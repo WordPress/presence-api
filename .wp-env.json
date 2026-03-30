@@ -1,0 +1,9 @@
+{
+	"core": "https://wordpress.org/wordpress-7.0-RC2.zip",
+	"plugins": [ ".", "https://downloads.wordpress.org/plugin/classic-editor.zip" ],
+	"config": {
+		"WP_DEBUG": true,
+		"WP_DEBUG_LOG": true,
+		"WP_TESTS_PHPUNIT_POLYFILLS_PATH": "/var/www/html/vendor/yoast/phpunit-polyfills"
+	}
+}

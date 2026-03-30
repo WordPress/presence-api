@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<phpunit
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:noNamespaceSchemaLocation="http://schema.phpunit.de/9.2/phpunit.xsd"
+	bootstrap="tests/bootstrap.php"
+	backupGlobals="false"
+	colors="true"
+	beStrictAboutTestsThatDoNotTestAnything="true"
+	beStrictAboutOutputDuringTests="true"
+>
+	<testsuites>
+		<testsuite name="presence-api">
+			<directory suffix=".php">tests/</directory>
+			<exclude>tests/e2e</exclude>
+			<exclude>tests/bootstrap.php</exclude>
+		</testsuite>
+	</testsuites>
+</phpunit>

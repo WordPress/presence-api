@@ -1,0 +1,15 @@
+{
+	"name": "presence-api",
+	"private": true,
+	"scripts": {
+		"env:start": "wp-env start",
+		"env:stop": "wp-env stop",
+		"env:cli": "wp-env run cli wp",
+		"test": "wp-env run tests-cli --env-cwd='wp-content/plugins/presence-api' -- /var/www/html/vendor/bin/phpunit --testdox"
+	},
+	"devDependencies": {
+		"@playwright/test": "^1.58.2",
+		"@wordpress/e2e-test-utils-playwright": "^1.42.0",
+		"@wordpress/env": "^11.0.0"
+	}
+}
