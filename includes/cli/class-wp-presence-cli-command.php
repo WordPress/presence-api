@@ -103,6 +103,10 @@ class WP_Presence_CLI_Command extends WP_CLI_Command {
 	 * @param array $assoc_args Associative arguments.
 	 */
 	public function list_( $args, $assoc_args ) {
+		if ( empty( $args[0] ) ) {
+			WP_CLI::error( __( 'Please specify a room. Usage: wp presence list <room>', 'presence-api' ) );
+		}
+
 		$room    = $args[0];
 		$entries = wp_get_presence( $room );
 		$format  = WP_CLI\Utils\get_flag_value( $assoc_args, 'format', 'table' );
