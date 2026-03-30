@@ -1,14 +1,18 @@
 /**
- * External dependencies
+ * Playwright configuration following WordPress core patterns.
+ *
+ * @see https://github.com/WordPress/wordpress-develop/blob/trunk/tests/e2e/playwright.config.ts
  */
 import path from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 
 const pluginRoot = path.resolve( __dirname, '../..' );
-const artifactsPath =
-	process.env.WP_ARTIFACTS_PATH ?? path.join( pluginRoot, 'artifacts' );
 
-process.env.WP_ARTIFACTS_PATH ??= artifactsPath;
+process.env.WP_ARTIFACTS_PATH ??= path.join( pluginRoot, 'artifacts' );
+process.env.STORAGE_STATE_PATH ??= path.join(
+	process.env.WP_ARTIFACTS_PATH,
+	'storage-states/admin.json'
+);
 
 const baseUrl = new URL(
 	process.env.WP_BASE_URL || 'http://localhost:8888'
@@ -16,24 +20,28 @@ const baseUrl = new URL(
 
 process.env.WP_BASE_URL = baseUrl.href;
 
-const config = defineConfig( {
-	reporter: [ [ 'list' ] ],
+export default defineConfig( {
+	globalSetup: path.resolve( __dirname, 'global-setup.js' ),
+	reporter: process.env.CI ? [ [ 'github' ] ] : [ [ 'list' ] ],
 	workers: 1,
-	timeout: 600_000,
+	timeout: 100_000,
 	reportSlowTests: null,
 	testDir: '.',
-	outputDir: path.join( artifactsPath, 'test-results' ),
+	outputDir: path.join( process.env.WP_ARTIFACTS_PATH, 'test-results' ),
 	use: {
 		baseURL: baseUrl.href,
-		headless: false,
-		viewport: null,
+		headless: true,
+		viewport: { width: 1440, height: 900 },
 		ignoreHTTPSErrors: true,
 		locale: 'en-US',
 		contextOptions: {
+			reducedMotion: 'reduce',
 			strictSelectors: true,
 		},
-		actionTimeout: 30_000,
+		storageState: process.env.STORAGE_STATE_PATH,
+		actionTimeout: 10_000,
 		trace: 'retain-on-failure',
+		screenshot: 'only-on-failure',
 	},
 	webServer: {
 		command: 'npm run env:start',
@@ -44,16 +52,7 @@ const config = defineConfig( {
 	projects: [
 		{
 			name: 'chromium',
-			use: {
-				...devices[ 'Desktop Chrome' ],
-				viewport: null,
-				deviceScaleFactor: undefined,
-				launchOptions: {
-					args: [ '--window-size=1600,1100' ],
-				},
-			},
+			use: { ...devices[ 'Desktop Chrome' ] },
 		},
 	],
 } );
-
-export default config;
