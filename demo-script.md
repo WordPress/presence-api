@@ -1,16 +1,16 @@
 # Presence API — Demo Script
 
-> **Runtime target:** ~2:00
+> **Runtime target:** ~1:45
 > **Setup:** Fresh WordPress install, plugin activated, WP_DEBUG on.
-> **Browser tabs:** Dashboard (logged in as admin), second browser/profile ready for User B.
+> **Browser:** Dashboard (logged in as admin). Terminal visible alongside.
 
 ---
 
-## ACT 1 — The Empty Room (0:00–0:25)
+## SHOT 1 — Empty state (0:00–0:15)
 
-**[Screen: Dashboard, Debugger widget visible]**
+**[Screen: Dashboard, widgets visible]**
 
-> Nobody's here. The heartbeat is flat, the table is empty. The system is at rest, costing zero.
+> This is a feature plugin for a dedicated presence table in WordPress. One table, isolated from the rest of the database. Let me show you what it does.
 
 **Terminal:**
 
@@ -18,87 +18,74 @@
 wp presence summary
 ```
 
-> Zero entries. Let's talk about *which* table.
-
-> WordPress stores almost everything — options, transients, sessions — in a handful of shared tables. On a starter plan, that's fine. At scale, those tables become bottlenecks — every feature that writes there competes for the same rows, the same locks, the same indexes. Presence data is high-frequency and short-lived: it doesn't belong in a table designed for things that stick around. So this plugin uses its own dedicated table. Small, purpose-built, and completely isolated from the rest of WordPress. Hosts don't have to worry about it because it can't interfere with anything else.
+> Empty. Let's wake it up.
 
 ---
 
-## ACT 2 — First Signs of Life (0:25–0:50)
+## SHOT 2 — First heartbeat (0:10–0:25)
 
-**[Refresh Dashboard in browser]**
+**[Refresh Dashboard]**
 
-> I loaded the dashboard and the Heartbeat API — which WordPress already runs — fired a ping. My entry appeared. No new connections, no new infrastructure.
+*Pause 3 seconds — let the viewer see the entry appear in the debugger.*
+
+> Refreshing the dashboard fires a Heartbeat ping. That upserts a row. If I stop pinging, the row expires in 60 seconds.
 
 ```bash
 wp presence list admin/online --format=table
 ```
 
-> One row. If I stop pinging, it self-destructs in 60 seconds. That's the key design choice: every row has a built-in expiration. The table never grows unbounded — it only holds what's alive right now.
-
-> Let's simulate a team.
-
-```bash
-wp presence demo 5
-```
-
-> Five users joined. Avatars, screens, active dots — all live.
-
-```bash
-wp presence summary --format=table
-```
-
-> Six users across multiple rooms. The table stays tiny because it only holds the present moment.
+*Pause — let the viewer read the output.*
 
 ---
 
-## ACT 3 — Real-Time Awareness (0:50–1:20)
+## SHOT 3 — Team arrives (0:25–0:50)
 
-**[Open a post in the block editor]**
-
-> I opened a post. A second entry appeared for me in this post's room. The Active Posts widget shows who's editing what — live.
-
-**[Open second browser, log in as User B, open the same post]**
-
-> Two editors on the same post. No WebSocket server, no Redis — just the Heartbeat that was already running. This matters for hosts: zero additional infrastructure to provision, monitor, or scale.
+> Let's add a team.
 
 ```bash
-wp presence list postType/post:1 --format=table
+wp presence demo 5 --keep-alive
 ```
 
-> Two rows. The post list shows stacked avatars, the admin bar shows a live count. All from the same small table.
+**[Refresh Dashboard]**
+
+*Pause 5 seconds — let the viewer see widgets fill in, admin bar update.*
+
+> Five users. Avatars, screen labels, active indicators. All from the same small table.
 
 ---
 
-## ACT 4 — Entropy (1:20–1:45)
+## SHOT 4 — Post editing (0:50–1:10)
 
-**[Close User B's browser tab]**
+**[Open a post in the editor. Return to Dashboard.]**
 
-> User B closed the tab. No logout event fired. But watch —
+> Opening a post creates a second entry in that post's room. The Active Posts widget picks it up.
 
-*Wait ~10 seconds.*
+*Pause — let the viewer see it.*
 
-> The dot went hollow. After 60 seconds the row is gone. No manual cleanup, no cron piling up work — rows expire on their own and a lightweight sweep removes the residue. The table always returns to a predictable size. For hosts, that's the difference between a feature that degrades over time and one that stays constant.
+---
+
+## SHOT 5 — Entropy (1:10–1:35)
+
+**[Ctrl+C the keep-alive in terminal. Wait 15 seconds.]**
+
+> I stopped refreshing the demo users. Watch the dots.
+
+*Let the idle transition happen on screen. Pause.*
+
+> Hollow — idle. After 60 seconds, gone. The table cleans itself.
 
 ```bash
 wp presence demo --cleanup
-```
-
-> Demo users gone.
-
-```bash
 wp presence summary
 ```
 
-> One user. The system is back at rest.
-
 ---
 
-## ACT 5 — Why This Architecture (1:45–2:00)
+## SHOT 6 — Close (1:35–1:45)
 
-> One dedicated table that never touches `wp_options`. Rows that delete themselves. The Heartbeat API that WordPress already ships. No external services.
+> One table. Bounded by active users, not history. Same cost at 10 users or 10,000.
 
-> For hosts, this is a presence system that costs the same at 10 users and 10,000 — bounded storage, predictable queries, zero new infrastructure. It scales because it was designed to stay small.
+*Dashboard showing just you. Hold 3 seconds. End.*
 
 ---
 
@@ -113,4 +100,3 @@ wp presence summary
 | `wp presence demo --cleanup` | Remove demo users |
 | `GET /wp-presence/v1/presence?room=...` | REST endpoint |
 | `GET /wp-presence/v1/presence/rooms` | All active rooms |
-| `/?presence-db=1` | Live table viewer |
