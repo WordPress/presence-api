@@ -218,8 +218,11 @@ function wp_presence_demo_refresh( $user_ids ) {
 		);
 	}
 
+	$first_user = true;
+
 	foreach ( $user_ids as $uid ) {
-		$screen = $screens[ array_rand( $screens ) ];
+		// Guarantee at least one user is editing a post for the Active Posts widget.
+		$screen = $first_user ? 'post' : $screens[ array_rand( $screens ) ];
 		$state  = array( 'screen' => $screen );
 
 		if ( in_array( $screen, array( 'post', 'post-new' ), true ) ) {
@@ -237,6 +240,8 @@ function wp_presence_demo_refresh( $user_ids ) {
 				$uid
 			);
 		}
+
+		$first_user = false;
 
 		if ( $has_cli ) {
 			$progress->tick();
