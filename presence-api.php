@@ -748,14 +748,13 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 	$here_count      = count( $here ) + 1; // +1 for current user.
 	$elsewhere_count = count( $elsewhere );
 
-	// Build avatar stack from other users only (not current user).
-	$stack_html    = '<span class="presence-bar-avatars">';
-	$current_user  = get_userdata( $current_uid );
-	$stack_entries = array_merge( $here, $elsewhere );
-	$stack_max     = min( count( $stack_entries ), 3 );
-	$z             = $stack_max;
+	// Build avatar stack from users on this page only (not current user).
+	$stack_html   = '<span class="presence-bar-avatars">';
+	$current_user = get_userdata( $current_uid );
+	$stack_max    = min( count( $here ), 3 );
+	$z            = $stack_max;
 
-	foreach ( array_slice( $stack_entries, 0, $stack_max ) as $entry ) {
+	foreach ( array_slice( $here, 0, $stack_max ) as $entry ) {
 		$user = get_userdata( $entry->user_id );
 		if ( ! $user ) {
 			continue;
