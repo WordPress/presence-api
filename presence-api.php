@@ -731,6 +731,17 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 
 	cache_users( wp_list_pluck( $entries, 'user_id' ) );
 
+	// Sort both groups alphabetically by display name.
+	$sort_by_name = function ( $a, $b ) {
+		$user_a = get_userdata( $a->user_id );
+		$user_b = get_userdata( $b->user_id );
+		$name_a = $user_a ? $user_a->display_name : '';
+		$name_b = $user_b ? $user_b->display_name : '';
+		return strcasecmp( $name_a, $name_b );
+	};
+	usort( $here, $sort_by_name );
+	usort( $elsewhere, $sort_by_name );
+
 	// Build a map of user_id → post_id for users currently editing a post.
 	$user_editing_post = array();
 	$post_entries      = wp_get_presence_by_room_prefix( 'postType/' );
@@ -748,13 +759,14 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 	$here_count      = count( $here ) + 1; // +1 for current user.
 	$elsewhere_count = count( $elsewhere );
 
-	// Build avatar stack from users on this page only (not current user).
+	// Build avatar stack from users on this page only (not current user), capped at 10.
 	$stack_html   = '<span class="presence-bar-avatars">';
 	$current_user = get_userdata( $current_uid );
-	$stack_max    = min( count( $here ), 3 );
-	$z            = $stack_max;
+	$stack_limit  = 10;
+	$stack_show   = array_slice( $here, 0, $stack_limit );
+	$z            = count( $stack_show );
 
-	foreach ( array_slice( $here, 0, $stack_max ) as $entry ) {
+	foreach ( $stack_show as $entry ) {
 		$user = get_userdata( $entry->user_id );
 		if ( ! $user ) {
 			continue;
