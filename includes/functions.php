@@ -160,18 +160,7 @@ function wp_can_access_presence_room( $room, $user_id = 0 ) {
 		return false;
 	}
 
-	$can_access = user_can( $user_id, 'edit_posts' );
-
-	/**
-	 * Filters whether a user can access a presence room.
-	 *
-	 * @since 7.1.0
-	 *
-	 * @param bool   $can_access Whether the user can access the room.
-	 * @param string $room       The room identifier.
-	 * @param int    $user_id    The user ID.
-	 */
-	return apply_filters( 'wp_presence_user_can_access_room', $can_access, $room, $user_id );
+	return user_can( $user_id, 'edit_posts' );
 }
 
 /**

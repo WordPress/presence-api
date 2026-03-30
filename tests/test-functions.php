@@ -175,17 +175,6 @@ class WP_Test_Presence_Functions extends WP_UnitTestCase {
 	/**
 	 * @covers ::wp_can_access_presence_room
 	 */
-	public function test_room_access_filter() {
-		add_filter( 'wp_presence_user_can_access_room', '__return_true' );
-
-		$this->assertTrue( wp_can_access_presence_room( 'test/room', self::$subscriber_id ) );
-
-		remove_filter( 'wp_presence_user_can_access_room', '__return_true' );
-	}
-
-	/**
-	 * @covers ::wp_can_access_presence_room
-	 */
 	public function test_logged_out_user_cannot_access_room() {
 		$this->assertFalse( wp_can_access_presence_room( 'test/room', 0 ) );
 	}

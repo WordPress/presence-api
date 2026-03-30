@@ -37,12 +37,4 @@ Creates presence entries alongside `_edit_lock` postmeta when a post lock is ref
 
 ## Capability
 
-All features require `edit_posts`. Filterable via `wp_presence_user_can_access_room`.
-
-## Alternatives considered
-
-**WebSocket** — Heartbeat handles visibility throttling, idle timeout, and suspension. Sub-second presence (cursors, selections) is a separate concern.
-
-**Post meta** — Triggers `wp_cache_set_posts_last_changed()` on every write, invalidating `WP_Query` caches site-wide. See [#64696](https://core.trac.wordpress.org/ticket/64696), [#64916](https://core.trac.wordpress.org/ticket/64916).
-
-**Persistent history** — Activity logging is a separate concern. See XWP Stream.
+All features require `edit_posts`.

@@ -18,7 +18,6 @@ Initial release.
 - WP-CLI: `set`, `list`, `summary`, `cleanup`, `demo` (with `--keep-alive` and `--cleanup`).
 - Debugger widget (WP_DEBUG only): heartbeat monitor with live table viewer.
 - `wp_presence_default_ttl` filter and `WP_PRESENCE_DEFAULT_TTL` constant.
-- `wp_presence_user_can_access_room` filter for room access control.
 - Multisite-aware `uninstall.php`.
 - Full i18n with `.pot` file.
 - WCAG AA accessibility: ARIA labels, `aria-live`, keyboard navigation.
