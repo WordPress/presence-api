@@ -3,39 +3,19 @@
  * Tests for the Presence API core functions.
  *
  * @package Presence_API
- * @since 7.1.0
  *
  * @group presence
  */
 class WP_Test_Presence_Functions extends WP_UnitTestCase {
 
-	/**
-	 * Editor user ID.
-	 *
-	 * @var int
-	 */
 	private static $editor_id;
-
-	/**
-	 * Subscriber user ID.
-	 *
-	 * @var int
-	 */
 	private static $subscriber_id;
 
-	/**
-	 * Sets up fixtures before any tests run.
-	 *
-	 * @param WP_UnitTest_Factory $factory Test factory.
-	 */
 	public static function wpSetUpBeforeClass( WP_UnitTest_Factory $factory ) {
 		self::$editor_id     = $factory->user->create( array( 'role' => 'editor' ) );
 		self::$subscriber_id = $factory->user->create( array( 'role' => 'subscriber' ) );
 	}
 
-	/**
-	 * Cleans up the presence table after each test.
-	 */
 	public function tear_down() {
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -375,9 +355,6 @@ class WP_Test_Presence_Functions extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that wp_maybe_create_presence_table() upgrades the schema when the
-	 * database version changes.
-	 *
 	 * @covers ::wp_maybe_create_presence_table
 	 */
 	public function test_schema_migration_on_version_bump() {
@@ -406,9 +383,6 @@ class WP_Test_Presence_Functions extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that wp_maybe_create_presence_table() is a no-op when the version
-	 * is already current.
-	 *
 	 * @covers ::wp_maybe_create_presence_table
 	 */
 	public function test_schema_migration_skipped_when_current() {
@@ -426,8 +400,6 @@ class WP_Test_Presence_Functions extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that set_presence handles empty room name.
-	 *
 	 * @covers ::wp_set_presence
 	 */
 	public function test_set_presence_empty_room() {
@@ -441,8 +413,6 @@ class WP_Test_Presence_Functions extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that set_presence handles very long room names by truncation.
-	 *
 	 * @covers ::wp_set_presence
 	 */
 	public function test_set_presence_long_room_name() {
@@ -454,8 +424,6 @@ class WP_Test_Presence_Functions extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that presence data preserves complex nested structures.
-	 *
 	 * @covers ::wp_set_presence
 	 * @covers ::wp_get_presence
 	 */

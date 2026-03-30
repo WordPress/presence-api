@@ -3,47 +3,21 @@
  * Tests for the Presence REST controller.
  *
  * @package Presence_API
- * @since 7.1.0
  *
  * @group presence
  */
 class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 
-	/**
-	 * Editor user ID.
-	 *
-	 * @var int
-	 */
 	private static $editor_id;
-
-	/**
-	 * Second editor user ID.
-	 *
-	 * @var int
-	 */
 	private static $editor_2_id;
-
-	/**
-	 * Admin user ID.
-	 *
-	 * @var int
-	 */
 	private static $admin_id;
 
-	/**
-	 * Sets up fixtures before any tests run.
-	 *
-	 * @param WP_UnitTest_Factory $factory Test factory.
-	 */
 	public static function wpSetUpBeforeClass( WP_UnitTest_Factory $factory ) {
 		self::$editor_id   = $factory->user->create( array( 'role' => 'editor' ) );
 		self::$editor_2_id = $factory->user->create( array( 'role' => 'editor' ) );
 		self::$admin_id    = $factory->user->create( array( 'role' => 'administrator' ) );
 	}
 
-	/**
-	 * Cleans up the presence table after each test.
-	 */
 	public function tear_down() {
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -52,8 +26,6 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that REST create_item prevents overwriting another user's entry.
-	 *
 	 * @covers WP_REST_Presence_Controller::create_item
 	 */
 	public function test_rest_create_prevents_client_id_spoofing() {
@@ -76,8 +48,6 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that REST delete checks ownership via user_id column.
-	 *
 	 * @covers WP_REST_Presence_Controller::delete_item_permissions_check
 	 */
 	public function test_rest_delete_checks_user_id_ownership() {
@@ -99,8 +69,6 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that REST delete allows admin to remove any entry.
-	 *
 	 * @covers WP_REST_Presence_Controller::delete_item_permissions_check
 	 */
 	public function test_rest_delete_allows_admin() {
@@ -121,8 +89,6 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that REST delete allows deleting lock- entries owned by the current user.
-	 *
 	 * @covers WP_REST_Presence_Controller::delete_item_permissions_check
 	 */
 	public function test_rest_delete_allows_own_lock_entries() {
@@ -143,8 +109,6 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that sanitize_data_param preserves nested arrays and scalar types.
-	 *
 	 * @covers WP_REST_Presence_Controller::sanitize_data_param
 	 */
 	public function test_sanitize_data_preserves_types() {
@@ -170,8 +134,6 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that sanitize_data_param enforces depth limit.
-	 *
 	 * @covers WP_REST_Presence_Controller::sanitize_data_param
 	 */
 	public function test_sanitize_data_enforces_depth_limit() {
@@ -193,8 +155,6 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that REST response filters by context.
-	 *
 	 * @covers WP_REST_Presence_Controller::prepare_item_for_response
 	 */
 	public function test_prepare_item_filters_by_context() {
@@ -265,8 +225,6 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that sanitize_data_param strips HTML tags from string values.
-	 *
 	 * @covers WP_REST_Presence_Controller::sanitize_data_param
 	 */
 	public function test_sanitize_data_strips_html() {
@@ -280,8 +238,6 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that REST create_item requires room parameter.
-	 *
 	 * @covers WP_REST_Presence_Controller::create_item
 	 */
 	public function test_rest_create_requires_room() {
@@ -297,8 +253,6 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that GET /presence includes pagination and cache headers.
-	 *
 	 * @covers WP_REST_Presence_Controller::get_items
 	 */
 	public function test_get_items_returns_headers() {
@@ -319,8 +273,6 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that create_item returns 429 when user exceeds MAX_ENTRIES_PER_USER.
-	 *
 	 * @covers WP_REST_Presence_Controller::create_item
 	 */
 	public function test_rest_create_enforces_entry_limit() {

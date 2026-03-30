@@ -3,38 +3,15 @@
  * Tests for the Active Posts dashboard widget.
  *
  * @package Presence_API
- * @since 7.1.0
  *
  * @group presence
  */
 class WP_Test_Presence_Widget_Active_Posts extends WP_UnitTestCase {
 
-	/**
-	 * Editor user ID.
-	 *
-	 * @var int
-	 */
 	private static $editor_id;
-
-	/**
-	 * Second editor user ID.
-	 *
-	 * @var int
-	 */
 	private static $editor2_id;
-
-	/**
-	 * Test post ID.
-	 *
-	 * @var int
-	 */
 	private static $post_id;
 
-	/**
-	 * Sets up fixtures before any tests run.
-	 *
-	 * @param WP_UnitTest_Factory $factory Test factory.
-	 */
 	public static function wpSetUpBeforeClass( WP_UnitTest_Factory $factory ) {
 		self::$editor_id  = $factory->user->create( array( 'role' => 'editor' ) );
 		self::$editor2_id = $factory->user->create( array( 'role' => 'editor' ) );
@@ -46,9 +23,6 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_UnitTestCase {
 		);
 	}
 
-	/**
-	 * Cleans up the presence table after each test.
-	 */
 	public function tear_down() {
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -57,8 +31,6 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests the heartbeat handler returns active post data grouped by post.
-	 *
 	 * @covers WP_Presence_Widget_Active_Posts::heartbeat_received
 	 */
 	public function test_heartbeat_received_returns_active_posts() {
@@ -91,8 +63,6 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests the heartbeat handler ignores requests without the ping key.
-	 *
 	 * @covers WP_Presence_Widget_Active_Posts::heartbeat_received
 	 */
 	public function test_heartbeat_received_ignores_without_ping() {
@@ -107,8 +77,6 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that a recently active user shows as "active".
-	 *
 	 * @covers WP_Presence_Widget_Active_Posts::heartbeat_received
 	 */
 	public function test_active_status() {
@@ -127,8 +95,6 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that a stale presence entry shows as "idle".
-	 *
 	 * @covers WP_Presence_Widget_Active_Posts::heartbeat_received
 	 */
 	public function test_idle_status() {
@@ -158,8 +124,6 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that multiple users editing different posts are returned.
-	 *
 	 * @covers WP_Presence_Widget_Active_Posts::heartbeat_received
 	 */
 	public function test_multiple_users_editing() {
@@ -183,8 +147,6 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that admin/online entries are not included.
-	 *
 	 * @covers WP_Presence_Widget_Active_Posts::heartbeat_received
 	 */
 	public function test_excludes_non_post_rooms() {

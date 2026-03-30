@@ -3,39 +3,19 @@
  * Tests for lifecycle hooks (login/logout).
  *
  * @package Presence_API
- * @since 7.1.0
  *
  * @group presence
  */
 class WP_Test_Presence_Lifecycle extends WP_UnitTestCase {
 
-	/**
-	 * Editor user ID.
-	 *
-	 * @var int
-	 */
 	private static $editor_id;
-
-	/**
-	 * Subscriber user ID.
-	 *
-	 * @var int
-	 */
 	private static $subscriber_id;
 
-	/**
-	 * Sets up fixtures before any tests run.
-	 *
-	 * @param WP_UnitTest_Factory $factory Test factory.
-	 */
 	public static function wpSetUpBeforeClass( WP_UnitTest_Factory $factory ) {
 		self::$editor_id     = $factory->user->create( array( 'role' => 'editor' ) );
 		self::$subscriber_id = $factory->user->create( array( 'role' => 'subscriber' ) );
 	}
 
-	/**
-	 * Cleans up the presence table after each test.
-	 */
 	public function tear_down() {
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -44,8 +24,6 @@ class WP_Test_Presence_Lifecycle extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that wp_presence_on_login sets presence for an editor.
-	 *
 	 * @covers ::wp_presence_on_login
 	 */
 	public function test_login_sets_presence() {
@@ -59,8 +37,6 @@ class WP_Test_Presence_Lifecycle extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that wp_presence_on_login skips subscribers.
-	 *
 	 * @covers ::wp_presence_on_login
 	 */
 	public function test_login_skips_subscriber() {
@@ -72,8 +48,6 @@ class WP_Test_Presence_Lifecycle extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that wp_presence_on_logout clears all rooms.
-	 *
 	 * @covers ::wp_presence_on_logout
 	 */
 	public function test_logout_clears_all_rooms() {
@@ -87,8 +61,6 @@ class WP_Test_Presence_Lifecycle extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Tests that wp_presence_on_logout is a no-op for subscribers.
-	 *
 	 * @covers ::wp_presence_on_logout
 	 */
 	public function test_logout_skips_subscriber() {
