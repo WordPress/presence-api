@@ -1,0 +1,485 @@
+# Copyright (C) 2026 Joe Fusco
+# This file is distributed under the GPL-2.0-or-later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Presence API 0.4.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/presence-api\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-03-24T22:43:43+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: presence-api\n"
+
+#. Plugin Name of the plugin
+#: presence-api.php
+msgid "Presence API"
+msgstr ""
+
+#. Description of the plugin
+#: presence-api.php
+msgid "Standalone presence/awareness API for WordPress with REST endpoints, dashboard widget, and post-lock bridge."
+msgstr ""
+
+#. Author of the plugin
+#: presence-api.php
+msgid "Joe Fusco"
+msgstr ""
+
+#. translators: %s: Parameter name.
+#: includes/class-wp-rest-presence-controller.php:172
+#, php-format
+msgid "%s must be an object."
+msgstr ""
+
+#: includes/class-wp-rest-presence-controller.php:182
+msgid "Presence data payload exceeds the maximum allowed size."
+msgstr ""
+
+#: includes/class-wp-rest-presence-controller.php:254
+msgid "Sorry, you are not allowed to view presence in this room."
+msgstr ""
+
+#: includes/class-wp-rest-presence-controller.php:309
+msgid "Sorry, you are not allowed to set presence in this room."
+msgstr ""
+
+#: includes/class-wp-rest-presence-controller.php:359
+msgid "This client_id is already in use by another user."
+msgstr ""
+
+#: includes/class-wp-rest-presence-controller.php:369
+msgid "Could not set presence."
+msgstr ""
+
+#: includes/class-wp-rest-presence-controller.php:406
+msgid "Sorry, you are not allowed to remove presence in this room."
+msgstr ""
+
+#: includes/class-wp-rest-presence-controller.php:434
+msgid "Sorry, you are not allowed to remove another user's presence."
+msgstr ""
+
+#: includes/class-wp-rest-presence-controller.php:476
+msgid "Sorry, you are not allowed to view presence rooms."
+msgstr ""
+
+#: includes/class-wp-rest-presence-controller.php:571
+msgid "The presence room identifier."
+msgstr ""
+
+#: includes/class-wp-rest-presence-controller.php:577
+msgid "The client identifier within the room."
+msgstr ""
+
+#: includes/class-wp-rest-presence-controller.php:583
+msgid "The WordPress user ID associated with this presence entry."
+msgstr ""
+
+#: includes/class-wp-rest-presence-controller.php:589
+msgid "Arbitrary presence state data."
+msgstr ""
+
+#: includes/class-wp-rest-presence-controller.php:594
+msgid "The date the presence was last updated, in GMT."
+msgstr ""
+
+#: includes/cli/class-wp-presence-cli-command.php:58
+msgid "Invalid JSON in --data."
+msgstr ""
+
+#. translators: 1: Room identifier, 2: Client identifier.
+#: includes/cli/class-wp-presence-cli-command.php:67
+#, php-format
+msgid "Presence set in room \"%1$s\" for client \"%2$s\"."
+msgstr ""
+
+#: includes/cli/class-wp-presence-cli-command.php:69
+msgid "Failed to set presence."
+msgstr ""
+
+#. translators: %s: Room identifier.
+#: includes/cli/class-wp-presence-cli-command.php:106
+#, php-format
+msgid "No presence entries in room \"%s\"."
+msgstr ""
+
+#. translators: %d: Total number of presence entries.
+#: includes/cli/class-wp-presence-cli-command.php:157
+#, php-format
+msgid "Total entries: %d"
+msgstr ""
+
+#. translators: %d: Total number of distinct users.
+#: includes/cli/class-wp-presence-cli-command.php:159
+#, php-format
+msgid "Total users:   %d"
+msgstr ""
+
+#: includes/cli/class-wp-presence-cli-command.php:162
+msgid "No presence data."
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-active-posts.php:43
+msgid "Active Posts"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-active-posts.php:108
+#: includes/widgets/class-wp-presence-widget-active-posts.php:211
+msgid "No posts are being edited."
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-active-posts.php:109
+#: includes/widgets/class-wp-presence-widget-active-posts.php:213
+msgid "Posts currently being edited"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-active-posts.php:110
+#: includes/widgets/class-wp-presence-widget-active-posts.php:224
+msgid "Editing"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-active-posts.php:111
+#: includes/widgets/class-wp-presence-widget-active-posts.php:225
+msgid "Idle"
+msgstr ""
+
+#. translators: %d: Number of editors.
+#: includes/widgets/class-wp-presence-widget-active-posts.php:113
+#: includes/widgets/class-wp-presence-widget-active-posts.php:243
+#, php-format
+msgid "%d editors"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:65
+msgid "Dashboard"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:66
+msgid "Posts"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:67
+#: includes/widgets/class-wp-presence-widget-whos-online.php:68
+#: includes/widgets/class-wp-presence-widget-whos-online.php:239
+msgid "Editing post"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:69
+msgid "New post"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:70
+msgid "Pages"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:71
+#: includes/widgets/class-wp-presence-widget-whos-online.php:239
+msgid "Editing page"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:72
+#: includes/widgets/class-wp-presence-widget-whos-online.php:73
+msgid "Media"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:74
+#: includes/widgets/class-wp-presence-widget-whos-online.php:75
+msgid "Comments"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:76
+msgid "Themes"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:77
+msgid "Widgets"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:78
+msgid "Menus"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:79
+msgid "Plugins"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:80
+msgid "Users"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:81
+msgid "Profile"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:82
+msgid "Editing user"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:83
+msgid "Tools"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:84
+msgid "Import"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:85
+msgid "Export"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:86
+#: includes/widgets/class-wp-presence-widget-whos-online.php:87
+#: includes/widgets/class-wp-presence-widget-whos-online.php:88
+#: includes/widgets/class-wp-presence-widget-whos-online.php:89
+#: includes/widgets/class-wp-presence-widget-whos-online.php:90
+#: includes/widgets/class-wp-presence-widget-whos-online.php:91
+msgid "Settings"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:107
+msgid "Who's Online"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:231
+msgid "Drafting page"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:231
+msgid "Drafting post"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:233
+msgid "Pending page"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:233
+msgid "Pending post"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:235
+msgid "Editing private page"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:235
+msgid "Editing private post"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:237
+msgid "Editing scheduled page"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:237
+msgid "Editing scheduled post"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:285
+#: includes/widgets/class-wp-presence-widget-whos-online.php:557
+msgid "No other users are currently online."
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:286
+#: includes/widgets/class-wp-presence-widget-whos-online.php:510
+msgid "Online now"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:287
+#: includes/widgets/class-wp-presence-widget-whos-online.php:564
+msgid "Users currently online"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:288
+#: includes/widgets/class-wp-presence-widget-whos-online.php:622
+msgid "Additional online users"
+msgstr ""
+
+#: includes/widgets/class-wp-presence-widget-whos-online.php:289
+#: includes/widgets/class-wp-presence-widget-whos-online.php:636
+msgid "Show less"
+msgstr ""
+
+#. translators: %d: Number of additional online users.
+#: includes/widgets/class-wp-presence-widget-whos-online.php:291
+#: includes/widgets/class-wp-presence-widget-whos-online.php:619
+#: presence-api.php:776
+#: presence-api.php:820
+#, php-format
+msgid "+%d more"
+msgstr ""
+
+#. translators: %d: Number of additional online users.
+#: includes/widgets/class-wp-presence-widget-whos-online.php:293
+#: includes/widgets/class-wp-presence-widget-whos-online.php:599
+#, php-format
+msgid "+%d more — view all users"
+msgstr ""
+
+#. translators: %d: Number of seconds.
+#: includes/widgets/class-wp-presence-widget-whos-online.php:295
+#, php-format
+msgid "%d seconds ago"
+msgstr ""
+
+#. translators: %d: Number of minutes.
+#: includes/widgets/class-wp-presence-widget-whos-online.php:297
+#, php-format
+msgid "%d min ago"
+msgstr ""
+
+#. translators: %d: Number of hours (singular).
+#: includes/widgets/class-wp-presence-widget-whos-online.php:299
+#, php-format
+msgid "%d hour ago"
+msgstr ""
+
+#. translators: %d: Number of hours (plural).
+#: includes/widgets/class-wp-presence-widget-whos-online.php:301
+#, php-format
+msgid "%d hours ago"
+msgstr ""
+
+#. translators: %s: Human-readable time difference.
+#: includes/widgets/class-wp-presence-widget-whos-online.php:513
+#: presence-api.php:374
+#, php-format
+msgid "%s ago"
+msgstr ""
+
+#: presence-api.php:27
+msgid "Presence API requires WordPress 7.0 or later."
+msgstr ""
+
+#: presence-api.php:300
+msgid "Every Minute (Presence Cleanup)"
+msgstr ""
+
+#. translators: %s: The admin screen name.
+#: presence-api.php:359
+#, php-format
+msgid "Currently online (%s)"
+msgstr ""
+
+#: presence-api.php:362
+msgid "Currently online"
+msgstr ""
+
+#. translators: 1: Human-readable time difference, 2: The admin screen name.
+#: presence-api.php:368
+#, php-format
+msgid "%1$s ago on %2$s"
+msgstr ""
+
+#: presence-api.php:380
+msgid "Presence"
+msgstr ""
+
+#: presence-api.php:383
+msgid "Last seen"
+msgstr ""
+
+#: presence-api.php:398
+msgid "Heartbeat"
+msgstr ""
+
+#. translators: %d: Number of active users.
+#: presence-api.php:430
+#: presence-api.php:470
+#, php-format
+msgid "%d active user"
+msgid_plural "%d active users"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %d: Number of rooms.
+#: presence-api.php:432
+#: presence-api.php:472
+#, php-format
+msgid "%d room"
+msgid_plural "%d rooms"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: 1: "N active users", 2: "N rooms".
+#: presence-api.php:435
+#: presence-api.php:475
+#, php-format
+msgid "%1$s across %2$s"
+msgstr ""
+
+#: presence-api.php:440
+msgid "Heartbeat API"
+msgstr ""
+
+#. translators: %d: Heartbeat interval in seconds.
+#: presence-api.php:531
+#, php-format
+msgid "Every %ds"
+msgstr ""
+
+#: presence-api.php:532
+msgid "Resting"
+msgstr ""
+
+#: presence-api.php:533
+msgid "Sleeping"
+msgstr ""
+
+#: presence-api.php:699
+#: presence-api.php:759
+msgid "You"
+msgstr ""
+
+#. translators: 1: Number of users on the same screen (including you), 2: Number of users on other screens.
+#: presence-api.php:719
+#, php-format
+msgid "%1$d here · %2$d elsewhere"
+msgstr ""
+
+#. translators: %d: Number of users on the same screen (including you).
+#: presence-api.php:722
+#, php-format
+msgid "%d here"
+msgid_plural "%d here"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %d: Total number of users online including yourself.
+#: presence-api.php:735
+#, php-format
+msgid "%d user online"
+msgid_plural "%d users online"
+msgstr[0] ""
+msgstr[1] ""
+
+#: presence-api.php:748
+msgid "On this page"
+msgstr ""
+
+#: presence-api.php:759
+msgid "you"
+msgstr ""
+
+#: presence-api.php:803
+msgid "Elsewhere"
+msgstr ""
+
+#: presence-api.php:857
+msgid "View all users"
+msgstr ""
+
+#: presence-api.php:911
+#: presence-api.php:916
+msgid "Status"
+msgstr ""
+
+#: presence-api.php:953
+msgid "Online"
+msgstr ""
+
+#: presence-api.php:1014
+#: presence-api.php:1021
+msgid "Editors"
+msgstr ""
