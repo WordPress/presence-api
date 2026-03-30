@@ -14,10 +14,4 @@ npx wp-env run cli wp presence demo 10 --keep-alive
 
 Then open [localhost:8888/wp-admin/](http://localhost:8888/wp-admin/) (admin / password).
 
-## How it works
-
-A dedicated `wp_presence` table with a `UNIQUE KEY` on `(room, client_id)` enables atomic upserts via `INSERT ... ON DUPLICATE KEY UPDATE`. Entries expire after 60 seconds. Data flows through the WordPress [Heartbeat API](https://developer.wordpress.org/plugins/javascript/heartbeat-api/). Purely ephemeral — nothing persists beyond the TTL.
-
-Six public functions. Four REST endpoints. One capability gate (`edit_posts`). Zero cache side effects.
-
-See [ARCHITECTURE.md](ARCHITECTURE.md) for the full technical breakdown, API reference, and WP-CLI commands.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for details.
