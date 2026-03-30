@@ -3,7 +3,6 @@
  * Dashboard Widget: Active Posts
  *
  * @package Presence_API
- * @since 7.1.0
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -16,14 +15,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Shows which posts are currently being edited, grouped by post with
  * an avatar stack of editors.
  *
- * @since 7.1.0
  */
 class WP_Presence_Widget_Active_Posts {
 
 	/**
 	 * Seconds after which a user is considered idle.
 	 *
-	 * @since 7.1.0
 	 * @var int
 	 */
 	const IDLE_THRESHOLD = 30;
@@ -31,7 +28,6 @@ class WP_Presence_Widget_Active_Posts {
 	/**
 	 * Registers the dashboard widget.
 	 *
-	 * @since 7.1.0
 	 */
 	public static function register() {
 		if ( ! current_user_can( 'edit_posts' ) ) {
@@ -53,8 +49,6 @@ class WP_Presence_Widget_Active_Posts {
 
 	/**
 	 * Enqueues the widget's JavaScript and CSS.
-	 *
-	 * @since 7.1.0
 	 *
 	 * @param string $hook_suffix The current admin page.
 	 */
@@ -78,8 +72,6 @@ class WP_Presence_Widget_Active_Posts {
 	/**
 	 * Returns the inline CSS for the dashboard widget.
 	 *
-	 * @since 7.1.0
-	 *
 	 * @return string CSS code.
 	 */
 	private static function get_inline_css() {
@@ -99,8 +91,6 @@ class WP_Presence_Widget_Active_Posts {
 
 	/**
 	 * Returns the inline JavaScript for Heartbeat integration.
-	 *
-	 * @since 7.1.0
 	 *
 	 * @return string JavaScript code.
 	 */
@@ -202,7 +192,6 @@ JS,
 	/**
 	 * Renders the dashboard widget.
 	 *
-	 * @since 7.1.0
 	 */
 	public static function render() {
 		$posts = self::build_active_posts_data();
@@ -260,8 +249,6 @@ JS,
 	/**
 	 * Handles the heartbeat received event for active posts updates.
 	 *
-	 * @since 7.1.0
-	 *
 	 * @param array  $response  The Heartbeat response.
 	 * @param array  $data      The $_POST data sent.
 	 * @param string $screen_id The screen ID.
@@ -286,8 +273,6 @@ JS,
 	 *
 	 * Returns an array of posts, each with an 'editors' array containing
 	 * the users currently editing that post.
-	 *
-	 * @since 7.1.0
 	 *
 	 * @return array Array of post data with grouped editors.
 	 */

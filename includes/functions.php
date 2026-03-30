@@ -11,7 +11,6 @@
  *   wp_presence_post_room()
  *
  * @package Presence_API
- * @since 7.1.0
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -19,13 +18,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /*
- * ─── Public API ───────────────────────────────────────────────────────────────
  */
 
 /**
  * Gets all present clients in a room, filtered by TTL.
- *
- * @since 7.1.0
  *
  * @param string $room    The room identifier.
  * @param int    $timeout Optional. Timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL.
@@ -65,8 +61,6 @@ function wp_get_presence( $room, $timeout = WP_PRESENCE_DEFAULT_TTL ) {
  * Uses INSERT ... ON DUPLICATE KEY UPDATE for atomic upserts
  * via the UNIQUE KEY (room, client_id).
  *
- * @since 7.1.0
- *
  * @param string $room      The room identifier.
  * @param string $client_id The client identifier.
  * @param array  $state     The presence state data.
@@ -99,8 +93,6 @@ function wp_set_presence( $room, $client_id, $state, $user_id = 0 ) {
 /**
  * Removes a client from a room.
  *
- * @since 7.1.0
- *
  * @param string $room      The room identifier.
  * @param string $client_id The client identifier.
  * @return bool True on success, false on failure.
@@ -124,8 +116,6 @@ function wp_remove_presence( $room, $client_id ) {
 /**
  * Removes all presence entries for a given user across all rooms.
  *
- * @since 7.1.0
- *
  * @param int $user_id The user ID.
  * @return bool True on success, false on failure.
  */
@@ -144,8 +134,6 @@ function wp_remove_user_presence( $user_id ) {
 
 /**
  * Checks if a user can access a presence room.
- *
- * @since 7.1.0
  *
  * @param string $room    The room identifier.
  * @param int    $user_id Optional. The user ID. Default 0 (current user).
@@ -168,8 +156,6 @@ function wp_can_access_presence_room( $room, $user_id = 0 ) {
  *
  * Room format: `postType/{post_type}:{post_id}`
  *
- * @since 7.1.0
- *
  * @param int|WP_Post $post The post ID or post object.
  * @return string|false The room identifier, or false if the post doesn't exist
  *                      or its post type does not support presence.
@@ -189,7 +175,6 @@ function wp_presence_post_room( $post ) {
 }
 
 /*
- * ─── Internal functions ───────────────────────────────────────────────────────
  *
  * The following functions are used by the plugin's widgets, CLI, REST
  * controller, and cron jobs. They are not part of the public API contract
@@ -200,16 +185,12 @@ function wp_presence_post_room( $post ) {
  * Filters and returns the presence timeout value.
  *
  * @access private
- * @since 7.1.0
- *
  * @param int $timeout The timeout in seconds.
  * @return int The filtered timeout in seconds.
  */
 function wp_presence_get_timeout( $timeout ) {
 	/**
 	 * Filters the presence TTL (time-to-live) used for queries and cleanup.
-	 *
-	 * @since 7.1.0
 	 *
 	 * @param int $timeout The timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL (60).
 	 */
@@ -220,8 +201,6 @@ function wp_presence_get_timeout( $timeout ) {
  * Gets all presence entries for a given user across all rooms.
  *
  * @access private
- * @since 7.1.0
- *
  * @param int $user_id The user ID.
  * @param int $timeout Optional. Timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL.
  * @return array Array of presence entry objects.
@@ -257,8 +236,6 @@ function wp_get_user_presence( $user_id, $timeout = WP_PRESENCE_DEFAULT_TTL ) {
  * Gets all presence entries for rooms matching a prefix.
  *
  * @access private
- * @since 7.1.0
- *
  * @param string $prefix  The room prefix to match (e.g., 'postType/').
  * @param int    $timeout Optional. Timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL.
  * @return array Array of presence entry objects.
@@ -294,8 +271,6 @@ function wp_get_presence_by_room_prefix( $prefix, $timeout = WP_PRESENCE_DEFAULT
  * Returns a site-wide presence summary grouped by room prefix.
  *
  * @access private
- * @since 7.1.0
- *
  * @param int $timeout Optional. Timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL.
  * @return array {
  *     @type int   $total_entries Total presence entries.
@@ -374,7 +349,6 @@ function wp_get_presence_summary( $timeout = WP_PRESENCE_DEFAULT_TTL ) {
  * Deletes stale presence entries older than the default TTL.
  *
  * @access private
- * @since 7.1.0
  */
 function wp_delete_expired_presence_data() {
 	global $wpdb;
@@ -401,7 +375,6 @@ function wp_delete_expired_presence_data() {
  * during the database upgrade routine in wp-admin/includes/upgrade-schema.php.
  *
  * @access private
- * @since 7.1.0
  */
 function wp_maybe_create_presence_table() {
 	if ( get_option( 'wp_presence_db_version' ) === WP_PRESENCE_DB_VERSION ) {
@@ -438,8 +411,6 @@ function wp_maybe_create_presence_table() {
  * Returns all active rooms with their user counts and member lists.
  *
  * @access private
- * @since 7.1.0
- *
  * @param int $timeout Optional. Timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL.
  * @return array Array of room objects, each with 'room', 'user_count', and 'users'.
  */

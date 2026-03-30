@@ -3,7 +3,6 @@
  * REST API: WP_REST_Presence_Controller class
  *
  * @package Presence_API
- * @since 7.1.0
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -13,8 +12,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Core class used to manage presence via the REST API.
  *
- * @since 7.1.0
- *
  * @see WP_REST_Controller
  */
 class WP_REST_Presence_Controller extends WP_REST_Controller {
@@ -22,7 +19,6 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	/**
 	 * Maximum allowed size in bytes for the data payload.
 	 *
-	 * @since 7.1.0
 	 * @var int
 	 */
 	const MAX_DATA_SIZE = 10240;
@@ -30,7 +26,6 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	/**
 	 * Maximum nesting depth for the data payload.
 	 *
-	 * @since 7.1.0
 	 * @var int
 	 */
 	const MAX_DATA_DEPTH = 3;
@@ -38,7 +33,6 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	/**
 	 * Maximum number of presence entries a single user may hold.
 	 *
-	 * @since 7.1.0
 	 * @var int
 	 */
 	const MAX_ENTRIES_PER_USER = 50;
@@ -46,7 +40,6 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	/**
 	 * Constructor.
 	 *
-	 * @since 7.1.0
 	 */
 	public function __construct() {
 		$this->namespace = 'wp-presence/v1';
@@ -55,8 +48,6 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 
 	/**
 	 * Registers the routes for presence.
-	 *
-	 * @since 7.1.0
 	 *
 	 * @see register_rest_route()
 	 */
@@ -165,8 +156,6 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	/**
 	 * Validates the data parameter size and type.
 	 *
-	 * @since 7.1.0
-	 *
 	 * @param mixed           $value   The data parameter value.
 	 * @param WP_REST_Request $request Full details about the request.
 	 * @param string          $param   The parameter name.
@@ -201,8 +190,6 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	 * Preserves scalar types (strings, integers, floats, booleans)
 	 * and recurses into nested arrays up to MAX_DATA_DEPTH levels.
 	 *
-	 * @since 7.1.0
-	 *
 	 * @param mixed $value The data parameter value.
 	 * @return array Sanitized data array.
 	 */
@@ -216,8 +203,6 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 
 	/**
 	 * Recursively sanitizes data values with a depth limit.
-	 *
-	 * @since 7.1.0
 	 *
 	 * @param array $data  The data to sanitize.
 	 * @param int   $depth Current nesting depth.
@@ -248,8 +233,6 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	/**
 	 * Checks if the current user has permission to read presence.
 	 *
-	 * @since 7.1.0
-	 *
 	 * @param WP_REST_Request $request Full details about the request.
 	 * @return true|WP_Error True if the request has access, WP_Error otherwise.
 	 */
@@ -269,8 +252,6 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 
 	/**
 	 * Retrieves presence entries for a room.
-	 *
-	 * @since 7.1.0
 	 *
 	 * @param WP_REST_Request $request Full details about the request.
 	 * @return WP_REST_Response Response object.
@@ -334,8 +315,6 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	/**
 	 * Checks if the current user has permission to create a presence entry.
 	 *
-	 * @since 7.1.0
-	 *
 	 * @param WP_REST_Request $request Full details about the request.
 	 * @return true|WP_Error True if the request has access, WP_Error otherwise.
 	 */
@@ -358,8 +337,6 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	 *
 	 * Validates that the client_id is not already claimed by a different user
 	 * in the same room to prevent impersonation.
-	 *
-	 * @since 7.1.0
 	 *
 	 * @param WP_REST_Request $request Full details about the request.
 	 * @return WP_REST_Response|WP_Error Response object on success, WP_Error on failure.
@@ -445,8 +422,6 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	 * the 'manage_options' capability. Ownership is determined by the
 	 * user_id column in the database, not by the client_id format.
 	 *
-	 * @since 7.1.0
-	 *
 	 * @param WP_REST_Request $request Full details about the request.
 	 * @return true|WP_Error True if the request has access, WP_Error otherwise.
 	 */
@@ -498,8 +473,6 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	/**
 	 * Deletes a presence entry.
 	 *
-	 * @since 7.1.0
-	 *
 	 * @param WP_REST_Request $request Full details about the request.
 	 * @return WP_REST_Response Response object.
 	 */
@@ -520,8 +493,6 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	/**
 	 * Checks if the current user has permission to list rooms.
 	 *
-	 * @since 7.1.0
-	 *
 	 * @param WP_REST_Request $request Full details about the request.
 	 * @return true|WP_Error True if the request has access, WP_Error otherwise.
 	 */
@@ -539,8 +510,6 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 
 	/**
 	 * Retrieves all active rooms with user counts and members.
-	 *
-	 * @since 7.1.0
 	 *
 	 * @param WP_REST_Request $request Full details about the request.
 	 * @return WP_REST_Response Response object.
@@ -566,8 +535,6 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 
 	/**
 	 * Prepares a presence entry for the REST response.
-	 *
-	 * @since 7.1.0
 	 *
 	 * @param object          $item    Presence entry object.
 	 * @param WP_REST_Request $request Full details about the request.
@@ -608,8 +575,6 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 
 	/**
 	 * Retrieves the presence entry schema, conforming to JSON Schema.
-	 *
-	 * @since 7.1.0
 	 *
 	 * @return array Item schema data.
 	 */

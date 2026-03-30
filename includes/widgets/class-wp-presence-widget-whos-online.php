@@ -3,7 +3,6 @@
  * Dashboard Widget: Who's Online
  *
  * @package Presence_API
- * @since 7.1.0
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,15 +11,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Handles the "Who's Online" dashboard widget with Heartbeat integration.
- *
- * @since 7.1.0
  */
 class WP_Presence_Widget_Whos_Online {
 
 	/**
 	 * The presence room used by this widget.
 	 *
-	 * @since 7.1.0
 	 * @var string
 	 */
 	const ROOM = 'admin/online';
@@ -28,7 +24,6 @@ class WP_Presence_Widget_Whos_Online {
 	/**
 	 * Maximum number of users shown as full rows before collapsing.
 	 *
-	 * @since 7.1.0
 	 * @var int
 	 */
 	const VISIBLE_ROWS = 3;
@@ -40,7 +35,6 @@ class WP_Presence_Widget_Whos_Online {
 	 * stack with a count linking to the Users page instead of rendering
 	 * every user as an expandable list.
 	 *
-	 * @since 7.1.0
 	 * @var int
 	 */
 	const OVERFLOW_THRESHOLD = 20;
@@ -48,7 +42,6 @@ class WP_Presence_Widget_Whos_Online {
 	/**
 	 * Seconds after which a user is considered idle (but still present).
 	 *
-	 * @since 7.1.0
 	 * @var int
 	 */
 	const IDLE_THRESHOLD = 30;
@@ -60,8 +53,6 @@ class WP_Presence_Widget_Whos_Online {
 	 * switches from an expandable list to a compact summary linking to
 	 * the Users page.
 	 *
-	 * @since 7.1.0
-	 *
 	 * @return int The overflow threshold.
 	 */
 	public static function get_overflow_threshold() {
@@ -70,8 +61,6 @@ class WP_Presence_Widget_Whos_Online {
 
 	/**
 	 * Returns a map of pagenow slugs to translatable screen labels.
-	 *
-	 * @since 7.1.0
 	 *
 	 * @return array Associative array of slug => label.
 	 */
@@ -112,7 +101,6 @@ class WP_Presence_Widget_Whos_Online {
 	/**
 	 * Registers the dashboard widget.
 	 *
-	 * @since 7.1.0
 	 */
 	public static function register() {
 		if ( ! current_user_can( 'edit_posts' ) ) {
@@ -136,8 +124,6 @@ class WP_Presence_Widget_Whos_Online {
 	/**
 	 * Enqueues the widget's JavaScript and CSS.
 	 *
-	 * @since 7.1.0
-	 *
 	 * @param string $hook_suffix The current admin page.
 	 */
 	public static function enqueue_scripts( $hook_suffix ) {
@@ -157,8 +143,6 @@ class WP_Presence_Widget_Whos_Online {
 
 	/**
 	 * Returns the inline CSS for the dashboard widget.
-	 *
-	 * @since 7.1.0
 	 *
 	 * @return string CSS code.
 	 */
@@ -188,8 +172,6 @@ class WP_Presence_Widget_Whos_Online {
 
 	/**
 	 * Returns the admin URL for a pagenow screen slug, if linkable.
-	 *
-	 * @since 7.1.0
 	 *
 	 * @param string $screen The pagenow slug.
 	 * @return string|false The admin URL, or false if not linkable.
@@ -235,8 +217,6 @@ class WP_Presence_Widget_Whos_Online {
 	/**
 	 * Returns a context-aware screen label using post status when available.
 	 *
-	 * @since 7.1.0
-	 *
 	 * @param string $screen      The pagenow slug.
 	 * @param string $post_status Optional. The post status (draft, publish, etc.).
 	 * @return string The friendly label.
@@ -265,8 +245,6 @@ class WP_Presence_Widget_Whos_Online {
 	/**
 	 * Returns a human-readable label for a pagenow screen slug.
 	 *
-	 * @since 7.1.0
-	 *
 	 * @param string $screen The pagenow slug.
 	 * @return string The friendly label.
 	 */
@@ -282,8 +260,6 @@ class WP_Presence_Widget_Whos_Online {
 
 	/**
 	 * Returns the inline JavaScript for Heartbeat integration.
-	 *
-	 * @since 7.1.0
 	 *
 	 * @return string JavaScript code.
 	 */
@@ -540,8 +516,6 @@ JS,
 	/**
 	 * Renders a single user row in the presence list.
 	 *
-	 * @since 7.1.0
-	 *
 	 * @param object  $entry The presence entry object.
 	 * @param WP_User $user  The user object.
 	 */
@@ -597,7 +571,6 @@ JS,
 	/**
 	 * Renders the dashboard widget.
 	 *
-	 * @since 7.1.0
 	 */
 	public static function render() {
 		$entries     = wp_get_presence( self::ROOM );
@@ -708,8 +681,6 @@ JS,
 	 * Sets the current user's presence and returns structured presence
 	 * data for all users in the room. Returns avatar URLs and timestamps
 	 * rather than pre-rendered HTML, allowing clients to render as needed.
-	 *
-	 * @since 7.1.0
 	 *
 	 * @param array  $response  The Heartbeat response.
 	 * @param array  $data      The $_POST data sent.

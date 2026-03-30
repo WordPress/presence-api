@@ -3,7 +3,6 @@
  * WP-CLI commands for the Presence API.
  *
  * @package Presence_API
- * @since 7.1.0
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -13,7 +12,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Manages presence entries.
  *
- * @since 7.1.0
  */
 class WP_Presence_CLI_Command extends WP_CLI_Command {
 
@@ -198,8 +196,6 @@ class WP_Presence_CLI_Command extends WP_CLI_Command {
 	 *
 	 *     wp presence cleanup
 	 *     wp presence cleanup --yes
-	 *
-	 * @since 7.1.0
 	 *
 	 * @param array $args       Positional arguments.
 	 * @param array $assoc_args Associative arguments.

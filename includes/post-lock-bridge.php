@@ -9,7 +9,6 @@
  * which block) rather than the current blunt lock/takeover model.
  *
  * @package Presence_API
- * @since 7.1.0
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -21,8 +20,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * Writes a presence entry alongside the existing _edit_lock postmeta
  * whenever a post lock is refreshed via Heartbeat.
- *
- * @since 7.1.0
  *
  * @param array  $response  The Heartbeat response.
  * @param array  $data      The $_POST data sent.
