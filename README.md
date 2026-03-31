@@ -6,7 +6,7 @@ System-wide presence and awareness for WordPress.
 
 [![Watch the demo on YouTube](https://img.youtube.com/vi/Xa5WkZdjBD4/maxresdefault.jpg)](https://youtu.be/Xa5WkZdjBD4)
 
-▶ [Watch the demo on YouTube](https://youtu.be/Xa5WkZdjBD4)
+▶ [Watch the demo on YouTube](https://youtu.be/Xa5WkZdjBD4) (no audio)
 
 ## Try it
 
