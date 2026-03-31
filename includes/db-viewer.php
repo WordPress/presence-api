@@ -34,8 +34,10 @@ add_action(
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->presence}" );
 
-		$ttl    = wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL );
-		$now_ms = (int) ( microtime( true ) * 1000 );
+		$ttl         = wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL );
+		$now_ms      = (int) ( microtime( true ) * 1000 );
+		$max_visible = 10;
+		$is_embedded = isset( $_SERVER['HTTP_SEC_FETCH_DEST'] ) && 'iframe' === $_SERVER['HTTP_SEC_FETCH_DEST'];
 
 		header( 'Content-Type: text/html; charset=utf-8' );
 		header( 'Cache-Control: no-store' );
@@ -78,9 +80,7 @@ add_action(
 </thead>
 <tbody>
 			<?php
-			$max_visible = 10;
-			$is_embedded = isset( $_SERVER['HTTP_SEC_FETCH_DEST'] ) && 'iframe' === $_SERVER['HTTP_SEC_FETCH_DEST'];
-			$row_limit   = $is_embedded ? $max_visible : count( $rows );
+			$row_limit = $is_embedded ? $max_visible : count( $rows );
 			foreach ( $rows as $i => $row ) :
 				if ( $i >= $row_limit ) {
 					break;
