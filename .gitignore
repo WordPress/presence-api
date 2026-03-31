@@ -2,3 +2,4 @@ node_modules/
 vendor/
 artifacts/
 .cache/
+.phpunit.result.cache
