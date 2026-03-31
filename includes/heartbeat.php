@@ -11,8 +11,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Enqueues heartbeat and the presence ping script on all admin pages.
- *
- * @param string $hook_suffix The current admin page.
  */
 function wp_presence_enqueue_heartbeat_ping() {
 	if ( ! is_user_logged_in() || ! current_user_can( 'edit_posts' ) ) {

@@ -39,7 +39,6 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 
 	/**
 	 * Constructor.
-	 *
 	 */
 	public function __construct() {
 		$this->namespace = 'wp-presence/v1';
@@ -357,11 +356,13 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 		// Enforce per-user entry limit (only count non-expired entries).
 		$cutoff = gmdate( 'Y-m-d H:i:s', time() - wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL ) );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$user_entry_count = $wpdb->get_var( $wpdb->prepare(
-			"SELECT COUNT(*) FROM {$wpdb->presence} WHERE user_id = %d AND date_gmt > %s",
-			$current_user_id,
-			$cutoff
-		) );
+		$user_entry_count = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$wpdb->presence} WHERE user_id = %d AND date_gmt > %s",
+				$current_user_id,
+				$cutoff
+			)
+		);
 
 		if ( (int) $user_entry_count >= self::MAX_ENTRIES_PER_USER ) {
 			return new WP_Error(

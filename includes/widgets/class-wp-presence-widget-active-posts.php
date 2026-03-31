@@ -14,7 +14,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * Shows which posts are currently being edited, grouped by post with
  * an avatar stack of editors.
- *
  */
 class WP_Presence_Widget_Active_Posts {
 
@@ -27,7 +26,6 @@ class WP_Presence_Widget_Active_Posts {
 
 	/**
 	 * Registers the dashboard widget.
-	 *
 	 */
 	public static function register() {
 		if ( ! current_user_can( 'edit_posts' ) ) {
@@ -191,7 +189,6 @@ JS,
 
 	/**
 	 * Renders the dashboard widget.
-	 *
 	 */
 	public static function render() {
 		$posts = self::build_active_posts_data();

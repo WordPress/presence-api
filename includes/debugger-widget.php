@@ -100,8 +100,8 @@ function wp_presence_heartbeat_widget_received( $response, $data, $screen_id ) {
 		return $response;
 	}
 
-	$start   = microtime( true );
-	$summary = wp_get_presence_summary();
+	$start    = microtime( true );
+	$summary  = wp_get_presence_summary();
 	$query_ms = round( ( microtime( true ) - $start ) * 1000, 1 );
 
 	$response['presence-heartbeat-users']    = $summary['total_users'];
@@ -118,7 +118,6 @@ function wp_presence_heartbeat_widget_received( $response, $data, $screen_id ) {
 		);
 	}
 	$response['presence-heartbeat-room-list'] = $room_list;
-
 
 	return $response;
 }

@@ -17,8 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-/*
- */
+
 
 /**
  * Gets all present clients in a room, filtered by TTL.
@@ -323,16 +322,16 @@ function wp_get_presence_summary( $timeout = WP_PRESENCE_DEFAULT_TTL ) {
 				'entries' => 0,
 				'users'   => 0,
 			);
-			$prefix_user_ids[ $prefix ] = array();
+			$prefix_user_ids[ $prefix ]      = array();
 		}
 
 		$summary['by_prefix'][ $prefix ]['entries'] += (int) $row->entries;
 		$summary['total_entries']                   += (int) $row->entries;
 
 		if ( ! empty( $row->user_ids ) ) {
-			$room_user_ids                  = explode( ',', $row->user_ids );
-			$all_user_ids                   = array_merge( $all_user_ids, $room_user_ids );
-			$prefix_user_ids[ $prefix ]     = array_merge( $prefix_user_ids[ $prefix ], $room_user_ids );
+			$room_user_ids              = explode( ',', $row->user_ids );
+			$all_user_ids               = array_merge( $all_user_ids, $room_user_ids );
+			$prefix_user_ids[ $prefix ] = array_merge( $prefix_user_ids[ $prefix ], $room_user_ids );
 		}
 	}
 

@@ -100,7 +100,6 @@ class WP_Presence_Widget_Whos_Online {
 
 	/**
 	 * Registers the dashboard widget.
-	 *
 	 */
 	public static function register() {
 		if ( ! current_user_can( 'edit_posts' ) ) {
@@ -298,7 +297,7 @@ class WP_Presence_Widget_Whos_Online {
 		);
 
 		return sprintf(
-			<<<JS
+			<<<'JS'
 (function($) {
 	if (typeof wp === 'undefined' || typeof wp.heartbeat === 'undefined') {
 		return;
@@ -556,10 +555,11 @@ JS,
 				? '<em>' . esc_html( $parts[0] ) . '</em> ' . esc_html( $parts[1] )
 				: esc_html( $screen_text );
 
+			$allowed = array( 'em' => array() );
 			if ( $screen_url ) {
-				echo '<span class="presence-screen"><a href="' . esc_url( $screen_url ) . '">' . $formatted . '</a></span>';
+				echo '<span class="presence-screen"><a href="' . esc_url( $screen_url ) . '">' . wp_kses( $formatted, $allowed ) . '</a></span>';
 			} else {
-				echo '<span class="presence-screen">' . $formatted . '</span>';
+				echo '<span class="presence-screen">' . wp_kses( $formatted, $allowed ) . '</span>';
 			}
 		}
 
@@ -570,7 +570,6 @@ JS,
 
 	/**
 	 * Renders the dashboard widget.
-	 *
 	 */
 	public static function render() {
 		$entries     = wp_get_presence( self::ROOM );

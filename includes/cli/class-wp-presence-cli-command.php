@@ -11,7 +11,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Manages presence entries.
- *
  */
 class WP_Presence_CLI_Command extends WP_CLI_Command {
 
