@@ -30,6 +30,20 @@ if ( version_compare( $wp_version, '7.0-alpha', '<' ) ) {
 	return;
 }
 
+// If core or another plugin already provides the presence table, this plugin is not needed.
+global $wpdb;
+if ( isset( $wpdb->presence ) ) {
+	add_action(
+		'admin_notices',
+		function () {
+			echo '<div class="notice notice-warning"><p>';
+			echo esc_html__( 'Presence API: The presence table is already registered by WordPress or another plugin.', 'presence-api' );
+			echo '</p></div>';
+		}
+	);
+	return;
+}
+
 define( 'WP_PRESENCE_VERSION', '0.1.0' );
 define( 'WP_PRESENCE_DB_VERSION', '1' );
 define( 'WP_PRESENCE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
