@@ -5,7 +5,6 @@
  * Removes the presence table and related options when the plugin is deleted.
  *
  * @package Presence_API
- * @since 7.1.0
  */
 
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
@@ -15,7 +14,6 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 /**
  * Drops the presence table and deletes options for a single site.
  *
- * @since 7.1.0
  */
 function wp_presence_uninstall_site() {
 	global $wpdb;
