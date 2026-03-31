@@ -29,7 +29,7 @@ function wp_presence_users_views( $views ) {
 	$is_current   = isset( $_GET['presence_status'] ) && 'online' === $_GET['presence_status']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 	$class = $is_current ? 'current' : '';
-	$url   = admin_url( 'users.php?presence_status=online' );
+	$url   = wp_nonce_url( admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' );
 
 	$views['presence_online'] = sprintf(
 		'<a href="%s" class="%s">%s <span class="count">(%d)</span></a>',
@@ -57,7 +57,11 @@ function wp_presence_filter_online_users( $query ) {
 		return;
 	}
 
-	if ( empty( $_GET['presence_status'] ) || 'online' !== $_GET['presence_status'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	if ( empty( $_GET['presence_status'] ) || 'online' !== $_GET['presence_status'] ) {
+		return;
+	}
+
+	if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'presence_online_filter' ) ) {
 		return;
 	}
 

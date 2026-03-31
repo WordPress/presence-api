@@ -374,10 +374,13 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 
 		// Prevent overwriting another user's presence entry.
 		//
-		// Note: A narrow race window exists between the SELECT and INSERT below.
-		// This is acceptable because the UNIQUE KEY on (room, client_id) prevents
-		// duplicate entries, and Heartbeat re-establishes correct ownership within
-		// seconds. Table-level locking is not warranted for this use case.
+		// A narrow race window exists between the SELECT and INSERT below.
+		// This is acceptable because:
+		// 1. The UNIQUE KEY on (room, client_id) prevents duplicate rows.
+		// 2. Heartbeat re-establishes correct ownership within seconds.
+		// 3. Worst case: two users briefly share an entry until the next ping.
+		// 4. Data is ephemeral (60s TTL) — stale entries self-correct.
+		// Table-level locking is not warranted for ephemeral data.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$existing_user_id = $wpdb->get_var(
 			$wpdb->prepare(
