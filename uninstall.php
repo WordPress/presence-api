@@ -13,7 +13,6 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 
 /**
  * Drops the presence table and deletes options for a single site.
- *
  */
 function wp_presence_uninstall_site() {
 	global $wpdb;

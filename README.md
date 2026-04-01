@@ -1,6 +1,12 @@
 # Presence API
 
+> **Status:** Experimental feature plugin
+
 System-wide presence and awareness for WordPress.
+
+## Problem
+
+WordPress has no way to know who is logged in, what screen they are on, or which posts are being edited — without writing to shared tables like `wp_postmeta` or `wp_options`. High-frequency writes to those tables invalidate caches site-wide ([#64696](https://core.trac.wordpress.org/ticket/64696)). This plugin uses a dedicated `wp_presence` table with a 60-second TTL to provide that awareness with zero cache side effects.
 
 > "This idea of presence I think is really cool and seeing where people are... you log into your WordPress, I see oh Matias is moderating some comments, Lynn is on the dashboard maybe reading some news... that idea of like you log in and you can kind of see the neighborhood of like who else is also there." — [Matt Mullenweg, WordPress 7.0 planning session](https://youtu.be/F-xMPY9WqG4?si=YK0rIUM2nuYy7x45&t=2435)
 
@@ -42,3 +48,13 @@ Creates presence entries alongside `_edit_lock` postmeta when a post lock is ref
 ## Capability
 
 All features require `edit_posts`.
+
+## Maintainers
+
+- [@josephfusco](https://github.com/josephfusco)
+
+Sponsored by the [Core team](https://make.wordpress.org/core/). Updates posted on [make.wordpress.org/core](https://make.wordpress.org/core/) with the tag `#presence-api`.
+
+## Support
+
+Questions and bug reports: [GitHub Issues](https://github.com/WordPress/presence-api/issues).
