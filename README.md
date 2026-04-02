@@ -1,5 +1,7 @@
 # Presence API
 
+[![PHPCS](https://github.com/WordPress/presence-api/actions/workflows/phpcs.yml/badge.svg)](https://github.com/WordPress/presence-api/actions/workflows/phpcs.yml) [![PHPUnit](https://github.com/WordPress/presence-api/actions/workflows/phpunit.yml/badge.svg)](https://github.com/WordPress/presence-api/actions/workflows/phpunit.yml) [![Multisite](https://github.com/WordPress/presence-api/actions/workflows/multisite.yml/badge.svg)](https://github.com/WordPress/presence-api/actions/workflows/multisite.yml)
+
 > **Status:** Experimental feature plugin
 
 System-wide presence and awareness for WordPress.
