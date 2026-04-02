@@ -9,44 +9,19 @@ permissions:
 
 jobs:
   release:
-    name: Build and Release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
           tools: composer
-
       - run: composer install --no-dev --no-interaction --optimize-autoloader
-
       - name: Build plugin zip
         run: |
           mkdir -p build/presence-api
-          rsync -a \
-            --exclude='.git' \
-            --exclude='.github' \
-            --exclude='node_modules' \
-            --exclude='tests' \
-            --exclude='artifacts' \
-            --exclude='.cache' \
-            --exclude='build' \
-            --exclude='composer.json' \
-            --exclude='composer.lock' \
-            --exclude='package.json' \
-            --exclude='package-lock.json' \
-            --exclude='phpcs.xml.dist' \
-            --exclude='phpstan.neon.dist' \
-            --exclude='phpunit.xml.dist' \
-            --exclude='.wp-env.json' \
-            --exclude='demo-script.md' \
-            --exclude='.phpunit.result.cache' \
-            --exclude='.gitignore' \
-            ./ build/presence-api/
+          rsync -a --exclude-from='.distignore' ./ build/presence-api/
           cd build && zip -r presence-api.zip presence-api/
-
-      - name: Create GitHub Release
-        run: gh release create "${{ github.ref_name }}" build/presence-api.zip --generate-notes
+      - run: gh release create "${{ github.ref_name }}" build/presence-api.zip --generate-notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

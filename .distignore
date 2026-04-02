@@ -1,0 +1,17 @@
+.git
+.github
+.cache
+.gitignore
+.wp-env.json
+.phpunit.result.cache
+.distignore
+node_modules
+tests
+artifacts
+build
+composer.json
+package.json
+package-lock.json
+phpcs.xml.dist
+phpstan.neon.dist
+phpunit.xml.dist
