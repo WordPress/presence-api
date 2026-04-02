@@ -1,6 +1,8 @@
 name: PHPCS
 
 on:
+  push:
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
@@ -19,7 +21,7 @@ jobs:
           tools: composer
       - uses: actions/cache@v4
         with:
-          path: vendor
+          path: ~/.composer/cache
           key: composer-${{ hashFiles('composer.json') }}
       - run: composer install --no-interaction
       - run: ./vendor/bin/phpcs --standard=phpcs.xml.dist
