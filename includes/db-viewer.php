@@ -8,6 +8,10 @@
  * @package Presence_API
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 add_action(
 	'init',
 	function () {

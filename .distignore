@@ -1,6 +1,7 @@
 .git
 .github
 .cache
+.claude
 .gitignore
 .wp-env.json
 .phpunit.result.cache
