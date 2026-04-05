@@ -7,8 +7,11 @@
  * command and the Playwright visual demo.
  *
  * @package Presence_API
- * @since 7.1.0
  */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
 /**
  * First and last name pools for demo users.
@@ -108,10 +111,19 @@ function wp_presence_demo_ensure_posts() {
 	$post_ids = array();
 
 	foreach ( WP_PRESENCE_DEMO_POSTS as $title ) {
-		$existing = get_page_by_title( $title, OBJECT, 'post' );
+		$query = new WP_Query(
+			array(
+				'post_type'              => 'post',
+				'title'                  => $title,
+				'posts_per_page'         => 1,
+				'no_found_rows'          => true,
+				'update_post_meta_cache' => false,
+				'update_post_term_cache' => false,
+			)
+		);
 
-		if ( $existing ) {
-			$post_ids[] = $existing->ID;
+		if ( $query->have_posts() ) {
+			$post_ids[] = $query->posts[0]->ID;
 		} else {
 			$post_id = wp_insert_post( array(
 				'post_title'  => $title,

@@ -14,7 +14,7 @@ if ( ! $_tests_dir ) {
 
 // Verify the test suite exists.
 if ( ! file_exists( "{$_tests_dir}/includes/functions.php" ) ) {
-	echo "Could not find {$_tests_dir}/includes/functions.php. Have you run wp-env start?" . PHP_EOL;
+	echo "Could not find {$_tests_dir}/includes/functions.php. Have you run wp-env start?" . PHP_EOL; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- CLI bootstrap, WordPress not loaded.
 	exit( 1 );
 }
 
