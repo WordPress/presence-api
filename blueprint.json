@@ -1,6 +1,6 @@
 {
 	"preferredVersions": {
-		"wp": "https://wordpress.org/wordpress-7.0-RC2.zip"
+		"wp": "beta"
 	},
 	"landingPage": "/wp-admin/",
 	"login": true,
@@ -22,7 +22,7 @@
 		},
 		{
 			"step": "runPHP",
-			"code": "<?php require '/wordpress/wp-load.php'; require '/wordpress/wp-content/plugins/presence-api/demo-seeder.php'; wp_presence_demo_seed( 5 ); ?>"
+			"code": "<?php require '/wordpress/wp-load.php'; require '/wordpress/wp-content/plugins/presence-api/demo-seeder.php'; wp_presence_demo_seed( 5 ); update_user_meta( 1, 'show_welcome_panel', 0 ); update_user_meta( 1, 'meta-box-order_dashboard', array( 'normal' => 'presence_whos_online,presence_active_posts,dashboard_right_now,dashboard_activity', 'side' => 'dashboard_quick_press,dashboard_primary' ) ); ?>"
 		}
 	]
 }
