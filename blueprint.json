@@ -1,4 +1,7 @@
 {
+	"preferredVersions": {
+		"wp": "https://wordpress.org/wordpress-7.0-RC2.zip"
+	},
 	"landingPage": "/wp-admin/",
 	"login": true,
 	"steps": [
