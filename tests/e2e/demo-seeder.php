@@ -21,29 +21,109 @@ if ( ! defined( 'ABSPATH' ) ) {
  * that every combination is unique without appending numbers.
  */
 const WP_PRESENCE_DEMO_FIRST_NAMES = array(
-	'Alex',      'Jordan',    'Sam',       'Taylor',    'Casey',
-	'Morgan',    'Riley',     'Quinn',     'Avery',     'Blake',
-	'Cameron',   'Dakota',    'Emery',     'Finley',    'Harper',
-	'Jamie',     'Kendall',   'Logan',     'Micah',     'Noel',
-	'Parker',    'Reese',     'Sage',      'Tatum',     'Val',
-	'Wren',      'Adrian',    'Bailey',    'Corey',     'Drew',
-	'Ellis',     'Frankie',   'Gray',      'Hayden',    'Indigo',
-	'Jules',     'Kit',       'Lane',      'Marlow',    'Nico',
-	'Oakley',    'Peyton',    'Remy',      'Shay',      'Toby',
-	'Uma',       'Vic',       'Winter',    'Xen',       'Yael',
+	'Alex',
+	'Jordan',
+	'Sam',
+	'Taylor',
+	'Casey',
+	'Morgan',
+	'Riley',
+	'Quinn',
+	'Avery',
+	'Blake',
+	'Cameron',
+	'Dakota',
+	'Emery',
+	'Finley',
+	'Harper',
+	'Jamie',
+	'Kendall',
+	'Logan',
+	'Micah',
+	'Noel',
+	'Parker',
+	'Reese',
+	'Sage',
+	'Tatum',
+	'Val',
+	'Wren',
+	'Adrian',
+	'Bailey',
+	'Corey',
+	'Drew',
+	'Ellis',
+	'Frankie',
+	'Gray',
+	'Hayden',
+	'Indigo',
+	'Jules',
+	'Kit',
+	'Lane',
+	'Marlow',
+	'Nico',
+	'Oakley',
+	'Peyton',
+	'Remy',
+	'Shay',
+	'Toby',
+	'Uma',
+	'Vic',
+	'Winter',
+	'Xen',
+	'Yael',
 );
 
 const WP_PRESENCE_DEMO_LAST_NAMES = array(
-	'Smith',     'Johnson',   'Williams',  'Brown',     'Jones',
-	'Garcia',    'Miller',    'Davis',     'Rodriguez', 'Martinez',
-	'Hernandez', 'Lopez',     'Gonzalez',  'Wilson',    'Anderson',
-	'Thomas',    'Taylor',    'Moore',     'Jackson',   'Martin',
-	'Lee',       'Perez',     'Thompson',  'White',     'Harris',
-	'Sanchez',   'Clark',     'Ramirez',   'Lewis',     'Robinson',
-	'Walker',    'Young',     'Allen',     'King',      'Wright',
-	'Scott',     'Torres',    'Nguyen',    'Hill',      'Flores',
-	'Green',     'Adams',     'Nelson',    'Baker',     'Hall',
-	'Rivera',    'Campbell',  'Mitchell',  'Carter',    'Roberts',
+	'Smith',
+	'Johnson',
+	'Williams',
+	'Brown',
+	'Jones',
+	'Garcia',
+	'Miller',
+	'Davis',
+	'Rodriguez',
+	'Martinez',
+	'Hernandez',
+	'Lopez',
+	'Gonzalez',
+	'Wilson',
+	'Anderson',
+	'Thomas',
+	'Taylor',
+	'Moore',
+	'Jackson',
+	'Martin',
+	'Lee',
+	'Perez',
+	'Thompson',
+	'White',
+	'Harris',
+	'Sanchez',
+	'Clark',
+	'Ramirez',
+	'Lewis',
+	'Robinson',
+	'Walker',
+	'Young',
+	'Allen',
+	'King',
+	'Wright',
+	'Scott',
+	'Torres',
+	'Nguyen',
+	'Hill',
+	'Flores',
+	'Green',
+	'Adams',
+	'Nelson',
+	'Baker',
+	'Hall',
+	'Rivera',
+	'Campbell',
+	'Mitchell',
+	'Carter',
+	'Roberts',
 );
 
 /**
@@ -52,9 +132,18 @@ const WP_PRESENCE_DEMO_LAST_NAMES = array(
  * @var array
  */
 const WP_PRESENCE_DEMO_SCREENS = array(
-	'dashboard', 'edit', 'post', 'post-new', 'upload',
-	'edit-comments', 'themes', 'plugins', 'users',
-	'profile', 'tools', 'options-general',
+	'dashboard',
+	'edit',
+	'post',
+	'post-new',
+	'upload',
+	'edit-comments',
+	'themes',
+	'plugins',
+	'users',
+	'profile',
+	'tools',
+	'options-general',
 );
 
 /**
@@ -125,11 +214,13 @@ function wp_presence_demo_ensure_posts() {
 		if ( $query->have_posts() ) {
 			$post_ids[] = $query->posts[0]->ID;
 		} else {
-			$post_id = wp_insert_post( array(
-				'post_title'  => $title,
-				'post_status' => 'draft',
-				'post_type'   => 'post',
-			) );
+			$post_id = wp_insert_post(
+				array(
+					'post_title'  => $title,
+					'post_status' => 'draft',
+					'post_type'   => 'post',
+				)
+			);
 
 			if ( $post_id && ! is_wp_error( $post_id ) ) {
 				$post_ids[] = $post_id;
@@ -168,15 +259,17 @@ function wp_presence_demo_seed( $count ) {
 		} else {
 			$name = wp_presence_demo_name( $i );
 
-			$user_id = wp_insert_user( array(
-				'user_login'   => $username,
-				'user_email'   => $username . '@example.com',
-				'user_pass'    => wp_generate_password(),
-				'role'         => 'editor',
-				'first_name'   => $name['first'],
-				'last_name'    => $name['last'],
-				'display_name' => $name['display'],
-			) );
+			$user_id = wp_insert_user(
+				array(
+					'user_login'   => $username,
+					'user_email'   => $username . '@example.com',
+					'user_pass'    => wp_generate_password(),
+					'role'         => 'editor',
+					'first_name'   => $name['first'],
+					'last_name'    => $name['last'],
+					'display_name' => $name['display'],
+				)
+			);
 
 			if ( is_wp_error( $user_id ) ) {
 				if ( $has_cli ) {
@@ -248,7 +341,10 @@ function wp_presence_demo_refresh( $user_ids ) {
 			wp_set_presence(
 				'postType/post:' . $post_id,
 				'editor-' . $uid,
-				array( 'action' => 'editing', 'screen' => 'post' ),
+				array(
+					'action' => 'editing',
+					'screen' => 'post',
+				),
 				$uid
 			);
 		}
@@ -263,11 +359,13 @@ function wp_presence_demo_refresh( $user_ids ) {
 	if ( $has_cli ) {
 		$progress->finish();
 		$summary = wp_get_presence_summary();
-		WP_CLI::success( sprintf(
-			'%d users across %d rooms.',
-			$summary['total_users'],
-			count( $summary['by_prefix'] )
-		) );
+		WP_CLI::success(
+			sprintf(
+				'%d users across %d rooms.',
+				$summary['total_users'],
+				count( $summary['by_prefix'] )
+			)
+		);
 	}
 }
 

@@ -18,10 +18,13 @@ WordPress has no way to know who is logged in, what screen they are on, or which
 
 ## Try it
 
+[Test in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json)
+
+Or run locally:
+
 ```bash
 npm install
 npx wp-env start
-npx wp-env run cli wp presence demo 10 --keep-alive
 ```
 
 Then open [localhost:8888/wp-admin/](http://localhost:8888/wp-admin/) (admin / password).

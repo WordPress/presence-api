@@ -1,0 +1,25 @@
+{
+	"landingPage": "/wp-admin/",
+	"login": true,
+	"steps": [
+		{
+			"step": "installPlugin",
+			"pluginData": {
+				"resource": "url",
+				"url": "https://github.com/WordPress/presence-api/releases/latest/download/presence-api.zip"
+			}
+		},
+		{
+			"step": "writeFile",
+			"path": "/wordpress/wp-content/plugins/presence-api/demo-seeder.php",
+			"data": {
+				"resource": "url",
+				"url": "https://raw.githubusercontent.com/WordPress/presence-api/main/tests/e2e/demo-seeder.php"
+			}
+		},
+		{
+			"step": "runPHP",
+			"code": "<?php require '/wordpress/wp-load.php'; require '/wordpress/wp-content/plugins/presence-api/demo-seeder.php'; wp_presence_demo_seed( 5 ); ?>"
+		}
+	]
+}
