@@ -63,3 +63,5 @@ Sponsored by the [Core team](https://make.wordpress.org/core/). Updates posted o
 ## Support
 
 Questions and bug reports: [GitHub Issues](https://github.com/WordPress/presence-api/issues).
+
+Discussion: [#feature-presence-api](https://wordpress.slack.com/archives/feature-presence-api) on WordPress Slack
