@@ -46,6 +46,11 @@ function wp_presence_enqueue_heartbeat_ping() {
 			if (typeof wp === "undefined" || typeof wp.heartbeat === "undefined") { return; }
 			var frontContext = %s;
 			$(document).on("heartbeat-send", function(event, data) {
+				// A user with a hidden tab should not be reported as actively present.
+				// Skip the ping so the existing entry expires via the 60s TTL.
+				if (typeof document.visibilityState === "string" && document.visibilityState === "hidden") {
+					return;
+				}
 				var ping = { screen: window.pagenow || "front" };
 				if (frontContext.postId) {
 					ping.post_id = frontContext.postId;
@@ -69,6 +74,14 @@ function wp_presence_enqueue_heartbeat_ping() {
 			// DOMContentLoaded does not fire again.
 			window.addEventListener("pageshow", function(event) {
 				if (event.persisted) {
+					tickNow();
+				}
+			});
+
+			// When the tab becomes visible again, re-establish presence so the user
+			// does not sit out the next heartbeat interval.
+			document.addEventListener("visibilitychange", function() {
+				if (document.visibilityState === "visible") {
 					tickNow();
 				}
 			});
