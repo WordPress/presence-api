@@ -71,6 +71,35 @@ function wp_presence_enqueue_heartbeat_ping() {
 		}
 	}
 
+	// Write presence server-side during this request so the new page closes the
+	// gap between the old page's pagehide DELETE and the next heartbeat tick.
+	$screen_id = is_admin() && function_exists( 'get_current_screen' ) && get_current_screen()
+		? get_current_screen()->id
+		: 'front';
+
+	$admin_state = array( 'screen' => $screen_id );
+	if ( $front_context ) {
+		$admin_state['post_id']   = $front_context['postId'];
+		$admin_state['post_type'] = $front_context['postType'];
+		$admin_state['title']     = $front_context['title'];
+	}
+	wp_set_presence( 'admin/online', 'user-' . $user_id, $admin_state, $user_id );
+
+	if ( $editor_post_id ) {
+		$editor_room = wp_presence_post_room( $editor_post_id );
+		if ( $editor_room ) {
+			wp_set_presence(
+				$editor_room,
+				'editor-' . $user_id,
+				array(
+					'action' => 'editing',
+					'screen' => $screen_id,
+				),
+				$user_id
+			);
+		}
+	}
+
 	$config = array(
 		'entries'      => $entries,
 		'frontContext' => $front_context,
