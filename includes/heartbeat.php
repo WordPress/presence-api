@@ -24,69 +24,137 @@ function wp_presence_enqueue_heartbeat_ping() {
 
 	wp_enqueue_script( 'heartbeat' );
 
+	$user_id = get_current_user_id();
+
+	// Every page where the ping is enqueued occupies the admin/online room.
+	$entries = array(
+		array(
+			'room'      => 'admin/online',
+			'client_id' => 'user-' . $user_id,
+		),
+	);
+
 	// On frontend singular views, pass the current post context to the heartbeat ping.
-	$front_context = '{}';
+	$front_context = null;
 	if ( ! is_admin() && is_singular() ) {
 		$queried = get_queried_object();
 		if ( $queried instanceof WP_Post ) {
-			$front_context = wp_json_encode(
-				array(
-					'postId'   => $queried->ID,
-					'postType' => $queried->post_type,
-					'title'    => get_the_title( $queried ),
-				)
+			$front_context = array(
+				'postId'   => $queried->ID,
+				'postType' => $queried->post_type,
+				'title'    => get_the_title( $queried ),
 			);
 		}
 	}
 
-	wp_add_inline_script(
-		'heartbeat',
-		sprintf(
-			'(function($) {
-			if (typeof wp === "undefined" || typeof wp.heartbeat === "undefined") { return; }
-			var frontContext = %s;
-			$(document).on("heartbeat-send", function(event, data) {
-				var ping = { screen: window.pagenow || "front" };
-				if (frontContext.postId) {
-					ping.post_id = frontContext.postId;
-					ping.post_type = frontContext.postType;
-					ping.title = frontContext.title;
+	// On the post-edit screen, also occupy the per-post room.
+	$editor_post_id = 0;
+	if ( is_admin() && function_exists( 'get_current_screen' ) ) {
+		$screen = get_current_screen();
+		if ( $screen && 'post' === $screen->base ) {
+			$post = get_post();
+			if ( $post && post_type_supports( $post->post_type, 'presence' ) ) {
+				$room = wp_presence_post_room( $post->ID );
+				if ( $room ) {
+					$editor_post_id = $post->ID;
+					$entries[]      = array(
+						'room'      => $room,
+						'client_id' => 'editor-' . $user_id,
+					);
+					// The post-lock bridge writes this entry via the wp-refresh-post-lock heartbeat.
+					$entries[] = array(
+						'room'      => $room,
+						'client_id' => 'lock-' . $user_id,
+					);
 				}
-				data["presence-ping"] = ping;
-			});
-		})(jQuery);',
-			$front_context
-		)
+			}
+		}
+	}
+
+	$config = array(
+		'entries'      => $entries,
+		'frontContext' => $front_context,
+		'editorPostId' => $editor_post_id,
+		'restUrl'      => esc_url_raw( rest_url( 'wp-presence/v1/presence' ) ),
+		'nonce'        => wp_create_nonce( 'wp_rest' ),
 	);
-}
-
-/**
- * Enqueues a heartbeat ping for the block editor that reports which post is being edited.
- *
- * @param string $hook_suffix The current admin page.
- */
-function wp_presence_enqueue_editor_ping( $hook_suffix ) {
-	if ( ! in_array( $hook_suffix, array( 'post.php', 'post-new.php' ), true ) ) {
-		return;
-	}
-
-	$post = get_post();
-
-	if ( ! $post || ! post_type_supports( $post->post_type, 'presence' ) ) {
-		return;
-	}
 
 	wp_add_inline_script(
 		'heartbeat',
-		sprintf(
-			'(function($) {
-			if (typeof wp === "undefined" || typeof wp.heartbeat === "undefined") { return; }
-			$(document).on("heartbeat-send", function(event, data) {
-				data["presence-editor-ping"] = { post_id: %d };
-			});
-		})(jQuery);',
-			$post->ID
-		)
+		'window.wpPresenceConfig = ' . wp_json_encode( $config ) . ';',
+		'before'
+	);
+
+	wp_add_inline_script(
+		'heartbeat',
+		<<<'JS'
+(function ($) {
+	if (typeof wp === 'undefined' || typeof wp.heartbeat === 'undefined') {
+		return;
+	}
+
+	var config = window.wpPresenceConfig || {};
+	var entries = Array.isArray(config.entries) ? config.entries : [];
+	var frontContext = config.frontContext || null;
+	var editorPostId = parseInt(config.editorPostId, 10) || 0;
+	var restUrl = config.restUrl || '';
+	var nonce = config.nonce || '';
+
+	// Guards against duplicate leave() invocations.
+	var hasLeft = false;
+
+	$(document).on('heartbeat-send', function (event, data) {
+		var ping = { screen: window.pagenow || 'front' };
+		if (frontContext && frontContext.postId) {
+			ping.post_id = frontContext.postId;
+			ping.post_type = frontContext.postType;
+			ping.title = frontContext.title;
+		}
+		data['presence-ping'] = ping;
+
+		if (editorPostId) {
+			data['presence-editor-ping'] = { post_id: editorPostId };
+		}
+
+		hasLeft = false;
+	});
+
+	function leave() {
+		if (hasLeft || !restUrl || !entries.length) {
+			return;
+		}
+		hasLeft = true;
+
+		// keepalive lets the DELETE outlive the unload; sendBeacon is POST-only.
+		if (typeof window.fetch !== 'function') {
+			return;
+		}
+
+		entries.forEach(function (entry) {
+			if (!entry || !entry.room || !entry.client_id) {
+				return;
+			}
+			var url = restUrl
+				+ '?room=' + encodeURIComponent(entry.room)
+				+ '&client_id=' + encodeURIComponent(entry.client_id);
+			try {
+				window.fetch(url, {
+					method: 'DELETE',
+					credentials: 'same-origin',
+					keepalive: true,
+					headers: { 'X-WP-Nonce': nonce }
+				});
+			} catch (e) {
+				// Best-effort: TTL cleanup will catch entries we couldn't remove.
+			}
+		});
+	}
+
+	window.addEventListener('pagehide', function () {
+		leave();
+	});
+})(jQuery);
+JS
 	);
 }
 
