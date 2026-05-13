@@ -130,12 +130,15 @@ function wp_presence_enqueue_heartbeat_ping() {
 			return;
 		}
 
+		// rest_url() already contains ?rest_route= on plain-permalink sites.
+		var separator = restUrl.indexOf('?') === -1 ? '?' : '&';
+
 		entries.forEach(function (entry) {
 			if (!entry || !entry.room || !entry.client_id) {
 				return;
 			}
 			var url = restUrl
-				+ '?room=' + encodeURIComponent(entry.room)
+				+ separator + 'room=' + encodeURIComponent(entry.room)
 				+ '&client_id=' + encodeURIComponent(entry.client_id);
 			try {
 				window.fetch(url, {
