@@ -153,6 +153,19 @@ function wp_presence_enqueue_heartbeat_ping() {
 		});
 	}
 
+	// Re-establish presence on every page load so in-admin navigation doesn't
+	// leave a gap between the unload DELETE and the heartbeat's first tick.
+	function tickNow() {
+		if (wp.heartbeat && typeof wp.heartbeat.connectNow === 'function') {
+			wp.heartbeat.connectNow();
+		}
+	}
+	$(tickNow);
+	// bfcache restore: DOMContentLoaded won't fire.
+	window.addEventListener('pageshow', function (event) {
+		if (event.persisted) { tickNow(); }
+	});
+
 	window.addEventListener('pagehide', function () {
 		leave();
 	});
