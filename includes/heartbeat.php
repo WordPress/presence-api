@@ -59,7 +59,7 @@ function wp_presence_enqueue_heartbeat_ping() {
 			// reflects the current screen without waiting for the next interval
 			// (which can be up to 60s on screens like the dashboard).
 			function tickNow() {
-				if (wp.heartbeat && typeof wp.heartbeat.connectNow === "function") {
+				if (typeof wp?.heartbeat?.connectNow === "function") {
 					wp.heartbeat.connectNow();
 				}
 			}
@@ -68,7 +68,9 @@ function wp_presence_enqueue_heartbeat_ping() {
 			// pageshow with event.persisted is the bfcache restore case, where
 			// DOMContentLoaded does not fire again.
 			window.addEventListener("pageshow", function(event) {
-				if (event.persisted) { tickNow(); }
+				if (event.persisted) {
+					tickNow();
+				}
 			});
 		})(jQuery);',
 			$front_context
