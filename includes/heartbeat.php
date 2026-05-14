@@ -48,7 +48,7 @@ function wp_presence_enqueue_heartbeat_ping() {
 			$(document).on("heartbeat-send", function(event, data) {
 				// A user with a hidden tab should not be reported as actively present.
 				// Skip the ping so the existing entry expires via the 60s TTL.
-				if (typeof document.visibilityState === "string" && document.visibilityState === "hidden") {
+				if (document.visibilityState === "hidden") {
 					return;
 				}
 				var ping = { screen: window.pagenow || "front" };
