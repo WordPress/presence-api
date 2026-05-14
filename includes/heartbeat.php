@@ -110,96 +110,95 @@ function wp_presence_enqueue_heartbeat_ping() {
 
 	wp_add_inline_script(
 		'heartbeat',
-		'window.wpPresenceConfig = ' . wp_json_encode( $config ) . ';',
+		sprintf( 'window.wpPresenceConfig = %s;', wp_json_encode( $config, JSON_HEX_TAG | JSON_UNESCAPED_SLASHES ) ),
 		'before'
 	);
 
 	wp_add_inline_script(
 		'heartbeat',
 		<<<'JS'
-(function ($) {
-	if (typeof wp === 'undefined' || typeof wp.heartbeat === 'undefined') {
-		return;
-	}
-
-	var config = window.wpPresenceConfig || {};
-	var entries = Array.isArray(config.entries) ? config.entries : [];
-	var frontContext = config.frontContext || null;
-	var editorPostId = parseInt(config.editorPostId, 10) || 0;
-	var restUrl = config.restUrl || '';
-	var nonce = config.nonce || '';
-
-	// Guards against duplicate leave() invocations.
-	var hasLeft = false;
-
-	$(document).on('heartbeat-send', function (event, data) {
-		var ping = { screen: window.pagenow || 'front' };
-		if (frontContext && frontContext.postId) {
-			ping.post_id = frontContext.postId;
-			ping.post_type = frontContext.postType;
-			ping.title = frontContext.title;
-		}
-		data['presence-ping'] = ping;
-
-		if (editorPostId) {
-			data['presence-editor-ping'] = { post_id: editorPostId };
-		}
-
-		hasLeft = false;
-	});
-
-	function leave() {
-		if (hasLeft || !restUrl || !entries.length) {
-			return;
-		}
-		hasLeft = true;
-
-		// keepalive lets the DELETE outlive the unload; sendBeacon is POST-only.
-		if (typeof window.fetch !== 'function') {
-			return;
-		}
-
-		// rest_url() already contains ?rest_route= on plain-permalink sites.
-		var separator = restUrl.indexOf('?') === -1 ? '?' : '&';
-
-		entries.forEach(function (entry) {
-			if (!entry || !entry.room || !entry.client_id) {
+		(function ($) {
+			if (typeof wp === 'undefined' || typeof wp.heartbeat === 'undefined') {
 				return;
 			}
-			var url = restUrl
-				+ separator + 'room=' + encodeURIComponent(entry.room)
-				+ '&client_id=' + encodeURIComponent(entry.client_id);
-			try {
-				window.fetch(url, {
-					method: 'DELETE',
-					credentials: 'same-origin',
-					keepalive: true,
-					headers: { 'X-WP-Nonce': nonce }
+
+			const config = window.wpPresenceConfig || {};
+			const entries = Array.isArray(config.entries) ? config.entries : [];
+			const frontContext = config.frontContext || null;
+			const editorPostId = parseInt(config.editorPostId, 10) || 0;
+			const restUrl = config.restUrl || '';
+			const nonce = config.nonce || '';
+
+			// Guards against duplicate leave() invocations.
+			let hasLeft = false;
+
+			$(document).on('heartbeat-send', function (event, data) {
+				const ping = { screen: window.pagenow || 'front' };
+				if (frontContext && frontContext.postId) {
+					ping.post_id = frontContext.postId;
+					ping.post_type = frontContext.postType;
+					ping.title = frontContext.title;
+				}
+				data['presence-ping'] = ping;
+
+				if (editorPostId) {
+					data['presence-editor-ping'] = { post_id: editorPostId };
+				}
+
+				hasLeft = false;
+			});
+
+			function leave() {
+				if (hasLeft || !restUrl || !entries.length) {
+					return;
+				}
+				hasLeft = true;
+
+				// keepalive lets the DELETE outlive the unload; sendBeacon is POST-only.
+				if (typeof window.fetch !== 'function') {
+					return;
+				}
+
+				entries.forEach(function (entry) {
+					if (!entry || !entry.room || !entry.client_id) {
+						return;
+					}
+					const url = new URL(restUrl);
+					url.searchParams.set('room', entry.room);
+					url.searchParams.set('client_id', entry.client_id);
+					try {
+						window.fetch(url, {
+							method: 'DELETE',
+							credentials: 'same-origin',
+							keepalive: true,
+							headers: { 'X-WP-Nonce': nonce }
+						});
+					} catch {
+						// Best-effort: TTL cleanup will catch entries we couldn't remove.
+					}
 				});
-			} catch (e) {
-				// Best-effort: TTL cleanup will catch entries we couldn't remove.
 			}
-		});
-	}
 
-	// Re-establish presence on every page load so in-admin navigation doesn't
-	// leave a gap between the unload DELETE and the heartbeat's first tick.
-	function tickNow() {
-		if (wp.heartbeat && typeof wp.heartbeat.connectNow === 'function') {
-			wp.heartbeat.connectNow();
-		}
-	}
-	$(tickNow);
-	// bfcache restore: DOMContentLoaded won't fire.
-	window.addEventListener('pageshow', function (event) {
-		if (event.persisted) { tickNow(); }
-	});
+			// Re-establish presence on every page load so in-admin navigation doesn't
+			// leave a gap between the unload DELETE and the heartbeat's first tick.
+			function tickNow() {
+				if (typeof wp?.heartbeat?.connectNow === 'function') {
+					wp.heartbeat.connectNow();
+				}
+			}
+			$(tickNow);
+			// bfcache restore: DOMContentLoaded won't fire.
+			window.addEventListener('pageshow', function (event) {
+				if (event.persisted) {
+					tickNow();
+				}
+			});
 
-	window.addEventListener('pagehide', function () {
-		leave();
-	});
-})(jQuery);
-JS
+			window.addEventListener('pagehide', function () {
+				leave();
+			});
+		})(jQuery);
+		JS
 	);
 }
 
