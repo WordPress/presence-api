@@ -47,7 +47,7 @@ function wp_presence_enqueue_heartbeat_ping() {
 			var frontContext = %s;
 			$(document).on("heartbeat-send", function(event, data) {
 				// A user with a hidden tab should not be reported as actively present.
-				// Skip the ping so the existing entry expires via the 60s TTL.
+				// Skip the ping so the existing entry expires via the default TTL.
 				if (document.visibilityState === "hidden") {
 					return;
 				}
@@ -113,6 +113,10 @@ function wp_presence_enqueue_editor_ping( $hook_suffix ) {
 			'(function($) {
 			if (typeof wp === "undefined" || typeof wp.heartbeat === "undefined") { return; }
 			$(document).on("heartbeat-send", function(event, data) {
+				// Match the main ping: a hidden tab should not be reported as actively editing.
+				if (document.visibilityState === "hidden") {
+					return;
+				}
 				data["presence-editor-ping"] = { post_id: %d };
 			});
 		})(jQuery);',
