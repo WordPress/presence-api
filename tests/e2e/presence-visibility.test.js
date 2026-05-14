@@ -19,6 +19,17 @@
 import { test, expect } from '@wordpress/e2e-test-utils-playwright';
 
 /**
+ * Waits until the WordPress heartbeat library is ready on the page.
+ *
+ * @param {import('@playwright/test').Page} page
+ */
+function waitForHeartbeat( page ) {
+	return page.waitForFunction(
+		() => typeof wp !== 'undefined' && wp.heartbeat && wp.heartbeat.connectNow
+	);
+}
+
+/**
  * Fakes document.visibilityState and fires a visibilitychange event.
  *
  * @param {import('@playwright/test').Page} page
@@ -57,15 +68,16 @@ function captureHeartbeatSend( page ) {
 }
 
 test.describe( 'Presence Visibility', () => {
+	test.afterEach( async ( { requestUtils } ) => {
+		await requestUtils.deleteAllPosts();
+	} );
+
 	test( 'heartbeat-send omits presence-ping while document is hidden', async ( {
 		admin,
 		page,
 	} ) => {
 		await admin.visitAdminPage( '/' );
-		// Warm up the heartbeat machinery so subsequent connectNow() calls
-		// route through our handler.
-		await page.evaluate( () => wp.heartbeat.connectNow() );
-		await page.waitForTimeout( 1000 );
+		await waitForHeartbeat( page );
 
 		await setVisibility( page, 'hidden' );
 		const hidden = await captureHeartbeatSend( page );
@@ -91,8 +103,7 @@ test.describe( 'Presence Visibility', () => {
 			'post.php',
 			`post=${ post.id }&action=edit`
 		);
-		await page.evaluate( () => wp.heartbeat.connectNow() );
-		await page.waitForTimeout( 1000 );
+		await waitForHeartbeat( page );
 
 		await setVisibility( page, 'hidden' );
 		const hidden = await captureHeartbeatSend( page );
@@ -109,30 +120,35 @@ test.describe( 'Presence Visibility', () => {
 		page,
 	} ) => {
 		await admin.visitAdminPage( '/' );
-		await page.evaluate( () => wp.heartbeat.connectNow() );
-		await page.waitForTimeout( 1000 );
+		await waitForHeartbeat( page );
 
 		// Go hidden first so the next 'visible' event has something to do.
 		await setVisibility( page, 'hidden' );
 
-		// Wrap connectNow to count invocations from this point forward.
-		await page.evaluate( () => {
-			window.__connectNowCalls = 0;
-			const original = wp.heartbeat.connectNow.bind( wp.heartbeat );
-			wp.heartbeat.connectNow = function () {
-				window.__connectNowCalls++;
-				return original();
-			};
+		// Wrap connectNow to count invocations and snapshot the counter
+		// immediately before flipping visible, so we measure exactly the
+		// delta caused by our visibilitychange handler.
+		const before = await page.evaluate( () => {
+			window.__connectNowCalls = window.__connectNowCalls || 0;
+			if ( ! window.__connectNowWrapped ) {
+				const original = wp.heartbeat.connectNow.bind( wp.heartbeat );
+				wp.heartbeat.connectNow = function () {
+					window.__connectNowCalls++;
+					return original();
+				};
+				window.__connectNowWrapped = true;
+			}
+			return window.__connectNowCalls;
 		} );
 
 		await setVisibility( page, 'visible' );
 
 		await page.waitForFunction(
-			() => window.__connectNowCalls > 0,
-			null,
+			( baseline ) => window.__connectNowCalls > baseline,
+			before,
 			{ timeout: 5000 }
 		);
-		const calls = await page.evaluate( () => window.__connectNowCalls );
-		expect( calls ).toBeGreaterThan( 0 );
+		const after = await page.evaluate( () => window.__connectNowCalls );
+		expect( after - before ).toBeGreaterThanOrEqual( 1 );
 	} );
 } );
