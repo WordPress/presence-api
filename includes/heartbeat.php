@@ -34,16 +34,31 @@ function wp_presence_enqueue_heartbeat_ping() {
 		),
 	);
 
-	// On frontend singular views, pass the current post context to the heartbeat ping.
+	// Carry a title for any frontend URL so non-singular views (archives, search,
+	// the front page, taxonomies, 404s) are labeled too. is_singular() pages also
+	// include the post id/type so the Active Posts widget can group by post.
 	$front_context = null;
-	if ( ! is_admin() && is_singular() ) {
-		$queried = get_queried_object();
-		if ( $queried instanceof WP_Post ) {
-			$front_context = array(
-				'postId'   => $queried->ID,
-				'postType' => $queried->post_type,
-				'title'    => get_the_title( $queried ),
-			);
+	if ( ! is_admin() ) {
+		if ( is_front_page() ) {
+			$title = __( 'Home', 'presence-api' );
+		} else {
+			$strip_branding = static function ( $parts ) {
+				unset( $parts['tagline'], $parts['site'] );
+				return $parts;
+			};
+			add_filter( 'document_title_parts', $strip_branding );
+			$title = wp_get_document_title();
+			remove_filter( 'document_title_parts', $strip_branding );
+		}
+
+		$front_context = array( 'title' => $title );
+
+		if ( is_singular() ) {
+			$queried = get_queried_object();
+			if ( $queried instanceof WP_Post ) {
+				$front_context['postId']   = $queried->ID;
+				$front_context['postType'] = $queried->post_type;
+			}
 		}
 	}
 
@@ -79,9 +94,13 @@ function wp_presence_enqueue_heartbeat_ping() {
 
 	$admin_state = array( 'screen' => $screen_id );
 	if ( $front_context ) {
-		$admin_state['post_id']   = $front_context['postId'];
-		$admin_state['post_type'] = $front_context['postType'];
-		$admin_state['title']     = $front_context['title'];
+		if ( ! empty( $front_context['title'] ) ) {
+			$admin_state['title'] = $front_context['title'];
+		}
+		if ( ! empty( $front_context['postId'] ) ) {
+			$admin_state['post_id']   = $front_context['postId'];
+			$admin_state['post_type'] = $front_context['postType'];
+		}
 	}
 	wp_set_presence( 'admin/online', 'user-' . $user_id, $admin_state, $user_id );
 
@@ -134,10 +153,14 @@ function wp_presence_enqueue_heartbeat_ping() {
 
 			$(document).on('heartbeat-send', function (event, data) {
 				const ping = { screen: window.pagenow || 'front' };
-				if (frontContext && frontContext.postId) {
-					ping.post_id = frontContext.postId;
-					ping.post_type = frontContext.postType;
-					ping.title = frontContext.title;
+				if (frontContext) {
+					if (frontContext.title) {
+						ping.title = frontContext.title;
+					}
+					if (frontContext.postId) {
+						ping.post_id = frontContext.postId;
+						ping.post_type = frontContext.postType;
+					}
 				}
 				data['presence-ping'] = ping;
 

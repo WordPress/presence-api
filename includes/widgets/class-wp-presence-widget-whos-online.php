@@ -724,13 +724,20 @@ JS,
 			$state['post_status'] = $post_status;
 		}
 
-		// Include frontend post context when viewing a singular page/post.
-		if ( 'front' === $screen && ! empty( $data['presence-ping']['post_id'] ) ) {
-			$front_post_id = absint( $data['presence-ping']['post_id'] );
-			if ( $front_post_id ) {
-				$state['post_id']   = $front_post_id;
-				$state['post_type'] = isset( $data['presence-ping']['post_type'] ) ? sanitize_key( $data['presence-ping']['post_type'] ) : 'post';
-				$state['title']     = isset( $data['presence-ping']['title'] ) ? sanitize_text_field( $data['presence-ping']['title'] ) : '';
+		// Include the frontend page label whenever the ping is from the public site.
+		// The title alone supports non-singular URLs (archives, search, 404, etc.);
+		// post_id/post_type are added on singular views so the Active Posts widget
+		// can group by post.
+		if ( 'front' === $screen ) {
+			if ( ! empty( $data['presence-ping']['title'] ) ) {
+				$state['title'] = sanitize_text_field( $data['presence-ping']['title'] );
+			}
+			if ( ! empty( $data['presence-ping']['post_id'] ) ) {
+				$front_post_id = absint( $data['presence-ping']['post_id'] );
+				if ( $front_post_id ) {
+					$state['post_id']   = $front_post_id;
+					$state['post_type'] = isset( $data['presence-ping']['post_type'] ) ? sanitize_key( $data['presence-ping']['post_type'] ) : 'post';
+				}
 			}
 		}
 
