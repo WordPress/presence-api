@@ -732,11 +732,12 @@ JS,
 			if ( ! empty( $data['presence-ping']['title'] ) ) {
 				$state['title'] = sanitize_text_field( $data['presence-ping']['title'] );
 			}
-			if ( ! empty( $data['presence-ping']['post_id'] ) ) {
-				$front_post_id = absint( $data['presence-ping']['post_id'] );
-				if ( $front_post_id ) {
-					$state['post_id']   = $front_post_id;
-					$state['post_type'] = isset( $data['presence-ping']['post_type'] ) ? sanitize_key( $data['presence-ping']['post_type'] ) : 'post';
+			$post_id = (int) ( $data['presence-ping']['post_id'] ?? 0 );
+			if ( $post_id > 0 ) {
+				$front_post = get_post( $post );
+				if ( $front_post ) {
+					$state['post_id']   = $front_post->ID;
+					$state['post_type'] = $front_post->post_type;
 				}
 			}
 		}
