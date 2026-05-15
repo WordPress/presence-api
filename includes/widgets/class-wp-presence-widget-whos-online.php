@@ -734,7 +734,7 @@ JS,
 			}
 			$post_id = (int) ( $data['presence-ping']['post_id'] ?? 0 );
 			if ( $post_id > 0 ) {
-				$front_post = get_post( $post );
+				$front_post = get_post( $post_id );
 				if ( $front_post ) {
 					$state['post_id']   = $front_post->ID;
 					$state['post_type'] = $front_post->post_type;
