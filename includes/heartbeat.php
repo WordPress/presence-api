@@ -150,6 +150,15 @@ function wp_presence_enqueue_heartbeat_ping() {
 			let hasLeft = false;
 
 			$(document).on('heartbeat-send', function (event, data) {
+				// Skip while the document is hidden (background tab, minimized
+				// window, app switched away) so the existing entries expire via
+				// the default TTL. One early-return suppresses both presence-ping
+				// and presence-editor-ping, since the consolidated handler emits
+				// both.
+				if (document.visibilityState === 'hidden') {
+					return;
+				}
+
 				const ping = { screen: window.pagenow || 'front' };
 				if (frontContext) {
 					if (frontContext.title) {
@@ -210,6 +219,14 @@ function wp_presence_enqueue_heartbeat_ping() {
 			// bfcache restore: DOMContentLoaded won't fire.
 			window.addEventListener('pageshow', function (event) {
 				if (event.persisted) {
+					tickNow();
+				}
+			});
+
+			// When the tab becomes visible again, re-establish presence so the user
+			// does not sit out the next heartbeat interval.
+			document.addEventListener('visibilitychange', function () {
+				if (document.visibilityState === 'visible') {
 					tickNow();
 				}
 			});
