@@ -56,7 +56,7 @@ function wp_presence_enqueue_heartbeat_ping() {
 		if ( is_singular() ) {
 			$queried = get_queried_object();
 			if ( $queried instanceof WP_Post ) {
-				$front_context['postId'] = $queried->ID;
+				$front_context['post_id'] = $queried->ID;
 			}
 		}
 	}
@@ -96,8 +96,8 @@ function wp_presence_enqueue_heartbeat_ping() {
 		if ( ! empty( $front_context['title'] ) ) {
 			$admin_state['title'] = $front_context['title'];
 		}
-		if ( ! empty( $front_context['postId'] ) ) {
-			$admin_state['post_id'] = $front_context['postId'];
+		if ( ! empty( $front_context['post_id'] ) ) {
+			$admin_state['post_id'] = $front_context['post_id'];
 		}
 	}
 	wp_set_presence( 'admin/online', 'user-' . $user_id, $admin_state, $user_id );
@@ -155,8 +155,8 @@ function wp_presence_enqueue_heartbeat_ping() {
 					if (frontContext.title) {
 						ping.title = frontContext.title;
 					}
-					if (frontContext.postId) {
-						ping.post_id = frontContext.postId;
+					if (frontContext.post_id) {
+						ping.post_id = frontContext.post_id;
 					}
 				}
 				data['presence-ping'] = ping;
