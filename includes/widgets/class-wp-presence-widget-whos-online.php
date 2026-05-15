@@ -724,10 +724,9 @@ JS,
 			$state['post_status'] = $post_status;
 		}
 
-		// Include the frontend page label whenever the ping is from the public site.
-		// The title alone supports non-singular URLs (archives, search, 404, etc.);
-		// post_id/post_type are added on singular views so the Active Posts widget
-		// can group by post.
+		// Store the frontend page label whenever the ping is from the public site.
+		// title becomes the row's screen label in Who's Online; post_id is recorded
+		// when the ping carries one (singular views).
 		if ( 'front' === $screen ) {
 			if ( ! empty( $data['presence-ping']['title'] ) ) {
 				$state['title'] = sanitize_text_field( $data['presence-ping']['title'] );
@@ -736,8 +735,7 @@ JS,
 			if ( $post_id > 0 ) {
 				$front_post = get_post( $post_id );
 				if ( $front_post ) {
-					$state['post_id']   = $front_post->ID;
-					$state['post_type'] = $front_post->post_type;
+					$state['post_id'] = $front_post->ID;
 				}
 			}
 		}

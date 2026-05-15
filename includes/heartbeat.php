@@ -34,9 +34,9 @@ function wp_presence_enqueue_heartbeat_ping() {
 		),
 	);
 
-	// Carry a title for any frontend URL so non-singular views (archives, search,
-	// the front page, taxonomies, 404s) are labeled too. is_singular() pages also
-	// include the post id/type so the Active Posts widget can group by post.
+	// Carry a title for any frontend URL so it shows up in the Who's Online
+	// widget (non-singular views — archives, search, the front page, taxonomies,
+	// 404s — are labeled too). is_singular() pages also carry the post id.
 	$front_context = null;
 	if ( ! is_admin() ) {
 		if ( is_front_page() ) {
@@ -56,8 +56,7 @@ function wp_presence_enqueue_heartbeat_ping() {
 		if ( is_singular() ) {
 			$queried = get_queried_object();
 			if ( $queried instanceof WP_Post ) {
-				$front_context['postId']   = $queried->ID;
-				$front_context['postType'] = $queried->post_type;
+				$front_context['postId'] = $queried->ID;
 			}
 		}
 	}
@@ -98,8 +97,7 @@ function wp_presence_enqueue_heartbeat_ping() {
 			$admin_state['title'] = $front_context['title'];
 		}
 		if ( ! empty( $front_context['postId'] ) ) {
-			$admin_state['post_id']   = $front_context['postId'];
-			$admin_state['post_type'] = $front_context['postType'];
+			$admin_state['post_id'] = $front_context['postId'];
 		}
 	}
 	wp_set_presence( 'admin/online', 'user-' . $user_id, $admin_state, $user_id );
@@ -159,7 +157,6 @@ function wp_presence_enqueue_heartbeat_ping() {
 					}
 					if (frontContext.postId) {
 						ping.post_id = frontContext.postId;
-						ping.post_type = frontContext.postType;
 					}
 				}
 				data['presence-ping'] = ping;
