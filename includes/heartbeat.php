@@ -46,6 +46,12 @@ function wp_presence_enqueue_heartbeat_ping() {
 			if (typeof wp === "undefined" || typeof wp.heartbeat === "undefined") { return; }
 			var frontContext = %s;
 			$(document).on("heartbeat-send", function(event, data) {
+				// Skip the ping while the document is hidden (background tab,
+				// minimized window, app switched away) so the existing entry
+				// expires via the default TTL.
+				if (document.visibilityState === "hidden") {
+					return;
+				}
 				var ping = { screen: window.pagenow || "front" };
 				if (frontContext.postId) {
 					ping.post_id = frontContext.postId;
@@ -69,6 +75,14 @@ function wp_presence_enqueue_heartbeat_ping() {
 			// DOMContentLoaded does not fire again.
 			window.addEventListener("pageshow", function(event) {
 				if (event.persisted) {
+					tickNow();
+				}
+			});
+
+			// When the tab becomes visible again, re-establish presence so the user
+			// does not sit out the next heartbeat interval.
+			document.addEventListener("visibilitychange", function() {
+				if (document.visibilityState === "visible") {
 					tickNow();
 				}
 			});
@@ -100,6 +114,10 @@ function wp_presence_enqueue_editor_ping( $hook_suffix ) {
 			'(function($) {
 			if (typeof wp === "undefined" || typeof wp.heartbeat === "undefined") { return; }
 			$(document).on("heartbeat-send", function(event, data) {
+				// Match the main ping: skip while the document is hidden.
+				if (document.visibilityState === "hidden") {
+					return;
+				}
 				data["presence-editor-ping"] = { post_id: %d };
 			});
 		})(jQuery);',
