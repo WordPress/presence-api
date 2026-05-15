@@ -54,6 +54,24 @@ function wp_presence_enqueue_heartbeat_ping() {
 				}
 				data["presence-ping"] = ping;
 			});
+
+			// Trigger an immediate heartbeat tick once the DOM is ready so presence
+			// reflects the current screen without waiting for the next interval
+			// (which can be up to 60s on screens like the dashboard).
+			function tickNow() {
+				if (typeof wp?.heartbeat?.connectNow === "function") {
+					wp.heartbeat.connectNow();
+				}
+			}
+			$(tickNow);
+
+			// pageshow with event.persisted is the bfcache restore case, where
+			// DOMContentLoaded does not fire again.
+			window.addEventListener("pageshow", function(event) {
+				if (event.persisted) {
+					tickNow();
+				}
+			});
 		})(jQuery);',
 			$front_context
 		)
