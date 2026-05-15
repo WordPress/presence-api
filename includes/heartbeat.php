@@ -24,56 +24,200 @@ function wp_presence_enqueue_heartbeat_ping() {
 
 	wp_enqueue_script( 'heartbeat' );
 
-	// On frontend singular views, pass the current post context to the heartbeat ping.
-	$front_context = '{}';
-	if ( ! is_admin() && is_singular() ) {
-		$queried = get_queried_object();
-		if ( $queried instanceof WP_Post ) {
-			$front_context = wp_json_encode(
+	$user_id = get_current_user_id();
+
+	// Every page where the ping is enqueued occupies the admin/online room.
+	$entries = array(
+		array(
+			'room'      => 'admin/online',
+			'client_id' => 'user-' . $user_id,
+		),
+	);
+
+	// Carry a title for any frontend URL so it shows up in the Who's Online
+	// widget (non-singular views — archives, search, the front page, taxonomies,
+	// 404s — are labeled too). is_singular() pages also carry the post id.
+	$front_context = null;
+	if ( ! is_admin() ) {
+		if ( is_front_page() ) {
+			$title = __( 'Home', 'presence-api' );
+		} else {
+			$strip_branding = static function ( $parts ) {
+				unset( $parts['tagline'], $parts['site'] );
+				return $parts;
+			};
+			add_filter( 'document_title_parts', $strip_branding );
+			$title = wp_get_document_title();
+			remove_filter( 'document_title_parts', $strip_branding );
+		}
+
+		$front_context = array( 'title' => $title );
+
+		if ( is_singular() ) {
+			$queried = get_queried_object();
+			if ( $queried instanceof WP_Post ) {
+				$front_context['post_id'] = $queried->ID;
+			}
+		}
+	}
+
+	// On the post-edit screen, also occupy the per-post room.
+	$editor_post_id = 0;
+	if ( is_admin() && function_exists( 'get_current_screen' ) ) {
+		$screen = get_current_screen();
+		if ( $screen && 'post' === $screen->base ) {
+			$post = get_post();
+			if ( $post && post_type_supports( $post->post_type, 'presence' ) ) {
+				$room = wp_presence_post_room( $post->ID );
+				if ( $room ) {
+					$editor_post_id = $post->ID;
+					$entries[]      = array(
+						'room'      => $room,
+						'client_id' => 'editor-' . $user_id,
+					);
+					// The post-lock bridge writes this entry via the wp-refresh-post-lock heartbeat.
+					$entries[] = array(
+						'room'      => $room,
+						'client_id' => 'lock-' . $user_id,
+					);
+				}
+			}
+		}
+	}
+
+	// Write presence server-side during this request so the new page closes the
+	// gap between the old page's pagehide DELETE and the next heartbeat tick.
+	$screen_id = is_admin() && function_exists( 'get_current_screen' ) && get_current_screen()
+		? get_current_screen()->id
+		: 'front';
+
+	$admin_state = array( 'screen' => $screen_id );
+	if ( $front_context ) {
+		if ( ! empty( $front_context['title'] ) ) {
+			$admin_state['title'] = $front_context['title'];
+		}
+		if ( ! empty( $front_context['post_id'] ) ) {
+			$admin_state['post_id'] = $front_context['post_id'];
+		}
+	}
+	wp_set_presence( 'admin/online', 'user-' . $user_id, $admin_state, $user_id );
+
+	if ( $editor_post_id ) {
+		$editor_room = wp_presence_post_room( $editor_post_id );
+		if ( $editor_room ) {
+			wp_set_presence(
+				$editor_room,
+				'editor-' . $user_id,
 				array(
-					'postId'   => $queried->ID,
-					'postType' => $queried->post_type,
-					'title'    => get_the_title( $queried ),
-				)
+					'action' => 'editing',
+					'screen' => $screen_id,
+				),
+				$user_id
 			);
 		}
 	}
 
+	$config = array(
+		'entries'      => $entries,
+		'frontContext' => $front_context,
+		'editorPostId' => $editor_post_id,
+		'restUrl'      => esc_url_raw( rest_url( 'wp-presence/v1/presence' ) ),
+		'nonce'        => wp_create_nonce( 'wp_rest' ),
+	);
+
 	wp_add_inline_script(
 		'heartbeat',
-		sprintf(
-			'(function($) {
-			if (typeof wp === "undefined" || typeof wp.heartbeat === "undefined") { return; }
-			var frontContext = %s;
-			$(document).on("heartbeat-send", function(event, data) {
-				// Skip the ping while the document is hidden (background tab,
-				// minimized window, app switched away) so the existing entry
-				// expires via the default TTL.
-				if (document.visibilityState === "hidden") {
+		sprintf( 'window.wpPresenceConfig = %s;', wp_json_encode( $config, JSON_HEX_TAG | JSON_UNESCAPED_SLASHES ) ),
+		'before'
+	);
+
+	wp_add_inline_script(
+		'heartbeat',
+		<<<'JS'
+		(function ($) {
+			if (typeof wp === 'undefined' || typeof wp.heartbeat === 'undefined') {
+				return;
+			}
+
+			const config = window.wpPresenceConfig || {};
+			const entries = Array.isArray(config.entries) ? config.entries : [];
+			const frontContext = config.frontContext || null;
+			const editorPostId = parseInt(config.editorPostId, 10) || 0;
+			const restUrl = config.restUrl || '';
+			const nonce = config.nonce || '';
+
+			// Guards against duplicate leave() invocations.
+			let hasLeft = false;
+
+			$(document).on('heartbeat-send', function (event, data) {
+				// Skip while the document is hidden (background tab, minimized
+				// window, app switched away) so the existing entries expire via
+				// the default TTL. One early-return suppresses both presence-ping
+				// and presence-editor-ping, since the consolidated handler emits
+				// both.
+				if (document.visibilityState === 'hidden') {
 					return;
 				}
-				var ping = { screen: window.pagenow || "front" };
-				if (frontContext.postId) {
-					ping.post_id = frontContext.postId;
-					ping.post_type = frontContext.postType;
-					ping.title = frontContext.title;
+
+				const ping = { screen: window.pagenow || 'front' };
+				if (frontContext) {
+					if (frontContext.title) {
+						ping.title = frontContext.title;
+					}
+					if (frontContext.post_id) {
+						ping.post_id = frontContext.post_id;
+					}
 				}
-				data["presence-ping"] = ping;
+				data['presence-ping'] = ping;
+
+				if (editorPostId) {
+					data['presence-editor-ping'] = { post_id: editorPostId };
+				}
+
+				hasLeft = false;
 			});
 
-			// Trigger an immediate heartbeat tick once the DOM is ready so presence
-			// reflects the current screen without waiting for the next interval
-			// (which can be up to 60s on screens like the dashboard).
+			function leave() {
+				if (hasLeft || !restUrl || !entries.length) {
+					return;
+				}
+				hasLeft = true;
+
+				// keepalive lets the DELETE outlive the unload; sendBeacon is POST-only.
+				if (typeof window.fetch !== 'function') {
+					return;
+				}
+
+				entries.forEach(function (entry) {
+					if (!entry || !entry.room || !entry.client_id) {
+						return;
+					}
+					const url = new URL(restUrl);
+					url.searchParams.set('room', entry.room);
+					url.searchParams.set('client_id', entry.client_id);
+					try {
+						window.fetch(url, {
+							method: 'DELETE',
+							credentials: 'same-origin',
+							keepalive: true,
+							headers: { 'X-WP-Nonce': nonce }
+						});
+					} catch {
+						// Best-effort: TTL cleanup will catch entries we couldn't remove.
+					}
+				});
+			}
+
+			// Re-establish presence on every page load so in-admin navigation doesn't
+			// leave a gap between the unload DELETE and the heartbeat's first tick.
 			function tickNow() {
-				if (typeof wp?.heartbeat?.connectNow === "function") {
+				if (typeof wp?.heartbeat?.connectNow === 'function') {
 					wp.heartbeat.connectNow();
 				}
 			}
 			$(tickNow);
-
-			// pageshow with event.persisted is the bfcache restore case, where
-			// DOMContentLoaded does not fire again.
-			window.addEventListener("pageshow", function(event) {
+			// bfcache restore: DOMContentLoaded won't fire.
+			window.addEventListener('pageshow', function (event) {
 				if (event.persisted) {
 					tickNow();
 				}
@@ -81,48 +225,17 @@ function wp_presence_enqueue_heartbeat_ping() {
 
 			// When the tab becomes visible again, re-establish presence so the user
 			// does not sit out the next heartbeat interval.
-			document.addEventListener("visibilitychange", function() {
-				if (document.visibilityState === "visible") {
+			document.addEventListener('visibilitychange', function () {
+				if (document.visibilityState === 'visible') {
 					tickNow();
 				}
 			});
-		})(jQuery);',
-			$front_context
-		)
-	);
-}
 
-/**
- * Enqueues a heartbeat ping for the block editor that reports which post is being edited.
- *
- * @param string $hook_suffix The current admin page.
- */
-function wp_presence_enqueue_editor_ping( $hook_suffix ) {
-	if ( ! in_array( $hook_suffix, array( 'post.php', 'post-new.php' ), true ) ) {
-		return;
-	}
-
-	$post = get_post();
-
-	if ( ! $post || ! post_type_supports( $post->post_type, 'presence' ) ) {
-		return;
-	}
-
-	wp_add_inline_script(
-		'heartbeat',
-		sprintf(
-			'(function($) {
-			if (typeof wp === "undefined" || typeof wp.heartbeat === "undefined") { return; }
-			$(document).on("heartbeat-send", function(event, data) {
-				// Match the main ping: skip while the document is hidden.
-				if (document.visibilityState === "hidden") {
-					return;
-				}
-				data["presence-editor-ping"] = { post_id: %d };
+			window.addEventListener('pagehide', function () {
+				leave();
 			});
-		})(jQuery);',
-			$post->ID
-		)
+		})(jQuery);
+		JS
 	);
 }
 

@@ -139,7 +139,6 @@ add_filter( 'cron_schedules', 'wp_presence_cron_schedules' );
 
 add_action( 'admin_enqueue_scripts', 'wp_presence_enqueue_heartbeat_ping' );
 add_action( 'wp_enqueue_scripts', 'wp_presence_enqueue_heartbeat_ping' );
-add_action( 'admin_enqueue_scripts', 'wp_presence_enqueue_editor_ping' );
 add_filter( 'heartbeat_received', 'wp_presence_editor_heartbeat_received', 10, 3 );
 add_filter( 'heartbeat_received', 'wp_presence_bridge_post_lock', 11, 3 );
 

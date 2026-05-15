@@ -724,13 +724,19 @@ JS,
 			$state['post_status'] = $post_status;
 		}
 
-		// Include frontend post context when viewing a singular page/post.
-		if ( 'front' === $screen && ! empty( $data['presence-ping']['post_id'] ) ) {
-			$front_post_id = absint( $data['presence-ping']['post_id'] );
-			if ( $front_post_id ) {
-				$state['post_id']   = $front_post_id;
-				$state['post_type'] = isset( $data['presence-ping']['post_type'] ) ? sanitize_key( $data['presence-ping']['post_type'] ) : 'post';
-				$state['title']     = isset( $data['presence-ping']['title'] ) ? sanitize_text_field( $data['presence-ping']['title'] ) : '';
+		// Store the frontend page label whenever the ping is from the public site.
+		// title becomes the row's screen label in Who's Online; post_id is recorded
+		// when the ping carries one (singular views).
+		if ( 'front' === $screen ) {
+			if ( ! empty( $data['presence-ping']['title'] ) ) {
+				$state['title'] = sanitize_text_field( $data['presence-ping']['title'] );
+			}
+			$post_id = (int) ( $data['presence-ping']['post_id'] ?? 0 );
+			if ( $post_id > 0 ) {
+				$front_post = get_post( $post_id );
+				if ( $front_post ) {
+					$state['post_id'] = $front_post->ID;
+				}
 			}
 		}
 
