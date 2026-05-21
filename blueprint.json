@@ -1,6 +1,6 @@
 {
 	"preferredVersions": {
-		"wp": "beta"
+		"wp": "trunk"
 	},
 	"landingPage": "/wp-admin/",
 	"login": true,
