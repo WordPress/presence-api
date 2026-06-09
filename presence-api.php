@@ -47,6 +47,7 @@ if ( isset( $wpdb->presence ) ) {
 define( 'WP_PRESENCE_VERSION', '0.1.2' );
 define( 'WP_PRESENCE_DB_VERSION', '1' );
 define( 'WP_PRESENCE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+define( 'WP_PRESENCE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 if ( ! defined( 'WP_PRESENCE_DEFAULT_TTL' ) ) {
 	define( 'WP_PRESENCE_DEFAULT_TTL', 60 );
 }
@@ -66,6 +67,7 @@ require_once WP_PRESENCE_PLUGIN_DIR . 'includes/class-wp-rest-presence-controlle
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/heartbeat.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/cron.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/post-lock-bridge.php';
+require_once WP_PRESENCE_PLUGIN_DIR . 'includes/screen-revisions.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/lifecycle.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/admin-bar.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/user-list.php';
@@ -141,6 +143,14 @@ add_action( 'admin_enqueue_scripts', 'wp_presence_enqueue_heartbeat_ping' );
 add_action( 'wp_enqueue_scripts', 'wp_presence_enqueue_heartbeat_ping' );
 add_filter( 'heartbeat_received', 'wp_presence_editor_heartbeat_received', 10, 3 );
 add_filter( 'heartbeat_received', 'wp_presence_bridge_post_lock', 11, 3 );
+add_filter( 'heartbeat_received', 'wp_presence_screen_heartbeat_received', 12, 3 );
+
+add_action( 'admin_enqueue_scripts', 'wp_presence_enqueue_stale_screen_banner' );
+add_action( 'updated_option', 'wp_presence_on_updated_option' );
+add_action( 'post_updated', 'wp_presence_on_post_updated', 10, 3 );
+add_action( 'profile_update', 'wp_presence_on_profile_update' );
+add_action( 'edited_term', 'wp_presence_on_edited_term', 10, 3 );
+add_action( 'edit_comment', 'wp_presence_on_edit_comment' );
 
 add_action( 'wp_login', 'wp_presence_on_login', 10, 2 );
 add_action( 'wp_logout', 'wp_presence_on_logout' );
