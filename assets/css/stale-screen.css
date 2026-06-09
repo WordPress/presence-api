@@ -1,0 +1,30 @@
+/**
+ * Stale-screen banner styles.
+ *
+ * Layout for the dynamically-injected warning notice that fires when
+ * another user saves the screen the current viewer is on.
+ *
+ * @package Presence_API
+ */
+
+.wp-presence-stale-notice p {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 10px;
+	/* Reset core's `.notice p` margin so it doesn't compound with `gap`. */
+	margin: 0;
+}
+
+.wp-presence-stale-avatar {
+	flex-shrink: 0;
+	border-radius: 50%;
+}
+
+.wp-presence-stale-text {
+	flex: 1 1 auto;
+}
+
+.wp-presence-stale-notice .button-primary {
+	flex-shrink: 0;
+}

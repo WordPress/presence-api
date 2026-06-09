@@ -53,7 +53,7 @@ function presence_demo_render_buttons() {
 	<div class="notice notice-info is-dismissible">
 		<p>
 			<strong><?php esc_html_e( 'Demo:', 'presence-api' ); ?></strong>
-			<?php esc_html_e( 'pretend another user just saved this screen — the stale-screen notice should appear within a few seconds.', 'presence-api' ); ?>
+			<?php esc_html_e( 'simulate another user saving this screen. The stale notice will appear within seconds.', 'presence-api' ); ?>
 		</p>
 		<p>
 			<?php foreach ( $others as $user ) : ?>
