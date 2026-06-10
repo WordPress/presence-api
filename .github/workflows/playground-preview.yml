@@ -68,7 +68,7 @@ jobs:
               (.steps | length > 0)
               and (.steps | all(.step | IN("installPlugin", "writeFile", "runPHP")))
               and (.steps | map(select(.step == "installPlugin" and (.pluginData.resource // "") == "url")) | length == 1)
-              and (.steps | map(select(.step == "writeFile" and (.data.resource // "") == "url")) | length == 1)
+              and (.steps | map(select(.step == "writeFile" and (.data.resource // "") == "url")) | length == 2)
             ' "$f" > /dev/null
           done
 
@@ -78,6 +78,7 @@ jobs:
           mkdir -p release-assets
           cp build/presence-api.zip release-assets/
           cp tests/e2e/demo-seeder.php release-assets/
+          cp tests/e2e/screen-stale-demo-helper.php release-assets/
 
       # PR metadata as JSON (no shell-`source` upstream). The publish
       # workflow validates these fields with regex before using.

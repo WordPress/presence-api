@@ -71,6 +71,7 @@ jobs:
           unzip -q -o -d artifacts/pr-meta pr-meta.zip
           test -f artifacts/release-assets/presence-api.zip
           test -f artifacts/release-assets/demo-seeder.php
+          test -f artifacts/release-assets/screen-stale-demo-helper.php
           test -f artifacts/pr-meta/pr-meta.json
 
           # Parse with jq and validate types. Never `source` the artifact.
@@ -97,6 +98,7 @@ jobs:
           gh release create "$TAG" \
             artifacts/release-assets/presence-api.zip \
             artifacts/release-assets/demo-seeder.php \
+            artifacts/release-assets/screen-stale-demo-helper.php \
             --prerelease \
             --target "$HEAD_SHA" \
             --title "PR #${PR_NUMBER} preview" \
@@ -113,21 +115,27 @@ jobs:
           # head repository — so a fork PR cannot redirect Playground.
           PLUGIN_URL="https://github.com/${REPO}/releases/download/${TAG}/presence-api.zip"
           SEEDER_URL="https://github.com/${REPO}/releases/download/${TAG}/demo-seeder.php"
+          HELPER_URL="https://github.com/${REPO}/releases/download/${TAG}/screen-stale-demo-helper.php"
 
+          # writeFile steps are matched by trailing path component so the
+          # seeder and helper get distinct URLs without depending on the
+          # order they appear in the blueprint.
           transform() {
-            jq --arg plugin "$1" --arg seeder "$2" '
+            jq --arg plugin "$1" --arg seeder "$2" --arg helper "$3" '
               .steps |= map(
                 if .step == "installPlugin" and (.pluginData.resource == "url") then
                   .pluginData.url = $plugin
                 elif .step == "writeFile" and (.data.resource == "url") then
-                  .data.url = $seeder
+                  if (.path | endswith("/demo-seeder.php")) then .data.url = $seeder
+                  elif (.path | endswith("/screen-stale-demo-helper.php")) then .data.url = $helper
+                  else . end
                 else . end
               )
-            ' "$3"
+            ' "$4"
           }
 
-          BLUEPRINT=$(transform "$PLUGIN_URL" "$SEEDER_URL" blueprint.json)
-          BLUEPRINT_40=$(transform "$PLUGIN_URL" "$SEEDER_URL" blueprint-40.json)
+          BLUEPRINT=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" blueprint.json)
+          BLUEPRINT_40=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" blueprint-40.json)
 
           encode() { printf '%s' "$1" | base64 -w0; }
 
