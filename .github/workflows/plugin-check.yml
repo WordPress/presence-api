@@ -40,20 +40,10 @@ jobs:
 
       - run: npm install -g @wordpress/env@11.7.0
 
-      # Authenticate composer's GitHub API calls. Without this, wp-env's
-      # Docker build hits the 60/hour unauthenticated rate limit on
-      # `api.github.com/repos/.../zipball/...` and 504s while pulling
-      # the Sebastian Bergmann package tree. Writing the auth file at
-      # `~/.composer/auth.json` raises the limit to 5000/hour using the
-      # workflow's GITHUB_TOKEN.
+      # Avoids the intermittent 504s on api.github.com during wp-env's
+      # Docker build (PR #22). Authenticated requests dodge the issue.
       - name: Authenticate composer to GitHub
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          mkdir -p ~/.composer
-          cat > ~/.composer/auth.json <<JSON
-          { "github-oauth": { "github.com": "${GH_TOKEN}" } }
-          JSON
+        run: composer config --global --auth github-oauth.github.com '${{ secrets.GITHUB_TOKEN }}'
 
       # Build the plugin tree the same way `release.yml` does so
       # plugin-check sees only what would actually ship — `.distignore`
