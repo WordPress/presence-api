@@ -23,6 +23,7 @@ function wp_presence_uninstall_site() {
 	$wpdb->query( "DROP TABLE IF EXISTS {$table}" );
 
 	delete_option( 'wp_presence_db_version' );
+	delete_option( 'wp_presence_screen_revisions' );
 }
 
 if ( is_multisite() ) {
