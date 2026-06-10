@@ -1,0 +1,29 @@
+name: PHPStan
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  phpstan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer
+      - uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ hashFiles('composer.json') }}
+      - run: composer install --no-interaction
+      # `--error-format=github` renders findings as inline PR annotations
+      # on the diff, the same shape PHPCS uses via its own GitHub formatter.
+      - run: ./vendor/bin/phpstan analyse --no-progress --error-format=github

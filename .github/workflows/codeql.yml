@@ -1,0 +1,45 @@
+name: CodeQL
+
+# GitHub-managed security analysis. Scans our JavaScript and CI workflow
+# definitions on every PR, every push to main, and weekly so the local
+# CodeQL database refreshes against newly-published query packs even on
+# code that hasn't changed.
+#
+# PHP support is currently in beta on CodeQL. We scan the GitHub Actions
+# DSL (`actions`) plus our JavaScript today, and should add PHP once the
+# language pack is stable.
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 6 * * 1'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'javascript-typescript', 'actions' ]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
