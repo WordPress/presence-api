@@ -158,13 +158,9 @@ jobs:
               '',
               `[![Open in WordPress Playground](${badge})](${url})`,
               '',
-              "Boots a fresh WordPress, installs this PR's presence-api build, seeds 5 demo users, lands you in the dashboard.",
+              "Boots a fresh WordPress with this PR's presence-api build, seeds 5 demo users, and drops you on the dashboard.",
               '',
-              `[![Open in WordPress Playground](${badge})](${url40})`,
-              '',
-              'Same, with 40 demo users.',
-              '',
-              `<sub>Built from \`${sha}\`. Auto-updates when you push.</sub>`,
+              `<sub>Stress-test variant: [40 demo users](${url40}) · Built from \`${sha}\`. Auto-updates when you push.</sub>`,
             ].join('\n');
 
             const comments = await github.paginate(github.rest.issues.listComments, {
