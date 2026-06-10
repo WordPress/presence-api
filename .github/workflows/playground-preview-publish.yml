@@ -36,7 +36,7 @@ jobs:
       && github.event.workflow_run.event == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Download artifacts from the triggering run
         uses: actions/github-script@v7
