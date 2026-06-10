@@ -223,6 +223,11 @@ function wp_presence_on_updated_option( $option ) {
 	if ( ! $option_page ) {
 		return;
 	}
+	static $bumped_option_pages = array();
+	if ( isset( $bumped_option_pages[ $option_page ] ) ) {
+		return;
+	}
+	$bumped_option_pages[ $option_page ] = true;
 	wp_presence_bump_screen_revision( 'options/' . $option_page );
 }
 
