@@ -8,6 +8,15 @@ name: Playground Preview
 
 on:
   pull_request:
+    # Skip the obvious non-shippable surface. Docs, CI, tests — none of
+    # them change what a reviewer sees when they open the Playground
+    # link. A demo-seeder or workflow-only PR can fire the preview by
+    # hand via `workflow_dispatch` when there's a real need.
+    paths-ignore:
+      - '**.md'
+      - '.github/**'
+      - 'tests/**'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
