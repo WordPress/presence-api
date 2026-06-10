@@ -24,7 +24,15 @@ jobs:
         with:
           node-version: 20
           cache: npm
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer
       - run: npm ci
+      # Avoids the intermittent 504s on api.github.com during wp-env's
+      # Docker build (PR #22). Authenticated requests dodge the issue.
+      - name: Authenticate composer to GitHub
+        run: composer config --global --auth github-oauth.github.com '${{ secrets.GITHUB_TOKEN }}'
       - run: npx wp-env start
         env:
           WP_ENV_PHP_VERSION: ${{ matrix.php }}
