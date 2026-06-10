@@ -1,0 +1,31 @@
+name: Props Bot
+
+# Posts (and keeps updated) a sticky comment on every pull request that
+# lists everyone who contributed — author, reviewers, commenters with
+# code suggestions, and anyone the author called out. The output is a
+# ready-to-paste `Props: @user1, @user2, ...` line for the eventual core
+# import commit, matching the convention used by `wordpress-develop` and
+# the Performance Lab plugins.
+#
+# Re-trigger by leaving a `/props` comment on the PR.
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review, edited]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: write
+
+jobs:
+  props:
+    # `issue_comment` fires for both issues and PRs; gate to PRs only.
+    if: >
+      github.event_name == 'pull_request_target'
+      || ( github.event_name == 'issue_comment' && github.event.issue.pull_request )
+    runs-on: ubuntu-latest
+    steps:
+      - uses: WordPress/props-bot-action@trunk
