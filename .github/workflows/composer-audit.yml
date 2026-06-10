@@ -1,0 +1,31 @@
+name: Composer Audit
+
+# Fails when any direct or transitive dependency in `composer.lock` has a
+# known security advisory. Runs on every PR and weekly so newly-disclosed
+# advisories against unchanged dependencies still trip CI.
+
+on:
+  pull_request:
+    paths:
+      - 'composer.json'
+      - 'composer.lock'
+      - '.github/workflows/composer-audit.yml'
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer
+
+      - run: composer audit --no-interaction
