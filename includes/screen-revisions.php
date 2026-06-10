@@ -326,7 +326,7 @@ function wp_presence_screen_heartbeat_received( $response, $data, $screen_id ) {
 		? sprintf(
 			/* translators: %s: human-readable time difference like "2 minutes". */
 			__( '%s ago', 'default' ), // phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- Intentionally reuses core's "%s ago" string so we inherit its translation for every locale.
-			human_time_diff( $actor_time )
+			human_time_diff( $actor_time, time() )
 		)
 		: '';
 
