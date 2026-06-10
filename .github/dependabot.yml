@@ -1,0 +1,17 @@
+# Dependabot configuration.
+#
+# The plugin has effectively no runtime composer or npm dependency
+# surface — `vendor/` isn't shipped and every npm package is dev-only.
+# The real supply-chain surface is the third-party GitHub Actions our
+# CI calls (`actions/checkout`, `shivammathur/setup-php`, etc.), so
+# that's the only ecosystem we track here. Composer / npm updates are
+# handled in-band when a maintainer chooses to bump a dev tool.
+#
+# Docs: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
