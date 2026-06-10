@@ -5,9 +5,9 @@ name: CodeQL
 # CodeQL database refreshes against newly-published query packs even on
 # code that hasn't changed.
 #
-# PHP support is currently in beta on CodeQL; add `language: 'actions'`
-# coverage of the GitHub-actions DSL plus our JS today, and revisit PHP
-# once the language pack is stable.
+# PHP support is currently in beta on CodeQL. We scan the GitHub Actions
+# DSL (`actions`) plus our JavaScript today, and should add PHP once the
+# language pack is stable.
 
 on:
   push:
