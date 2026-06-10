@@ -1,0 +1,192 @@
+name: Playground Preview Publish
+
+# Runs in the base-repo context (via `workflow_run`) so it has write
+# access even for PRs from forks. Downloads the build artifacts from
+# the triggering workflow, publishes them as a prerelease, and posts
+# (or updates) the sticky Playground comment on the PR.
+#
+# Security model: every PR-derived input is untrusted.
+#   - `pr-meta.json` is parsed with jq and regex-validated; we never
+#     `source` it as shell.
+#   - The blueprint templates we encode into Playground URLs come from
+#     the base ref (this checkout), not from the PR — only the plugin
+#     and seeder URLs are rewritten in, and both point exclusively at
+#     github.com/${{ github.repository }} under our control, so a fork
+#     PR cannot direct Playground at attacker-controlled URLs through
+#     this workflow.
+
+on:
+  workflow_run:
+    workflows: ["Playground Preview"]
+    types: [completed]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  actions: read
+  issues: write
+
+jobs:
+  publish:
+    if: >
+      github.event.workflow_run.conclusion == 'success'
+      && github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifacts from the triggering run
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const list = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.payload.workflow_run.id,
+            });
+            for (const name of ['release-assets', 'pr-meta']) {
+              const found = list.data.artifacts.find(a => a.name === name);
+              if (!found) {
+                core.setFailed(`Required artifact "${name}" not found on workflow run.`);
+                return;
+              }
+              const dl = await github.rest.actions.downloadArtifact({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                artifact_id: found.id,
+                archive_format: 'zip',
+              });
+              fs.writeFileSync(`${name}.zip`, Buffer.from(dl.data));
+            }
+
+      - name: Unpack and validate artifacts
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/release-assets artifacts/pr-meta
+          unzip -q -o -d artifacts/release-assets release-assets.zip
+          unzip -q -o -d artifacts/pr-meta pr-meta.zip
+          test -f artifacts/release-assets/presence-api.zip
+          test -f artifacts/release-assets/demo-seeder.php
+          test -f artifacts/pr-meta/pr-meta.json
+
+          # Parse with jq and validate types. Never `source` the artifact.
+          PR_NUMBER=$(jq -r '.pr_number' artifacts/pr-meta/pr-meta.json)
+          HEAD_SHA=$(jq -r '.head_sha' artifacts/pr-meta/pr-meta.json)
+          [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]] \
+            || { echo "Invalid PR number in pr-meta: $PR_NUMBER"; exit 1; }
+          [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] \
+            || { echo "Invalid SHA in pr-meta: $HEAD_SHA"; exit 1; }
+          {
+            echo "PR_NUMBER=$PR_NUMBER"
+            echo "HEAD_SHA=$HEAD_SHA"
+          } >> "$GITHUB_ENV"
+
+      - name: Publish prerelease (replaces any prior preview for this PR)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="preview-pr-${PR_NUMBER}"
+          # Drop any prior release+tag for this PR so we always serve the
+          # latest preview from a stable URL. Tolerate first-time absence.
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" \
+            artifacts/release-assets/presence-api.zip \
+            artifacts/release-assets/demo-seeder.php \
+            --prerelease \
+            --target "$HEAD_SHA" \
+            --title "PR #${PR_NUMBER} preview" \
+            --notes "Auto-built from \`${HEAD_SHA}\` for PR #${PR_NUMBER}. Deleted on PR close."
+
+      - name: Assemble Playground URLs from base-ref blueprints
+        id: playground
+        env:
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          TAG="preview-pr-${PR_NUMBER}"
+          # Both URLs resolve to github.com/${REPO} — never to the PR's
+          # head repository — so a fork PR cannot redirect Playground.
+          PLUGIN_URL="https://github.com/${REPO}/releases/download/${TAG}/presence-api.zip"
+          SEEDER_URL="https://github.com/${REPO}/releases/download/${TAG}/demo-seeder.php"
+
+          transform() {
+            jq --arg plugin "$1" --arg seeder "$2" '
+              .steps |= map(
+                if .step == "installPlugin" and (.pluginData.resource == "url") then
+                  .pluginData.url = $plugin
+                elif .step == "writeFile" and (.data.resource == "url") then
+                  .data.url = $seeder
+                else . end
+              )
+            ' "$3"
+          }
+
+          BLUEPRINT=$(transform "$PLUGIN_URL" "$SEEDER_URL" blueprint.json)
+          BLUEPRINT_40=$(transform "$PLUGIN_URL" "$SEEDER_URL" blueprint-40.json)
+
+          encode() { printf '%s' "$1" | base64 -w0; }
+
+          {
+            echo "url=https://playground.wordpress.net/#$(encode "$BLUEPRINT")"
+            echo "url_40=https://playground.wordpress.net/#$(encode "$BLUEPRINT_40")"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Post or update sticky comment
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ env.PR_NUMBER }}
+          HEAD_SHA: ${{ env.HEAD_SHA }}
+          PLAYGROUND_URL: ${{ steps.playground.outputs.url }}
+          PLAYGROUND_URL_40: ${{ steps.playground.outputs.url_40 }}
+        with:
+          script: |
+            const marker = '<!-- presence-api:playground-preview -->';
+            const url = process.env.PLAYGROUND_URL;
+            const url40 = process.env.PLAYGROUND_URL_40;
+            const sha = process.env.HEAD_SHA;
+            const prNumber = parseInt(process.env.PR_NUMBER, 10);
+            const badge = 'https://img.shields.io/badge/Open%20in-WordPress%20Playground-3858E9?logo=wordpress&logoColor=white';
+
+            const body = [
+              marker,
+              '## ▶ Preview in WordPress Playground',
+              '',
+              `[![Open in WordPress Playground](${badge})](${url})`,
+              '',
+              "Boots a fresh WordPress, installs this PR's presence-api build, seeds 5 demo users, lands you in the dashboard.",
+              '',
+              `[![Open in WordPress Playground](${badge})](${url40})`,
+              '',
+              'Same, with 40 demo users.',
+              '',
+              `<sub>Built from \`${sha}\`. Auto-updates when you push.</sub>`,
+            ].join('\n');
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              per_page: 100,
+            });
+
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body,
+              });
+            }

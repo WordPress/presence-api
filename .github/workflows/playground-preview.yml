@@ -1,0 +1,103 @@
+name: Playground Preview
+
+# Builds `presence-api.zip` from the PR commit and uploads it (plus the
+# demo seeder and a small metadata file) as workflow artifacts. The
+# sibling `Playground Preview Publish` workflow picks the artifacts up
+# on `workflow_run` and hands them to GitHub Releases for hosting — we
+# don't depend on any third-party artifact proxy.
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Read-only token. The build runs PR code, so it must be treated as
+# untrusted. Hosting and commenting happen in the sibling workflow_run
+# job under a base-repo token.
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer
+
+      # `--no-scripts` prevents a hostile fork PR from running arbitrary
+      # PHP via composer.json's `scripts` block during install.
+      - run: composer install --no-dev --no-interaction --optimize-autoloader --no-scripts
+
+      - name: Build presence-api.zip
+        run: |
+          set -euo pipefail
+          mkdir -p build/presence-api
+          rsync -a --exclude-from='.distignore' --exclude='build' ./ build/presence-api/
+          (cd build && zip -qr presence-api.zip presence-api/)
+
+      # Cheap smoke test: parse every PHP file in the staged plugin and
+      # confirm the entry file is present. Catches the regression class
+      # where `.distignore` drifts out of sync with `require_once`
+      # graphs — install succeeds but the plugin fatals on first hit.
+      - name: Smoke-test the build
+        run: |
+          set -euo pipefail
+          test -f build/presence-api/presence-api.php
+          find build/presence-api -name '*.php' -print0 \
+            | xargs -0 -n1 -P 4 php -l > /dev/null
+
+      # Asserts each blueprint matches the shape the publish workflow
+      # rewrites — exactly one URL-resource `installPlugin` and one
+      # URL-resource `writeFile`, and only the step types we expect.
+      # Fork PRs can't sneak in additional `installPlugin` steps that
+      # pull from attacker URLs because the publish workflow uses the
+      # BASE-REF blueprints, but this still catches accidental breakage.
+      - name: Schema-validate blueprints
+        run: |
+          set -euo pipefail
+          for f in blueprint.json blueprint-40.json; do
+            jq -e '
+              (.steps | length > 0)
+              and (.steps | all(.step | IN("installPlugin", "writeFile", "runPHP")))
+              and (.steps | map(select(.step == "installPlugin" and (.pluginData.resource // "") == "url")) | length == 1)
+              and (.steps | map(select(.step == "writeFile" and (.data.resource // "") == "url")) | length == 1)
+            ' "$f" > /dev/null
+          done
+
+      - name: Stage release assets
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          cp build/presence-api.zip release-assets/
+          cp tests/e2e/demo-seeder.php release-assets/
+
+      # PR metadata as JSON (no shell-`source` upstream). The publish
+      # workflow validates these fields with regex before using.
+      - name: Save PR metadata
+        run: |
+          jq -n \
+            --argjson pr "${{ github.event.pull_request.number }}" \
+            --arg sha "${{ github.event.pull_request.head.sha }}" \
+            '{pr_number: $pr, head_sha: $sha}' > pr-meta.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-assets
+          path: release-assets/
+          retention-days: 14
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pr-meta
+          path: pr-meta.json
+          retention-days: 14
+          if-no-files-found: error

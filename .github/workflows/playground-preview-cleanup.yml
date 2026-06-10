@@ -1,0 +1,32 @@
+name: Playground Preview Cleanup
+
+# Deletes the per-PR preview release + tag when a PR is closed.
+#
+# Uses `pull_request_target` so cleanup also fires for PRs from forks
+# (the token from `pull_request: closed` is read-only on forks). This
+# workflow never checks out PR code and only calls the release API
+# with values from the GitHub event payload, so `pull_request_target`
+# is safe here.
+
+on:
+  pull_request_target:
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete preview release and tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          TAG="preview-pr-${PR_NUMBER}"
+          # Tolerate "release not found" — the build may have failed or
+          # been skipped, leaving nothing to clean up.
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
