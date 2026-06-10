@@ -89,14 +89,14 @@ jobs:
             --arg sha "${{ github.event.pull_request.head.sha }}" \
             '{pr_number: $pr, head_sha: $sha}' > pr-meta.json
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: release-assets
           path: release-assets/
           retention-days: 14
           if-no-files-found: error
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: pr-meta
           path: pr-meta.json
