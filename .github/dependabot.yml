@@ -1,0 +1,26 @@
+# Dependabot configuration.
+#
+# Surfaces version updates on a weekly cadence and ships out-of-cycle
+# security updates when a CVE drops against any tracked dependency.
+# Security alerts (the in-repo notification stream) and the auto-fix PR
+# flow rely on the corresponding toggles under Settings → Code security
+# and analysis.
+#
+# Docs: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  - package-ecosystem: "composer"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
