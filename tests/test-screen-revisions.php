@@ -375,15 +375,13 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 		wp_set_current_user( self::$admin_id );
 		set_current_screen( 'dashboard' );
 
-		add_filter(
-			'wp_presence_current_screen_key',
-			static function ( $key ) {
-				return $key ?: 'custom-screen';
-			}
-		);
+		$callback = static function ( $key ) {
+			return $key ?: 'custom-screen';
+		};
+		add_filter( 'wp_presence_current_screen_key', $callback );
 
 		$this->assertSame( 'custom-screen', wp_presence_current_screen_key() );
 
-		remove_all_filters( 'wp_presence_current_screen_key' );
+		remove_filter( 'wp_presence_current_screen_key', $callback );
 	}
 }
