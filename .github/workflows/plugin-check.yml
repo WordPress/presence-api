@@ -38,7 +38,7 @@ jobs:
         with:
           node-version: '22'
 
-      - run: npm install -g @wordpress/env@11.7.0
+      - run: npm install -g @wordpress/env@11.8.1
 
       # Avoids the intermittent 504s on api.github.com during wp-env's
       # Docker build (PR #22). Authenticated requests dodge the issue.
