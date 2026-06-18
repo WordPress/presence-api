@@ -61,6 +61,6 @@ jobs:
           mkdir -p build/presence-api
           rsync -a --exclude-from='.distignore' ./ build/presence-api/
           cd build && zip -r presence-api.zip presence-api/
-      - run: gh release upload "${{ needs.release-please.outputs.tag_name }}" build/presence-api.zip
+      - run: gh release upload --clobber "${{ needs.release-please.outputs.tag_name }}" build/presence-api.zip
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
