@@ -18,6 +18,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+command -v jq >/dev/null 2>&1 || { echo "jq is required to run scripts/sync-versions.sh" >&2; exit 1; }
 VERSION=$(jq -r '."."' .release-please-manifest.json)
 
 if [[ -z "$VERSION" || "$VERSION" == "null" ]]; then
