@@ -301,7 +301,8 @@ function wp_presence_on_edit_comment( $comment_id ) {
  */
 function wp_presence_screen_heartbeat_received( $response, $data, $screen_id ) {
 	unset( $screen_id );
-	if ( empty( $data['presence-screen-ping']['key'] ) ) {
+	$raw_key = $data['presence-screen-ping']['key'] ?? null;
+	if ( ! is_scalar( $raw_key ) || '' === (string) $raw_key ) {
 		return $response;
 	}
 	if ( ! current_user_can( 'edit_posts' ) ) {
@@ -309,7 +310,7 @@ function wp_presence_screen_heartbeat_received( $response, $data, $screen_id ) {
 	}
 	// Cap key length to the InnoDB index limit so we can't be made to do
 	// pointless work by clients pinging with megabyte-long keys.
-	$key   = substr( (string) $data['presence-screen-ping']['key'], 0, 191 );
+	$key   = substr( (string) $raw_key, 0, 191 );
 	$entry = wp_presence_get_screen_revision( $key );
 	if ( ! $entry ) {
 		return $response;
