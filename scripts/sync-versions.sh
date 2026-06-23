@@ -12,7 +12,7 @@
 #
 #   bash scripts/sync-versions.sh
 #
-# Each target line is grep-checked before the sed so a silent miss fails loudly.
+# Each target line is grep-checked before the sed and verified afterwards so a miss fails loudly.
 
 set -euo pipefail
 
