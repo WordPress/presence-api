@@ -26,6 +26,10 @@ if ( ! defined( 'WP_PRESENCE_SCREEN_REV_LIMIT' ) ) {
 	define( 'WP_PRESENCE_SCREEN_REV_LIMIT', 200 );
 }
 
+if ( ! defined( 'WP_PRESENCE_SCREEN_KEY_LIMIT' ) ) {
+	define( 'WP_PRESENCE_SCREEN_KEY_LIMIT', 191 );
+}
+
 /**
  * Returns the full screen-revision map.
  *
@@ -52,6 +56,16 @@ function wp_presence_get_screen_revision( $screen_key ) {
 }
 
 /**
+ * Normalizes a screen key for storage and lookup.
+ *
+ * @param string $screen_key Screen key to normalize.
+ * @return string
+ */
+function wp_presence_normalize_screen_key( $screen_key ) {
+	return substr( (string) $screen_key, 0, WP_PRESENCE_SCREEN_KEY_LIMIT );
+}
+
+/**
  * Increments the revision counter for a screen and records the actor.
  *
  * @param string $screen_key Screen key to bump.
@@ -59,7 +73,7 @@ function wp_presence_get_screen_revision( $screen_key ) {
  * @return int|false New revision number, or false when the key is empty.
  */
 function wp_presence_bump_screen_revision( $screen_key, $actor_id = 0 ) {
-	$screen_key = (string) $screen_key;
+	$screen_key = wp_presence_normalize_screen_key( $screen_key );
 	if ( '' === $screen_key ) {
 		return false;
 	}
@@ -310,7 +324,7 @@ function wp_presence_screen_heartbeat_received( $response, $data, $screen_id ) {
 	}
 	// Cap key length to the InnoDB index limit so we can't be made to do
 	// pointless work by clients pinging with megabyte-long keys.
-	$key   = substr( (string) $raw_key, 0, 191 );
+	$key   = wp_presence_normalize_screen_key( $raw_key );
 	$entry = wp_presence_get_screen_revision( $key );
 	if ( ! $entry ) {
 		return $response;

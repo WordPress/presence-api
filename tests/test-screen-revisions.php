@@ -241,10 +241,8 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 	/**
 	 * @covers ::wp_presence_screen_heartbeat_received
 	 */
-	public function test_heartbeat_caps_oversized_screen_key() {
+	public function test_heartbeat_matches_oversized_screen_key_after_normalization() {
 		wp_set_current_user( self::$admin_id );
-		// 200-char key is bumped on the server but the heartbeat handler
-		// only looks up the first 191 chars, so it should not match.
 		$long_key = str_repeat( 'a', 200 );
 		wp_presence_bump_screen_revision( $long_key );
 
@@ -254,7 +252,8 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 			'long'
 		);
 
-		$this->assertArrayNotHasKey( 'presence-screen-rev', $response );
+		$this->assertArrayHasKey( 'presence-screen-rev', $response );
+		$this->assertSame( substr( $long_key, 0, 191 ), $response['presence-screen-rev']['key'] );
 	}
 
 	/**
