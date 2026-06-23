@@ -323,12 +323,19 @@ function wp_presence_screen_heartbeat_received( $response, $data, $screen_id ) {
 	if ( ! is_scalar( $raw_key ) || '' === (string) $raw_key ) {
 		return $response;
 	}
-	if ( ! current_user_can( 'edit_posts' ) ) {
-		return $response;
-	}
 	// Cap key length to the InnoDB index limit so we can't be made to do
 	// pointless work by clients pinging with megabyte-long keys.
-	$key   = wp_presence_normalize_screen_key( $raw_key );
+	$key = wp_presence_normalize_screen_key( $raw_key );
+
+	// Require the viewer to have access to the screen whose revision is being disclosed.
+	if ( 0 === strpos( $key, 'options/' ) ) {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return $response;
+		}
+	} elseif ( ! current_user_can( 'edit_posts' ) ) {
+		return $response;
+	}
+
 	$entry = wp_presence_get_screen_revision( $key );
 	if ( ! $entry ) {
 		return $response;
