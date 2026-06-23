@@ -38,6 +38,13 @@ sed -i.bak "s|^ \* Version: .*$| * Version: ${VERSION}|" presence-api.php
 sed -i.bak "s|^\(define( 'WP_PRESENCE_VERSION', '\)[^']*\(' );\)|\1${VERSION}\2|" presence-api.php
 sed -i.bak "s|^Stable tag: .*$|Stable tag: ${VERSION}|" readme.txt
 
+grep -qFx " * Version: ${VERSION}" presence-api.php \
+	|| { echo "Failed to update plugin header version in presence-api.php" >&2; exit 1; }
+grep -qFx "define( 'WP_PRESENCE_VERSION', '${VERSION}' );" presence-api.php \
+	|| { echo "Failed to update WP_PRESENCE_VERSION define in presence-api.php" >&2; exit 1; }
+grep -qFx "Stable tag: ${VERSION}" readme.txt \
+	|| { echo "Failed to update 'Stable tag:' line in readme.txt" >&2; exit 1; }
+
 rm -f presence-api.php.bak readme.txt.bak
 
 echo "Synced all version references to ${VERSION}"
