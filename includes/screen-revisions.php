@@ -51,6 +51,10 @@ function wp_presence_get_screen_revisions() {
  * @return array|null
  */
 function wp_presence_get_screen_revision( $screen_key ) {
+	$screen_key = wp_presence_normalize_screen_key( $screen_key );
+	if ( '' === $screen_key ) {
+		return null;
+	}
 	$map = wp_presence_get_screen_revisions();
 	return isset( $map[ $screen_key ] ) ? $map[ $screen_key ] : null;
 }
