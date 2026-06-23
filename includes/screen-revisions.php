@@ -223,8 +223,8 @@ function wp_presence_current_screen_key() {
 	 * @param string    $key    Computed screen key, or '' when none applies.
 	 * @param WP_Screen $screen Current screen.
 	 */
-	return (string) apply_filters( 'wp_presence_current_screen_key', $key, $screen );
-}
+	$key = (string) apply_filters( 'wp_presence_current_screen_key', $key, $screen );
+	return '' === $key ? '' : wp_presence_normalize_screen_key( $key );
 
 /**
  * Bumps the Settings screen's revision when its option_page is saved.
