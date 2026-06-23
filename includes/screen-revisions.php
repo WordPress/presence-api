@@ -8,7 +8,7 @@
  * a non-blocking notice prompting them to reload.
  *
  * Coverage in this first cut: classic admin screens that submit via POST and
- * redirect on success — Settings → General/Writing/Reading/Discussion/Media,
+ * redirect on success — Settings → General/Writing/Reading/Discussion/Media/Permalinks,
  * post edits (post.php), user edits (user-edit.php, profile.php), term edits
  * (edit-tags.php), and comment edits (comment.php). JS-driven and REST-driven
  * screens can opt in via the `wp_presence_current_screen_key` filter plus a
