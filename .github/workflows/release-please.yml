@@ -1,0 +1,69 @@
+name: Release Please
+
+on:
+  push:
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      pr: ${{ steps.release.outputs.pr }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+
+  # release-please only updates the manifest and CHANGELOG. Every place
+  # WordPress (or WordPress.org) reads the version verbatim — the plugin
+  # header `* Version:`, the `WP_PRESENCE_VERSION` define, and readme.txt's
+  # `Stable tag:` — is synced by `scripts/sync-versions.sh`. The script is
+  # the same one a maintainer runs locally, so the CI behavior is grep-able.
+  sync-versions:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.pr }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ fromJSON(needs.release-please.outputs.pr).headBranchName }}
+      - run: bash scripts/sync-versions.sh
+      - name: Commit synced versions back to the release PR
+        run: |
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add presence-api.php readme.txt
+            git commit -m "chore: sync versions across plugin file and readme"
+            git push
+          fi
+
+  # When release-please's PR is merged, it tags + cuts the GitHub Release.
+  # Build the distribution zip and attach it to the release.
+  build-release-asset:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer
+      - run: composer install --no-dev --no-interaction --optimize-autoloader
+      - name: Build plugin zip
+        run: |
+          mkdir -p build/presence-api
+          rsync -a --exclude-from='.distignore' ./ build/presence-api/
+          cd build && zip -r presence-api.zip presence-api/
+      - run: gh release upload --clobber "${{ needs.release-please.outputs.tag_name }}" build/presence-api.zip
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
