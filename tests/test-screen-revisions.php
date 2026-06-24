@@ -9,10 +9,12 @@
 class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 
 	private static $admin_id;
+	private static $admin2_id;
 	private static $editor_id;
 
 	public static function wpSetUpBeforeClass( WP_UnitTest_Factory $factory ) {
 		self::$admin_id  = $factory->user->create( array( 'role' => 'administrator' ) );
+		self::$admin2_id = $factory->user->create( array( 'role' => 'administrator' ) );
 		self::$editor_id = $factory->user->create( array( 'role' => 'editor' ) );
 	}
 
@@ -263,7 +265,10 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 		wp_set_current_user( self::$admin_id );
 		wp_presence_bump_screen_revision( 'options/general', self::$admin_id );
 
-		wp_set_current_user( self::$editor_id );
+		// View as a *different* admin so the viewer can read an `options/*`
+		// revision (the handler requires `manage_options` for that prefix)
+		// without satisfying `actor_is_me`.
+		wp_set_current_user( self::$admin2_id );
 
 		$response = wp_presence_screen_heartbeat_received(
 			array(),
