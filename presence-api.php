@@ -74,8 +74,15 @@ require_once WP_PRESENCE_PLUGIN_DIR . 'includes/widgets/class-wp-presence-widget
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/widgets/class-wp-presence-widget-active-posts.php';
 
 if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/debugger-widget.php';
-	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/db-viewer.php';
+	// Developer tooling is excluded from the distributed build (see .distignore),
+	// so guard the includes for installs that ship without these files.
+	$presence_debug_dir = WP_PRESENCE_PLUGIN_DIR . 'includes/';
+	if ( file_exists( $presence_debug_dir . 'debugger-widget.php' ) ) {
+		require_once $presence_debug_dir . 'debugger-widget.php';
+	}
+	if ( file_exists( $presence_debug_dir . 'db-viewer.php' ) ) {
+		require_once $presence_debug_dir . 'db-viewer.php';
+	}
 }
 
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
@@ -103,13 +110,6 @@ function wp_presence_register_rest_routes() {
 }
 
 /**
- * Loads the plugin text domain for translations.
- */
-function wp_presence_load_textdomain() {
-	load_plugin_textdomain( 'presence-api', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
-}
-
-/**
  * Handles plugin activation.
  */
 function wp_presence_activate() {
@@ -126,7 +126,6 @@ function wp_presence_deactivate() {
 
 add_action( 'init', 'wp_presence_register_table', 0 );
 add_action( 'init', 'wp_presence_register_post_type_support' );
-add_action( 'init', 'wp_presence_load_textdomain' );
 
 add_action( 'admin_init', 'wp_maybe_create_presence_table' );
 add_action( 'cli_init', 'wp_maybe_create_presence_table' );
@@ -159,7 +158,9 @@ add_filter( 'heartbeat_received', array( 'WP_Presence_Widget_Whos_Online', 'hear
 add_action( 'wp_dashboard_setup', array( 'WP_Presence_Widget_Active_Posts', 'register' ) );
 add_filter( 'heartbeat_received', array( 'WP_Presence_Widget_Active_Posts', 'heartbeat_received' ), 10, 3 );
 
-if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+if ( ( defined( 'WP_DEBUG' ) && WP_DEBUG )
+	&& function_exists( 'wp_presence_heartbeat_widget_register' )
+	&& function_exists( 'wp_presence_heartbeat_widget_received' ) ) {
 	add_action( 'wp_dashboard_setup', 'wp_presence_heartbeat_widget_register' );
 	add_filter( 'heartbeat_received', 'wp_presence_heartbeat_widget_received', 10, 3 );
 }

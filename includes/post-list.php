@@ -28,7 +28,7 @@ function wp_presence_register_post_list_columns() {
 		add_action( "manage_{$post_type}_posts_custom_column", 'wp_presence_render_editors_column', 10, 2 );
 	}
 
-	add_action( 'admin_head-edit.php', 'wp_presence_editors_column_css' );
+	add_action( 'admin_enqueue_scripts', 'wp_presence_editors_column_css' );
 }
 
 /**
@@ -128,11 +128,16 @@ function wp_presence_render_editors_column( $column_name, $post_id ) {
 }
 
 /**
- * Outputs CSS for the editors column on the post list screen.
+ * Enqueues CSS for the editors column on the post list screen.
+ *
+ * @param string $hook_suffix The current admin page.
  */
-function wp_presence_editors_column_css() {
-	?>
-	<style>
+function wp_presence_editors_column_css( $hook_suffix ) {
+	if ( 'edit.php' !== $hook_suffix ) {
+		return;
+	}
+
+	$css = '
 		.column-presence_editors { width: 80px; }
 		.presence-editors-stack { display: flex; align-items: center; }
 		.presence-editors-stack img {
@@ -142,6 +147,9 @@ function wp_presence_editors_column_css() {
 			position: relative;
 		}
 		.presence-editors-stack img:first-child { margin-inline-start: 0; }
-	</style>
-	<?php
+	';
+
+	wp_register_style( 'presence-post-list', false, array(), WP_PRESENCE_VERSION );
+	wp_enqueue_style( 'presence-post-list' );
+	wp_add_inline_style( 'presence-post-list', $css );
 }
