@@ -158,7 +158,9 @@ add_filter( 'heartbeat_received', array( 'WP_Presence_Widget_Whos_Online', 'hear
 add_action( 'wp_dashboard_setup', array( 'WP_Presence_Widget_Active_Posts', 'register' ) );
 add_filter( 'heartbeat_received', array( 'WP_Presence_Widget_Active_Posts', 'heartbeat_received' ), 10, 3 );
 
-if ( function_exists( 'wp_presence_heartbeat_widget_register' ) ) {
+if ( ( defined( 'WP_DEBUG' ) && WP_DEBUG )
+	&& function_exists( 'wp_presence_heartbeat_widget_register' )
+	&& function_exists( 'wp_presence_heartbeat_widget_received' ) ) {
 	add_action( 'wp_dashboard_setup', 'wp_presence_heartbeat_widget_register' );
 	add_filter( 'heartbeat_received', 'wp_presence_heartbeat_widget_received', 10, 3 );
 }
