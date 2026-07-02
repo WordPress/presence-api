@@ -222,15 +222,17 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 	 * @covers ::wp_presence_screen_heartbeat_received
 	 */
 	public function test_heartbeat_requires_edit_posts_capability() {
-		wp_presence_bump_screen_revision( 'options/general', self::$admin_id );
+		// Use a non-`options/*` key so the viewer is gated on `edit_posts`
+		// (the `options/*` prefix is gated on `manage_options` instead).
+		wp_presence_bump_screen_revision( 'post/1', self::$admin_id );
 
 		$subscriber_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
 		wp_set_current_user( $subscriber_id );
 
 		$response = wp_presence_screen_heartbeat_received(
 			array(),
-			array( 'presence-screen-ping' => array( 'key' => 'options/general' ) ),
-			'options-general'
+			array( 'presence-screen-ping' => array( 'key' => 'post/1' ) ),
+			'post'
 		);
 
 		$this->assertArrayNotHasKey(

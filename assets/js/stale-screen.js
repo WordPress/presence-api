@@ -59,11 +59,11 @@
 	} );
 
 	function showBanner( info ) {
-		bannerShown = true;
 		const target = document.querySelector( '.wrap' ) || document.getElementById( 'wpbody-content' );
 		if ( ! target ) {
 			return;
 		}
+		bannerShown = true;
 
 		// Place the notice after the screen heading, matching where
 		// `do_action('admin_notices')` injects on a normal page load.
