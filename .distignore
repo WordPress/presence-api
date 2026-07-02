@@ -17,3 +17,5 @@ package-lock.json
 phpcs.xml.dist
 phpstan.neon.dist
 phpunit.xml.dist
+includes/db-viewer.php
+includes/debugger-widget.php
