@@ -334,6 +334,22 @@ function wp_presence_screen_heartbeat_received( $response, $data, $screen_id ) {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return $response;
 		}
+	} elseif ( preg_match( '#^post/(\d+)$#', $key, $m ) ) {
+		if ( ! current_user_can( 'edit_post', (int) $m[1] ) ) {
+			return $response;
+		}
+	} elseif ( preg_match( '#^user-edit/(\d+)$#', $key, $m ) ) {
+		if ( ! current_user_can( 'edit_user', (int) $m[1] ) ) {
+			return $response;
+		}
+	} elseif ( preg_match( '#^term/([^/]+)/(\d+)$#', $key, $m ) ) {
+		if ( ! current_user_can( 'edit_term', (int) $m[2], $m[1] ) ) {
+			return $response;
+		}
+	} elseif ( preg_match( '#^comment/(\d+)$#', $key, $m ) ) {
+		if ( ! current_user_can( 'edit_comment', (int) $m[1] ) ) {
+			return $response;
+		}
 	} elseif ( ! current_user_can( 'edit_posts' ) ) {
 		return $response;
 	}
