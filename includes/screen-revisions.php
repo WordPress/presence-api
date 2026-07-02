@@ -320,7 +320,8 @@ function wp_presence_on_edit_comment( $comment_id ) {
  */
 function wp_presence_screen_heartbeat_received( $response, $data, $screen_id ) {
 	unset( $screen_id );
-	$raw_key = $data['presence-screen-ping']['key'] ?? null;
+	$ping    = $data['presence-screen-ping'] ?? null;
+	$raw_key = is_array( $ping ) && array_key_exists( 'key', $ping ) ? $ping['key'] : null;
 	if ( ! is_scalar( $raw_key ) || '' === (string) $raw_key ) {
 		return $response;
 	}
