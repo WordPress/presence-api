@@ -376,7 +376,7 @@ function wp_presence_screen_heartbeat_received( $response, $data, $screen_id ) {
 
 	$response['presence-screen-rev'] = array(
 		'key'              => $key,
-		'rev'              => (int) $entry['rev'],
+		'rev'              => isset( $entry['rev'] ) ? (int) $entry['rev'] : 0,
 		'actor_id'         => $actor_id,
 		'actor_name'       => $actor_name,
 		'actor_avatar_url' => $avatar_url,
