@@ -320,7 +320,8 @@ function wp_presence_on_edit_comment( $comment_id ) {
  */
 function wp_presence_screen_heartbeat_received( $response, $data, $screen_id ) {
 	unset( $screen_id );
-	$raw_key = $data['presence-screen-ping']['key'] ?? null;
+	$ping    = $data['presence-screen-ping'] ?? null;
+	$raw_key = is_array( $ping ) && array_key_exists( 'key', $ping ) ? $ping['key'] : null;
 	if ( ! is_scalar( $raw_key ) || '' === (string) $raw_key ) {
 		return $response;
 	}
@@ -331,6 +332,22 @@ function wp_presence_screen_heartbeat_received( $response, $data, $screen_id ) {
 	// Require the viewer to have access to the screen whose revision is being disclosed.
 	if ( 0 === strpos( $key, 'options/' ) ) {
 		if ( ! current_user_can( 'manage_options' ) ) {
+			return $response;
+		}
+	} elseif ( preg_match( '#^post/(\d+)$#', $key, $m ) ) {
+		if ( ! current_user_can( 'edit_post', (int) $m[1] ) ) {
+			return $response;
+		}
+	} elseif ( preg_match( '#^user-edit/(\d+)$#', $key, $m ) ) {
+		if ( ! current_user_can( 'edit_user', (int) $m[1] ) ) {
+			return $response;
+		}
+	} elseif ( preg_match( '#^term/([^/]+)/(\d+)$#', $key, $m ) ) {
+		if ( ! current_user_can( 'edit_term', (int) $m[2], $m[1] ) ) {
+			return $response;
+		}
+	} elseif ( preg_match( '#^comment/(\d+)$#', $key, $m ) ) {
+		if ( ! current_user_can( 'edit_comment', (int) $m[1] ) ) {
 			return $response;
 		}
 	} elseif ( ! current_user_can( 'edit_posts' ) ) {
@@ -359,7 +376,7 @@ function wp_presence_screen_heartbeat_received( $response, $data, $screen_id ) {
 
 	$response['presence-screen-rev'] = array(
 		'key'              => $key,
-		'rev'              => (int) ( $entry['rev'] ?? 0 ),
+		'rev'              => isset( $entry['rev'] ) ? (int) $entry['rev'] : 0,
 		'actor_id'         => $actor_id,
 		'actor_name'       => $actor_name,
 		'actor_avatar_url' => $avatar_url,
