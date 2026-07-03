@@ -19,8 +19,16 @@ jobs:
       tag_name: ${{ steps.release.outputs.tag_name }}
       pr: ${{ steps.release.outputs.pr }}
     steps:
+      # The default GITHUB_TOKEN cannot open pull requests when the org/repo
+      # setting "Allow GitHub Actions to create and approve pull requests" is
+      # disabled (and it's locked at the org level here). Authenticate with a
+      # PAT or GitHub App token stored in the RELEASE_PLEASE_TOKEN secret so
+      # the release PR can be created. Falls back to GITHUB_TOKEN when the
+      # secret is absent, so nothing breaks before the secret is added.
       - uses: googleapis/release-please-action@v5
         id: release
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
 
   # release-please only updates the manifest and CHANGELOG. Every place
   # WordPress (or WordPress.org) reads the version verbatim — the plugin
