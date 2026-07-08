@@ -23,12 +23,11 @@ jobs:
       # setting "Allow GitHub Actions to create and approve pull requests" is
       # disabled (and it's locked at the org level here). Authenticate with a
       # PAT or GitHub App token stored in the RELEASE_PLEASE_TOKEN secret so
-      # the release PR can be created. Falls back to GITHUB_TOKEN when the
-      # secret is absent, so nothing breaks before the secret is added.
+      # the release PR can be created.
       - uses: googleapis/release-please-action@v5
         id: release
         with:
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
 
   # release-please only updates the manifest and CHANGELOG. Every place
   # WordPress (or WordPress.org) reads the version verbatim — the plugin
