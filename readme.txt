@@ -24,6 +24,10 @@ For full details, see the [GitHub repository](https://github.com/WordPress/prese
 
 == Changelog ==
 
+= 0.1.3 =
+* Detect stale screens and remove their presence entries automatically.
+* Fix several WordPress.org plugin review feedback items.
+
 = 0.1.2 =
 * Add WordPress Playground blueprint for one-click testing.
 * Remove demo CLI command from production builds.
