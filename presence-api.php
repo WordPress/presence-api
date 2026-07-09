@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Presence API
  * Description: System-wide presence and awareness for WordPress.
- * Version: 0.1.2
+ * Version: 0.1.3
  * Requires at least: 7.0
  * Requires PHP: 7.4
  * Author: Joe Fusco
@@ -44,7 +44,7 @@ if ( isset( $wpdb->presence ) ) {
 	return;
 }
 
-define( 'WP_PRESENCE_VERSION', '0.1.2' );
+define( 'WP_PRESENCE_VERSION', '0.1.3' );
 define( 'WP_PRESENCE_DB_VERSION', '1' );
 define( 'WP_PRESENCE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WP_PRESENCE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
