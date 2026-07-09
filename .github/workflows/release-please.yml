@@ -61,7 +61,9 @@ jobs:
     if: ${{ needs.release-please.outputs.release_created }}
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       issues: write
+      pull-requests: read
     steps:
       - uses: actions/checkout@v7
         with:
@@ -83,11 +85,11 @@ jobs:
           CLOSED=()
           PR_NUMBERS=$(git log "${PREV_TAG}..${TAG}" --pretty=format:"%s" \
             | grep -oE 'Merge pull request #[0-9]+' \
-            | grep -oE '[0-9]+$')
+            | grep -oE '[0-9]+$' || true)
 
           for PR in $PR_NUMBERS; do
             BODY=$(gh pr view "$PR" --json body --jq '.body // ""' 2>/dev/null || true)
-            ISSUES=$(echo "$BODY" | grep -oiE '(closes|fixes|resolves)[[:space:]:]+#[0-9]+' | grep -oE '[0-9]+')
+            ISSUES=$(echo "$BODY" | grep -oiE '(closes|fixes|resolves)[[:space:]:]+#[0-9]+' | grep -oE '[0-9]+' || true)
             for ISSUE in $ISSUES; do
               if printf '%s\n' "${CLOSED[@]:-}" | grep -qx "$ISSUE"; then continue; fi
               CLOSED+=("$ISSUE")
