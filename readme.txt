@@ -3,7 +3,7 @@ Contributors: joefusco
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.0
-Stable tag: 0.1.3
+Stable tag: 0.1.4
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -23,6 +23,9 @@ For full details, see the [GitHub repository](https://github.com/WordPress/prese
 2. Activate through the "Plugins" menu in WordPress.
 
 == Changelog ==
+
+= 0.1.4 =
+* Auto-sync readme.txt changelog from CHANGELOG.md in sync-versions.sh.
 
 = 0.1.3 =
 * Add 40-user Playground blueprint.

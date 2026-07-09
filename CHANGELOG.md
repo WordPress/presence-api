@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/WordPress/presence-api/compare/v0.1.3...v0.1.4) (2026-07-09)
+
+
+### Features
+
+* auto-sync readme.txt changelog from CHANGELOG.md in sync-versions.sh ([cdf3fce](https://github.com/WordPress/presence-api/commit/cdf3fce38bea227d248613566a4e108e19e2a19a))
+
 ## [0.1.3](https://github.com/WordPress/presence-api/compare/v0.1.2...v0.1.3) (2026-07-09)
 
 
