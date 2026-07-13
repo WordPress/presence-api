@@ -311,6 +311,40 @@ function wp_presence_on_edit_comment( $comment_id ) {
 }
 
 /**
+ * Checks if the current user has permission to access or edit a given screen.
+ *
+ * @param string $screen_key Normalized screen key.
+ * @return bool
+ */
+function wp_presence_current_user_can_access_screen( $screen_key ) {
+	if ( 0 === strpos( $screen_key, 'options/' ) ) {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return false;
+		}
+	} elseif ( preg_match( '#^post/(\d+)$#', $screen_key, $m ) ) {
+		if ( ! current_user_can( 'edit_post', (int) $m[1] ) ) {
+			return false;
+		}
+	} elseif ( preg_match( '#^user-edit/(\d+)$#', $screen_key, $m ) ) {
+		if ( ! current_user_can( 'edit_user', (int) $m[1] ) ) {
+			return false;
+		}
+	} elseif ( preg_match( '#^term/([^/]+)/(\d+)$#', $screen_key, $m ) ) {
+		if ( ! current_user_can( 'edit_term', (int) $m[2], $m[1] ) ) {
+			return false;
+		}
+	} elseif ( preg_match( '#^comment/(\d+)$#', $screen_key, $m ) ) {
+		if ( ! current_user_can( 'edit_comment', (int) $m[1] ) ) {
+			return false;
+		}
+	} elseif ( ! current_user_can( 'edit_posts' ) ) {
+		return false;
+	}
+
+	return true;
+}
+
+/**
  * Returns the current revision for the screen the client claims to be on.
  *
  * @param array  $response  Heartbeat response.
@@ -330,27 +364,7 @@ function wp_presence_screen_heartbeat_received( $response, $data, $screen_id ) {
 	$key = wp_presence_normalize_screen_key( $raw_key );
 
 	// Require the viewer to have access to the screen whose revision is being disclosed.
-	if ( 0 === strpos( $key, 'options/' ) ) {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			return $response;
-		}
-	} elseif ( preg_match( '#^post/(\d+)$#', $key, $m ) ) {
-		if ( ! current_user_can( 'edit_post', (int) $m[1] ) ) {
-			return $response;
-		}
-	} elseif ( preg_match( '#^user-edit/(\d+)$#', $key, $m ) ) {
-		if ( ! current_user_can( 'edit_user', (int) $m[1] ) ) {
-			return $response;
-		}
-	} elseif ( preg_match( '#^term/([^/]+)/(\d+)$#', $key, $m ) ) {
-		if ( ! current_user_can( 'edit_term', (int) $m[2], $m[1] ) ) {
-			return $response;
-		}
-	} elseif ( preg_match( '#^comment/(\d+)$#', $key, $m ) ) {
-		if ( ! current_user_can( 'edit_comment', (int) $m[1] ) ) {
-			return $response;
-		}
-	} elseif ( ! current_user_can( 'edit_posts' ) ) {
+	if ( ! wp_presence_current_user_can_access_screen( $key ) ) {
 		return $response;
 	}
 
