@@ -150,6 +150,30 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 				),
 			)
 		);
+
+		register_rest_route(
+			$this->namespace,
+			'/' . $this->rest_base . '/screen-revisions/stale',
+			array(
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'bump_screen_revision' ),
+					'permission_callback' => array( $this, 'bump_screen_revision_permissions_check' ),
+					'args'                => array(
+						'screen_key' => array(
+							'required'          => true,
+							'type'              => 'string',
+							'sanitize_callback' => 'sanitize_text_field',
+						),
+						'actor_id'   => array(
+							'type'              => 'integer',
+							'default'           => 0,
+							'sanitize_callback' => 'absint',
+						),
+					),
+				),
+			)
+		);
 	}
 
 	/**
