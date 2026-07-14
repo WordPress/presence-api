@@ -440,6 +440,8 @@ function wp_presence_enqueue_stale_screen_banner() {
 	$config = array(
 		'screenKey'   => $screen_key,
 		'baselineRev' => $baseline_rev,
+		'restUrl'     => esc_url_raw( rest_url( 'wp-presence/v1/presence/screen-revisions/stale' ) ),
+		'nonce'       => wp_create_nonce( 'wp_rest' ),
 		'strings'     => array(
 			/* translators: 1: display name, 2: relative time like "2 minutes ago". */
 			'updatedBy'          => __( '%1$s updated this screen %2$s.', 'presence-api' ),
