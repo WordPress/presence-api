@@ -89,7 +89,7 @@ test.describe( 'Presence Visibility', () => {
 		expect( visible[ 'presence-ping' ].screen ).toBeTruthy();
 	} );
 
-	test( 'heartbeat-send omits presence-editor-ping while editor tab is hidden', async ( {
+	test( 'heartbeat-send omits presence-editor-ping and wp-refresh-post-lock while editor tab is hidden', async ( {
 		admin,
 		page,
 		requestUtils,
@@ -108,6 +108,7 @@ test.describe( 'Presence Visibility', () => {
 		await setVisibility( page, 'hidden' );
 		const hidden = await captureHeartbeatSend( page );
 		expect( hidden[ 'presence-editor-ping' ] ).toBeUndefined();
+		expect( hidden[ 'wp-refresh-post-lock' ] ).toBeUndefined();
 
 		await setVisibility( page, 'visible' );
 		const visible = await captureHeartbeatSend( page );
