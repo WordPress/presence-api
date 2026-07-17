@@ -20,9 +20,9 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 
 	public function tear_down() {
 		global $wpdb;
+		delete_option( 'wp_presence_screen_revisions' );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->query( "TRUNCATE TABLE {$wpdb->presence}" );
-		delete_option( 'wp_presence_screen_revisions' );
 		parent::tear_down();
 	}
 
