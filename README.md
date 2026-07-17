@@ -39,9 +39,9 @@ Then open [localhost:8888/wp-admin/](http://localhost:8888/wp-admin/) (admin / p
 
 ## Rooms
 
-| Pattern | Example |
-|---|---|
-| `admin/online` | All admin pages |
+| Pattern                | Example            |
+| ---------------------- | ------------------ |
+| `admin/online`         | All admin pages    |
 | `postType/{type}:{id}` | `postType/post:42` |
 
 Post types opt in via `add_post_type_support( 'post', 'presence' )`.
@@ -53,6 +53,21 @@ Creates presence entries alongside `_edit_lock` postmeta when a post lock is ref
 ## Capability
 
 All features require `edit_posts`.
+
+## Stale-screen detection
+
+Warns users when an admin screen they are viewing has been modified by someone else.
+
+Classic admin screens that save via `POST` and redirect (like Settings or `post.php`) are covered automatically.
+
+Custom JS-driven screens (like Gutenberg settings panels or custom plugin screens) can opt-in by bumping the screen revision after a successful background save:
+
+```js
+// After a successful REST or AJAX save:
+if (window.wp?.presence?.markScreenStale) {
+    wp.presence.markScreenStale('options/my-custom-plugin-settings');
+}
+```
 
 ## Maintainers
 
