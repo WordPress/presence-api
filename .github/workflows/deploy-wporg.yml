@@ -39,9 +39,11 @@ jobs:
       - name: Resolve inputs
         id: inputs
         run: |
-          TAG="$(printf '%s' "${{ inputs.tag }}" | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+          TAG="$(printf '%s' "${{ inputs.tag }}" | tr -d '\r\n')"
+          TAG="${TAG#"${TAG%%[![:space:]]*}"}"
+          TAG="${TAG%"${TAG##*[![:space:]]}"}"
           if [ -z "$TAG" ]; then
-            echo "::error::Input 'tag' is required and cannot be empty."
+            echo "::error::Input 'tag' cannot be empty or whitespace-only."
             exit 1
           fi
           printf 'ref=refs/tags/%s\n' "$TAG" >> "$GITHUB_OUTPUT"
