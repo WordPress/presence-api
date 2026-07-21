@@ -62,8 +62,8 @@ jobs:
   # Close issues that were fixed in this release and leave a comment with a
   # Playground link so reporters can verify the fix without a local install.
   close-issues:
-    needs: release-please
-    if: ${{ needs.release-please.outputs.release_created }}
+    needs: [release-please, deploy-to-wporg]
+if: ${{ needs.release-please.outputs.release_created && needs.deploy-to-wporg.result == 'success' && !(github.event_name == 'workflow_dispatch' && inputs.dry-run) }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
