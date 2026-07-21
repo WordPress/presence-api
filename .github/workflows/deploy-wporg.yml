@@ -6,7 +6,7 @@ on:
       tag:
         type: string
         description: 'Git tag to deploy (e.g. v0.1.4)'
-        required: false
+        required: true
       dry-run:
         type: boolean
         default: false
@@ -39,14 +39,13 @@ jobs:
       - name: Resolve inputs
         id: inputs
         run: |
-          TAG="$(echo "${{ inputs.tag }}" | xargs)"
-          if [ -n "$TAG" ]; then
-            echo "ref=refs/tags/$TAG" >> "$GITHUB_OUTPUT"
-            echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
-          else
-            echo "ref=${{ github.sha }}" >> "$GITHUB_OUTPUT"
-            echo "version=" >> "$GITHUB_OUTPUT"
+          TAG="$(printf '%s' "${{ inputs.tag }}" | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+          if [ -z "$TAG" ]; then
+            echo "::error::Input 'tag' is required and cannot be empty."
+            exit 1
           fi
+          printf 'ref=refs/tags/%s\n' "$TAG" >> "$GITHUB_OUTPUT"
+          printf 'version=%s\n' "${TAG#v}" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v7
         with:
           ref: ${{ steps.inputs.outputs.ref }}
