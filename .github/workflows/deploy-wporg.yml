@@ -36,9 +36,20 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Resolve inputs
+        id: inputs
+        run: |
+          TAG="$(echo "${{ inputs.tag }}" | xargs)"
+          if [ -n "$TAG" ]; then
+            echo "ref=refs/tags/$TAG" >> "$GITHUB_OUTPUT"
+            echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+            echo "version=" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || github.sha }}
+          ref: ${{ steps.inputs.outputs.ref }}
       - name: Deploy to WordPress.org Plugin Directory
         # To add banner/icon assets later, place them in .wordpress-org/ and
         # the action will sync them to the SVN assets/ directory automatically.
@@ -49,3 +60,4 @@ jobs:
           SVN_PASSWORD: ${{ secrets.WPORG_SVN_PASSWORD }}
           SVN_USERNAME: ${{ secrets.WPORG_SVN_USERNAME }}
           SLUG: presence-api
+          VERSION: ${{ steps.inputs.outputs.version }}
