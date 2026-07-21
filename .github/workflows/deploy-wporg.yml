@@ -39,8 +39,7 @@ jobs:
       - name: Resolve inputs
         id: inputs
         run: |
-          TAG="$(printf '%s' "${{ inputs.tag }}" | tr -d '\r\n')"
-          TAG="$(printf '%s' "$TAG" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          TAG="$(printf '%s' "${{ inputs.tag }}" | tr -d '\r\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
           if [ -z "$TAG" ]; then
             echo "::error::Input 'tag' cannot be empty or whitespace-only."
             exit 1
