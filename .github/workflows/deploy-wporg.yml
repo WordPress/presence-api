@@ -6,7 +6,7 @@ on:
       tag:
         type: string
         description: 'Git tag to deploy (e.g. v0.1.4)'
-        required: false
+        required: true
       dry-run:
         type: boolean
         default: false
@@ -36,9 +36,20 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Resolve inputs
+        id: inputs
+        run: |
+          # Normalize user-provided tag to avoid output injection and empty values.
+          TAG="$(printf '%s' "${{ inputs.tag }}" | tr -d '\r\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          if [ -z "$TAG" ]; then
+            echo "::error::Input 'tag' cannot be empty or whitespace-only."
+            exit 1
+          fi
+          printf 'ref=refs/tags/%s\n' "$TAG" >> "$GITHUB_OUTPUT"
+          printf 'version=%s\n' "${TAG#v}" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || github.sha }}
+          ref: ${{ steps.inputs.outputs.ref }}
       - name: Deploy to WordPress.org Plugin Directory
         # To add banner/icon assets later, place them in .wordpress-org/ and
         # the action will sync them to the SVN assets/ directory automatically.
@@ -49,3 +60,4 @@ jobs:
           SVN_PASSWORD: ${{ secrets.WPORG_SVN_PASSWORD }}
           SVN_USERNAME: ${{ secrets.WPORG_SVN_USERNAME }}
           SLUG: presence-api
+          VERSION: ${{ steps.inputs.outputs.version }}
