@@ -39,6 +39,7 @@ jobs:
       - name: Resolve inputs
         id: inputs
         run: |
+          # Normalize user-provided tag to avoid output injection and empty values.
           TAG="$(printf '%s' "${{ inputs.tag }}" | tr -d '\r\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
           if [ -z "$TAG" ]; then
             echo "::error::Input 'tag' cannot be empty or whitespace-only."
