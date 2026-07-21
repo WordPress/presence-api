@@ -1,0 +1,42 @@
+name: Deploy to WordPress.org
+
+on:
+  workflow_call:
+    inputs:
+      dry-run:
+        type: boolean
+        default: false
+  workflow_dispatch:
+    inputs:
+      tag:
+        type: string
+        description: 'Git tag to deploy (e.g. v0.1.4)'
+        required: true
+      dry-run:
+        type: boolean
+        description: 'Dry run (deploy without publishing to WordPress.org).'
+        default: false
+
+# Disable permissions for all available scopes.
+# The deploy job only needs read access to clone the repo.
+permissions: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag || github.sha }}
+      - name: Deploy to WordPress.org Plugin Directory
+        # To add banner/icon assets later, place them in .wordpress-org/ and
+        # the action will sync them to the SVN assets/ directory automatically.
+        uses: 10up/action-wordpress-plugin-deploy@54bd289b8525fd23a5c365ec369185f2966529c2 # stable
+        with:
+          dry-run: ${{ inputs.dry-run || false }}
+        env:
+          SVN_PASSWORD: ${{ secrets.WPORG_SVN_PASSWORD }}
+          SVN_USERNAME: ${{ secrets.WPORG_SVN_USERNAME }}
+          SLUG: presence-api

@@ -107,23 +107,14 @@ jobs:
           echo "Closed: ${CLOSED[*]:-none}"
 
   # Push the release to the WordPress.org Plugin Directory via SVN.
-  # Requires WPORG_SVN_USERNAME and WPORG_SVN_PASSWORD repo secrets.
-  # To add banner/icon assets later, place them in .wordpress-org/ and
-  # the action will sync them to the SVN assets/ directory automatically.
+  # Deploy logic lives in deploy-wporg.yml — edit it there to avoid drift.
   deploy-to-wporg:
     needs: release-please
     if: ${{ needs.release-please.outputs.release_created }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - name: Deploy to WordPress.org Plugin Directory
-        uses: 10up/action-wordpress-plugin-deploy@54bd289b8525fd23a5c365ec369185f2966529c2 # stable
-        with:
-          dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run || false }}
-        env:
-          SVN_PASSWORD: ${{ secrets.WPORG_SVN_PASSWORD }}
-          SVN_USERNAME: ${{ secrets.WPORG_SVN_USERNAME }}
-          SLUG: presence-api
+    uses: ./.github/workflows/deploy-wporg.yml
+    with:
+      dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run || false }}
+    secrets: inherit
 
   # When release-please's PR is merged, it tags + cuts the GitHub Release.
   # Build the distribution zip and attach it to the release.
