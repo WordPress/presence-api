@@ -114,7 +114,10 @@ jobs:
     uses: ./.github/workflows/deploy-wporg.yml
     with:
       dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run || false }}
-    secrets: inherit
+      tag: ${{ needs.release-please.outputs.tag_name }}
+    secrets:
+      WPORG_SVN_PASSWORD: ${{ secrets.WPORG_SVN_PASSWORD }}
+      WPORG_SVN_USERNAME: ${{ secrets.WPORG_SVN_USERNAME }}
 
   # When release-please's PR is merged, it tags + cuts the GitHub Release.
   # Build the distribution zip and attach it to the release.

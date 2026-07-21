@@ -3,9 +3,18 @@ name: Deploy to WordPress.org
 on:
   workflow_call:
     inputs:
+      tag:
+        type: string
+        description: 'Git tag to deploy (e.g. v0.1.4)'
+        required: false
       dry-run:
         type: boolean
         default: false
+    secrets:
+      WPORG_SVN_PASSWORD:
+        required: true
+      WPORG_SVN_USERNAME:
+        required: true
   workflow_dispatch:
     inputs:
       tag:
@@ -27,20 +36,20 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.tag || github.sha }}
-      - name: Resolve version
-        id: version
+      - name: Resolve inputs
+        id: inputs
         run: |
-          if [ -n "${{ inputs.tag }}" ]; then
-            # Strip leading 'v' from the tag (v0.1.4 → 0.1.4).
+          TAG="$(echo "${{ inputs.tag }}" | xargs)"
+          if [ -n "$TAG" ]; then
+            echo "ref=refs/tags/$TAG" >> "$GITHUB_OUTPUT"
             echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
           else
+            echo "ref=${{ github.sha }}" >> "$GITHUB_OUTPUT"
             echo "version=" >> "$GITHUB_OUTPUT"
           fi
-        env:
-          TAG: ${{ inputs.tag }}
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.inputs.outputs.ref }}
       - name: Deploy to WordPress.org Plugin Directory
         # To add banner/icon assets later, place them in .wordpress-org/ and
         # the action will sync them to the SVN assets/ directory automatically.
@@ -51,4 +60,4 @@ jobs:
           SVN_PASSWORD: ${{ secrets.WPORG_SVN_PASSWORD }}
           SVN_USERNAME: ${{ secrets.WPORG_SVN_USERNAME }}
           SLUG: presence-api
-          VERSION: ${{ steps.version.outputs.version }}
+          VERSION: ${{ steps.inputs.outputs.version }}
