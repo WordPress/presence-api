@@ -33,20 +33,7 @@ Data flows through the existing Heartbeat API and is stored in a dedicated `wp_p
 
 = For Developers =
 
-**Rooms** are the unit of presence. Two built-in rooms:
-
-* `admin/online` — all admin pages
-* `postType/{type}:{id}` — a specific post (e.g. `postType/post:42`)
-
-Post types opt in via `add_post_type_support( 'post', 'presence' )`.
-
-**Public functions:** `wp_get_presence()`, `wp_set_presence()`, `wp_remove_presence()`, `wp_remove_user_presence()`, `wp_presence_post_room()`
-
-**REST endpoints:** `GET/POST/DELETE /wp-presence/v1/presence`, `GET /wp-presence/v1/presence/rooms`
-
-**WP-CLI:** `wp presence list`, `wp presence summary`, `wp presence set`, `wp presence cleanup`
-
-**Filter:** `wp_presence_default_ttl` — override the 60-second TTL
+For the full API reference — PHP functions, REST endpoints, WP-CLI commands, filters, and room conventions — see the [GitHub repository](https://github.com/WordPress/presence-api).
 
 = Background =
 

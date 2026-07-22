@@ -46,6 +46,63 @@ Then open [localhost:8888/wp-admin/](http://localhost:8888/wp-admin/) (admin / p
 
 Post types opt in via `add_post_type_support( 'post', 'presence' )`.
 
+## PHP API
+
+Six public functions are part of the stable API contract. Everything else in `includes/functions.php` is marked `@access private` and may change without notice.
+
+```php
+// Read all presence entries in a room.
+$entries = wp_get_presence( $room, $timeout = WP_PRESENCE_DEFAULT_TTL );
+
+// Upsert a client's presence state. Atomic via INSERT … ON DUPLICATE KEY UPDATE.
+wp_set_presence( $room, $client_id, $state, $user_id = 0 );
+
+// Remove a single client from a room.
+wp_remove_presence( $room, $client_id );
+
+// Remove all presence entries for a user across all rooms.
+wp_remove_user_presence( $user_id );
+
+// Check whether a user can access a room (requires edit_posts).
+wp_can_access_presence_room( $room, $user_id = 0 );
+
+// Return the canonical room string for a post, or false if the post type
+// does not support presence.
+$room = wp_presence_post_room( $post );
+```
+
+Each entry object returned by `wp_get_presence()` has: `room`, `client_id`, `user_id`, `data` (array), `date_gmt`.
+
+## REST API
+
+All endpoints require `edit_posts`. Responses include `Cache-Control: no-store`.
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/wp-presence/v1/presence` | List entries in a room |
+| `POST` | `/wp-presence/v1/presence` | Upsert a presence entry |
+| `DELETE` | `/wp-presence/v1/presence` | Remove a presence entry |
+| `GET` | `/wp-presence/v1/presence/rooms` | List active rooms |
+
+## WP-CLI
+
+```
+wp presence list      # List all active presence entries
+wp presence summary   # Summary grouped by room
+wp presence set       # Manually upsert an entry
+wp presence cleanup   # Delete expired entries immediately
+```
+
+## Filters and constants
+
+```php
+// Override the TTL (seconds) used for all queries and cleanup. Default: 60.
+add_filter( 'wp_presence_default_ttl', fn() => 30 );
+
+// Or define the constant before the plugin loads.
+define( 'WP_PRESENCE_DEFAULT_TTL', 30 );
+```
+
 ## Post-lock bridge
 
 Creates presence entries alongside `_edit_lock` postmeta when a post lock is refreshed via Heartbeat. Both systems coexist.
