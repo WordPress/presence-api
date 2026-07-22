@@ -15,7 +15,7 @@ System-wide presence and awareness for WordPress.
 
 Presence API tells you who is logged in to your WordPress site, what admin screen they are on, and which posts they are editing — in real time.
 
-Data flows through the existing Heartbeat API and is stored in a dedicated `wp_presence` table with a 60-second TTL. No writes to `wp_options` or `wp_postmeta` means no site-wide cache invalidation.
+Data flows through the existing Heartbeat API and is stored in a dedicated `wp_presence` table with a 60-second TTL. No writes to `wp_postmeta` means no post-cache invalidation on every heartbeat.
 
 = Features =
 

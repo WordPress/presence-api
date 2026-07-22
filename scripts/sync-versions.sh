@@ -124,7 +124,7 @@ for block in blocks:
             bullets.append(f'* {text}')
 
     if not bullets:
-        continue
+        bullets = ['* Maintenance release.']
     entry = f'= {version} =\n' + '\n'.join(bullets)
     entries.append(entry)
 
