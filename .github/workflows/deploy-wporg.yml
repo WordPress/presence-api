@@ -21,10 +21,6 @@ on:
         type: string
         description: 'Git tag to deploy (e.g. v0.1.4)'
         required: true
-      checkout-ref:
-        type: string
-        description: 'Git ref to check out (defaults to tag). Override to deploy assets from a branch without cutting a new release.'
-        required: false
       dry-run:
         type: boolean
         description: 'Dry run (deploy without publishing to WordPress.org).'
@@ -39,6 +35,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    outputs:
+      ref: ${{ steps.inputs.outputs.ref }}
     steps:
       - name: Resolve inputs
         id: inputs
@@ -49,19 +47,12 @@ jobs:
             echo "::error::Input 'tag' cannot be empty or whitespace-only."
             exit 1
           fi
-          CHECKOUT_REF="${{ inputs.checkout-ref }}"
-          if [ -n "$CHECKOUT_REF" ]; then
-            printf 'ref=%s\n' "$CHECKOUT_REF" >> "$GITHUB_OUTPUT"
-          else
-            printf 'ref=refs/tags/%s\n' "$TAG" >> "$GITHUB_OUTPUT"
-          fi
+          printf 'ref=refs/tags/%s\n' "$TAG" >> "$GITHUB_OUTPUT"
           printf 'version=%s\n' "${TAG#v}" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v7
         with:
           ref: ${{ steps.inputs.outputs.ref }}
       - name: Deploy to WordPress.org Plugin Directory
-        # To add banner/icon assets later, place them in .wordpress-org/ and
-        # the action will sync them to the SVN assets/ directory automatically.
         uses: 10up/action-wordpress-plugin-deploy@54bd289b8525fd23a5c365ec369185f2966529c2 # stable
         with:
           dry-run: ${{ inputs.dry-run || false }}
@@ -70,3 +61,13 @@ jobs:
           SVN_USERNAME: ${{ secrets.WPORG_SVN_USERNAME }}
           SLUG: presence-api
           VERSION: ${{ steps.inputs.outputs.version }}
+
+  assets:
+    needs: deploy
+    uses: ./.github/workflows/deploy-wporg-assets.yml
+    with:
+      checkout-ref: ${{ needs.deploy.outputs.ref }}
+      dry-run: ${{ inputs.dry-run == true }}
+    secrets:
+      WPORG_SVN_USERNAME: ${{ secrets.WPORG_SVN_USERNAME }}
+      WPORG_SVN_PASSWORD: ${{ secrets.WPORG_SVN_PASSWORD }}
