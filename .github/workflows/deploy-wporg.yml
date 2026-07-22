@@ -21,6 +21,10 @@ on:
         type: string
         description: 'Git tag to deploy (e.g. v0.1.4)'
         required: true
+      checkout-ref:
+        type: string
+        description: 'Git ref to check out (defaults to tag). Override to deploy assets from a branch without cutting a new release.'
+        required: false
       dry-run:
         type: boolean
         description: 'Dry run (deploy without publishing to WordPress.org).'
@@ -45,7 +49,12 @@ jobs:
             echo "::error::Input 'tag' cannot be empty or whitespace-only."
             exit 1
           fi
-          printf 'ref=refs/tags/%s\n' "$TAG" >> "$GITHUB_OUTPUT"
+          CHECKOUT_REF="${{ inputs.checkout-ref }}"
+          if [ -n "$CHECKOUT_REF" ]; then
+            printf 'ref=%s\n' "$CHECKOUT_REF" >> "$GITHUB_OUTPUT"
+          else
+            printf 'ref=refs/tags/%s\n' "$TAG" >> "$GITHUB_OUTPUT"
+          fi
           printf 'version=%s\n' "${TAG#v}" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v7
         with:
