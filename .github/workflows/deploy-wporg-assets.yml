@@ -1,0 +1,58 @@
+name: Deploy Assets to WordPress.org
+
+on:
+  workflow_dispatch:
+    inputs:
+      checkout-ref:
+        type: string
+        description: 'Git ref to source assets from (branch or SHA). Defaults to main.'
+        required: false
+        default: main
+      dry-run:
+        type: boolean
+        description: 'Dry run — show what would be committed without pushing to SVN.'
+        default: false
+
+permissions: {}
+
+jobs:
+  deploy-assets:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.checkout-ref }}
+
+      - name: Install SVN
+        run: sudo apt-get install -y subversion
+
+      - name: Check out SVN assets directory
+        run: |
+          svn checkout \
+            "https://plugins.svn.wordpress.org/presence-api/assets/" \
+            /tmp/svn-assets \
+            --username "${{ secrets.WPORG_SVN_USERNAME }}" \
+            --password "${{ secrets.WPORG_SVN_PASSWORD }}" \
+            --no-auth-cache \
+            --non-interactive
+
+      - name: Sync .wordpress-org/ into SVN assets
+        run: |
+          cp -v .wordpress-org/* /tmp/svn-assets/
+          svn status /tmp/svn-assets
+          # Stage any new files
+          svn add --force /tmp/svn-assets/* 2>/dev/null || true
+          # Remove files that no longer exist in source
+          svn status /tmp/svn-assets | grep '^!' | awk '{print $2}' | xargs -r svn delete
+
+      - name: Commit to SVN
+        if: ${{ !inputs.dry-run }}
+        run: |
+          svn commit /tmp/svn-assets \
+            --message "Update plugin directory assets from GitHub" \
+            --username "${{ secrets.WPORG_SVN_USERNAME }}" \
+            --password "${{ secrets.WPORG_SVN_PASSWORD }}" \
+            --no-auth-cache \
+            --non-interactive
