@@ -2,6 +2,7 @@
 .github
 .cache
 .claude
+.wordpress-org
 .gitignore
 .wp-env.json
 .phpunit.result.cache
