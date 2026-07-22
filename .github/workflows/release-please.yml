@@ -63,7 +63,7 @@ jobs:
   # Playground link so reporters can verify the fix without a local install.
   close-issues:
     needs: [release-please, deploy-to-wporg]
-if: ${{ needs.release-please.outputs.release_created && needs.deploy-to-wporg.result == 'success' && !(github.event_name == 'workflow_dispatch' && inputs.dry-run) }}
+    if: ${{ needs.release-please.outputs.release_created && needs.deploy-to-wporg.result == 'success' && !(github.event_name == 'workflow_dispatch' && inputs.dry-run) }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
