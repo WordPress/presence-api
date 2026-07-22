@@ -63,7 +63,7 @@ jobs:
   # Playground link so reporters can verify the fix without a local install.
   close-issues:
     needs: [release-please, deploy-to-wporg]
-    if: ${{ needs.release-please.outputs.release_created && needs.deploy-to-wporg.result == 'success' && !(github.event_name == 'workflow_dispatch' && inputs.dry-run) }}
+    if: ${{ needs.release-please.outputs.release_created && needs.deploy-to-wporg.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -113,7 +113,7 @@ jobs:
     if: ${{ needs.release-please.outputs.release_created }}
     uses: ./.github/workflows/deploy-wporg.yml
     with:
-      dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run || false }}
+      dry-run: ${{ inputs.dry-run || false }}
       tag: ${{ needs.release-please.outputs.tag_name }}
     secrets:
       WPORG_SVN_PASSWORD: ${{ secrets.WPORG_SVN_PASSWORD }}
