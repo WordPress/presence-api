@@ -13,26 +13,63 @@ System-wide presence and awareness for WordPress.
 
 == Description ==
 
-Tracks which users are logged in, what admin screen they are viewing, and which posts are being edited. Uses a dedicated database table with a 60-second TTL. Data flows through the existing Heartbeat API.
+Presence API tells you who is logged in to your WordPress site, what admin screen they are on, and which posts they are editing — in real time.
 
-For full details, see the [GitHub repository](https://github.com/WordPress/presence-api).
+Data flows through the existing Heartbeat API and is stored in a dedicated `wp_presence` table with a 60-second TTL. No writes to `wp_options` or `wp_postmeta` means no site-wide cache invalidation.
+
+= Features =
+
+* **Who's Online widget** — avatar stack of logged-in users with idle detection and an overflow threshold for large teams
+* **Active Posts widget** — posts grouped by title showing which editors are currently inside them
+* **Admin bar indicator** — avatar stack for other users on the same page, with a dropdown grouped by "On this page" and "Elsewhere"
+* **Post list Editors column** — see who is in each post without opening it
+* **Users list Online filter** — filter the Users screen to show only currently active users
+
+= Try it =
+
+[Test in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json) — no install required, seeds multiple users automatically.
+
+[Watch the demo on YouTube](https://youtu.be/Xa5WkZdjBD4)
+
+= For Developers =
+
+**Rooms** are the unit of presence. Two built-in rooms:
+
+* `admin/online` — all admin pages
+* `postType/{type}:{id}` — a specific post (e.g. `postType/post:42`)
+
+Post types opt in via `add_post_type_support( 'post', 'presence' )`.
+
+**Public functions:** `wp_get_presence()`, `wp_set_presence()`, `wp_remove_presence()`, `wp_remove_user_presence()`, `wp_presence_post_room()`
+
+**REST endpoints:** `GET/POST/DELETE /wp-presence/v1/presence`, `GET /wp-presence/v1/presence/rooms`
+
+**WP-CLI:** `wp presence list`, `wp presence summary`, `wp presence set`, `wp presence cleanup`
+
+**Filter:** `wp_presence_default_ttl` — override the 60-second TTL
+
+= Background =
+
+This is an experimental feature plugin sponsored by the WordPress Core team, exploring what system-wide presence could look like for a future WordPress release. Follow development on [make.wordpress.org/core](https://make.wordpress.org/core/) with the tag `#presence-api`.
 
 == Installation ==
 
-1. Upload the plugin to the `/wp-content/plugins/` directory.
-2. Activate through the "Plugins" menu in WordPress.
+1. In your WordPress admin, go to **Plugins → Add New Plugin** and search for "Presence API", then click **Install Now**.
+2. Activate through the **Plugins** menu.
+
+Or install manually:
+
+1. Download the zip and upload the `presence-api` folder to `/wp-content/plugins/`.
+2. Activate through the **Plugins** menu.
+
+Or [try it in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json) without installing anything.
 
 == Changelog ==
 
-= 0.1.4 =
-* Auto-sync readme.txt changelog from CHANGELOG.md in sync-versions.sh.
-
 = 0.1.3 =
 * Add 40-user Playground blueprint.
-* Add 40-user Playground blueprint (down from 100).
 * Address stale-screen review feedback.
 * Address WordPress.org plugin review feedback.
-* Close wp_presence_current_screen_key() brace dropped by autofix.
 
 = 0.1.2 =
 * Add WordPress Playground blueprint for one-click testing.
@@ -44,7 +81,6 @@ For full details, see the [GitHub repository](https://github.com/WordPress/prese
 * Move community health files to .github/.
 * Replace deprecated get_page_by_title() with WP_Query.
 * Add ABSPATH guards to db-viewer.php and demo-seeder.php.
-* Exclude .claude directory from release zip.
 
 = 0.1.1 =
 * Fix Plugin Check errors for directory submission.

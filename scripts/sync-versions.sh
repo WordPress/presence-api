@@ -74,9 +74,28 @@ for block in blocks:
         continue
     version = m.group(1)
 
+    # Entries matching any of these patterns are silently dropped as non-user-facing.
+    SKIP_PATTERNS = [
+        r'sync.?versions\.sh',       # internal release tooling
+        r'changelog\.md',            # references to the changelog itself
+        r'dropped by autofix',       # autofix noise
+        r'\.claude\b',               # internal .claude directory
+        r'merge conflict',           # git housekeeping
+        r'^\*\*test[^*]*:\*\*',     # **test:** scoped commits
+    ]
+
+    def _skip(text):
+        return any(re.search(p, text, re.IGNORECASE) for p in SKIP_PATTERNS)
+
+    def _stem(text):
+        """First 4 normalised words — used to deduplicate near-identical entries."""
+        words = re.sub(r'[^\w\s]', '', text.lower()).split()
+        return ' '.join(words[:4])
+
     in_skip = False
     bullets = []
-    seen = set()
+    seen_exact = set()
+    seen_stems = set()
     for line in lines[1:]:
         if re.match(r'^### ', line):
             in_skip = 'Dependencies' in line
@@ -89,10 +108,7 @@ for block in blocks:
         text = bm.group(1)
         # Strip trailing commit link(s): ([abc123](url))
         text = re.sub(r'\s+\(\[[\da-f]+\]\([^)]+\)(?:,\s*\[\w+\]\([^)]+\))*\)$', '', text)
-        # Skip test-only and housekeeping entries that are not user-facing
-        if re.match(r'^\*\*test[^*]*:\*\*', text, re.IGNORECASE):
-            continue
-        if re.search(r'merge conflict', text, re.IGNORECASE):
+        if _skip(text):
             continue
         # Strip leading **scope:** prefix added by release-please for scoped commits
         # release-please format: **scope:** text  (colon is inside the bold markers)
@@ -100,14 +116,16 @@ for block in blocks:
         text = (text[0].upper() + text[1:]) if text else text
         if text and text[-1] not in '.!?':
             text += '.'
-        key = text.lower()
-        if key not in seen:
-            seen.add(key)
+        exact = text.lower()
+        stem  = _stem(text)
+        if exact not in seen_exact and stem not in seen_stems:
+            seen_exact.add(exact)
+            seen_stems.add(stem)
             bullets.append(f'* {text}')
 
-    entry = f'= {version} ='
-    if bullets:
-        entry += '\n' + '\n'.join(bullets)
+    if not bullets:
+        continue
+    entry = f'= {version} =\n' + '\n'.join(bullets)
     entries.append(entry)
 
 new_section = '== Changelog ==\n\n' + '\n\n'.join(entries) + '\n'
