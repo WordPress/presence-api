@@ -275,6 +275,30 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 	/**
 	 * @covers WP_REST_Presence_Controller::create_item
 	 */
+	public function test_rest_update_existing_entry_succeeds_at_limit() {
+		wp_set_current_user( self::$editor_id );
+
+		// Fill exactly to the limit (50), including one entry we'll try to refresh.
+		wp_set_presence( 'room/target', 'client-target', array(), self::$editor_id );
+		for ( $i = 0; $i < 49; $i++ ) {
+			wp_set_presence( 'room/test-' . $i, 'client-' . $i, array(), self::$editor_id );
+		}
+
+		// Now at exactly 50 entries — refreshing an existing (room, client_id) should succeed.
+		$request = new WP_REST_Request( 'POST', '/wp-presence/v1/presence' );
+		$request->set_param( 'room', 'room/target' );
+		$request->set_param( 'client_id', 'client-target' );
+		$request->set_param( 'data', array( 'screen' => 'updated' ) );
+
+		$controller = new WP_REST_Presence_Controller();
+		$response   = $controller->create_item( $request );
+
+		$this->assertNotWPError( $response );
+	}
+
+	/**
+	 * @covers WP_REST_Presence_Controller::create_item
+	 */
 	public function test_rest_create_enforces_entry_limit() {
 		wp_set_current_user( self::$editor_id );
 

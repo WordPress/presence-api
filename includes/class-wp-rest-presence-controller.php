@@ -353,26 +353,8 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 
 		$current_user_id = get_current_user_id();
 
-		// Enforce per-user entry limit (only count non-expired entries).
-		$cutoff = gmdate( 'Y-m-d H:i:s', time() - wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL ) );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$user_entry_count = $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$wpdb->presence} WHERE user_id = %d AND date_gmt > %s",
-				$current_user_id,
-				$cutoff
-			)
-		);
-
-		if ( (int) $user_entry_count >= self::MAX_ENTRIES_PER_USER ) {
-			return new WP_Error(
-				'rest_presence_limit_exceeded',
-				__( 'You have reached the maximum number of presence entries.', 'presence-api' ),
-				array( 'status' => 429 )
-			);
-		}
-
-		// Prevent overwriting another user's presence entry.
+		// Prevent overwriting another user's presence entry, and determine whether
+		// this request is an update to an existing entry or a new insertion.
 		//
 		// A narrow race window exists between the SELECT and INSERT below.
 		// This is acceptable because:
@@ -396,6 +378,28 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 				__( 'This client_id is already in use by another user.', 'presence-api' ),
 				array( 'status' => 409 )
 			);
+		}
+
+		// Enforce per-user entry limit only for new entries. Refreshing an existing
+		// entry owned by this user must always succeed regardless of the cap.
+		if ( null === $existing_user_id ) {
+			$cutoff = gmdate( 'Y-m-d H:i:s', time() - wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL ) );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$user_entry_count = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT COUNT(*) FROM {$wpdb->presence} WHERE user_id = %d AND date_gmt > %s",
+					$current_user_id,
+					$cutoff
+				)
+			);
+
+			if ( (int) $user_entry_count >= self::MAX_ENTRIES_PER_USER ) {
+				return new WP_Error(
+					'rest_presence_limit_exceeded',
+					__( 'You have reached the maximum number of presence entries.', 'presence-api' ),
+					array( 'status' => 429 )
+				);
+			}
 		}
 
 		$result = wp_set_presence( $room, $client_id, $data, $current_user_id );
