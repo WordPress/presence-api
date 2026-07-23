@@ -98,9 +98,8 @@ jobs:
             for ISSUE in $ISSUES; do
               if printf '%s\n' "${CLOSED[@]:-}" | grep -qx "$ISSUE"; then continue; fi
               CLOSED+=("$ISSUE")
-              gh issue close "$ISSUE" --comment ":tada: Resolved in [**${TAG}**](${RELEASE_URL}).
-
-**[Try it on WordPress Playground →](${PLAYGROUND_URL})**"
+              printf -v COMMENT ':tada: Resolved in [**%s**](%s).\n\n**[Try it on WordPress Playground →](%s)**' "$TAG" "$RELEASE_URL" "$PLAYGROUND_URL"
+              gh issue close "$ISSUE" --comment "$COMMENT"
             done
           done
 
