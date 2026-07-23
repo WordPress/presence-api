@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.6](https://github.com/WordPress/presence-api/compare/v0.1.5...v0.1.6) (2026-07-23)
+
+
+### Bug Fixes
+
+* dispatch deploy workflow instead of calling as reusable to avoid startup failure ([acd812b](https://github.com/WordPress/presence-api/commit/acd812bcfe8b468a837ea88377d361d0ef4389da))
+* flatten deploy workflow to remove reusable nesting causing startup failure ([b7b5459](https://github.com/WordPress/presence-api/commit/b7b54595b3380d05d453d1b54c0b4e0a7185f567))
+* use 10up action ASSETS_DIR instead of separate assets workflow ([4ec612d](https://github.com/WordPress/presence-api/commit/4ec612db68878c61cfd4edf55a0b8adc83cccd49))
+* use 10up action ASSETS_DIR, remove separate assets workflow ([5de6150](https://github.com/WordPress/presence-api/commit/5de6150b52b5ca54ac2f56ac921400af743aba75))
+* use correct heading format in Unlinked Accounts regex ([6dc2d0d](https://github.com/WordPress/presence-api/commit/6dc2d0d75ee0397dda1b2dc58cd6038d58cc103b))
+
 ## [0.1.5](https://github.com/WordPress/presence-api/compare/v0.1.4...v0.1.5) (2026-07-23)
 
 
