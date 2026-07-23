@@ -3,7 +3,7 @@ Contributors: joefusco
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.0
-Stable tag: 0.1.5
+Stable tag: 0.1.6
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -53,8 +53,14 @@ Or [try it in WordPress Playground](https://playground.wordpress.net/?blueprint-
 
 == Changelog ==
 
+= 0.1.6 =
+* Dispatch deploy workflow instead of calling as reusable to avoid startup failure.
+* Flatten deploy workflow to remove reusable nesting causing startup failure.
+* Use 10up action ASSETS_DIR instead of separate assets workflow.
+* Use correct heading format in Unlinked Accounts regex.
+
 = 0.1.5 =
-* Check entry ownership before enforcing per-user presence limit.
+* Check entry ownership before enforcing per-user presence limit ([5698d94](https://github.com/WordPress/presence-api/commit/5698d9425baa9a67561626c4ca8421a5daf64728)), closes [#88](https://github.com/WordPress/presence-api/issues/88).
 * Exclude expired entries from ownership check to keep cap exact.
 * Pass VERSION env var to deploy action so SVN tag matches git tag.
 * Preserve version headings in sync script and correct wp_options claim.
@@ -82,4 +88,22 @@ Or [try it in WordPress Playground](https://playground.wordpress.net/?blueprint-
 * Fix Plugin Check errors for directory submission.
 
 = 0.1.0 =
-* Initial release.
+* Dedicated `wp_presence` table with `UNIQUE KEY (room, client_id)` for atomic upserts via `INSERT ... ON DUPLICATE KEY UPDATE`.
+* 60-second TTL with batched cron cleanup.
+* Public API: `wp_get_presence`, `wp_set_presence`, `wp_remove_presence`, `wp_remove_user_presence`, `wp_can_access_presence_room`, `wp_presence_post_room`.
+* REST endpoints: `GET/POST/DELETE /wp-presence/v1/presence`, `GET /wp-presence/v1/presence/rooms` with SQL pagination and `Cache-Control: no-store`.
+* Heartbeat integration for admin and editor presence pings.
+* Post-lock bridge: translates `wp-refresh-post-lock` into presence entries.
+* Login/logout lifecycle hooks gated on `edit_posts`.
+* Dashboard widgets: Who's Online (with idle detection, overflow threshold, avatar stacks) and Active Posts (grouped by post with editor counts).
+* Admin bar indicator: avatar stack for same-page users, dropdown grouped by "On this page" / "Elsewhere", alphabetically sorted.
+* Post list "Editors" column with avatar stacks.
+* Users list "Online" filter tab.
+* WP-CLI: `set`, `list`, `summary`, `cleanup`.
+* Debugger widget (WP_DEBUG only): heartbeat monitor with live table viewer.
+* `wp_presence_default_ttl` filter and `WP_PRESENCE_DEFAULT_TTL` constant.
+* Multisite-aware `uninstall.php`.
+* Full i18n with `.pot` file.
+* WCAG AA accessibility: ARIA labels, `aria-live`, keyboard navigation.
+* 59 PHPUnit tests, 118 assertions.
+* Playwright e2e tests with screenshot artifacts.
