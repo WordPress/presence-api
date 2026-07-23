@@ -13,31 +13,31 @@ System-wide presence and awareness for WordPress.
 
 == Description ==
 
-Presence API tells you who is logged in to your WordPress site, what admin screen they are on, and which posts they are editing — in real time.
+Presence API gives WordPress a system-wide awareness layer. It tracks which users are logged in, which admin screen they are on, and which posts they are editing.
 
-Data flows through the existing Heartbeat API and is stored in a dedicated `wp_presence` table with a 60-second TTL. No writes to `wp_postmeta` means no post-cache invalidation on every heartbeat.
+Data flows through the Heartbeat API and is stored in a dedicated `wp_presence` table with a 60-second TTL. No writes to `wp_postmeta` means no post-cache invalidation on every heartbeat.
 
 = Features =
 
-* **Who's Online widget** — avatar stack of logged-in users with idle detection and an overflow threshold for large teams
-* **Active Posts widget** — posts grouped by title showing which editors are currently inside them
-* **Admin bar indicator** — avatar stack for other users on the same page, with a dropdown grouped by "On this page" and "Elsewhere"
-* **Post list Editors column** — see who is in each post without opening it
-* **Users list Online filter** — filter the Users screen to show only currently active users
+* Who's Online dashboard widget with idle detection
+* Active Posts dashboard widget grouped by post
+* Admin bar indicator showing other users on the same page
+* Editors column in the post list
+* Online filter in the Users list
 
 = Try it =
 
-[Test in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json) — no install required, seeds multiple users automatically.
+[Test in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json) without installing anything.
 
 [Watch the demo on YouTube](https://youtu.be/Xa5WkZdjBD4)
 
 = For Developers =
 
-For the full API reference — PHP functions, REST endpoints, WP-CLI commands, filters, and room conventions — see the [GitHub repository](https://github.com/WordPress/presence-api).
+PHP functions, REST endpoints, WP-CLI commands, filters, and room conventions are documented in the [GitHub repository](https://github.com/WordPress/presence-api).
 
 = Background =
 
-This is an experimental feature plugin sponsored by the WordPress Core team, exploring what system-wide presence could look like for a future WordPress release. Follow development on [make.wordpress.org/core](https://make.wordpress.org/core/) with the tag `#presence-api`.
+An experimental feature plugin sponsored by the WordPress Core team, exploring what system-wide presence could look like for a future WordPress release. Follow development on [make.wordpress.org/core](https://make.wordpress.org/core/) with the tag `#presence-api`.
 
 == Installation ==
 
@@ -82,22 +82,4 @@ Or [try it in WordPress Playground](https://playground.wordpress.net/?blueprint-
 * Fix Plugin Check errors for directory submission.
 
 = 0.1.0 =
-* Dedicated `wp_presence` table with `UNIQUE KEY (room, client_id)` for atomic upserts via `INSERT ... ON DUPLICATE KEY UPDATE`.
-* 60-second TTL with batched cron cleanup.
-* Public API: `wp_get_presence`, `wp_set_presence`, `wp_remove_presence`, `wp_remove_user_presence`, `wp_can_access_presence_room`, `wp_presence_post_room`.
-* REST endpoints: `GET/POST/DELETE /wp-presence/v1/presence`, `GET /wp-presence/v1/presence/rooms` with SQL pagination and `Cache-Control: no-store`.
-* Heartbeat integration for admin and editor presence pings.
-* Post-lock bridge: translates `wp-refresh-post-lock` into presence entries.
-* Login/logout lifecycle hooks gated on `edit_posts`.
-* Dashboard widgets: Who's Online (with idle detection, overflow threshold, avatar stacks) and Active Posts (grouped by post with editor counts).
-* Admin bar indicator: avatar stack for same-page users, dropdown grouped by "On this page" / "Elsewhere", alphabetically sorted.
-* Post list "Editors" column with avatar stacks.
-* Users list "Online" filter tab.
-* WP-CLI: `set`, `list`, `summary`, `cleanup`.
-* Debugger widget (WP_DEBUG only): heartbeat monitor with live table viewer.
-* `wp_presence_default_ttl` filter and `WP_PRESENCE_DEFAULT_TTL` constant.
-* Multisite-aware `uninstall.php`.
-* Full i18n with `.pot` file.
-* WCAG AA accessibility: ARIA labels, `aria-live`, keyboard navigation.
-* 59 PHPUnit tests, 118 assertions.
-* Playwright e2e tests with screenshot artifacts.
+* Initial release.
