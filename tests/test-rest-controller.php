@@ -301,7 +301,7 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 	public function test_bump_screen_revision_success() {
 		wp_set_current_user( self::$admin_id );
 
-		$request = new WP_REST_Request( 'POST', '/wp-presence/v1/screen-revisions/stale' );
+		$request = new WP_REST_Request( 'POST', '/wp-presence/v1/presence/screen-revisions/stale' );
 		$request->set_param( 'screen_key', 'options/general' );
 
 		$controller = new WP_REST_Presence_Controller();
@@ -320,7 +320,7 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 	public function test_bump_screen_revision_permissions() {
 		wp_set_current_user( self::$editor_id );
 
-		$request = new WP_REST_Request( 'POST', '/wp-presence/v1/screen-revisions/stale' );
+		$request = new WP_REST_Request( 'POST', '/wp-presence/v1/presence/screen-revisions/stale' );
 		$request->set_param( 'screen_key', 'options/general' );
 
 		$controller = new WP_REST_Presence_Controller();
@@ -336,7 +336,7 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 	public function test_bump_screen_revision_invalid_key() {
 		wp_set_current_user( self::$admin_id );
 
-		$request = new WP_REST_Request( 'POST', '/wp-presence/v1/screen-revisions/stale' );
+		$request = new WP_REST_Request( 'POST', '/wp-presence/v1/presence/screen-revisions/stale' );
 		$request->set_param( 'screen_key', '' );
 
 		$controller = new WP_REST_Presence_Controller();
