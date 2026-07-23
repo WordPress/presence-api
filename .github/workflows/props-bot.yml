@@ -82,7 +82,6 @@ jobs:
         with:
           script: |
             const LAST = process.env.PROPS_SORT_LAST;
-            if (!LAST) return;
             const comments = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -91,11 +90,30 @@ jobs:
             const propsComment = [...comments.data].reverse()
               .find(c => c.user.login === 'github-actions[bot]' && c.body.includes('Props '));
             if (!propsComment) return;
-            const body = propsComment.body.replace(/Props ([^.]+)\./, (_, names) => {
-              const all = names.split(', ').map(n => n.trim());
-              const sorted = [...all.filter(n => n !== LAST), ...all.filter(n => n === LAST)];
-              return 'Props ' + sorted.join(', ') + '.';
-            });
+
+            let body = propsComment.body;
+
+            // Move LAST to end of props list.
+            if (LAST) {
+              body = body.replace(/Props ([^.]+)\./, (_, names) => {
+                const all = names.split(', ').map(n => n.trim());
+                const sorted = [...all.filter(n => n !== LAST), ...all.filter(n => n === LAST)];
+                return 'Props ' + sorted.join(', ') + '.';
+              });
+            }
+
+            // Filter bot accounts from Unlinked Accounts; drop the section if nothing real remains.
+            body = body.replace(
+              /## Unlinked Accounts\n\n([\s\S]*?)\n\nCore Committers/,
+              (_, section) => {
+                const lineMatch = section.match(/accounts: ([^.]+)\./);
+                if (!lineMatch) return _;
+                const real = lineMatch[1].split(', ').map(n => n.trim()).filter(n => !n.includes('[bot]'));
+                if (!real.length) return 'Core Committers';
+                return '## Unlinked Accounts\n\n' + section.replace(lineMatch[1], real.join(', ')) + '\n\nCore Committers';
+              }
+            );
+
             if (body === propsComment.body) return;
             await github.rest.issues.updateComment({
               owner: context.repo.owner,
