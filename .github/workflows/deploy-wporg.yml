@@ -35,8 +35,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    outputs:
-      ref: ${{ steps.inputs.outputs.ref }}
     steps:
       - name: Resolve inputs
         id: inputs
@@ -61,54 +59,4 @@ jobs:
           SVN_USERNAME: ${{ secrets.WPORG_SVN_USERNAME }}
           SLUG: presence-api
           VERSION: ${{ steps.inputs.outputs.version }}
-
-  assets:
-    needs: deploy
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ needs.deploy.outputs.ref }}
-
-      - name: Skip if no assets directory
-        id: check
-        run: |
-          if [ ! -d .wordpress-org ] || [ -z "$(ls -A .wordpress-org 2>/dev/null)" ]; then
-            echo "No assets to sync — skipping."
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Install SVN
-        if: steps.check.outputs.skip != 'true'
-        run: sudo apt-get install -y subversion
-
-      - name: Check out SVN assets directory
-        if: steps.check.outputs.skip != 'true'
-        run: |
-          svn checkout \
-            "https://plugins.svn.wordpress.org/presence-api/assets/" \
-            /tmp/svn-assets \
-            --username "${{ secrets.WPORG_SVN_USERNAME }}" \
-            --password "${{ secrets.WPORG_SVN_PASSWORD }}" \
-            --no-auth-cache \
-            --non-interactive
-
-      - name: Sync .wordpress-org/ into SVN assets
-        if: steps.check.outputs.skip != 'true'
-        run: |
-          cp -v .wordpress-org/* /tmp/svn-assets/
-          svn add --force /tmp/svn-assets/* 2>/dev/null || true
-          svn status /tmp/svn-assets | grep '^!' | awk '{print $2}' | xargs -r svn delete
-          svn status /tmp/svn-assets
-
-      - name: Commit to SVN
-        if: steps.check.outputs.skip != 'true' && !inputs.dry-run
-        run: |
-          svn commit /tmp/svn-assets \
-            --message "Update plugin directory assets from GitHub" \
-            --username "${{ secrets.WPORG_SVN_USERNAME }}" \
-            --password "${{ secrets.WPORG_SVN_PASSWORD }}" \
-            --no-auth-cache \
-            --non-interactive
+          ASSETS_DIR: .wordpress-org
