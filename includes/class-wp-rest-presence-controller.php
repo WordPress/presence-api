@@ -164,11 +164,9 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 							'required'          => true,
 							'type'              => 'string',
 							'sanitize_callback' => 'sanitize_text_field',
-						),
-						'actor_id'   => array(
-							'type'              => 'integer',
-							'default'           => 0,
-							'sanitize_callback' => 'absint',
+							'validate_callback' => static function ( $value ) {
+								return (bool) preg_match( '#^[a-z0-9/_-]+$#', $value );
+							},
 						),
 					),
 				),
