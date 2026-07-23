@@ -112,7 +112,7 @@ jobs:
     if: ${{ needs.release-please.outputs.release_created }}
     uses: ./.github/workflows/deploy-wporg.yml
     with:
-      dry-run: ${{ inputs.dry-run || false }}
+      dry-run: ${{ inputs.dry-run == true }}
       tag: ${{ needs.release-please.outputs.tag_name }}
     secrets:
       WPORG_SVN_PASSWORD: ${{ secrets.WPORG_SVN_PASSWORD }}
