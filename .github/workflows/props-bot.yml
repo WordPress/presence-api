@@ -104,13 +104,13 @@ jobs:
 
             // Filter bot accounts from Unlinked Accounts; drop the section if nothing real remains.
             body = body.replace(
-              /\*\*Unlinked Accounts\*\*\n\n([\s\S]*?)\n\nCore Committers/,
+              /## Unlinked Accounts\n\n([\s\S]*?)\n\nCore Committers/,
               (_, section) => {
                 const lineMatch = section.match(/accounts: ([^.]+)\./);
                 if (!lineMatch) return _;
                 const real = lineMatch[1].split(', ').map(n => n.trim()).filter(n => !n.includes('[bot]'));
                 if (!real.length) return 'Core Committers';
-                return '**Unlinked Accounts**\n\n' + section.replace(lineMatch[1], real.join(', ')) + '\n\nCore Committers';
+                return '## Unlinked Accounts\n\n' + section.replace(lineMatch[1], real.join(', ')) + '\n\nCore Committers';
               }
             );
 
