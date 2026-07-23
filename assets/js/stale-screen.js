@@ -37,10 +37,9 @@
 	 * save so other users viewing the same screen receive a stale notice.
 	 *
 	 * @param {string} key     The screen key (e.g. 'options/my-plugin').
-	 * @param {number} actorId Optional. User ID who made the change.
 	 * @return {Promise} jQuery Promise.
 	 */
-	window.wp.presence.markScreenStale = function ( key, actorId = 0 ) {
+	window.wp.presence.markScreenStale = function ( key ) {
 		if ( ! config.restUrl || ! config.nonce ) {
 			return $.Deferred().reject( 'Missing REST configuration.' ).promise();
 		}
@@ -53,7 +52,6 @@
 			},
 			data: {
 				screen_key: key,
-				actor_id: actorId,
 			},
 		} );
 	};

@@ -628,9 +628,7 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	 */
 	public function bump_screen_revision( $request ) {
 		$screen_key = $request->get_param( 'screen_key' );
-		$actor_id   = $request->get_param( 'actor_id' );
-
-		$revision = wp_presence_bump_screen_revision( $screen_key, $actor_id );
+		$revision   = wp_presence_bump_screen_revision( $screen_key );
 
 		if ( false === $revision ) {
 			return new WP_Error(
