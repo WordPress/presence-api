@@ -79,7 +79,11 @@ jobs:
   deploy-to-wporg:
     needs: [release-please, build-release-asset]
     if: ${{ needs.release-please.outputs.release_created }}
-    uses: ./.github/workflows/deploy-wporg.yml
-    with:
-      tag: ${{ needs.release-please.outputs.tag_name }}
-    secrets: inherit
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.release-please.outputs.tag_name }}
+        run: gh workflow run deploy-wporg.yml --repo "$GITHUB_REPOSITORY" --field "tag=$TAG"
