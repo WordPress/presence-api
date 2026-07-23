@@ -35,8 +35,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    outputs:
-      ref: ${{ steps.inputs.outputs.ref }}
     steps:
       - name: Resolve inputs
         id: inputs
@@ -61,13 +59,4 @@ jobs:
           SVN_USERNAME: ${{ secrets.WPORG_SVN_USERNAME }}
           SLUG: presence-api
           VERSION: ${{ steps.inputs.outputs.version }}
-
-  assets:
-    needs: deploy
-    uses: ./.github/workflows/deploy-wporg-assets.yml
-    with:
-      checkout-ref: ${{ needs.deploy.outputs.ref }}
-      dry-run: ${{ inputs.dry-run == true }}
-    secrets:
-      WPORG_SVN_USERNAME: ${{ secrets.WPORG_SVN_USERNAME }}
-      WPORG_SVN_PASSWORD: ${{ secrets.WPORG_SVN_PASSWORD }}
+          ASSETS_DIR: .wordpress-org
