@@ -1,20 +1,6 @@
 name: Deploy Assets to WordPress.org
 
 on:
-  workflow_call:
-    inputs:
-      checkout-ref:
-        type: string
-        description: 'Git ref to source assets from.'
-        required: true
-      dry-run:
-        type: boolean
-        default: false
-    secrets:
-      WPORG_SVN_USERNAME:
-        required: true
-      WPORG_SVN_PASSWORD:
-        required: true
   workflow_dispatch:
     inputs:
       checkout-ref:
