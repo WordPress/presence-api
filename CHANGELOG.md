@@ -5,21 +5,16 @@
 
 ### Bug Fixes
 
-* check entry ownership before enforcing per-user presence limit ([429e803](https://github.com/WordPress/presence-api/commit/429e803242831c07372a76d1827109ff3ede9ebe))
 * check entry ownership before enforcing per-user presence limit ([5698d94](https://github.com/WordPress/presence-api/commit/5698d9425baa9a67561626c4ca8421a5daf64728)), closes [#88](https://github.com/WordPress/presence-api/issues/88)
 * exclude expired entries from ownership check to keep cap exact ([1560498](https://github.com/WordPress/presence-api/commit/15604988141f85028d4367a3c73dff909f65fca1))
-* pass VERSION env var to deploy action so SVN tag matches git tag ([bfaf64f](https://github.com/WordPress/presence-api/commit/bfaf64fafa35a7b9b9bca92275f41222b22f3dd2))
 * pass VERSION env var to deploy action so SVN tag matches git tag ([1a920ef](https://github.com/WordPress/presence-api/commit/1a920ef5f007465cd5e4f5e56a3439a34ec1bc10))
 * preserve version headings in sync script and correct wp_options claim ([8d1189f](https://github.com/WordPress/presence-api/commit/8d1189fe02e70a778be05fdc31ec2e9492c8c662))
 
 
 ### Dependencies
 
-* **deps-dev:** bump @wordpress/e2e-test-utils-playwright ([c5b2bb3](https://github.com/WordPress/presence-api/commit/c5b2bb3c7cc4bebfc63d88280d05c4b961aa8acb))
 * **deps-dev:** bump @wordpress/e2e-test-utils-playwright from 1.50.0 to 1.51.0 ([c217dd4](https://github.com/WordPress/presence-api/commit/c217dd4607362e0b3166678c93f88da07452d5e3))
-* **deps-dev:** bump @wordpress/env from 11.10.0 to 11.11.0 ([0237b5a](https://github.com/WordPress/presence-api/commit/0237b5aa645dcd9e071c035f69b69cb39c8f8f9c))
 * **deps-dev:** bump @wordpress/env from 11.10.0 to 11.11.0 ([ab48e93](https://github.com/WordPress/presence-api/commit/ab48e93eb4f2bbd335480703b263987ecb19d3c4))
-* **deps-dev:** update wp-coding-standards/wpcs requirement ([11a4fdd](https://github.com/WordPress/presence-api/commit/11a4fdd24c820a3136f7bb10de1cf23f3f713e93))
 * **deps-dev:** update wp-coding-standards/wpcs requirement from ~3.3.0 to ~3.4.0 ([a0578dd](https://github.com/WordPress/presence-api/commit/a0578dd9326f735cdcb315c1958aeff354bc9b01))
 
 ## [0.1.4](https://github.com/WordPress/presence-api/compare/v0.1.3...v0.1.4) (2026-07-09)
