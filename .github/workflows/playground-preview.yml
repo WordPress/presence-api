@@ -12,8 +12,6 @@ on:
     # them change what a reviewer sees when they open the Playground
     # link. A demo-seeder or workflow-only PR can fire the preview by
     # hand via `workflow_dispatch` when there's a real need.
-    branches-ignore:
-      - 'release-please--**'
     paths-ignore:
       - '**.md'
       - '.github/**'
@@ -33,6 +31,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    if: ${{ !startsWith(github.head_ref, 'release-please--') }}
     steps:
       - uses: actions/checkout@v7
         with:
