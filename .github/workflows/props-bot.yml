@@ -75,6 +75,35 @@ jobs:
         with:
           format: 'svn'
 
+      - name: Sort props
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        env:
+          PROPS_SORT_LAST: ${{ vars.PROPS_SORT_LAST }}
+        with:
+          script: |
+            const LAST = process.env.PROPS_SORT_LAST;
+            if (!LAST) return;
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const propsComment = [...comments.data].reverse()
+              .find(c => c.user.login === 'github-actions[bot]' && c.body.includes('Props '));
+            if (!propsComment) return;
+            const body = propsComment.body.replace(/Props ([^.]+)\./, (_, names) => {
+              const all = names.split(', ').map(n => n.trim());
+              const sorted = [...all.filter(n => n !== LAST), ...all.filter(n => n === LAST)];
+              return 'Props ' + sorted.join(', ') + '.';
+            });
+            if (body === propsComment.body) return;
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: propsComment.id,
+              body,
+            });
+
       - name: Remove the props-bot label
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         if: ${{ github.event.action == 'labeled' && 'props-bot' == github.event.label.name }}
