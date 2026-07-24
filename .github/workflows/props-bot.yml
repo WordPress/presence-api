@@ -68,7 +68,8 @@ jobs:
         'props-bot' == github.event.label.name
       ) &&
       ( ! github.event.pull_request.draft && github.event.pull_request.state == 'open' || ! github.event.issue.draft && github.event.issue.state == 'open' ) &&
-      ! startsWith( github.event.pull_request.head.ref, 'docs/add-' )
+      ! startsWith( github.event.pull_request.head.ref, 'docs/add-' ) &&
+      ! startsWith( github.event.pull_request.head.ref, 'release-please--' )
 
     steps:
       - name: Gather a list of contributors
