@@ -80,7 +80,7 @@ class WP_Test_Presence_Lifecycle extends WP_UnitTestCase {
 		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), self::$editor_id );
 		wp_set_presence( 'postType/post:1', 'lock-' . self::$editor_id, array(), self::$editor_id );
 
-		// Simulate real wp_logout timing
+		// Simulate real wp_logout timing.
 		// Auth cookie has been cleared, so get_current_user_id() would return 0.
 		wp_set_current_user( 0 );
 
