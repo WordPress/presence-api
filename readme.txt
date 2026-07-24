@@ -3,7 +3,7 @@ Contributors: joefusco
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.0
-Stable tag: 0.1.6
+Stable tag: 0.1.7
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -52,6 +52,10 @@ Or install manually:
 Or [try it in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json) without installing anything.
 
 == Changelog ==
+
+= 0.1.7 =
+* Add validate_callback validation check to REST screen_key.
+* Use correct REST route in PHPUnit tests.
 
 = 0.1.6 =
 * Dispatch deploy workflow instead of calling as reusable to avoid startup failure.
