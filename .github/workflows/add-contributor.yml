@@ -19,7 +19,7 @@ jobs:
       github.event.pull_request.merged == true &&
       !startsWith(github.event.pull_request.head.ref, 'release-please--') &&
       !startsWith(github.event.pull_request.head.ref, 'docs/add-') &&
-      !endsWith(github.event.pull_request.user.login, '[bot]')
+      github.event.pull_request.user.type != 'Bot'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -35,15 +35,14 @@ jobs:
           result-encoding: string
           script: |
             const login = process.env.GH_LOGIN;
-            const res = await fetch( 'https://profiles.wordpress.org/wp-json/wporg-github/v1/lookup/', {
+            const data = await fetch( 'https://profiles.wordpress.org/wp-json/wporg-github/v1/lookup/', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
                 'User-Agent': `${ context.repo.owner }/${ context.repo.repo }`,
               },
               body: JSON.stringify( { github_user: [ login ] } ),
-            } );
-            const data = await res.json().catch( () => null );
+            } ).then( r => r.json() ).catch( () => null );
             const slug = data?.[ login ]?.slug ?? '';
             if ( ! slug ) {
               core.warning( `No WordPress.org profile linked for GitHub user @${ login }. Skipping.` );
