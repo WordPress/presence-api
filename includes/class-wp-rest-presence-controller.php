@@ -150,6 +150,28 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 				),
 			)
 		);
+
+		register_rest_route(
+			$this->namespace,
+			'/' . $this->rest_base . '/screen-revisions/stale',
+			array(
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'bump_screen_revision' ),
+					'permission_callback' => array( $this, 'bump_screen_revision_permissions_check' ),
+					'args'                => array(
+						'screen_key' => array(
+							'required'          => true,
+							'type'              => 'string',
+							'sanitize_callback' => 'sanitize_text_field',
+							'validate_callback' => static function ( $value ) {
+								return (bool) preg_match( '#^[a-z0-9/_-]+$#', $value );
+							},
+						),
+					),
+				),
+			)
+		);
 	}
 
 	/**
@@ -582,6 +604,53 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 		$data    = $this->filter_response_by_context( $data, $context );
 
 		return rest_ensure_response( $data );
+	}
+
+	/**
+	 * Checks if the current user has permission to bump the given screen revision.
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @return true|WP_Error True if the request has access, WP_Error otherwise.
+	 */
+	public function bump_screen_revision_permissions_check( $request ) {
+		$screen_key = $request->get_param( 'screen_key' );
+		$key        = wp_presence_normalize_screen_key( $screen_key );
+
+		if ( ! wp_presence_current_user_can_access_screen( $key ) ) {
+			return new WP_Error(
+				'rest_forbidden',
+				__( 'Sorry, you are not allowed to update this screen revision.', 'presence-api' ),
+				array( 'status' => rest_authorization_required_code() )
+			);
+		}
+
+		return true;
+	}
+
+	/**
+	 * Bumps a screen revision.
+	 *
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @return WP_REST_Response|WP_Error Response object on success, WP_Error on failure.
+	 */
+	public function bump_screen_revision( $request ) {
+		$screen_key = $request->get_param( 'screen_key' );
+		$revision   = wp_presence_bump_screen_revision( $screen_key );
+
+		if ( false === $revision ) {
+			return new WP_Error(
+				'rest_invalid_screen_key',
+				__( 'Invalid or empty screen key provided.', 'presence-api' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		return rest_ensure_response(
+			array(
+				'screen_key' => wp_presence_normalize_screen_key( $screen_key ),
+				'rev'        => $revision,
+			)
+		);
 	}
 
 	/**

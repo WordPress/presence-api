@@ -20,6 +20,7 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 
 	public function tear_down() {
 		global $wpdb;
+		delete_option( 'wp_presence_screen_revisions' );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->query( "TRUNCATE TABLE {$wpdb->presence}" );
 		parent::tear_down();
@@ -316,5 +317,56 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 
 		$this->assertInstanceOf( 'WP_Error', $response );
 		$this->assertSame( 'rest_presence_limit_exceeded', $response->get_error_code() );
+	}
+
+	/**
+	 * @covers WP_REST_Presence_Controller::bump_screen_revision
+	 */
+	public function test_bump_screen_revision_success() {
+		wp_set_current_user( self::$admin_id );
+
+		$request = new WP_REST_Request( 'POST', '/wp-presence/v1/presence/screen-revisions/stale' );
+		$request->set_param( 'screen_key', 'options/general' );
+
+		$controller = new WP_REST_Presence_Controller();
+		$response   = $controller->bump_screen_revision( $request );
+
+		$this->assertNotInstanceOf( 'WP_Error', $response );
+		$data = $response->get_data();
+
+		$this->assertSame( 'options/general', $data['screen_key'] );
+		$this->assertSame( 1, $data['rev'] );
+	}
+
+	/**
+	 * @covers WP_REST_Presence_Controller::bump_screen_revision_permissions_check
+	 */
+	public function test_bump_screen_revision_permissions() {
+		wp_set_current_user( self::$editor_id );
+
+		$request = new WP_REST_Request( 'POST', '/wp-presence/v1/presence/screen-revisions/stale' );
+		$request->set_param( 'screen_key', 'options/general' );
+
+		$controller = new WP_REST_Presence_Controller();
+		$result     = $controller->bump_screen_revision_permissions_check( $request );
+
+		$this->assertInstanceOf( 'WP_Error', $result );
+		$this->assertSame( 'rest_forbidden', $result->get_error_code() );
+	}
+
+	/**
+	 * @covers WP_REST_Presence_Controller::bump_screen_revision
+	 */
+	public function test_bump_screen_revision_invalid_key() {
+		wp_set_current_user( self::$admin_id );
+
+		$request = new WP_REST_Request( 'POST', '/wp-presence/v1/presence/screen-revisions/stale' );
+		$request->set_param( 'screen_key', '' );
+
+		$controller = new WP_REST_Presence_Controller();
+		$response   = $controller->bump_screen_revision( $request );
+
+		$this->assertInstanceOf( 'WP_Error', $response );
+		$this->assertSame( 'rest_invalid_screen_key', $response->get_error_code() );
 	}
 }

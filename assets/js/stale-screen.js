@@ -27,6 +27,35 @@
 		return;
 	}
 
+	window.wp = window.wp || {};
+	window.wp.presence = window.wp.presence || {};
+
+	/**
+	 * Marks a screen as stale, bumping its revision on the server.
+	 *
+	 * Custom REST or AJAX-driven screens should call this after a successful
+	 * save so other users viewing the same screen receive a stale notice.
+	 *
+	 * @param {string} key     The screen key (e.g. 'options/my-plugin').
+	 * @return {Promise} jQuery Promise.
+	 */
+	window.wp.presence.markScreenStale = function ( key ) {
+		if ( ! config.restUrl || ! config.nonce ) {
+			return $.Deferred().reject( 'Missing REST configuration.' ).promise();
+		}
+
+		return $.ajax( {
+			url: config.restUrl,
+			method: 'POST',
+			beforeSend: function ( xhr ) {
+				xhr.setRequestHeader( 'X-WP-Nonce', config.nonce );
+			},
+			data: {
+				screen_key: key,
+			},
+		} );
+	};
+
 	$( document ).on( 'heartbeat-send', function ( event, data ) {
 		if ( document.visibilityState === 'hidden' ) {
 			return;
