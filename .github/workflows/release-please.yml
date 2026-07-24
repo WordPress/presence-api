@@ -54,6 +54,24 @@ jobs:
             git push
           fi
 
+  # When a release PR is created or updated, aggregate props from all PRs
+  # merged since the last published release and post a single sticky comment.
+  aggregate-props:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.pr }}
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/github-script@v8
+        env:
+          PROPS_SORT_LAST: ${{ vars.PROPS_SORT_LAST }}
+          PR_NUMBER: ${{ fromJSON(needs.release-please.outputs.pr).number }}
+        with:
+          script-path: .github/scripts/aggregate-props.js
+
   # When release-please's PR is merged, it tags + cuts the GitHub Release.
   # Build the distribution zip and attach it to the release.
   build-release-asset:
