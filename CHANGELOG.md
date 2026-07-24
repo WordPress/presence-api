@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.8](https://github.com/WordPress/presence-api/compare/v0.1.7...v0.1.8) (2026-07-24)
+
+
+### Bug Fixes
+
+* add AI Tools disclosure to automated contributor PR body ([17261d4](https://github.com/WordPress/presence-api/commit/17261d450362cdedca898f161e83008630965e70))
+* add concurrency group, use default_branch instead of hardcoded main ([bd4b20e](https://github.com/WordPress/presence-api/commit/bd4b20e93ae1f1855de8507e43338db0ef102772))
+* robot PR body for first contributions, suppress props-bot on contributor PRs ([1990954](https://github.com/WordPress/presence-api/commit/1990954eedb6c5130e3677d89667fa16181829f1))
+* suppress props-bot on release-please PRs ([b2dd9ab](https://github.com/WordPress/presence-api/commit/b2dd9ab4020cfe70eb8d0d5af08c461599dbbed6))
+* suppress props-bot on release-please PRs ([3b9ad69](https://github.com/WordPress/presence-api/commit/3b9ad69471b9cbc3b885cd020de1b4c7a33329cd))
+* use user.type for bot detection, wrap fetch in full try/catch ([840ab72](https://github.com/WordPress/presence-api/commit/840ab720b1ba7901c3f2b8a69b021340abd6b9b3))
+
+
+### Reverts
+
+* remove AI disclosure from automated PR body ([2333d5e](https://github.com/WordPress/presence-api/commit/2333d5e29e823b4738ada29654afe63162e1e825))
+
 ## [0.1.7](https://github.com/WordPress/presence-api/compare/v0.1.6...v0.1.7) (2026-07-24)
 
 
