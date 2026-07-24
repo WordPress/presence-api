@@ -152,7 +152,7 @@ add_action( 'edited_term', 'wp_presence_on_edited_term', 10, 3 );
 add_action( 'edit_comment', 'wp_presence_on_edit_comment' );
 
 add_action( 'wp_login', 'wp_presence_on_login', 10, 2 );
-add_action( 'wp_logout', 'wp_presence_on_logout' );
+add_action( 'wp_logout', 'wp_presence_on_logout', 10, 1 );
 
 add_action( 'admin_bar_menu', 'wp_presence_admin_bar_node', 80 );
 add_action( 'admin_enqueue_scripts', 'wp_presence_admin_bar_assets' );
