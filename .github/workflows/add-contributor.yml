@@ -1,0 +1,139 @@
+name: Add New Contributor to readme.txt
+
+on:
+  # pull_request_target is required (instead of pull_request) so that
+  # GITHUB_TOKEN has write permissions even when the merged PR came from a fork.
+  # No untrusted code is checked out here, so this is safe.
+  pull_request_target:
+    types: [closed]
+    branches: [main]
+
+# Disable permissions for all available scopes by default.
+# Any needed permissions should be configured at the job level.
+permissions: {}
+
+jobs:
+  add-contributor:
+    name: Open follow-up PR for new contributor
+    if: |
+      github.event.pull_request.merged == true &&
+      !startsWith(github.event.pull_request.head.ref, 'release-please--') &&
+      !startsWith(github.event.pull_request.head.ref, 'docs/add-') &&
+      github.event.pull_request.user.type != 'Bot'
+    # Serialize runs per contributor so back-to-back merges don't race on the same branch.
+    concurrency:
+      group: add-contributor-${{ github.event.pull_request.user.login }}
+      cancel-in-progress: false
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+    timeout-minutes: 10
+    steps:
+      - name: Resolve WordPress.org username from GitHub login
+        id: wporg
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        env:
+          GH_LOGIN: ${{ github.event.pull_request.user.login }}
+        with:
+          result-encoding: string
+          script: |
+            const login = process.env.GH_LOGIN;
+            const data = await fetch( 'https://profiles.wordpress.org/wp-json/wporg-github/v1/lookup/', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'User-Agent': `${ context.repo.owner }/${ context.repo.repo }`,
+              },
+              body: JSON.stringify( { github_user: [ login ] } ),
+            } ).then( r => r.json() ).catch( () => null );
+            const slug = data?.[ login ]?.slug ?? '';
+            if ( ! slug ) {
+              core.warning( `No WordPress.org profile linked for GitHub user @${ login }. Skipping.` );
+            }
+            return slug;
+
+      - name: Open contributor PR if not already listed
+        if: steps.wporg.outputs.result != ''
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        env:
+          GH_LOGIN: ${{ github.event.pull_request.user.login }}
+          WPORG_LOGIN: ${{ steps.wporg.outputs.result }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        with:
+          script: |
+            const { GH_LOGIN, WPORG_LOGIN, PR_NUMBER } = process.env;
+            const slug = WPORG_LOGIN.toLowerCase();
+            const { owner, repo } = context.repo;
+
+            // Read readme.txt via API — no checkout needed.
+            const { data: file } = await github.rest.repos.getContent( {
+              owner,
+              repo,
+              path: 'readme.txt',
+            } );
+            const readme = Buffer.from( file.content, 'base64' ).toString();
+
+            const match = readme.match( /^(Contributors:\s*)(.+)$/m );
+            if ( ! match ) return;
+
+            const existing = match[ 2 ].split( ',' ).map( c => c.trim().toLowerCase() );
+            if ( existing.includes( slug ) ) return;
+
+            const branch = `docs/add-${ slug }-to-contributors`;
+            const updated = readme.replace( /^(Contributors:\s*)(.+)$/m, `$1${ match[ 2 ] }, ${ slug }` );
+
+            // Get the default branch SHA.
+            const defaultBranch = context.payload.repository.default_branch;
+            const { data: ref } = await github.rest.git.getRef( {
+              owner,
+              repo,
+              ref: `heads/${ defaultBranch }`,
+            } );
+
+            // Create branch; ignore 422 if it already exists.
+            try {
+              await github.rest.git.createRef( {
+                owner,
+                repo,
+                ref: `refs/heads/${ branch }`,
+                sha: ref.object.sha,
+              } );
+            } catch ( e ) {
+              if ( e.status !== 422 ) throw e;
+            }
+
+            // Commit the readme.txt change onto the new branch.
+            const { data: branchFile } = await github.rest.repos.getContent( {
+              owner,
+              repo,
+              path: 'readme.txt',
+              ref: branch,
+            } );
+            await github.rest.repos.createOrUpdateFileContents( {
+              owner,
+              repo,
+              path: 'readme.txt',
+              message: `docs: add ${ slug } to contributors`,
+              content: Buffer.from( updated ).toString( 'base64' ),
+              sha: branchFile.sha,
+              branch,
+            } );
+
+            // Skip if a PR for this branch already exists.
+            const { data: prs } = await github.rest.pulls.list( {
+              owner,
+              repo,
+              head: `${ owner }:${ branch }`,
+              state: 'open',
+            } );
+            if ( prs.length > 0 ) return;
+
+            await github.rest.pulls.create( {
+              owner,
+              repo,
+              title: `docs: add ${ slug } to contributors`,
+              body: `:robot: I have added a new contributor *beep* *boop*\n\n---\n\n@${ GH_LOGIN } made their first contribution in #${ PR_NUMBER }.\n\n---\nThis PR was generated by the [add-contributor workflow](https://github.com/${ owner }/${ repo }/blob/main/.github/workflows/add-contributor.yml).`,
+              head: branch,
+              base: defaultBranch,
+            } );
