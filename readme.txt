@@ -3,7 +3,7 @@ Contributors: joefusco, intenzi, ashishjii
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.0
-Stable tag: 0.1.7
+Stable tag: 0.1.8
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -52,6 +52,14 @@ Or install manually:
 Or [try it in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json) without installing anything.
 
 == Changelog ==
+
+= 0.1.8 =
+* Add AI Tools disclosure to automated contributor PR body.
+* Add concurrency group, use default_branch instead of hardcoded main.
+* Robot PR body for first contributions, suppress props-bot on contributor PRs.
+* Suppress props-bot on release-please PRs.
+* Use user.type for bot detection, wrap fetch in full try/catch.
+* Remove AI disclosure from automated PR body.
 
 = 0.1.7 =
 * Add validate_callback validation check to REST screen_key.
