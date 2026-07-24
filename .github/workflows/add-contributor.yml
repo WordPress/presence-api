@@ -26,8 +26,6 @@ jobs:
       pull-requests: write
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
-
       - name: Resolve WordPress.org username from GitHub login
         id: wporg
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
@@ -52,24 +50,8 @@ jobs:
             }
             return slug;
 
-      - name: Check if already listed as a contributor
-        id: check
+      - name: Open contributor PR if not already listed
         if: steps.wporg.outputs.result != ''
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
-        env:
-          WPORG_LOGIN: ${{ steps.wporg.outputs.result }}
-        with:
-          result-encoding: string
-          script: |
-            const fs = require( 'fs' );
-            const readme = fs.readFileSync( 'readme.txt', 'utf8' );
-            const match = readme.match( /^Contributors:\s*(.+)$/m );
-            if ( ! match ) return 'false';
-            const existing = match[ 1 ].split( ',' ).map( c => c.trim().toLowerCase() );
-            return String( existing.includes( process.env.WPORG_LOGIN.toLowerCase() ) );
-
-      - name: Open follow-up PR to add contributor
-        if: steps.check.outputs.result == 'false'
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         env:
           GH_LOGIN: ${{ github.event.pull_request.user.login }}
@@ -78,27 +60,38 @@ jobs:
         with:
           script: |
             const { GH_LOGIN, WPORG_LOGIN, PR_NUMBER } = process.env;
-            const fs = require( 'fs' );
-            const readme = fs.readFileSync( 'readme.txt', 'utf8' );
-            const branch = `docs/add-${ WPORG_LOGIN.toLowerCase() }-to-contributors`;
+            const slug = WPORG_LOGIN.toLowerCase();
+            const { owner, repo } = context.repo;
 
-            const updated = readme.replace(
-              /^(Contributors:\s*)(.+)$/m,
-              ( _, prefix, names ) => `${ prefix }${ names }, ${ WPORG_LOGIN.toLowerCase() }`
-            );
+            // Read readme.txt via API — no checkout needed.
+            const { data: file } = await github.rest.repos.getContent( {
+              owner,
+              repo,
+              path: 'readme.txt',
+            } );
+            const readme = Buffer.from( file.content, 'base64' ).toString();
 
-            // Get the current main SHA.
+            const match = readme.match( /^(Contributors:\s*)(.+)$/m );
+            if ( ! match ) return;
+
+            const existing = match[ 2 ].split( ',' ).map( c => c.trim().toLowerCase() );
+            if ( existing.includes( slug ) ) return;
+
+            const branch = `docs/add-${ slug }-to-contributors`;
+            const updated = readme.replace( /^(Contributors:\s*)(.+)$/m, `$1${ match[ 2 ] }, ${ slug }` );
+
+            // Get main SHA.
             const { data: ref } = await github.rest.git.getRef( {
-              owner: context.repo.owner,
-              repo: context.repo.repo,
+              owner,
+              repo,
               ref: 'heads/main',
             } );
 
-            // Create the branch; ignore 422 if it already exists.
+            // Create branch; ignore 422 if it already exists.
             try {
               await github.rest.git.createRef( {
-                owner: context.repo.owner,
-                repo: context.repo.repo,
+                owner,
+                repo,
                 ref: `refs/heads/${ branch }`,
                 sha: ref.object.sha,
               } );
@@ -106,38 +99,37 @@ jobs:
               if ( e.status !== 422 ) throw e;
             }
 
-            // Get the file SHA on the new branch.
-            const { data: file } = await github.rest.repos.getContent( {
-              owner: context.repo.owner,
-              repo: context.repo.repo,
+            // Commit the readme.txt change onto the new branch.
+            const { data: branchFile } = await github.rest.repos.getContent( {
+              owner,
+              repo,
               path: 'readme.txt',
               ref: branch,
             } );
-
             await github.rest.repos.createOrUpdateFileContents( {
-              owner: context.repo.owner,
-              repo: context.repo.repo,
+              owner,
+              repo,
               path: 'readme.txt',
-              message: `docs: add ${ WPORG_LOGIN.toLowerCase() } to contributors`,
+              message: `docs: add ${ slug } to contributors`,
               content: Buffer.from( updated ).toString( 'base64' ),
-              sha: file.sha,
+              sha: branchFile.sha,
               branch,
             } );
 
             // Skip if a PR for this branch already exists.
             const { data: prs } = await github.rest.pulls.list( {
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              head: `${ context.repo.owner }:${ branch }`,
+              owner,
+              repo,
+              head: `${ owner }:${ branch }`,
               state: 'open',
             } );
             if ( prs.length > 0 ) return;
 
             await github.rest.pulls.create( {
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `docs: add ${ WPORG_LOGIN.toLowerCase() } to contributors`,
-              body: `:robot: *beep* *boop*\n\n---\n\n@${ GH_LOGIN } made their first contribution in #${ PR_NUMBER }.`,
+              owner,
+              repo,
+              title: `docs: add ${ slug } to contributors`,
+              body: `:robot: I have added a new contributor *beep* *boop*\n\n---\n\n@${ GH_LOGIN } made their first contribution in #${ PR_NUMBER }.\n\n---\nThis PR was generated by the [add-contributor workflow](https://github.com/${ owner }/${ repo }/blob/main/.github/workflows/add-contributor.yml).`,
               head: branch,
               base: 'main',
             } );
