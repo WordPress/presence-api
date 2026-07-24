@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.7](https://github.com/WordPress/presence-api/compare/v0.1.6...v0.1.7) (2026-07-24)
+
+
+### Bug Fixes
+
+* add validate_callback validation check to REST screen_key ([66eb99f](https://github.com/WordPress/presence-api/commit/66eb99f4ac0d1b136243714c4829eb8dd127edcf))
+* use correct REST route in PHPUnit tests ([1a95f2f](https://github.com/WordPress/presence-api/commit/1a95f2f352340072d19800476087e7eebb4d3b80))
+
 ## [0.1.6](https://github.com/WordPress/presence-api/compare/v0.1.5...v0.1.6) (2026-07-23)
 
 
