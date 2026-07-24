@@ -137,7 +137,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: `docs: add ${ WPORG_LOGIN.toLowerCase() } to contributors`,
-              body: `Props to @${ GH_LOGIN } for their contribution in #${ PR_NUMBER }.`,
+              body: `:robot: *beep* *boop*\n\n---\n\n@${ GH_LOGIN } made their first contribution in #${ PR_NUMBER }.`,
               head: branch,
               base: 'main',
             } );
