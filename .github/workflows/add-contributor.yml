@@ -1,0 +1,125 @@
+name: Add New Contributor to readme.txt
+
+on:
+  # pull_request_target is required (instead of pull_request) so that
+  # GITHUB_TOKEN has write permissions even when the merged PR came from a fork.
+  # No untrusted code is checked out here, so this is safe.
+  pull_request_target:
+    types: [closed]
+    branches: [main]
+
+# Disable permissions for all available scopes by default.
+# Any needed permissions should be configured at the job level.
+permissions: {}
+
+jobs:
+  add-contributor:
+    name: Open follow-up PR for new contributor
+    if: |
+      github.event.pull_request.merged == true &&
+      !startsWith(github.event.pull_request.head.ref, 'release-please--') &&
+      !startsWith(github.event.pull_request.head.ref, 'docs/add-') &&
+      !endsWith(github.event.pull_request.user.login, '[bot]')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Add contributor to readme.txt
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        env:
+          GH_LOGIN: ${{ github.event.pull_request.user.login }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        with:
+          script: |
+            const { GH_LOGIN, PR_NUMBER } = process.env;
+            const fs = require('fs');
+
+            // Resolve the WordPress.org username via the wporg GitHub lookup API.
+            // Contributors must link their GitHub account in their WordPress.org profile.
+            // See: https://profiles.wordpress.org/wp-json/wporg-github/v1/lookup/
+            const lookup = await fetch('https://profiles.wordpress.org/wp-json/wporg-github/v1/lookup/', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'User-Agent': `${context.repo.owner}/${context.repo.repo}`,
+              },
+              body: JSON.stringify({ github_user: [ GH_LOGIN ] }),
+            }).then(r => r.json()).catch(() => null);
+
+            const wporgLogin = lookup?.[ GH_LOGIN ]?.slug;
+            if (!wporgLogin) {
+              core.warning(`No WordPress.org profile linked for GitHub user @${GH_LOGIN}. Skipping.`);
+              return;
+            }
+
+            const readme = fs.readFileSync('readme.txt', 'utf8');
+            const match = readme.match(/^(Contributors:\s*)(.+)$/m);
+            if (!match) return;
+
+            const existing = match[2].split(',').map(c => c.trim().toLowerCase());
+            if (existing.includes(wporgLogin.toLowerCase())) return;
+
+            const branch = `docs/add-${wporgLogin.toLowerCase()}-to-contributors`;
+            const updated = readme.replace(
+              /^(Contributors:\s*)(.+)$/m,
+              `$1${match[2]}, ${wporgLogin.toLowerCase()}`
+            );
+
+            // Get main SHA.
+            const { data: ref } = await github.rest.git.getRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'heads/main',
+            });
+
+            // Create branch; ignore 422 if it already exists.
+            try {
+              await github.rest.git.createRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `refs/heads/${branch}`,
+                sha: ref.object.sha,
+              });
+            } catch (e) {
+              if (e.status !== 422) throw e;
+            }
+
+            // Get file SHA on the new branch.
+            const { data: file } = await github.rest.repos.getContent({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              path: 'readme.txt',
+              ref: branch,
+            });
+
+            await github.rest.repos.createOrUpdateFileContents({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              path: 'readme.txt',
+              message: `docs: add ${wporgLogin.toLowerCase()} to contributors`,
+              content: Buffer.from(updated).toString('base64'),
+              sha: file.sha,
+              branch,
+            });
+
+            // Skip if a PR for this branch already exists.
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: `${context.repo.owner}:${branch}`,
+              state: 'open',
+            });
+            if (prs.length > 0) return;
+
+            await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `docs: add ${wporgLogin.toLowerCase()} to contributors`,
+              body: `Props to @${GH_LOGIN} for their contribution in #${PR_NUMBER}.`,
+              head: branch,
+              base: 'main',
+            });
