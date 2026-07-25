@@ -18,7 +18,7 @@ WordPress has no way to know who is logged in, what screen they are on, or which
 
 ## Try it
 
-[Test in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json)
+[![Open in WordPress Playground](https://playground.wordpress.net/assets/playground-badge.svg)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json)
 
 Or run locally:
 

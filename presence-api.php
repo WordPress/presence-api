@@ -121,6 +121,22 @@ function wp_presence_activate() {
 }
 
 /**
+ * Returns the default dashboard widget order when the user has no stored preference.
+ *
+ * @param array|false $result Stored meta value, or false if not set.
+ * @return array|false Original value, or a default order with presence widgets first.
+ */
+function wp_presence_default_widget_order( $result ) {
+	if ( $result ) {
+		return $result;
+	}
+	return array(
+		'normal' => 'presence_whos_online,presence_active_posts,dashboard_right_now,dashboard_activity',
+		'side'   => 'dashboard_quick_press,dashboard_primary',
+	);
+}
+
+/**
  * Cleans up on plugin deactivation.
  */
 function wp_presence_deactivate() {
@@ -164,6 +180,7 @@ add_action( 'pre_get_users', 'wp_presence_filter_online_users' );
 
 add_action( 'admin_init', 'wp_presence_register_post_list_columns' );
 
+add_filter( 'get_user_option_meta-box-order_dashboard', 'wp_presence_default_widget_order' );
 add_action( 'wp_dashboard_setup', array( 'WP_Presence_Widget_Whos_Online', 'register' ) );
 add_filter( 'heartbeat_received', array( 'WP_Presence_Widget_Whos_Online', 'heartbeat_received' ), 10, 3 );
 add_action( 'wp_dashboard_setup', array( 'WP_Presence_Widget_Active_Posts', 'register' ) );
