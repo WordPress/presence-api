@@ -47,7 +47,7 @@ jobs:
           fi
           printf 'ref=refs/tags/%s\n' "$TAG" >> "$GITHUB_OUTPUT"
           printf 'version=%s\n' "${TAG#v}" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
           ref: ${{ steps.inputs.outputs.ref }}
