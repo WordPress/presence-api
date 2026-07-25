@@ -3,3 +3,4 @@ vendor/
 artifacts/
 .cache/
 .phpunit.result.cache
+coverage.xml

@@ -15,4 +15,9 @@
 			<exclude>tests/bootstrap.php</exclude>
 		</testsuite>
 	</testsuites>
+	<coverage>
+		<include>
+			<directory suffix=".php">includes/</directory>
+		</include>
+	</coverage>
 </phpunit>
