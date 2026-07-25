@@ -1,0 +1,23 @@
+name: PHPCS
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  phpcs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer
+      - uses: actions/cache@v6
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ hashFiles('composer.json') }}
+      - run: composer install --no-interaction
+      - run: ./vendor/bin/phpcs --standard=phpcs.xml.dist

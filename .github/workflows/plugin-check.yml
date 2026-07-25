@@ -1,0 +1,50 @@
+name: Plugin Check
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  plugin-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer
+
+      - run: composer install --no-dev --no-interaction --optimize-autoloader --no-scripts
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - run: npm install -g @wordpress/env@11.8.1
+
+      - name: Authenticate composer to GitHub
+        run: composer config --global --auth github-oauth.github.com '${{ secrets.GITHUB_TOKEN }}'
+
+      - name: Build plugin
+        run: |
+          mkdir -p build/presence-api
+          rsync -a --exclude-from='.distignore' --exclude='build' ./ build/presence-api/
+
+      - name: Configure wp-env to mount built plugin
+        run: |
+          cat > .wp-env.override.json <<'JSON'
+          { "plugins": [ "./build/presence-api" ] }
+          JSON
+
+      - run: wp-env start
+
+      - name: Install Plugin Check
+        run: |
+          wp-env run cli wp plugin install plugin-check --activate
+          wp-env run cli wp plugin activate presence-api
+
+      - name: Run Plugin Check
+        run: wp-env run cli wp plugin check presence-api --format=strict-table

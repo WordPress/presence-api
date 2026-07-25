@@ -22,154 +22,21 @@ jobs:
 
   phpcs:
     needs: gate
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          tools: composer
-      - uses: actions/cache@v6
-        with:
-          path: ~/.composer/cache
-          key: composer-${{ hashFiles('composer.json') }}
-      - run: composer install --no-interaction
-      - run: ./vendor/bin/phpcs --standard=phpcs.xml.dist
+    uses: ./.github/workflows/phpcs.yml
 
   phpstan:
     needs: gate
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          tools: composer
-      - uses: actions/cache@v6
-        with:
-          path: ~/.composer/cache
-          key: composer-${{ hashFiles('composer.json') }}
-      - run: composer install --no-interaction
-      # `--error-format=github` renders findings as inline PR annotations
-      # on the diff, the same shape PHPCS uses via its own GitHub formatter.
-      - run: ./vendor/bin/phpstan analyse --no-progress --error-format=github
+    uses: ./.github/workflows/phpstan.yml
 
   phpunit:
     needs: gate
-    name: PHP ${{ matrix.php }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        php: [ '7.4', '8.3' ]
-        include:
-          - php: '8.3'
-            coverage: true
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          tools: composer
-      - run: npm ci
-      # Avoids the intermittent 504s on api.github.com during wp-env's
-      # Docker build (PR #22). Authenticated requests dodge the issue.
-      - name: Authenticate composer to GitHub
-        run: composer config --global --auth github-oauth.github.com '${{ secrets.GITHUB_TOKEN }}'
-      - run: npx wp-env start ${{ matrix.coverage && '--xdebug=coverage' || '' }}
-        env:
-          WP_ENV_PHP_VERSION: ${{ matrix.php }}
-      - run: npx wp-env run tests-cli -- composer require --dev phpunit/phpunit:^9.6 yoast/phpunit-polyfills:^2.0 --working-dir=/var/www/html --update-with-all-dependencies
-      - run: npx wp-env run tests-cli --env-cwd='wp-content/plugins/presence-api' -- /var/www/html/vendor/bin/phpunit ${{ matrix.coverage && '--coverage-clover coverage.xml' || '' }}
-      - name: Upload coverage to Codecov
-        if: ${{ matrix.coverage }}
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage.xml
-          flags: phpunit
+    uses: ./.github/workflows/phpunit.yml
+    secrets: inherit
 
   multisite:
     needs: gate
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          tools: composer
-      - run: npm ci
-      # Avoids the intermittent 504s on api.github.com during wp-env's
-      # Docker build (PR #22). Authenticated requests dodge the issue.
-      - name: Authenticate composer to GitHub
-        run: composer config --global --auth github-oauth.github.com '${{ secrets.GITHUB_TOKEN }}'
-      - run: npx wp-env start
-      - run: npx wp-env run tests-cli -- composer require --dev phpunit/phpunit:^9.6 yoast/phpunit-polyfills:^2.0 --working-dir=/var/www/html --update-with-all-dependencies
-      - run: npx wp-env run tests-cli -- wp core multisite-convert --title="Test Network"
-      - run: npx wp-env run tests-cli --env-cwd='wp-content/plugins/presence-api' -- /var/www/html/vendor/bin/phpunit
+    uses: ./.github/workflows/multisite.yml
 
   plugin-check:
     needs: gate
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          tools: composer
-
-      # Match `release.yml` — no dev deps, optimized autoloader, scripts
-      # disabled — so what's checked is what would ship.
-      - run: composer install --no-dev --no-interaction --optimize-autoloader --no-scripts
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - run: npm install -g @wordpress/env@11.8.1
-
-      # Avoids the intermittent 504s on api.github.com during wp-env's
-      # Docker build (PR #22). Authenticated requests dodge the issue.
-      - name: Authenticate composer to GitHub
-        run: composer config --global --auth github-oauth.github.com '${{ secrets.GITHUB_TOKEN }}'
-
-      # Build the plugin tree the same way `release.yml` does so
-      # plugin-check sees only what would actually ship — `.distignore`
-      # excludes `.wp-env.json`, the `*.dist` configs, tests, and other
-      # dev files that the live WP.org plugin directory wouldn't see.
-      - name: Build the plugin
-        run: |
-          mkdir -p build/presence-api
-          rsync -a --exclude-from='.distignore' --exclude='build' ./ build/presence-api/
-
-      # Point wp-env at the built tree instead of the repo root so the
-      # `presence-api` slug it loads is the directory plugin-check
-      # should be analyzing.
-      - name: Mount the built plugin into wp-env
-        run: |
-          cat > .wp-env.override.json <<'JSON'
-          { "plugins": [ "./build/presence-api" ] }
-          JSON
-
-      - run: wp-env start --update
-
-      - name: Install Plugin Check inside wp-env
-        run: |
-          wp-env run cli wp plugin install plugin-check --activate
-          wp-env run cli wp plugin activate presence-api
-
-      # `strict-table` is the only built-in format that's human-readable
-      # in CI logs and exits non-zero when errors are found. (Plain
-      # `table` always exits 0 even with findings.)
-      - name: Run Plugin Check
-        run: |
-          wp-env run cli wp plugin check presence-api --format=strict-table
+    uses: ./.github/workflows/plugin-check.yml
