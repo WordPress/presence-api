@@ -70,7 +70,9 @@ jobs:
           PROPS_SORT_LAST: ${{ vars.PROPS_SORT_LAST }}
           PR_NUMBER: ${{ fromJSON(needs.release-please.outputs.pr).number }}
         with:
-          script-path: .github/scripts/aggregate-props.js
+          script: |
+            const run = require(`${process.env.GITHUB_WORKSPACE}/.github/scripts/aggregate-props.js`);
+            await run({ github, context, core });
 
   # When release-please's PR is merged, it tags + cuts the GitHub Release.
   # Build the distribution zip and attach it to the release.
