@@ -15,6 +15,7 @@ concurrency:
 
 jobs:
   phpstan:
+    if: ${{ !startsWith(github.head_ref, 'release-please--') && !startsWith(github.ref, 'refs/heads/release-please--') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
