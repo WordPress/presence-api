@@ -7,7 +7,7 @@ on:
   # Note: The pull_request_target event is used instead of pull_request because this workflow needs permission to comment
   # on the pull request. Because this event grants extra permissions to `GITHUB_TOKEN`, any code changes within the PR
   # should be considered untrusted. See https://securitylab.github.com/research/github-actions-preventing-pwn-requests/.
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers]
     types:
       - opened
       - synchronize
@@ -73,7 +73,7 @@ jobs:
 
     steps:
       - name: Gather a list of contributors
-        uses: WordPress/props-bot-action@trunk
+        uses: WordPress/props-bot-action@trunk # zizmor: ignore[unpinned-uses]
         with:
           format: 'svn'
 

@@ -4,7 +4,7 @@ on:
   # pull_request_target is required (instead of pull_request) so that
   # GITHUB_TOKEN has write permissions even when the merged PR came from a fork.
   # No untrusted code is checked out here, so this is safe.
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers]
     types: [closed]
     branches: [main]
 

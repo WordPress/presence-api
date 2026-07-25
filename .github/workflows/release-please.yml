@@ -8,13 +8,15 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-permissions:
-  contents: write
-  pull-requests: write
+
+permissions: {}
 
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
@@ -25,7 +27,7 @@ jobs:
       # disabled (and it's locked at the org level here). Authenticate with a
       # PAT or GitHub App token stored in the RELEASE_PLEASE_TOKEN secret so
       # the release PR can be created.
-      - uses: googleapis/release-please-action@v5
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5
         id: release
         with:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
@@ -39,18 +41,24 @@ jobs:
     needs: release-please
     if: ${{ needs.release-please.outputs.pr }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
+          persist-credentials: false
           ref: ${{ fromJSON(needs.release-please.outputs.pr).headBranchName }}
       - run: bash scripts/sync-versions.sh
       - name: Commit synced versions back to the release PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if ! git diff --quiet; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add presence-api.php readme.txt
             git commit -m "chore: sync versions across plugin file and readme"
+            gh auth setup-git
             git push
           fi
 
@@ -64,8 +72,10 @@ jobs:
       pull-requests: write
       contents: read
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/github-script@v8
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
         env:
           PROPS_SORT_LAST: ${{ vars.PROPS_SORT_LAST }}
           PR_NUMBER: ${{ fromJSON(needs.release-please.outputs.pr).number }}
@@ -80,9 +90,13 @@ jobs:
     needs: release-please
     if: ${{ needs.release-please.outputs.release_created }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v7
-      - uses: shivammathur/setup-php@v2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: '8.3'
           tools: composer
@@ -102,4 +116,6 @@ jobs:
     uses: ./.github/workflows/deploy-wporg.yml
     with:
       tag: ${{ needs.release-please.outputs.tag_name }}
-    secrets: inherit
+    secrets:
+      WPORG_SVN_PASSWORD: ${{ secrets.WPORG_SVN_PASSWORD }}
+      WPORG_SVN_USERNAME: ${{ secrets.WPORG_SVN_USERNAME }}

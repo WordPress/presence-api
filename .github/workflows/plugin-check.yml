@@ -1,20 +1,7 @@
 name: Plugin Check
 
-# Runs the WordPress.org Plugin Check suite against the staged plugin —
-# the same checks the directory's automated review applies on submission.
-# Surfaces missing `readme.txt` fields, license-header issues, forbidden
-# function calls, and similar guideline violations before they become a
-# submission blocker.
-
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  workflow_call:
 
 permissions:
   contents: read
@@ -23,56 +10,43 @@ jobs:
   plugin-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
 
-      - uses: shivammathur/setup-php@v2
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: '8.3'
           tools: composer
 
-      # Match `release.yml` — no dev deps, optimized autoloader, scripts
-      # disabled — so what's checked is what would ship.
       - run: composer install --no-dev --no-interaction --optimize-autoloader --no-scripts
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
 
       - run: npm install -g @wordpress/env@11.8.1
 
-      # Avoids the intermittent 504s on api.github.com during wp-env's
-      # Docker build (PR #22). Authenticated requests dodge the issue.
       - name: Authenticate composer to GitHub
         run: composer config --global --auth github-oauth.github.com '${{ secrets.GITHUB_TOKEN }}'
 
-      # Build the plugin tree the same way `release.yml` does so
-      # plugin-check sees only what would actually ship — `.distignore`
-      # excludes `.wp-env.json`, the `*.dist` configs, tests, and other
-      # dev files that the live WP.org plugin directory wouldn't see.
-      - name: Build the plugin
+      - name: Build plugin
         run: |
           mkdir -p build/presence-api
           rsync -a --exclude-from='.distignore' --exclude='build' ./ build/presence-api/
 
-      # Point wp-env at the built tree instead of the repo root so the
-      # `presence-api` slug it loads is the directory plugin-check
-      # should be analyzing.
-      - name: Mount the built plugin into wp-env
+      - name: Configure wp-env to mount built plugin
         run: |
           cat > .wp-env.override.json <<'JSON'
           { "plugins": [ "./build/presence-api" ] }
           JSON
 
-      - run: wp-env start --update
+      - run: wp-env start
 
-      - name: Install Plugin Check inside wp-env
+      - name: Install Plugin Check
         run: |
           wp-env run cli wp plugin install plugin-check --activate
           wp-env run cli wp plugin activate presence-api
 
-      # `strict-table` is the only built-in format that's human-readable
-      # in CI logs and exits non-zero when errors are found. (Plain
-      # `table` always exits 0 even with findings.)
       - name: Run Plugin Check
-        run: |
-          wp-env run cli wp plugin check presence-api --format=strict-table
+        run: wp-env run cli wp plugin check presence-api --format=strict-table
