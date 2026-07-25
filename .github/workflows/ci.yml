@@ -31,7 +31,8 @@ jobs:
   phpunit:
     needs: gate
     uses: ./.github/workflows/phpunit.yml
-    secrets: inherit
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   multisite:
     needs: gate
