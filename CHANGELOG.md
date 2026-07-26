@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.9](https://github.com/WordPress/presence-api/compare/v0.1.8...v0.1.9) (2026-07-26)
+
+
+### Features
+
+* aggregate props from merged PRs onto release PR ([05441f1](https://github.com/WordPress/presence-api/commit/05441f154299304a7d67966705f9ac43e3b440f7))
+
+
+### Bug Fixes
+
+* default presence widgets to top of dashboard on fresh install ([aa2e12f](https://github.com/WordPress/presence-api/commit/aa2e12fa0bf40cdf709b68a8e88592e5e6a173a3))
+* default presence widgets to top of dashboard on fresh install ([6432478](https://github.com/WordPress/presence-api/commit/643247849919909f3808b78b9fb8f34918db128a))
+* remove top-level permissions block that broke release-please startup ([e3408dd](https://github.com/WordPress/presence-api/commit/e3408dd7205688029fa776b4c5582036d3508c05))
+* remove top-level permissions block that broke release-please startup ([9786643](https://github.com/WordPress/presence-api/commit/978664327cbadfeafa232ec4be10fff804ec1819))
+* use inline script to load aggregate-props from workspace ([a7aa1f1](https://github.com/WordPress/presence-api/commit/a7aa1f1903a11dfafe6c0e441bac69f6ae451c6f))
+* use inline script to load aggregate-props from workspace ([a2231d0](https://github.com/WordPress/presence-api/commit/a2231d0c268afed9c5101d3f65c84c9b78cb3c97))
+
 ## [0.1.8](https://github.com/WordPress/presence-api/compare/v0.1.7...v0.1.8) (2026-07-24)
 
 
