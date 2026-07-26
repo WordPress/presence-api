@@ -227,15 +227,21 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 
 	/**
 	 * @covers WP_REST_Presence_Controller::sanitize_data_param
+	 * @covers WP_REST_Presence_Controller::sanitize_data_recursive
 	 */
-	public function test_sanitize_data_strips_html() {
+	public function test_sanitize_data_does_not_strip_html_or_whitespace() {
 		$controller = new WP_REST_Presence_Controller();
 
-		$input  = array( 'msg' => '<script>alert("xss")</script>' );
+		$input  = array(
+			'html'      => '<script>alert("xss")</script>',
+			'multiline' => "line 1\nline 2",
+			'spaced'    => '  hello world  ',
+		);
 		$result = $controller->sanitize_data_param( $input );
 
-		$this->assertStringNotContainsString( '<script>', $result['msg'] );
-		$this->assertStringNotContainsString( '</script>', $result['msg'] );
+		$this->assertSame( '<script>alert("xss")</script>', $result['html'] );
+		$this->assertSame( "line 1\nline 2", $result['multiline'] );
+		$this->assertSame( '  hello world  ', $result['spaced'] );
 	}
 
 	/**

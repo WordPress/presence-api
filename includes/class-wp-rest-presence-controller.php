@@ -206,10 +206,12 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	}
 
 	/**
-	 * Sanitizes the data parameter values recursively.
+	 * Sanitizes the data parameter structure recursively.
 	 *
-	 * Preserves scalar types (strings, integers, floats, booleans)
-	 * and recurses into nested arrays up to MAX_DATA_DEPTH levels.
+	 * Enforces a type allowlist (strings, integers, floats, booleans,
+	 * and nested arrays) and a depth limit of MAX_DATA_DEPTH levels.
+	 * String values are passed through untouched; output-time encoding
+	 * (e.g. wp_json_encode, esc_html) is responsible for escaping.
 	 *
 	 * @param mixed $value The data parameter value.
 	 * @return array Sanitized data array.
@@ -223,11 +225,15 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	}
 
 	/**
-	 * Recursively sanitizes data values with a depth limit.
+	 * Recursively enforces the type allowlist and depth limit on data values.
 	 *
-	 * @param array $data  The data to sanitize.
+	 * Keys are sanitized via sanitize_text_field(). Scalar values
+	 * (strings, integers, floats, booleans) are preserved as-is;
+	 * unsupported types are silently dropped.
+	 *
+	 * @param array $data  The data to process.
 	 * @param int   $depth Current nesting depth.
-	 * @return array Sanitized data.
+	 * @return array Processed data.
 	 */
 	private static function sanitize_data_recursive( $data, $depth ) {
 		if ( $depth >= self::MAX_DATA_DEPTH ) {
@@ -242,7 +248,7 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 			if ( is_array( $value ) ) {
 				$sanitized[ $key ] = self::sanitize_data_recursive( $value, $depth + 1 );
 			} elseif ( is_string( $value ) ) {
-				$sanitized[ $key ] = sanitize_text_field( $value );
+				$sanitized[ $key ] = $value;
 			} elseif ( is_int( $value ) || is_float( $value ) || is_bool( $value ) ) {
 				$sanitized[ $key ] = $value;
 			}
