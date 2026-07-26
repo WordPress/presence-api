@@ -227,6 +227,7 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 
 	/**
 	 * @covers WP_REST_Presence_Controller::sanitize_data_param
+	 * @covers WP_REST_Presence_Controller::sanitize_data_recursive
 	 */
 	public function test_sanitize_data_does_not_strip_html_or_whitespace() {
 		$controller = new WP_REST_Presence_Controller();
