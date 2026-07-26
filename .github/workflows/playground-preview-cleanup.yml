@@ -12,13 +12,12 @@ on:
   pull_request_target:
     types: [closed]
 
-permissions: {}
+permissions:
+  contents: write
 
 jobs:
   cleanup:
     runs-on: ubuntu-24.04
-    permissions:
-      contents: write
     if: ${{ !startsWith(github.head_ref, 'release-please--') }}
     steps:
       - name: Delete preview release and tag
