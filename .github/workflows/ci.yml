@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   gate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: ${{ !startsWith(github.head_ref, 'release-please--') && !startsWith(github.ref, 'refs/heads/release-please--') }}
     steps:
       - run: true
@@ -41,3 +41,7 @@ jobs:
   plugin-check:
     needs: gate
     uses: ./.github/workflows/plugin-check.yml
+
+  typos:
+    needs: gate
+    uses: ./.github/workflows/typos.yml
