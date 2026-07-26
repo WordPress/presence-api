@@ -3,7 +3,7 @@ Contributors: joefusco, intenzi, ashishjii
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.0
-Stable tag: 0.1.8
+Stable tag: 0.1.9
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -52,6 +52,12 @@ Or install manually:
 Or [try it in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json) without installing anything.
 
 == Changelog ==
+
+= 0.1.9 =
+* Aggregate props from merged PRs onto release PR.
+* Default presence widgets to top of dashboard on fresh install.
+* Remove top-level permissions block that broke release-please startup.
+* Use inline script to load aggregate-props from workspace.
 
 = 0.1.8 =
 * Add AI Tools disclosure to automated contributor PR body.
