@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.10](https://github.com/WordPress/presence-api/compare/v0.1.9...v0.1.10) (2026-07-27)
+
+
+### Bug Fixes
+
+* credit every contributor in the release props comment ([d069193](https://github.com/WordPress/presence-api/commit/d069193109e69dc1f6a84b261ca6b95c0efd313b))
+* credit every contributor in the release props comment ([dd0f7b2](https://github.com/WordPress/presence-api/commit/dd0f7b2ba966c319a6ef18e1dc65afa80122e4c2))
+* move the admin/online write out of the Who's Online widget ([b7b500b](https://github.com/WordPress/presence-api/commit/b7b500bd2ca5eac2d2cc98485ea3ac4452c0a324)), closes [#141](https://github.com/WordPress/presence-api/issues/141)
+* render release props in a code block like props-bot ([3a2ae99](https://github.com/WordPress/presence-api/commit/3a2ae990edf2279519e480d6e3f1f12c425cb93b))
+* render release props in a code block like props-bot ([ac720d6](https://github.com/WordPress/presence-api/commit/ac720d682f488e8f78fa479a1806687895e462e6))
+
 ## [0.1.9](https://github.com/WordPress/presence-api/compare/v0.1.8...v0.1.9) (2026-07-26)
 
 
