@@ -16,7 +16,68 @@
  * @package WordPress
  * @since 7.1.0
  */
-import { test, expect } from '@wordpress/e2e-test-utils-playwright';
+import { test as base, expect } from '@wordpress/e2e-test-utils-playwright';
+import { chromium } from '@playwright/test';
+
+const BASE_URL = ( process.env.WP_BASE_URL || 'http://localhost:8888' ).replace( /\/$/, '' );
+
+const TEST_USERS = [
+	{
+		username: 'presence_test_b',
+		email: 'presence_test_b@example.com',
+		firstName: 'User',
+		lastName: 'B',
+		password: 'password',
+		roles: [ 'editor' ],
+	},
+];
+
+const test = base.extend( {
+	testUsers: [
+		async ( { requestUtils }, use ) => {
+			for ( const user of TEST_USERS ) {
+				await requestUtils.createUser( user ).catch( ( error ) => {
+					if ( error?.code !== 'existing_user_login' ) {
+						throw error;
+					}
+				} );
+			}
+			await use( TEST_USERS );
+			await requestUtils.deleteAllUsers();
+		},
+		{ scope: 'test' },
+	],
+} );
+
+async function loginHeadlessUser( headlessBrowser, user, destinationUrl ) {
+	const context = await headlessBrowser.newContext( {
+		baseURL: BASE_URL,
+		ignoreHTTPSErrors: true,
+	} );
+
+	// Authenticate via POST request to set cookies on the context.
+	await context.request.post( `${ BASE_URL }/wp-login.php`, {
+		form: {
+			log: user.username,
+			pwd: user.password,
+			'wp-submit': 'Log In',
+			redirect_to: destinationUrl || `${ BASE_URL }/wp-admin/`,
+			testcookie: '1',
+		},
+	} );
+
+	const userPage = await context.newPage();
+	await userPage.goto( destinationUrl || `${ BASE_URL }/wp-admin/` );
+	await userPage.waitForLoadState( 'networkidle' );
+
+	await userPage.evaluate( () => {
+		if ( typeof wp !== 'undefined' && wp.heartbeat ) {
+			wp.heartbeat.connectNow();
+		}
+	} );
+
+	return { context, page: userPage };
+}
 
 /**
  * Waits until the WordPress heartbeat library is ready on the page.
@@ -89,7 +150,7 @@ test.describe( 'Presence Visibility', () => {
 		expect( visible[ 'presence-ping' ].screen ).toBeTruthy();
 	} );
 
-	test( 'heartbeat-send omits presence-editor-ping and wp-refresh-post-lock while editor tab is hidden', async ( {
+	test( 'heartbeat-send omits presence-editor-ping while editor tab is hidden', async ( {
 		admin,
 		page,
 		requestUtils,
@@ -108,12 +169,67 @@ test.describe( 'Presence Visibility', () => {
 		await setVisibility( page, 'hidden' );
 		const hidden = await captureHeartbeatSend( page );
 		expect( hidden[ 'presence-editor-ping' ] ).toBeUndefined();
-		expect( hidden[ 'wp-refresh-post-lock' ] ).toBeUndefined();
 
 		await setVisibility( page, 'visible' );
 		const visible = await captureHeartbeatSend( page );
 		expect( visible[ 'presence-editor-ping' ] ).toBeDefined();
 		expect( visible[ 'presence-editor-ping' ].post_id ).toBe( post.id );
+	} );
+
+	test( 'heartbeat-send omits wp-refresh-post-lock while editor tab is hidden', async ( {
+		admin,
+		page,
+		requestUtils,
+		testUsers,
+	} ) => {
+		const post = await requestUtils.createPost( {
+			title: 'E2E Visibility Editor Post Lock Test',
+			status: 'draft',
+		} );
+
+		// User A opens the post editor to create the initial lock.
+		await admin.visitAdminPage(
+			'post.php',
+			`post=${ post.id }&action=edit`
+		);
+		await waitForHeartbeat( page );
+
+		// User B opens the same post editor in a new browser context.
+		const headlessBrowser = await chromium.launch( { headless: true } );
+
+		try {
+			const userB = await loginHeadlessUser(
+				headlessBrowser,
+				testUsers[ 0 ],
+				`${ BASE_URL }/wp-admin/post.php?post=${ post.id }&action=edit`
+			);
+
+			// User B clicks "Take over" to become the active lock holder.
+			const takeOverButton = userB.page.locator( 'a:has-text("Take over")' );
+			await takeOverButton.click();
+
+			// Wait for heartbeat library on User B's page.
+			await waitForHeartbeat( userB.page );
+
+			// Verify that wp-refresh-post-lock is present when visible initially.
+			const initial = await captureHeartbeatSend( userB.page );
+			expect( initial[ 'wp-refresh-post-lock' ] ).toBeDefined();
+			expect( initial[ 'wp-refresh-post-lock' ].post_id ).toBe( String( post.id ) );
+
+			// Verify that wp-refresh-post-lock is deleted when page is hidden.
+			await setVisibility( userB.page, 'hidden' );
+			const hidden = await captureHeartbeatSend( userB.page );
+			expect( hidden[ 'wp-refresh-post-lock' ] ).toBeUndefined();
+
+			// Restore visibility to User B's page and assert it is sent again.
+			await setVisibility( userB.page, 'visible' );
+			const visible = await captureHeartbeatSend( userB.page );
+			expect( visible[ 'wp-refresh-post-lock' ] ).toBeDefined();
+
+			await userB.context.close();
+		} finally {
+			await headlessBrowser.close();
+		}
 	} );
 
 	test( 'visibility restore triggers an immediate heartbeat tick', async ( {
