@@ -83,4 +83,35 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_UnitTestCase {
 		// date_gmt should be a datetime string, not pre-formatted.
 		$this->assertMatchesRegularExpression( '/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $entry['date_gmt'] );
 	}
+
+	/**
+	 * @covers WP_Presence_Widget_Whos_Online::render
+	 */
+	public function test_render_includes_avatar_with_alt_text() {
+		// Create a user and set their display name.
+		$user_id = self::factory()->user->create( array(
+			'role'         => 'editor',
+			'display_name' => 'John Doe',
+		) );
+
+		// Set presence for this user in the "Who's Online" room.
+		wp_set_presence(
+			WP_Presence_Widget_Whos_Online::ROOM,
+			'client-1',
+			array(),
+			$user_id
+		);
+
+		// Make sure the current logged-in user is different so John Doe is listed.
+		wp_set_current_user( self::$editor_id );
+
+		// Capture the output of render().
+		ob_start();
+		WP_Presence_Widget_Whos_Online::render();
+		$output = ob_get_clean();
+
+		// Verify that the avatar includes alt="John Doe".
+		$this->assertStringContainsString( 'alt="John Doe"', $output );
+	}
 }
+
