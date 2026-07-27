@@ -6,10 +6,8 @@
 ### Bug Fixes
 
 * credit every contributor in the release props comment ([d069193](https://github.com/WordPress/presence-api/commit/d069193109e69dc1f6a84b261ca6b95c0efd313b))
-* credit every contributor in the release props comment ([dd0f7b2](https://github.com/WordPress/presence-api/commit/dd0f7b2ba966c319a6ef18e1dc65afa80122e4c2))
 * move the admin/online write out of the Who's Online widget ([b7b500b](https://github.com/WordPress/presence-api/commit/b7b500bd2ca5eac2d2cc98485ea3ac4452c0a324)), closes [#141](https://github.com/WordPress/presence-api/issues/141)
 * render release props in a code block like props-bot ([3a2ae99](https://github.com/WordPress/presence-api/commit/3a2ae990edf2279519e480d6e3f1f12c425cb93b))
-* render release props in a code block like props-bot ([ac720d6](https://github.com/WordPress/presence-api/commit/ac720d682f488e8f78fa479a1806687895e462e6))
 
 ## [0.1.9](https://github.com/WordPress/presence-api/compare/v0.1.8...v0.1.9) (2026-07-26)
 
@@ -22,11 +20,8 @@
 ### Bug Fixes
 
 * default presence widgets to top of dashboard on fresh install ([aa2e12f](https://github.com/WordPress/presence-api/commit/aa2e12fa0bf40cdf709b68a8e88592e5e6a173a3))
-* default presence widgets to top of dashboard on fresh install ([6432478](https://github.com/WordPress/presence-api/commit/643247849919909f3808b78b9fb8f34918db128a))
 * remove top-level permissions block that broke release-please startup ([e3408dd](https://github.com/WordPress/presence-api/commit/e3408dd7205688029fa776b4c5582036d3508c05))
-* remove top-level permissions block that broke release-please startup ([9786643](https://github.com/WordPress/presence-api/commit/978664327cbadfeafa232ec4be10fff804ec1819))
 * use inline script to load aggregate-props from workspace ([a7aa1f1](https://github.com/WordPress/presence-api/commit/a7aa1f1903a11dfafe6c0e441bac69f6ae451c6f))
-* use inline script to load aggregate-props from workspace ([a2231d0](https://github.com/WordPress/presence-api/commit/a2231d0c268afed9c5101d3f65c84c9b78cb3c97))
 
 ## [0.1.8](https://github.com/WordPress/presence-api/compare/v0.1.7...v0.1.8) (2026-07-24)
 
@@ -37,7 +32,6 @@
 * add concurrency group, use default_branch instead of hardcoded main ([bd4b20e](https://github.com/WordPress/presence-api/commit/bd4b20e93ae1f1855de8507e43338db0ef102772))
 * robot PR body for first contributions, suppress props-bot on contributor PRs ([1990954](https://github.com/WordPress/presence-api/commit/1990954eedb6c5130e3677d89667fa16181829f1))
 * suppress props-bot on release-please PRs ([b2dd9ab](https://github.com/WordPress/presence-api/commit/b2dd9ab4020cfe70eb8d0d5af08c461599dbbed6))
-* suppress props-bot on release-please PRs ([3b9ad69](https://github.com/WordPress/presence-api/commit/3b9ad69471b9cbc3b885cd020de1b4c7a33329cd))
 * use user.type for bot detection, wrap fetch in full try/catch ([840ab72](https://github.com/WordPress/presence-api/commit/840ab720b1ba7901c3f2b8a69b021340abd6b9b3))
 
 
@@ -101,7 +95,6 @@
 
 * address stale-screen review feedback ([495c3ce](https://github.com/WordPress/presence-api/commit/495c3ceaf92f16bfac71d977c951c5161ef24114))
 * address WordPress.org plugin review feedback ([032a3d0](https://github.com/WordPress/presence-api/commit/032a3d02fef843d94a536b98eb089d7b642c56ff))
-* address WordPress.org plugin review feedback ([155067f](https://github.com/WordPress/presence-api/commit/155067f4a912beee2cb25eba016d139675806627))
 * close wp_presence_current_screen_key() brace dropped by autofix ([106cc9b](https://github.com/WordPress/presence-api/commit/106cc9b6e334e93b15298c4c2a766b679305b815))
 * resolve merge conflicts with main branch ([afeb72b](https://github.com/WordPress/presence-api/commit/afeb72bd41934991bb603c651069072f00900ee3))
 * **test:** use a second admin viewer for the options/* heartbeat test ([ea2f618](https://github.com/WordPress/presence-api/commit/ea2f61806cf9d74c730d20381594405baa48dd74))
@@ -110,33 +103,20 @@
 ### Dependencies
 
 * **deps-dev:** bump @playwright/test from 1.58.2 to 1.61.0 ([8ac3924](https://github.com/WordPress/presence-api/commit/8ac392486d36127a510d034c7f3f4ba4dd7dd459))
-* **deps-dev:** bump @playwright/test from 1.58.2 to 1.61.0 ([0840f51](https://github.com/WordPress/presence-api/commit/0840f51bd6513c1e587ba362b06f90720e839405))
 * **deps-dev:** bump @playwright/test from 1.61.0 to 1.61.1 ([7de9a96](https://github.com/WordPress/presence-api/commit/7de9a96290340e01795efe710ca0c11f38f3e11d))
-* **deps-dev:** bump @playwright/test from 1.61.0 to 1.61.1 ([fea7439](https://github.com/WordPress/presence-api/commit/fea7439d0ae9b2cbe8c65d897def8ef45e5079e2))
 * **deps-dev:** bump @wordpress/e2e-test-utils-playwright ([dc16d26](https://github.com/WordPress/presence-api/commit/dc16d26518a7b5673f37e14300acbd79615669b6))
-* **deps-dev:** bump @wordpress/e2e-test-utils-playwright ([3069684](https://github.com/WordPress/presence-api/commit/30696843b41a2b0bdc299af650ef8fd286989529))
-* **deps-dev:** bump @wordpress/e2e-test-utils-playwright ([8588c9b](https://github.com/WordPress/presence-api/commit/8588c9b42f0d0ed6c610476675b35c484ea56311))
 * **deps-dev:** bump @wordpress/e2e-test-utils-playwright from 1.42.0 to 1.48.1 ([8f0563a](https://github.com/WordPress/presence-api/commit/8f0563a70b92dbc3ba0b54ecd5b1f7cee803af7a))
 * **deps-dev:** bump @wordpress/e2e-test-utils-playwright from 1.48.1 to 1.49.0 ([41ea0a5](https://github.com/WordPress/presence-api/commit/41ea0a59ce730fb0eac999644b78829ea0698610))
 * **deps-dev:** bump @wordpress/e2e-test-utils-playwright from 1.49.0 to 1.50.0 ([2c5a787](https://github.com/WordPress/presence-api/commit/2c5a7877a2f111dc9b806885c03579f37de04b2d))
 * **deps-dev:** bump @wordpress/env from 11.2.0 to 11.8.1 ([f434e72](https://github.com/WordPress/presence-api/commit/f434e72b691f9b0b7df72d14352ad5bc52a00c93))
-* **deps-dev:** bump @wordpress/env from 11.2.0 to 11.8.1 ([89d77b1](https://github.com/WordPress/presence-api/commit/89d77b1563344875d29c3ef0deb5e2ff5f2651e1))
 * **deps-dev:** bump @wordpress/env from 11.8.1 to 11.9.0 ([35860b9](https://github.com/WordPress/presence-api/commit/35860b9f5e0d28ac203dc55ce354a553eca9b8ce))
-* **deps-dev:** bump @wordpress/env from 11.8.1 to 11.9.0 ([f67c7f1](https://github.com/WordPress/presence-api/commit/f67c7f10a02d1ae96adff1e8673e4b32c671ea21))
 * **deps-dev:** bump @wordpress/env from 11.9.0 to 11.10.0 ([83cae8f](https://github.com/WordPress/presence-api/commit/83cae8feb1ecd444e21348b7253078726160d009))
-* **deps-dev:** bump @wordpress/env from 11.9.0 to 11.10.0 ([32157ae](https://github.com/WordPress/presence-api/commit/32157aedaefb7777f4a8e839e11dd695636b50f0))
 * **deps-dev:** update phpstan/phpstan requirement from 2.1.39 to 2.2.3 ([ac9ca35](https://github.com/WordPress/presence-api/commit/ac9ca3571a3644313d7da245a3a7b1ee8c7c41bf))
-* **deps-dev:** update phpstan/phpstan requirement from 2.1.39 to 2.2.3 ([26151b2](https://github.com/WordPress/presence-api/commit/26151b225ce02583d7faeb3bf6df4846f637fba5))
 * **deps-dev:** update phpstan/phpstan requirement from 2.2.3 to 2.2.5 ([b330e29](https://github.com/WordPress/presence-api/commit/b330e29340b3165fc0773b8865f61b467606e8f5))
-* **deps-dev:** update phpstan/phpstan requirement from 2.2.3 to 2.2.5 ([767edaf](https://github.com/WordPress/presence-api/commit/767edafceee8b45a1f9fb008d679ddb49df31ffb))
 * **deps:** bump actions/cache from 4 to 6 ([4cd66ba](https://github.com/WordPress/presence-api/commit/4cd66ba79d69ba80b5addc8a4c6aae9b716bf207))
-* **deps:** bump actions/cache from 4 to 6 ([3659561](https://github.com/WordPress/presence-api/commit/365956198c387d3bfb6fd4275c56a20aac2d2079))
 * **deps:** bump actions/checkout from 4 to 7 ([8a70b87](https://github.com/WordPress/presence-api/commit/8a70b87e2194e25db24ef93644ca6b4457fcadcb))
-* **deps:** bump actions/checkout from 4 to 7 ([f7a1c7d](https://github.com/WordPress/presence-api/commit/f7a1c7d6195fa7bc2fc4b52fb9fbc96963d6e4bd))
 * **deps:** bump github/codeql-action from 3 to 4 ([f9e540e](https://github.com/WordPress/presence-api/commit/f9e540e4ca1bed150e65f1e0615fe34989c649e0))
-* **deps:** bump github/codeql-action from 3 to 4 ([08b5607](https://github.com/WordPress/presence-api/commit/08b560789eceae19c2419cad2f9d48bee6d16ea0))
 * **deps:** bump googleapis/release-please-action from 4 to 5 ([68a89de](https://github.com/WordPress/presence-api/commit/68a89dea5af9bd71dec33c48be830ea3306c8aa6))
-* **deps:** bump googleapis/release-please-action from 4 to 5 ([e2ae7e8](https://github.com/WordPress/presence-api/commit/e2ae7e80e78fc94534b96df31699077065c88c08))
 
 ## 0.1.2
 
