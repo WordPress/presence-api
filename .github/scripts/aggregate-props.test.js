@@ -4,7 +4,7 @@ const { test, mock } = require('node:test');
 const assert = require('node:assert/strict');
 
 const run = require('./aggregate-props.js');
-const { parsePropsNames, sortProps, buildComment, MARKER } = run;
+const { findCutoff, parsePropsNames, sortProps, buildComment, MARKER } = run;
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -21,13 +21,17 @@ function propsComment(body) {
   return { id: 1, user: { login: 'github-actions[bot]' }, body };
 }
 
-function buildGithub({ releases = [], prs = [], commentsByPR = {} } = {}) {
+function makeRelease(tag_name, published_at, draft = false) {
+  return { tag_name, published_at, draft };
+}
+
+function buildGithub({ releases = [], prs = [], openPRs = [], commentsByPR = {} } = {}) {
   return {
     rest: {
       repos: {
         listReleases: async () => ({ data: releases }),
       },
-      pulls: { list: async () => ({ data: prs }) },
+      pulls: { list: async ({ state }) => ({ data: state === 'open' ? openPRs : prs }) },
       issues: {
         listComments: async ({ issue_number }) => ({ data: commentsByPR[issue_number] ?? [] }),
         createComment: mock.fn(async () => {}),
@@ -71,6 +75,45 @@ test('parsePropsNames: handles Props line embedded in a longer comment body', ()
 
 test('parsePropsNames: trims whitespace around names', () => {
   assert.deepEqual(parsePropsNames('Props  alice ,  bob .'), ['alice', 'bob']);
+});
+
+// ---------------------------------------------------------------------------
+// findCutoff
+// ---------------------------------------------------------------------------
+
+test('findCutoff: returns the newest published plugin release', () => {
+  assert.equal(
+    findCutoff([
+      makeRelease('v0.1.8', '2026-07-24T17:51:03Z'),
+      makeRelease('v0.1.9', '2026-07-26T15:22:39Z'),
+    ]),
+    '2026-07-26T15:22:39Z'
+  );
+});
+
+test('findCutoff: ignores Playground preview releases', () => {
+  assert.equal(
+    findCutoff([
+      makeRelease('preview-pr-149', '2026-07-27T18:01:25Z'),
+      makeRelease('v0.1.9', '2026-07-26T15:22:39Z'),
+    ]),
+    '2026-07-26T15:22:39Z'
+  );
+});
+
+test('findCutoff: ignores draft releases', () => {
+  assert.equal(
+    findCutoff([
+      makeRelease('v0.2.0', '2026-08-01T00:00:00Z', true),
+      makeRelease('v0.1.9', '2026-07-26T15:22:39Z'),
+    ]),
+    '2026-07-26T15:22:39Z'
+  );
+});
+
+test('findCutoff: returns undefined when there is no published release', () => {
+  assert.equal(findCutoff([makeRelease('preview-pr-1', '2026-07-01T00:00:00Z')]), undefined);
+  assert.equal(findCutoff([]), undefined);
 });
 
 // ---------------------------------------------------------------------------
@@ -172,7 +215,7 @@ test('run: skips posting when no merged PRs have props comments', async () => {
 
 test('run: excludes PRs merged before the cutoff date', async () => {
   const github = buildGithub({
-    releases: [{ published_at: '2026-07-15T00:00:00Z' }],
+    releases: [makeRelease('v0.1.9', '2026-07-15T00:00:00Z')],
     prs: [makePR(10, 'feature/old', '2026-07-01T00:00:00Z')],
     commentsByPR: {
       10: [propsComment('Props alice.')],
@@ -234,12 +277,39 @@ test('run: applies PROPS_SORT_LAST and deduplicates across PRs', async () => {
   assert.ok(body.includes('Props alice, bob, maintainer.'));
 });
 
-test('run: calls setFailed when PR_NUMBER is invalid', async () => {
-  const github = buildGithub();
+test('run: falls back to the open release PR when PR_NUMBER is absent', async () => {
+  const github = buildGithub({
+    openPRs: [
+      { number: 7, head: { ref: 'feature/unrelated' } },
+      { number: RELEASE_PR, head: { ref: 'release-please--branches--main' } },
+    ],
+    prs: [makePR(10, 'feature/foo')],
+    commentsByPR: {
+      10: [propsComment('Props alice.')],
+      [RELEASE_PR]: [],
+    },
+  });
   const core = { info: () => {}, setFailed: mock.fn() };
 
   await run({ github, context, core, env: { PR_NUMBER: '', PROPS_SORT_LAST: '' } });
 
-  assert.equal(core.setFailed.mock.calls.length, 1);
+  assert.equal(github.rest.issues.createComment.mock.calls.length, 1);
+  assert.equal(
+    github.rest.issues.createComment.mock.calls[0].arguments[0].issue_number,
+    RELEASE_PR
+  );
+});
+
+test('run: skips when PR_NUMBER is absent and no release PR is open', async () => {
+  const github = buildGithub({
+    openPRs: [{ number: 7, head: { ref: 'feature/unrelated' } }],
+    prs: [makePR(10, 'feature/foo')],
+    commentsByPR: { 10: [propsComment('Props alice.')] },
+  });
+  const core = { info: mock.fn(), setFailed: mock.fn() };
+
+  await run({ github, context, core, env: { PR_NUMBER: '', PROPS_SORT_LAST: '' } });
+
+  assert.equal(core.setFailed.mock.calls.length, 0);
   assert.equal(github.rest.issues.createComment.mock.calls.length, 0);
 });

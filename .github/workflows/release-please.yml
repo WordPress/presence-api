@@ -60,11 +60,15 @@ jobs:
             git push
           fi
 
-  # When a release PR is created or updated, aggregate props from all PRs
-  # merged since the last published release and post a single sticky comment.
+  # Aggregate props from all PRs merged since the last published release and
+  # post a single sticky comment on the open release PR.
+  #
+  # This runs on every push to main, not only when release-please reports a PR.
+  # release-please reports one only on runs where it touched the PR, so gating
+  # on that output drops anyone who merged after the last touch. The script
+  # finds the open release PR itself when the output is absent.
   aggregate-props:
     needs: release-please
-    if: ${{ needs.release-please.outputs.pr }}
     runs-on: ubuntu-24.04
     permissions:
       pull-requests: write
@@ -76,7 +80,7 @@ jobs:
       - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         env:
           PROPS_SORT_LAST: ${{ vars.PROPS_SORT_LAST }}
-          PR_NUMBER: ${{ fromJSON(needs.release-please.outputs.pr).number }}
+          PR_NUMBER: ${{ needs.release-please.outputs.pr && fromJSON(needs.release-please.outputs.pr).number || '' }}
         with:
           script: |
             const run = require(`${process.env.GITHUB_WORKSPACE}/.github/scripts/aggregate-props.js`);
