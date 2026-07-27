@@ -158,6 +158,14 @@ test('buildComment: formats the Props line correctly', () => {
   assert.ok(buildComment(['alice', 'bob']).includes('Props alice, bob.'));
 });
 
+test('buildComment: wraps the Props line in a fenced code block', () => {
+  assert.ok(buildComment(['alice', 'bob']).includes('```\nProps alice, bob.\n```'));
+});
+
+test('buildComment: keeps the props line parseable by parsePropsNames', () => {
+  assert.deepEqual(parsePropsNames(buildComment(['alice', 'bob'])), ['alice', 'bob']);
+});
+
 // ---------------------------------------------------------------------------
 // run()
 // ---------------------------------------------------------------------------
