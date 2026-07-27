@@ -38,6 +38,10 @@ jobs:
     needs: gate
     uses: ./.github/workflows/multisite.yml
 
+  e2e:
+    needs: gate
+    uses: ./.github/workflows/e2e.yml
+
   plugin-check:
     needs: gate
     uses: ./.github/workflows/plugin-check.yml
