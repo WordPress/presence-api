@@ -149,32 +149,36 @@ function wp_presence_enqueue_heartbeat_ping() {
 			// Guards against duplicate leave() invocations.
 			let hasLeft = false;
 
-			$(document).on('heartbeat-send', function (event, data) {
-				// Skip while the document is hidden (background tab, minimized
-				// window, app switched away) so the existing entries expire via
-				// the default TTL. One early-return suppresses both presence-ping
-				// and presence-editor-ping, since the consolidated handler emits
-				// both.
-				if (document.visibilityState === 'hidden') {
-					return;
-				}
-
-				const ping = { screen: window.pagenow || 'front' };
-				if (frontContext) {
-					if (frontContext.title) {
-						ping.title = frontContext.title;
+			// Defer registration to document ready to ensure it runs after WP Core's post.js handler.
+			$(function () {
+				$(document).on('heartbeat-send', function (event, data) {
+					// Skip while the document is hidden (background tab, minimized
+					// window, app switched away) so the existing entries expire via
+					// the default TTL. One early-return suppresses both presence-ping
+					// and presence-editor-ping, since the consolidated handler emits
+					// both.
+					if (document.visibilityState === 'hidden') {
+						delete data['wp-refresh-post-lock'];
+						return;
 					}
-					if (frontContext.post_id) {
-						ping.post_id = frontContext.post_id;
+
+					const ping = { screen: window.pagenow || 'front' };
+					if (frontContext) {
+						if (frontContext.title) {
+							ping.title = frontContext.title;
+						}
+						if (frontContext.post_id) {
+							ping.post_id = frontContext.post_id;
+						}
 					}
-				}
-				data['presence-ping'] = ping;
+					data['presence-ping'] = ping;
 
-				if (editorPostId) {
-					data['presence-editor-ping'] = { post_id: editorPostId };
-				}
+					if (editorPostId) {
+						data['presence-editor-ping'] = { post_id: editorPostId };
+					}
 
-				hasLeft = false;
+					hasLeft = false;
+				});
 			});
 
 			function leave() {
