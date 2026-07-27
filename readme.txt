@@ -3,7 +3,7 @@ Contributors: joefusco, intenzi, ashishjii
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.0
-Stable tag: 0.1.9
+Stable tag: 0.1.10
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -52,6 +52,11 @@ Or install manually:
 Or [try it in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json) without installing anything.
 
 == Changelog ==
+
+= 0.1.10 =
+* Credit every contributor in the release props comment.
+* Move the admin/online write out of the Who's Online widget ([b7b500b](https://github.com/WordPress/presence-api/commit/b7b500bd2ca5eac2d2cc98485ea3ac4452c0a324)), closes [#141](https://github.com/WordPress/presence-api/issues/141).
+* Render release props in a code block like props-bot.
 
 = 0.1.9 =
 * Aggregate props from merged PRs onto release PR.
