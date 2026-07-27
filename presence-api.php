@@ -143,6 +143,29 @@ function wp_presence_deactivate() {
 	wp_clear_scheduled_hook( 'wp_delete_expired_presence_data' );
 }
 
+/**
+ * Adds action links to the plugin list table.
+ *
+ * The plugin has no settings screen; its interface is the dashboard widgets,
+ * so the link points at the dashboard.
+ *
+ * @since 0.1.9
+ *
+ * @param string[] $links Existing plugin action links.
+ * @return string[] Action links with the dashboard link prepended.
+ */
+function wp_presence_plugin_action_links( $links ) {
+	$dashboard_link = sprintf(
+		'<a href="%1$s">%2$s</a>',
+		esc_url( admin_url( 'users.php?presence_status=online' ) ),
+		esc_html__( 'View Online Users', 'presence-api' )
+	);
+
+	array_unshift( $links, $dashboard_link );
+
+	return $links;
+}
+
 add_action( 'init', 'wp_presence_register_table', 0 );
 add_action( 'init', 'wp_presence_register_post_type_support' );
 
@@ -193,5 +216,6 @@ if ( ( defined( 'WP_DEBUG' ) && WP_DEBUG )
 	add_filter( 'heartbeat_received', 'wp_presence_heartbeat_widget_received', 10, 3 );
 }
 
+add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'wp_presence_plugin_action_links' );
 register_activation_hook( __FILE__, 'wp_presence_activate' );
 register_deactivation_hook( __FILE__, 'wp_presence_deactivate' );
