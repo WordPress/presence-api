@@ -27,8 +27,18 @@ function sortProps(names, sortLast) {
   return [...unique.filter(n => n !== sortLast), ...(unique.includes(sortLast) ? [sortLast] : [])];
 }
 
+// Mirrors the props-bot comment layout so the props line is a copyable code
+// block rather than prose.
 function buildComment(names) {
-  return `${MARKER}\n\nProps ${names.join(', ')}.`;
+  return [
+    MARKER,
+    '',
+    'Core Committers: Use this line as a base for the props when committing in SVN:',
+    '',
+    '```',
+    `Props ${names.join(', ')}.`,
+    '```',
+  ].join('\n');
 }
 
 async function run({ github, context, core, env = process.env }) {
