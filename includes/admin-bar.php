@@ -102,9 +102,9 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 	$user_editing_post = array();
 	$post_entries      = wp_get_presence_by_room_prefix( 'postType/' );
 	foreach ( $post_entries as $pe ) {
-		// Room format: postType/{type}:{id}.
-		if ( preg_match( '/^postType\/[^:]+:(\d+)$/', $pe->room, $m ) ) {
-			$user_editing_post[ (int) $pe->user_id ] = (int) $m[1];
+		$parsed = wp_presence_parse_room( $pe->room );
+		if ( $parsed ) {
+			$user_editing_post[ (int) $pe->user_id ] = $parsed['post_id'];
 		}
 	}
 	if ( ! empty( $user_editing_post ) ) {

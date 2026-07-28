@@ -76,13 +76,12 @@ function wp_presence_render_editors_column( $column_name, $post_id ) {
 		$entries      = wp_get_presence_by_room_prefix( 'postType/' );
 
 		foreach ( $entries as $entry ) {
-			$room_parts = explode( ':', $entry->room, 2 );
-
-			if ( count( $room_parts ) < 2 ) {
+			$parsed = wp_presence_parse_room( $entry->room );
+			if ( ! $parsed ) {
 				continue;
 			}
 
-			$pid = (int) $room_parts[1];
+			$pid = $parsed['post_id'];
 
 			if ( ! isset( $presence_map[ $pid ] ) ) {
 				$presence_map[ $pid ] = array();
