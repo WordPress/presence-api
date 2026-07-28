@@ -132,6 +132,25 @@ function wp_remove_user_presence( $user_id ) {
 }
 
 /**
+ * Parses a room identifier.
+ *
+ * Room format: `postType/{post_type}:{post_id}`
+ *
+ * @param string $room The room identifier.
+ * @return array|false An array containing 'post_type' and 'post_id' on success, false otherwise.
+ */
+function wp_presence_parse_room( $room ) {
+	if ( preg_match( '#^postType/([^:]+):(\d+)$#', $room, $matches ) ) {
+		return array(
+			'post_type' => $matches[1],
+			'post_id'   => (int) $matches[2],
+		);
+	}
+
+	return false;
+}
+
+/**
  * Checks if a user can access a presence room.
  *
  * @param string $room    The room identifier.
@@ -145,6 +164,11 @@ function wp_can_access_presence_room( $room, $user_id = 0 ) {
 
 	if ( ! $user_id ) {
 		return false;
+	}
+
+	$parsed = wp_presence_parse_room( $room );
+	if ( $parsed ) {
+		return user_can( $user_id, 'edit_post', $parsed['post_id'] );
 	}
 
 	return user_can( $user_id, 'edit_posts' );
