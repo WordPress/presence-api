@@ -320,6 +320,11 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 			$results = array();
 		}
 
+		$user_ids = wp_list_pluck( $results, 'user_id' );
+		if ( ! empty( $user_ids ) ) {
+			cache_users( array_unique( array_map( 'intval', $user_ids ) ) );
+		}
+
 		foreach ( $results as $row ) {
 			$decoded   = json_decode( $row->data, true );
 			$row->data = is_array( $decoded ) ? $decoded : array();
@@ -597,6 +602,16 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 			$data['user_id'] = (int) $item->user_id;
 		}
 
+		$user = get_userdata( $item->user_id );
+
+		if ( rest_is_field_included( 'display_name', $fields ) ) {
+			$data['display_name'] = $user ? $user->display_name : '';
+		}
+
+		if ( rest_is_field_included( 'avatar_url', $fields ) ) {
+			$data['avatar_url'] = $user ? get_avatar_url( $item->user_id, array( 'size' => 32 ) ) : '';
+		}
+
 		if ( rest_is_field_included( 'data', $fields ) ) {
 			$data['data'] = $item->data;
 		}
@@ -674,31 +689,44 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 			'title'      => 'presence',
 			'type'       => 'object',
 			'properties' => array(
-				'room'      => array(
+				'room'         => array(
 					'description' => __( 'The presence room identifier.', 'presence-api' ),
 					'type'        => 'string',
 					'context'     => array( 'view', 'edit' ),
 					'readonly'    => false,
 				),
-				'client_id' => array(
+				'client_id'    => array(
 					'description' => __( 'The client identifier within the room.', 'presence-api' ),
 					'type'        => 'string',
 					'context'     => array( 'view', 'edit' ),
 					'readonly'    => false,
 				),
-				'user_id'   => array(
+				'user_id'      => array(
 					'description' => __( 'The WordPress user ID associated with this presence entry.', 'presence-api' ),
 					'type'        => 'integer',
 					'context'     => array( 'view', 'edit' ),
 					'readonly'    => true,
 				),
-				'data'      => array(
+				'display_name' => array(
+					'description' => __( 'The display name of the user.', 'presence-api' ),
+					'type'        => 'string',
+					'context'     => array( 'view' ),
+					'readonly'    => true,
+				),
+				'avatar_url'   => array(
+					'description' => __( 'The avatar URL of the user.', 'presence-api' ),
+					'type'        => 'string',
+					'format'      => 'uri',
+					'context'     => array( 'view' ),
+					'readonly'    => true,
+				),
+				'data'         => array(
 					'description'          => __( 'Arbitrary presence state data.', 'presence-api' ),
 					'type'                 => 'object',
 					'context'              => array( 'view', 'edit' ),
 					'additionalProperties' => true,
 				),
-				'date_gmt'  => array(
+				'date_gmt'     => array(
 					'description' => __( 'The date the presence was last updated, in GMT.', 'presence-api' ),
 					'type'        => 'string',
 					'format'      => 'date-time',

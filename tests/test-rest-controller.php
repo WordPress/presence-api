@@ -375,4 +375,61 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 		$this->assertInstanceOf( 'WP_Error', $response );
 		$this->assertSame( 'rest_invalid_screen_key', $response->get_error_code() );
 	}
+
+	/**
+	 * @covers WP_REST_Presence_Controller::get_items
+	 */
+	public function test_get_items_includes_display_name_and_avatar_url() {
+		wp_set_current_user( self::$editor_id );
+
+		wp_set_presence( 'admin/online', 'client-1', array(), self::$editor_id );
+
+		$request = new WP_REST_Request( 'GET', '/wp-presence/v1/presence' );
+		$request->set_param( 'room', 'admin/online' );
+
+		$response = rest_get_server()->dispatch( $request );
+		$data     = $response->get_data();
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertCount( 1, $data );
+
+		$user = get_userdata( self::$editor_id );
+		$this->assertSame( $user->display_name, $data[0]['display_name'] );
+		$this->assertSame( get_avatar_url( self::$editor_id, array( 'size' => 32 ) ), $data[0]['avatar_url'] );
+	}
+
+	/**
+	 * @covers WP_REST_Presence_Controller::get_items
+	 */
+	public function test_get_items_handles_deleted_user() {
+		wp_set_current_user( self::$admin_id );
+
+		// Create a temporary user.
+		$temp_user_id = self::factory()->user->create( array( 'role' => 'editor' ) );
+		wp_set_presence( 'admin/online', 'client-temp', array(), $temp_user_id );
+
+		// Delete the user.
+		wp_delete_user( $temp_user_id );
+
+		$request = new WP_REST_Request( 'GET', '/wp-presence/v1/presence' );
+		$request->set_param( 'room', 'admin/online' );
+
+		$response = rest_get_server()->dispatch( $request );
+		$data     = $response->get_data();
+
+		$this->assertSame( 200, $response->get_status() );
+
+		// The row should still be returned, but with empty fallback fields.
+		$found_temp = null;
+		foreach ( $data as $entry ) {
+			if ( 'client-temp' === $entry['client_id'] ) {
+				$found_temp = $entry;
+				break;
+			}
+		}
+
+		$this->assertNotNull( $found_temp );
+		$this->assertSame( '', $found_temp['display_name'] );
+		$this->assertSame( '', $found_temp['avatar_url'] );
+	}
 }
