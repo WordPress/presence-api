@@ -24,6 +24,23 @@ function wpCli( command ) {
 	} );
 }
 
+const SEEDER_PATH =
+	'/var/www/html/wp-content/plugins/presence-api/tests/e2e/demo-seeder.php';
+
+/**
+ * Calls a demo-seeder function inside the container.
+ *
+ * The `wp presence demo` subcommand this file used to call was removed in
+ * a1ed56a, because registering it meant the plugin required a file under
+ * `tests/`. The seeder functions survived, so load the file and call them
+ * directly, the same way the Playground blueprint does.
+ *
+ * @param {string} php Statement to run after the seeder is loaded.
+ */
+function demoSeeder( php ) {
+	wpCli( `eval 'require "${ SEEDER_PATH }"; ${ php }'` );
+}
+
 async function snap( page, name ) {
 	fs.mkdirSync( SCREENSHOTS_DIR, { recursive: true } );
 	await page.screenshot( {
@@ -46,12 +63,12 @@ const test = base.extend( {} );
 
 test.describe.serial( 'Presence Screenshots', () => {
 	test.beforeAll( () => {
-		wpCli( 'presence demo --cleanup' );
+		demoSeeder( 'wp_presence_demo_cleanup();' );
 		wpCli( 'db query "TRUNCATE TABLE wp_presence"' );
 	} );
 
 	test.afterAll( () => {
-		wpCli( 'presence demo --cleanup' );
+		demoSeeder( 'wp_presence_demo_cleanup();' );
 	} );
 
 	test( '01 — Empty state', async ( { admin, page } ) => {
@@ -66,7 +83,7 @@ test.describe.serial( 'Presence Screenshots', () => {
 	} );
 
 	test( '02 — Active users (5)', async ( { admin, page } ) => {
-		wpCli( 'presence demo 5' );
+		demoSeeder( 'wp_presence_demo_seed( 5 );' );
 		await admin.visitAdminPage( '/' );
 		await page.evaluate( () => wp.heartbeat.connectNow() );
 		await page.waitForTimeout( 3000 );
@@ -85,9 +102,9 @@ test.describe.serial( 'Presence Screenshots', () => {
 	} );
 
 	test( '03 — Active users (20)', async ( { admin, page } ) => {
-		wpCli( 'presence demo --cleanup' );
+		demoSeeder( 'wp_presence_demo_cleanup();' );
 		wpCli( 'db query "TRUNCATE TABLE wp_presence"' );
-		wpCli( 'presence demo 20' );
+		demoSeeder( 'wp_presence_demo_seed( 20 );' );
 		await admin.visitAdminPage( '/' );
 		await page.evaluate( () => wp.heartbeat.connectNow() );
 		await page.waitForTimeout( 3000 );
@@ -127,6 +144,6 @@ test.describe.serial( 'Presence Screenshots', () => {
 		await page.waitForTimeout( 3000 );
 
 		await snap( page, '07-expired-dashboard' );
-		wpCli( 'presence demo --cleanup' );
+		demoSeeder( 'wp_presence_demo_cleanup();' );
 	} );
 } );

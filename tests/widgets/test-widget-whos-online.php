@@ -22,20 +22,27 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Sends a ping through the write handler, then the widget's read handler,
+	 * mirroring the priority order they are registered at on heartbeat_received.
+	 *
+	 * @param array $ping The presence-ping payload.
+	 * @return array The Heartbeat response.
+	 */
+	private function tick( $ping = array( 'screen' => 'dashboard' ) ) {
+		$data = array( 'presence-ping' => $ping );
+
+		wp_presence_admin_heartbeat_received( array(), $data, 'dashboard' );
+
+		return WP_Presence_Widget_Whos_Online::heartbeat_received( array(), $data, 'dashboard' );
+	}
+
+	/**
 	 * @covers WP_Presence_Widget_Whos_Online::heartbeat_received
 	 */
-	public function test_heartbeat_received_sets_presence() {
+	public function test_heartbeat_received_returns_online_users() {
 		wp_set_current_user( self::$editor_id );
 
-		$response = WP_Presence_Widget_Whos_Online::heartbeat_received(
-			array(),
-			array(
-				'presence-ping' => array(
-					'screen' => 'dashboard',
-				),
-			),
-			'dashboard'
-		);
+		$response = $this->tick();
 
 		$this->assertArrayHasKey( 'presence-online', $response );
 		$this->assertCount( 1, $response['presence-online'] );
@@ -64,15 +71,7 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_UnitTestCase {
 	public function test_heartbeat_response_returns_structured_data() {
 		wp_set_current_user( self::$editor_id );
 
-		$response = WP_Presence_Widget_Whos_Online::heartbeat_received(
-			array(),
-			array(
-				'presence-ping' => array(
-					'screen' => 'dashboard',
-				),
-			),
-			'dashboard'
-		);
+		$response = $this->tick();
 
 		$entry = $response['presence-online'][0];
 

@@ -157,6 +157,8 @@ add_filter( 'cron_schedules', 'wp_presence_cron_schedules' );
 
 add_action( 'admin_enqueue_scripts', 'wp_presence_enqueue_heartbeat_ping' );
 add_action( 'wp_enqueue_scripts', 'wp_presence_enqueue_heartbeat_ping' );
+// Priority 9 so the admin/online write lands before any widget reads the room at 10.
+add_filter( 'heartbeat_received', 'wp_presence_admin_heartbeat_received', 9, 3 );
 add_filter( 'heartbeat_received', 'wp_presence_editor_heartbeat_received', 10, 3 );
 add_filter( 'heartbeat_received', 'wp_presence_bridge_post_lock', 11, 3 );
 add_filter( 'heartbeat_received', 'wp_presence_screen_heartbeat_received', 12, 3 );

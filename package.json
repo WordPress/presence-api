@@ -6,6 +6,7 @@
 		"env:stop": "wp-env stop",
 		"env:cli": "wp-env run cli wp",
 		"test": "wp-env run tests-cli --env-cwd='wp-content/plugins/presence-api' -- ./vendor/bin/phpunit --testdox",
+		"test:e2e": "playwright test --config tests/e2e/playwright.config.js",
 		"test:scripts": "node --test .github/scripts/*.test.js"
 	},
 	"devDependencies": {

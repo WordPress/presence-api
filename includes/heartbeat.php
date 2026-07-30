@@ -149,32 +149,36 @@ function wp_presence_enqueue_heartbeat_ping() {
 			// Guards against duplicate leave() invocations.
 			let hasLeft = false;
 
-			$(document).on('heartbeat-send', function (event, data) {
-				// Skip while the document is hidden (background tab, minimized
-				// window, app switched away) so the existing entries expire via
-				// the default TTL. One early-return suppresses both presence-ping
-				// and presence-editor-ping, since the consolidated handler emits
-				// both.
-				if (document.visibilityState === 'hidden') {
-					return;
-				}
-
-				const ping = { screen: window.pagenow || 'front' };
-				if (frontContext) {
-					if (frontContext.title) {
-						ping.title = frontContext.title;
+			// Defer registration to document ready to ensure it runs after WP Core's post.js handler.
+			$(function () {
+				$(document).on('heartbeat-send', function (event, data) {
+					// Skip while the document is hidden (background tab, minimized
+					// window, app switched away) so the existing entries expire via
+					// the default TTL. One early-return suppresses both presence-ping
+					// and presence-editor-ping, since the consolidated handler emits
+					// both.
+					if (document.visibilityState === 'hidden') {
+						delete data['wp-refresh-post-lock'];
+						return;
 					}
-					if (frontContext.post_id) {
-						ping.post_id = frontContext.post_id;
+
+					const ping = { screen: window.pagenow || 'front' };
+					if (frontContext) {
+						if (frontContext.title) {
+							ping.title = frontContext.title;
+						}
+						if (frontContext.post_id) {
+							ping.post_id = frontContext.post_id;
+						}
 					}
-				}
-				data['presence-ping'] = ping;
+					data['presence-ping'] = ping;
 
-				if (editorPostId) {
-					data['presence-editor-ping'] = { post_id: editorPostId };
-				}
+					if (editorPostId) {
+						data['presence-editor-ping'] = { post_id: editorPostId };
+					}
 
-				hasLeft = false;
+					hasLeft = false;
+				});
 			});
 
 			function leave() {
@@ -237,6 +241,75 @@ function wp_presence_enqueue_heartbeat_ping() {
 		})(jQuery);
 		JS
 	);
+}
+
+/**
+ * Records the current user's presence in the admin/online room on every tick.
+ *
+ * This is the API's primary write path. It runs regardless of which dashboard
+ * widgets are registered.
+ *
+ * @param array  $response  The Heartbeat response.
+ * @param array  $data      The $_POST data sent.
+ * @param string $screen_id The screen ID.
+ * Nonce verification is handled by WordPress in wp_ajax_heartbeat().
+ *
+ * @return array The Heartbeat response.
+ */
+function wp_presence_admin_heartbeat_received( $response, $data, $screen_id ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- Required by filter signature.
+	if ( empty( $data['presence-ping'] ) ) {
+		return $response;
+	}
+
+	if ( ! current_user_can( 'edit_posts' ) ) {
+		return $response;
+	}
+
+	$user_id = get_current_user_id();
+	$screen  = isset( $data['presence-ping']['screen'] ) ? sanitize_text_field( $data['presence-ping']['screen'] ) : '';
+
+	// Enrich post-editing screens with the post status.
+	$post_status = '';
+	if ( in_array( $screen, array( 'post', 'edit-post', 'page' ), true ) ) {
+		// The editor heartbeat includes the post ID in wp-refresh-post-lock.
+		$post_id = 0;
+		if ( ! empty( $data['wp-refresh-post-lock']['post_id'] ) ) {
+			$post_id = absint( $data['wp-refresh-post-lock']['post_id'] );
+		} elseif ( ! empty( $data['presence-editor-ping']['post_id'] ) ) {
+			$post_id = absint( $data['presence-editor-ping']['post_id'] );
+		}
+		if ( $post_id ) {
+			$post = get_post( $post_id );
+			if ( $post && current_user_can( 'edit_post', $post_id ) && isset( get_post_stati()[ $post->post_status ] ) ) {
+				$post_status = $post->post_status;
+			}
+		}
+	}
+
+	$state = array( 'screen' => $screen );
+	if ( $post_status ) {
+		$state['post_status'] = $post_status;
+	}
+
+	// Store the frontend page label whenever the ping is from the public site.
+	// title becomes the row's screen label in Who's Online; post_id is recorded
+	// when the ping carries one (singular views).
+	if ( 'front' === $screen ) {
+		if ( ! empty( $data['presence-ping']['title'] ) ) {
+			$state['title'] = sanitize_text_field( $data['presence-ping']['title'] );
+		}
+		$post_id = (int) ( $data['presence-ping']['post_id'] ?? 0 );
+		if ( $post_id > 0 ) {
+			$front_post = get_post( $post_id );
+			if ( $front_post ) {
+				$state['post_id'] = $front_post->ID;
+			}
+		}
+	}
+
+	wp_set_presence( 'admin/online', 'user-' . $user_id, $state, $user_id );
+
+	return $response;
 }
 
 /**
