@@ -145,4 +145,34 @@ class WP_Test_Presence_Heartbeat extends WP_UnitTestCase {
 			has_filter( 'heartbeat_received', 'wp_presence_admin_heartbeat_received' )
 		);
 	}
+
+	/**
+	 * @covers ::wp_presence_enqueue_heartbeat_ping
+	 */
+	public function test_wp_presence_enqueue_heartbeat_ping() {
+		wp_set_current_user( self::$editor_id );
+
+		// Reset enqueued scripts.
+		$wp_scripts = wp_scripts();
+		$wp_scripts->queue = array();
+		$wp_scripts->done  = array();
+
+		wp_presence_enqueue_heartbeat_ping();
+
+		$this->assertTrue( wp_script_is( 'wp-presence-ping', 'enqueued' ) );
+
+		$wp_scripts = wp_scripts();
+		$this->assertArrayHasKey( 'wp-presence-ping', $wp_scripts->registered );
+		$extra = $wp_scripts->registered['wp-presence-ping']->extra;
+		$this->assertArrayHasKey( 'before', $extra );
+
+		$found_config = false;
+		foreach ( $extra['before'] as $script ) {
+			if ( $script && strpos( $script, 'window.wpPresenceConfig =' ) !== false ) {
+				$found_config = true;
+				break;
+			}
+		}
+		$this->assertTrue( $found_config );
+	}
 }
