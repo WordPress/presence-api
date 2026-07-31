@@ -5,9 +5,14 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Never cancel a run in flight. This workflow tags, uploads release assets, and
+# commits to the WordPress.org SVN repo, so a cancelled run leaves the release
+# half-finished. Release 0.1.10 shipped to GitHub but never reached .org because
+# a burst of Dependabot merges cancelled its deploy job. A superseded run costs
+# a few minutes; a cancelled one costs a release.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   release-please:
