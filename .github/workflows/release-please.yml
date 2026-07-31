@@ -47,6 +47,12 @@ jobs:
           persist-credentials: false
           ref: ${{ fromJSON(needs.release-please.outputs.pr).headBranchName }}
       - run: bash scripts/sync-versions.sh
+      # Merging a pull request produces two commits carrying the same
+      # conventional prefix, so release-please writes every change to the
+      # changelog twice. See the header of the script for why this is cleaned
+      # up after the fact rather than prevented. release-please rewrites this
+      # branch on every run, which drops the fix, so this re-runs alongside it.
+      - run: node .github/scripts/dedupe-changelog.js CHANGELOG.md
       - name: Commit synced versions back to the release PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -54,8 +60,8 @@ jobs:
           if ! git diff --quiet; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add presence-api.php readme.txt
-            git commit -m "chore: sync versions across plugin file and readme"
+            git add presence-api.php readme.txt CHANGELOG.md
+            git commit -m "chore: sync versions and remove duplicate changelog entries"
             gh auth setup-git
             git push
           fi
