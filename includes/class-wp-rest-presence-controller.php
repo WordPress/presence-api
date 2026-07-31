@@ -557,7 +557,30 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 		$per_page = $request->get_param( 'per_page' );
 		$page     = $request->get_param( 'page' );
 
-		$rooms = wp_get_active_rooms();
+		$rooms           = wp_get_active_rooms();
+		$current_user_id = get_current_user_id();
+
+		// Prime post caches to avoid N+1 queries during the wp_can_access_presence_room filtering loop.
+		$post_ids = array();
+		foreach ( $rooms as $room ) {
+			$parsed = wp_presence_parse_room( $room['room'] );
+			if ( $parsed ) {
+				$post_ids[] = $parsed['post_id'];
+			}
+		}
+		if ( ! empty( $post_ids ) ) {
+			_prime_post_caches( array_unique( $post_ids ) );
+		}
+
+		$rooms = array_values(
+			array_filter(
+				$rooms,
+				function ( $room ) use ( $current_user_id ) {
+					return wp_can_access_presence_room( $room['room'], $current_user_id );
+				}
+			)
+		);
+
 		$total = count( $rooms );
 
 		// Rooms are aggregated in PHP (GROUP BY + user hydration), so paginate the result.

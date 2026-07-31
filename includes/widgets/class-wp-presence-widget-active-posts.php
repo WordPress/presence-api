@@ -283,9 +283,9 @@ JS,
 		// Prime post caches to avoid N+1 queries from get_post() in the loop.
 		$post_ids = array();
 		foreach ( $entries as $entry ) {
-			$parts = explode( ':', $entry->room, 2 );
-			if ( count( $parts ) >= 2 ) {
-				$post_ids[] = (int) $parts[1];
+			$parsed = wp_presence_parse_room( $entry->room );
+			if ( $parsed ) {
+				$post_ids[] = $parsed['post_id'];
 			}
 		}
 		if ( ! empty( $post_ids ) ) {
@@ -300,14 +300,14 @@ JS,
 			}
 
 			/* Parse room format: postType/{type}:{id} */
-			$room_parts = explode( ':', $entry->room, 2 );
+			$parsed = wp_presence_parse_room( $entry->room );
 
-			if ( count( $room_parts ) < 2 ) {
+			if ( ! $parsed ) {
 				continue;
 			}
 
-			$post_id   = (int) $room_parts[1];
-			$post_type = str_replace( 'postType/', '', $room_parts[0] );
+			$post_id   = $parsed['post_id'];
+			$post_type = $parsed['post_type'];
 
 			if ( ! post_type_supports( $post_type, 'presence' ) ) {
 				continue;

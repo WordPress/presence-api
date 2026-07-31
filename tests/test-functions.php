@@ -158,6 +158,24 @@ class WP_Test_Presence_Functions extends WP_UnitTestCase {
 	public function test_logged_out_user_cannot_access_room() {
 		$this->assertFalse( wp_can_access_presence_room( 'test/room', 0 ) );
 	}
+	/**
+	 * @covers ::wp_can_access_presence_room
+	 */
+	public function test_wp_can_access_presence_room_checks_post_type_capabilities() {
+		$author_1 = self::factory()->user->create( array( 'role' => 'author' ) );
+		$author_2 = self::factory()->user->create( array( 'role' => 'author' ) );
+
+		$post_id = self::factory()->post->create( array(
+			'post_author' => $author_1,
+			'post_status' => 'draft',
+		) );
+
+		$room = 'postType/post:' . $post_id;
+
+		$this->assertTrue( wp_can_access_presence_room( $room, $author_1 ) );
+		$this->assertFalse( wp_can_access_presence_room( $room, $author_2 ) );
+		$this->assertTrue( wp_can_access_presence_room( $room, self::$editor_id ) );
+	}
 
 	/**
 	 * @covers ::wp_delete_expired_presence_data
