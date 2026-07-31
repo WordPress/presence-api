@@ -11,11 +11,9 @@ permissions:
   contents: read
 
 jobs:
-  # The repository merges with merge commits and takes the merge commit subject
-  # from the pull request title, so the PR title is what release-please parses.
-  # A non-conventional title means the change never reaches the changelog: see
-  # v0.1.9..HEAD, where four of five commits were unparseable and no release PR
-  # was staged. Validating the title here is what keeps that from recurring.
+  # The merge commit's body is this pull request's title, and release-please
+  # parses it alongside the branch commits, so a conventional title puts this
+  # change in the changelog however the branch commits happen to be written.
   title:
     name: Validate pull request title
     runs-on: ubuntu-24.04
