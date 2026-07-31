@@ -10,12 +10,14 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_UnitTestCase {
 
 	private static $editor_id;
 	private static $editor2_id;
+	private static $contributor_id;
 	private static $post_id;
 
 	public static function wpSetUpBeforeClass( WP_UnitTest_Factory $factory ) {
-		self::$editor_id  = $factory->user->create( array( 'role' => 'editor' ) );
-		self::$editor2_id = $factory->user->create( array( 'role' => 'editor' ) );
-		self::$post_id    = $factory->post->create(
+		self::$editor_id      = $factory->user->create( array( 'role' => 'editor' ) );
+		self::$editor2_id     = $factory->user->create( array( 'role' => 'editor' ) );
+		self::$contributor_id = $factory->user->create( array( 'role' => 'contributor' ) );
+		self::$post_id        = $factory->post->create(
 			array(
 				'post_title' => 'Test Post',
 				'post_type'  => 'post',
@@ -161,5 +163,82 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_UnitTestCase {
 		);
 
 		$this->assertCount( 0, $response['presence-active-posts'] );
+	}
+
+	/**
+	 * A contributor has `edit_posts`, which is all the widget itself requires,
+	 * but cannot edit someone else's post and must not learn it is being
+	 * worked on.
+	 *
+	 * @covers WP_Presence_Widget_Active_Posts::heartbeat_received
+	 */
+	public function test_heartbeat_excludes_posts_the_user_cannot_edit() {
+		$room = wp_presence_post_room( self::$post_id );
+		wp_set_presence( $room, 'lock-' . self::$editor_id, array(), self::$editor_id );
+
+		wp_set_current_user( self::$contributor_id );
+
+		$response = WP_Presence_Widget_Active_Posts::heartbeat_received(
+			array(),
+			array( 'presence-active-posts-ping' => true ),
+			'dashboard'
+		);
+
+		$this->assertCount( 0, $response['presence-active-posts'] );
+	}
+
+	/**
+	 * @covers WP_Presence_Widget_Active_Posts::heartbeat_received
+	 */
+	public function test_heartbeat_includes_posts_the_user_can_edit() {
+		$draft_id = self::factory()->post->create(
+			array(
+				'post_author' => self::$contributor_id,
+				'post_status' => 'draft',
+				'post_title'  => 'Contributor Draft',
+			)
+		);
+
+		$room = wp_presence_post_room( $draft_id );
+		wp_set_presence( $room, 'lock-' . self::$contributor_id, array(), self::$contributor_id );
+
+		wp_set_current_user( self::$contributor_id );
+
+		$response = WP_Presence_Widget_Active_Posts::heartbeat_received(
+			array(),
+			array( 'presence-active-posts-ping' => true ),
+			'dashboard'
+		);
+
+		$this->assertCount( 1, $response['presence-active-posts'] );
+		$this->assertSame( $draft_id, $response['presence-active-posts'][0]['post_id'] );
+	}
+
+	/**
+	 * Only the rooms the user cannot reach are dropped, not the whole response.
+	 *
+	 * @covers WP_Presence_Widget_Active_Posts::heartbeat_received
+	 */
+	public function test_heartbeat_filters_per_post_rather_than_all_or_nothing() {
+		$draft_id = self::factory()->post->create(
+			array(
+				'post_author' => self::$contributor_id,
+				'post_status' => 'draft',
+			)
+		);
+
+		wp_set_presence( wp_presence_post_room( self::$post_id ), 'lock-a', array(), self::$editor_id );
+		wp_set_presence( wp_presence_post_room( $draft_id ), 'lock-b', array(), self::$contributor_id );
+
+		wp_set_current_user( self::$contributor_id );
+
+		$response = WP_Presence_Widget_Active_Posts::heartbeat_received(
+			array(),
+			array( 'presence-active-posts-ping' => true ),
+			'dashboard'
+		);
+
+		$this->assertCount( 1, $response['presence-active-posts'] );
+		$this->assertSame( $draft_id, $response['presence-active-posts'][0]['post_id'] );
 	}
 }
