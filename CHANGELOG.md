@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.11](https://github.com/WordPress/presence-api/compare/v0.1.10...v0.1.11) (2026-07-31)
+
+
+### Bug Fixes
+
+* enforce per-room authorization checks for presence rooms ([e6d7782](https://github.com/WordPress/presence-api/commit/e6d77823d6216481b025d70667411c0ae4115499))
+
 ## [0.1.10](https://github.com/WordPress/presence-api/compare/v0.1.9...v0.1.10) (2026-07-27)
 
 
