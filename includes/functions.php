@@ -136,6 +136,7 @@ function wp_remove_user_presence( $user_id ) {
  *
  * Room format: `postType/{post_type}:{post_id}`
  *
+ * @access private
  * @param string $room The room identifier.
  * @return array|false An array containing 'post_type' and 'post_id' on success, false otherwise.
  */
