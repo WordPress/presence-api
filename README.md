@@ -103,6 +103,19 @@ Or define the constant before the plugin loads:
 define( 'WP_PRESENCE_DEFAULT_TTL', 30 );
 ```
 
+#### `wp_presence_current_screen_key`
+Filters the key identifying the current admin screen for [stale-screen detection](#stale-screen-detection). Core screens (Settings, `post.php`, term, user, comment) resolve their own keys; `$key` is `''` on any screen without coverage. Return a non-empty string to opt a custom screen in.
+```php
+add_filter( 'wp_presence_current_screen_key', function( $key, $screen ) {
+    if ( 'toplevel_page_my-plugin' === $screen->id ) {
+        return 'options/my-plugin-settings';
+    }
+    return $key; // Leave other screens untouched.
+}, 10, 2 );
+```
+
+Keys follow the plugin's slash-separated room convention and are truncated to 191 characters (`WP_PRESENCE_SCREEN_KEY_LIMIT`). Use the same key when bumping the revision from JS via `wp.presence.markScreenStale()`.
+
 ### Actions
 #### `wp_presence_screen_revision_bumped`
 Fires after an admin screen revision has been bumped. Useful for triggering custom sync or WebSocket integrations.
@@ -154,6 +167,8 @@ if (window.wp?.presence?.markScreenStale) {
     wp.presence.markScreenStale('options/my-custom-plugin-settings');
 }
 ```
+
+For a screen to be *watched* in the first place, it needs a screen key — core screens resolve their own, and custom screens supply one via the [`wp_presence_current_screen_key`](#wp_presence_current_screen_key) filter.
 
 ## Maintainers
 
