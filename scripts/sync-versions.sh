@@ -6,6 +6,7 @@
 #   - presence-api.php plugin header `* Version:`
 #   - presence-api.php `WP_PRESENCE_VERSION` define
 #   - readme.txt `Stable tag:`
+#   - .wordpress-org/blueprints/blueprint.json tag-pinned demo seeder URLs
 #
 # Called from .github/workflows/release-please.yml after release-please opens
 # (or updates) its release PR. Also runnable locally:
@@ -34,10 +35,19 @@ grep -q "^define( 'WP_PRESENCE_VERSION'" presence-api.php \
 grep -q '^Stable tag: ' readme.txt \
 	|| { echo "'Stable tag:' line not found in readme.txt" >&2; exit 1; }
 
+# The WordPress.org preview blueprint pulls the demo seeder from a tag, not from
+# main, so the seeder always matches the plugin version published to the
+# directory. The tag does not exist yet while the release PR is open; it is
+# created when that PR merges, before deploy-wporg.yml ships this file.
+BLUEPRINT='.wordpress-org/blueprints/blueprint.json'
+grep -q 'raw\.githubusercontent\.com/WordPress/presence-api/v[0-9]' "$BLUEPRINT" \
+	|| { echo "Tag-pinned seeder URL not found in ${BLUEPRINT}" >&2; exit 1; }
+
 # `sed -i.bak` works on both GNU sed (Linux CI) and BSD sed (macOS dev).
 sed -i.bak "s|^ \* Version: .*$| * Version: ${VERSION}|" presence-api.php
 sed -i.bak "s|^\(define( 'WP_PRESENCE_VERSION', '\)[^']*\(' );\)|\1${VERSION}\2|" presence-api.php
 sed -i.bak "s|^Stable tag: .*$|Stable tag: ${VERSION}|" readme.txt
+sed -i.bak "s|\(raw\.githubusercontent\.com/WordPress/presence-api/\)v[^/]*|\1v${VERSION}|g" "$BLUEPRINT"
 
 grep -qFx " * Version: ${VERSION}" presence-api.php \
 	|| { echo "Failed to update plugin header version in presence-api.php" >&2; exit 1; }
@@ -45,8 +55,15 @@ grep -qFx "define( 'WP_PRESENCE_VERSION', '${VERSION}' );" presence-api.php \
 	|| { echo "Failed to update WP_PRESENCE_VERSION define in presence-api.php" >&2; exit 1; }
 grep -qFx "Stable tag: ${VERSION}" readme.txt \
 	|| { echo "Failed to update 'Stable tag:' line in readme.txt" >&2; exit 1; }
+grep -q "raw\.githubusercontent\.com/WordPress/presence-api/v${VERSION}/" "$BLUEPRINT" \
+	|| { echo "Failed to update seeder URLs in ${BLUEPRINT}" >&2; exit 1; }
+if grep -o 'raw\.githubusercontent\.com/WordPress/presence-api/v[^/]*' "$BLUEPRINT" \
+	| grep -qv "v${VERSION}$"; then
+	echo "A stale seeder tag remains in ${BLUEPRINT}" >&2
+	exit 1
+fi
 
-rm -f presence-api.php.bak readme.txt.bak
+rm -f presence-api.php.bak readme.txt.bak "${BLUEPRINT}.bak"
 
 # Rewrite the == Changelog == section in readme.txt from CHANGELOG.md.
 # Skips the Dependencies subsection, strips GitHub commit links, deduplicates bullets.

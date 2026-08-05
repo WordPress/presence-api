@@ -1,0 +1,44 @@
+{
+	"$schema": "https://playground.wordpress.net/blueprint-schema.json",
+	"landingPage": "/wp-admin/index.php",
+	"preferredVersions": {
+		"php": "latest",
+		"wp": "latest"
+	},
+	"login": true,
+	"features": {
+		"networking": true
+	},
+	"steps": [
+		{
+			"step": "installPlugin",
+			"pluginData": {
+				"resource": "wordpress.org/plugins",
+				"slug": "presence-api"
+			},
+			"options": {
+				"activate": true
+			}
+		},
+		{
+			"step": "writeFile",
+			"path": "/wordpress/wp-content/plugins/presence-api/demo-seeder.php",
+			"data": {
+				"resource": "url",
+				"url": "https://raw.githubusercontent.com/WordPress/presence-api/v0.1.11/tests/e2e/demo-seeder.php"
+			}
+		},
+		{
+			"step": "writeFile",
+			"path": "/wordpress/wp-content/mu-plugins/screen-stale-demo-helper.php",
+			"data": {
+				"resource": "url",
+				"url": "https://raw.githubusercontent.com/WordPress/presence-api/v0.1.11/tests/e2e/screen-stale-demo-helper.php"
+			}
+		},
+		{
+			"step": "runPHP",
+			"code": "<?php require '/wordpress/wp-load.php'; require '/wordpress/wp-content/plugins/presence-api/demo-seeder.php'; wp_presence_demo_seed( 5 ); update_user_meta( 1, 'show_welcome_panel', 0 ); update_user_meta( 1, 'meta-box-order_dashboard', array( 'normal' => 'presence_whos_online,presence_active_posts,dashboard_right_now,dashboard_activity', 'side' => 'dashboard_quick_press,dashboard_primary' ) ); ?>"
+		}
+	]
+}
