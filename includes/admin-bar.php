@@ -19,7 +19,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 		return;
 	}
 
-	$entries     = wp_get_presence( 'admin/online' );
+	$entries     = wp_get_presence( wp_presence_admin_room() );
 	$current_uid = get_current_user_id();
 
 	// Only show the admin bar node when other users are online.

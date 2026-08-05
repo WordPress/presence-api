@@ -15,13 +15,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 class WP_Presence_Widget_Whos_Online {
 
 	/**
-	 * The presence room used by this widget.
-	 *
-	 * @var string
-	 */
-	const ROOM = 'admin/online';
-
-	/**
 	 * Maximum number of users shown as full rows before collapsing.
 	 *
 	 * @var int
@@ -572,7 +565,7 @@ JS,
 	 * Renders the dashboard widget.
 	 */
 	public static function render() {
-		$entries     = wp_get_presence( self::ROOM );
+		$entries     = wp_get_presence( wp_presence_admin_room() );
 		$current_uid = get_current_user_id();
 		$entries     = array_values(
 			array_filter(
@@ -701,7 +694,7 @@ JS,
 			return $response;
 		}
 
-		$entries = wp_get_presence( self::ROOM );
+		$entries = wp_get_presence( wp_presence_admin_room() );
 		$online  = array();
 
 		cache_users( wp_list_pluck( $entries, 'user_id' ) );

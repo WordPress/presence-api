@@ -2,13 +2,14 @@
 /**
  * Presence API functions.
  *
- * Public API (6 functions):
+ * Public API (7 functions):
  *   wp_get_presence()
  *   wp_set_presence()
  *   wp_remove_presence()
  *   wp_remove_user_presence()
  *   wp_can_access_presence_room()
  *   wp_presence_post_room()
+ *   wp_presence_admin_room()
  *
  * @package Presence_API
  */
@@ -195,6 +196,15 @@ function wp_presence_post_room( $post ) {
 	}
 
 	return 'postType/' . $post->post_type . ':' . $post->ID;
+}
+
+/**
+ * Returns the presence room identifier for the admin "who's online" list.
+ *
+ * @return string The room identifier.
+ */
+function wp_presence_admin_room() {
+	return 'admin/online';
 }
 
 /*
