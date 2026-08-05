@@ -12,23 +12,22 @@ Dashboard: [localhost:8888/wp-admin/](http://localhost:8888/wp-admin/) (admin / 
 ## Running tests
 
 ```bash
-# Coding standards
+# PHP dependencies (PHPCS, PHPStan, PHPUnit, Polyfills)
 composer install
+
+# Coding standards
 ./vendor/bin/phpcs --standard=phpcs.xml.dist
 
 # Static analysis
 ./vendor/bin/phpstan analyse --configuration=phpstan.neon.dist --memory-limit=2G
 
 # Unit tests (requires wp-env running)
-npx wp-env run tests-cli -- composer require --dev phpunit/phpunit:^9.6 yoast/phpunit-polyfills:^2.0 --working-dir=/var/www/html --update-with-all-dependencies
 npm test
 
 # E2E tests (requires wp-env running)
 npx playwright install chromium
 npm run test:e2e
 ```
-
-The PHPUnit install step only needs to be run once per `wp-env start`.
 
 ## Pull requests
 
