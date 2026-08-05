@@ -146,22 +146,20 @@ function wp_presence_deactivate() {
 /**
  * Adds action links to the plugin list table.
  *
- * The plugin has no settings screen; its interface is the dashboard widgets,
- * so the link points at the dashboard.
- *
- * @since 0.1.9
+ * The plugin has no settings screen, so the link points at the Users list
+ * filtered to the users who are currently online.
  *
  * @param string[] $links Existing plugin action links.
- * @return string[] Action links with the dashboard link prepended.
+ * @return string[] Action links with the online users link prepended.
  */
 function wp_presence_plugin_action_links( $links ) {
-	$dashboard_link = sprintf(
+	$online_users_link = sprintf(
 		'<a href="%1$s">%2$s</a>',
 		esc_url( admin_url( 'users.php?presence_status=online' ) ),
 		esc_html__( 'View Online Users', 'presence-api' )
 	);
 
-	array_unshift( $links, $dashboard_link );
+	array_unshift( $links, $online_users_link );
 
 	return $links;
 }
