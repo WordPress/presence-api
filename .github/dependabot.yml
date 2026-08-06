@@ -24,3 +24,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # codeql-action steps must share a version, so bump them together.
+    groups:
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"
