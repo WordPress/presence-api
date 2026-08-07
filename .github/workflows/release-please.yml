@@ -65,7 +65,7 @@ jobs:
           if ! git diff --quiet; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add presence-api.php readme.txt CHANGELOG.md
+            git add presence-api.php readme.txt CHANGELOG.md .wordpress-org/blueprints/blueprint.json
             git commit -m "chore: sync versions and remove duplicate changelog entries"
             gh auth setup-git
             git push
