@@ -1,5 +1,5 @@
 === Presence API ===
-Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain
+Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.0
