@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.12](https://github.com/WordPress/presence-api/compare/v0.1.11...v0.1.12) (2026-08-07)
+
+
+### Features
+
+* add action links to the plugin list table ([a5bd44a](https://github.com/WordPress/presence-api/commit/a5bd44a3720529a6262066315ee28a9e25417dea))
+* add blueprints for plugin page preview button ([722b400](https://github.com/WordPress/presence-api/commit/722b400cf89ba0743c3cf602ccd5da6b9430c76f))
+
+
+### Dependencies
+
+* bump php_codesniffer to 3.13.6 for CVE-2026-67434 ([f2667ee](https://github.com/WordPress/presence-api/commit/f2667ee20435f0fe9cab48b6525ba8d165141125))
+* declare PHPUnit and Polyfills as composer dependencies ([0636200](https://github.com/WordPress/presence-api/commit/0636200383110c681358b72d4a8a79f451b512d2))
+* **deps:** bump the codeql-action group with 3 updates ([9eaa679](https://github.com/WordPress/presence-api/commit/9eaa679257ccbf4dcdd874e11385cf7d177ea42f))
+* pin the Dependabot commit prefix so bumps reach the changelog ([c11c4fa](https://github.com/WordPress/presence-api/commit/c11c4fa1c7fabb736ffd44132cb0b09f9c9c21e6))
+* require phpunit-polyfills ^2.0 to clear the core bootstrap floor ([031bd84](https://github.com/WordPress/presence-api/commit/031bd848b2750070f1f7e3bfccf4abcdaf74b050))
+
 ## [0.1.11](https://github.com/WordPress/presence-api/compare/v0.1.10...v0.1.11) (2026-07-31)
 
 
