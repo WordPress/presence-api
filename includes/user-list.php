@@ -23,7 +23,7 @@ function wp_presence_users_views( $views ) {
 		return $views;
 	}
 
-	$entries         = wp_get_presence( 'admin/online' );
+	$entries         = wp_get_presence( wp_presence_admin_room() );
 	$online_ids      = array_map( 'intval', array_unique( wp_list_pluck( $entries, 'user_id' ) ) );
 	$current_user_id = get_current_user_id();
 
@@ -71,7 +71,7 @@ function wp_presence_filter_online_users( $query ) {
 		return;
 	}
 
-	$entries         = wp_get_presence( 'admin/online' );
+	$entries         = wp_get_presence( wp_presence_admin_room() );
 	$online_ids      = array_map( 'intval', array_unique( wp_list_pluck( $entries, 'user_id' ) ) );
 	$current_user_id = get_current_user_id();
 
