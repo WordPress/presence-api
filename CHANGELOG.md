@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.13](https://github.com/WordPress/presence-api/compare/v0.1.12...v0.1.13) (2026-08-07)
+
+
+### Features
+
+* move inline heartbeat JS to a standalone enqueued script ([8913cad](https://github.com/WordPress/presence-api/commit/8913cad63e40dda4f4c56bad579fba4fb90c70a6))
+
+
+### Bug Fixes
+
+* replace GROUP_CONCAT session mutations with PHP aggregation ([9628b33](https://github.com/WordPress/presence-api/commit/9628b3312f98cfe027b59bda431941562f5e0797))
+
 ## [0.1.12](https://github.com/WordPress/presence-api/compare/v0.1.11...v0.1.12) (2026-08-07)
 
 
