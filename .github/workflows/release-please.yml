@@ -58,6 +58,12 @@ jobs:
       # up after the fact rather than prevented. release-please rewrites this
       # branch on every run, which drops the fix, so this re-runs alongside it.
       - run: node .github/scripts/dedupe-changelog.js CHANGELOG.md
+      - name: Sync contributors from release props
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ fromJSON(needs.release-please.outputs.pr).number }}
+        run: node .github/scripts/sync-contributors.js readme.txt
       - name: Commit synced versions back to the release PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
