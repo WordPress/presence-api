@@ -6,6 +6,11 @@
 # flow rely on the corresponding toggles under Settings → Code security
 # and analysis.
 #
+# Every ecosystem pins commit-message. Dependabot otherwise infers the
+# prefix from recent history, and it drifted from `build` to `chore`
+# after 0.1.5. `chore` is hidden in release-please-config.json, so the
+# bumps silently dropped out of the changelog.
+#
 # Docs: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
 
 version: 2
@@ -14,16 +19,27 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: "build"
+      prefix-development: "build"
+      include: "scope"
 
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: "build"
+      prefix-development: "build"
+      include: "scope"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: "build"
+      include: "scope"
     # codeql-action steps must share a version, so bump them together.
     groups:
       codeql-action:
