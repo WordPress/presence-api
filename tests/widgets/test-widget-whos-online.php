@@ -96,7 +96,7 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_UnitTestCase {
 
 		// Set presence for this user in the "Who's Online" room.
 		wp_set_presence(
-			WP_Presence_Widget_Whos_Online::ROOM,
+			wp_presence_admin_room(),
 			'client-1',
 			array(),
 			$user_id
