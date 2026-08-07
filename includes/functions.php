@@ -462,7 +462,7 @@ function wp_get_active_rooms( $timeout = WP_PRESENCE_DEFAULT_TTL ) {
 
 		++$rooms_by_name[ $row->room ]['entry_count'];
 		$rooms_by_name[ $row->room ]['user_ids'][ $user_id ] = true;
-		$all_user_ids[ $user_id ] = true;
+		$all_user_ids[ $user_id ]                            = true;
 	}
 
 	// Prime the user object cache in a single query.
