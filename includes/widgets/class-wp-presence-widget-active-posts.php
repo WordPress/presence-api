@@ -274,13 +274,16 @@ JS,
 	 * @return array Array of post data with grouped editors.
 	 */
 	private static function build_active_posts_data() {
-		$entries = wp_get_presence_by_room_prefix( 'postType/' );
-		$by_post = array();
-		$now     = time();
+		$entries         = wp_get_presence_by_room_prefix( 'postType/' );
+		$by_post         = array();
+		$now             = time();
+		$current_user_id = get_current_user_id();
 
 		cache_users( wp_list_pluck( $entries, 'user_id' ) );
 
-		// Prime post caches to avoid N+1 queries from get_post() in the loop.
+		// Prime post caches to avoid N+1 queries from get_post() and the
+		// capability check in the loop. Neither reads the term or meta cache,
+		// so priming those is two queries spent on nothing.
 		$post_ids = array();
 		foreach ( $entries as $entry ) {
 			$parsed = wp_presence_parse_room( $entry->room );
@@ -289,7 +292,7 @@ JS,
 			}
 		}
 		if ( ! empty( $post_ids ) ) {
-			_prime_post_caches( array_unique( $post_ids ), true, true );
+			_prime_post_caches( array_unique( $post_ids ), false, false );
 		}
 
 		foreach ( $entries as $entry ) {
@@ -310,6 +313,14 @@ JS,
 			$post_type = $parsed['post_type'];
 
 			if ( ! post_type_supports( $post_type, 'presence' ) ) {
+				continue;
+			}
+
+			// Rendering the widget only takes `edit_posts`, so without this a
+			// contributor would receive the title, edit link and editors of
+			// every post being worked on. Same check the REST controller
+			// applies to the room collection.
+			if ( ! wp_can_access_presence_room( $entry->room, $current_user_id ) ) {
 				continue;
 			}
 

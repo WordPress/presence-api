@@ -560,7 +560,9 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 		$rooms           = wp_get_active_rooms();
 		$current_user_id = get_current_user_id();
 
-		// Prime post caches to avoid N+1 queries during the wp_can_access_presence_room filtering loop.
+		// Prime post caches to avoid N+1 queries during the wp_can_access_presence_room
+		// filtering loop. The capability check reads neither the term nor the meta
+		// cache, so priming those is two queries spent on nothing.
 		$post_ids = array();
 		foreach ( $rooms as $room ) {
 			$parsed = wp_presence_parse_room( $room['room'] );
@@ -569,7 +571,7 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 			}
 		}
 		if ( ! empty( $post_ids ) ) {
-			_prime_post_caches( array_unique( $post_ids ) );
+			_prime_post_caches( array_unique( $post_ids ), false, false );
 		}
 
 		$rooms = array_values(
