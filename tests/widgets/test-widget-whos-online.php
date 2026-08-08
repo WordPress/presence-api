@@ -95,11 +95,8 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_UnitTestCase {
 
 		wp_set_current_user( $user_id );
 
-		WP_Presence_Widget_Whos_Online::heartbeat_received(
-			array(),
-			array( 'presence-ping' => array( 'screen' => 'dashboard' ) ),
-			'dashboard'
-		);
+		$data = array( 'presence-ping' => array( 'screen' => 'dashboard' ) );
+		wp_presence_admin_heartbeat_received( array(), $data, 'dashboard' );
 
 		wp_set_current_user( self::$editor_id );
 
