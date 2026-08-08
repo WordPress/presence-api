@@ -63,6 +63,9 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 						'room'     => array(
 							'required'          => true,
 							'type'              => 'string',
+							'minLength'         => 1,
+							'maxLength'         => WP_PRESENCE_MAX_KEY_LENGTH,
+							'validate_callback' => 'rest_validate_request_arg',
 							'sanitize_callback' => 'sanitize_text_field',
 						),
 						'per_page' => array(
@@ -70,12 +73,14 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 							'default'           => 100,
 							'minimum'           => 1,
 							'maximum'           => 100,
+							'validate_callback' => 'rest_validate_request_arg',
 							'sanitize_callback' => 'absint',
 						),
 						'page'     => array(
 							'type'              => 'integer',
 							'default'           => 1,
 							'minimum'           => 1,
+							'validate_callback' => 'rest_validate_request_arg',
 							'sanitize_callback' => 'absint',
 						),
 					),
@@ -88,11 +93,17 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 						'room'      => array(
 							'required'          => true,
 							'type'              => 'string',
+							'minLength'         => 1,
+							'maxLength'         => WP_PRESENCE_MAX_KEY_LENGTH,
+							'validate_callback' => 'rest_validate_request_arg',
 							'sanitize_callback' => 'sanitize_text_field',
 						),
 						'client_id' => array(
 							'required'          => true,
 							'type'              => 'string',
+							'minLength'         => 1,
+							'maxLength'         => WP_PRESENCE_MAX_KEY_LENGTH,
+							'validate_callback' => 'rest_validate_request_arg',
 							'sanitize_callback' => 'sanitize_text_field',
 						),
 						'data'      => array(
@@ -111,11 +122,17 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 						'room'      => array(
 							'required'          => true,
 							'type'              => 'string',
+							'minLength'         => 1,
+							'maxLength'         => WP_PRESENCE_MAX_KEY_LENGTH,
+							'validate_callback' => 'rest_validate_request_arg',
 							'sanitize_callback' => 'sanitize_text_field',
 						),
 						'client_id' => array(
 							'required'          => true,
 							'type'              => 'string',
+							'minLength'         => 1,
+							'maxLength'         => WP_PRESENCE_MAX_KEY_LENGTH,
+							'validate_callback' => 'rest_validate_request_arg',
 							'sanitize_callback' => 'sanitize_text_field',
 						),
 					),
@@ -138,12 +155,14 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 							'default'           => 50,
 							'minimum'           => 1,
 							'maximum'           => 100,
+							'validate_callback' => 'rest_validate_request_arg',
 							'sanitize_callback' => 'absint',
 						),
 						'page'     => array(
 							'type'              => 'integer',
 							'default'           => 1,
 							'minimum'           => 1,
+							'validate_callback' => 'rest_validate_request_arg',
 							'sanitize_callback' => 'absint',
 						),
 					),
@@ -163,8 +182,16 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 						'screen_key' => array(
 							'required'          => true,
 							'type'              => 'string',
+							'maxLength'         => WP_PRESENCE_SCREEN_KEY_LIMIT,
 							'sanitize_callback' => 'sanitize_text_field',
-							'validate_callback' => static function ( $value ) {
+							// A custom validate_callback replaces the default one, so run
+							// the schema check first or maxLength above is never applied.
+							'validate_callback' => static function ( $value, $request, $param ) {
+								$valid = rest_validate_request_arg( $value, $request, $param );
+								if ( is_wp_error( $valid ) ) {
+									return $valid;
+								}
+
 								return (bool) preg_match( '#^[a-z0-9/_-]+$#', $value );
 							},
 						),
