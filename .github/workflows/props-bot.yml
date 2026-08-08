@@ -130,6 +130,23 @@ jobs:
               }
             );
 
+            // Fail-closed backstop. Everything above depends on the exact prose
+            // emitted by WordPress/props-bot-action, which is pinned to @trunk
+            // and can change without notice. If the wording moves, the section
+            // parsing silently no-ops and any raw email survives, which is the
+            // exact failure this workflow already shipped once. Redact address
+            // shaped strings from the whole body regardless of structure.
+            const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+/g;
+            const redacted = body.replace(EMAIL, '[redacted]');
+            if (redacted !== body) {
+              body = redacted;
+              core.warning(
+                'A raw email survived section parsing and was redacted by the backstop. ' +
+                'The upstream props-bot comment format has probably changed; ' +
+                'check the Unlinked Accounts parsing in .github/workflows/props-bot.yml.'
+              );
+            }
+
             if (body === propsComment.body) return;
             await github.rest.issues.updateComment({
               owner: context.repo.owner,

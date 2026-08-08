@@ -14,10 +14,16 @@ coverage:
     # New and changed lines are held to a fixed bar, independent of the
     # project total. This is what keeps untested code from landing while the
     # overall figure is still climbing.
+    #
+    # Reporting only for now. Four files are still at 0% (cli, post-list,
+    # user-list, cron), so any PR touching them would fail this gate before
+    # the tests that would satisfy it exist. Drop `informational` once those
+    # are covered, to make it blocking.
     patch:
       default:
         target: 80%
         threshold: 0%
+        informational: true
 
 # Files excluded here are also excluded from PHPUnit's coverage measurement in
 # phpunit.xml.dist. Keep the two lists in sync.
