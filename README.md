@@ -48,7 +48,7 @@ Post types opt in via `add_post_type_support( 'post', 'presence' )`.
 
 ## PHP API
 
-Six public functions are part of the stable API contract. Everything else in `includes/functions.php` is marked `@access private` and may change without notice.
+The following six public functions are part of the stable public API contract. All other helper functions in `includes/functions.php` (such as `wp_get_active_rooms()`, `wp_get_presence_summary()`, etc.) are marked `@access private`, are intended for internal plugin use only, and may change or be removed without notice.
 
 ```php
 // Read all presence entries in a room.
@@ -73,6 +73,58 @@ $room = wp_presence_post_room( $post );
 
 Each entry object returned by `wp_get_presence()` has: `room`, `client_id`, `user_id`, `data` (array), `date_gmt`.
 
+## Extension Points
+
+### Post Type Support
+A post type opts in to per-post presence rooms by declaring `presence` support. `post` and `page` are registered by the plugin; any other post type must opt in itself, either during registration or afterwards:
+```php
+// During registration:
+register_post_type( 'my-post-type', array(
+    'supports' => array( 'title', 'editor', 'presence' ),
+) );
+
+// Or afterwards, on a post type someone else registered:
+add_post_type_support( 'my-post-type', 'presence' );
+```
+
+Without support, `wp_presence_post_room()` returns `false` for that post type and no per-post room is created.
+
+### Filters
+#### `wp_presence_default_ttl`
+Filters the presence TTL (time-to-live) in seconds used for all queries and cleanup. Default: 60.
+```php
+add_filter( 'wp_presence_default_ttl', function( $timeout ) {
+    return 30; // Override TTL to 30 seconds.
+} );
+```
+
+Or define the constant before the plugin loads:
+```php
+define( 'WP_PRESENCE_DEFAULT_TTL', 30 );
+```
+
+#### `wp_presence_current_screen_key`
+Filters the key identifying the current admin screen for [stale-screen detection](#stale-screen-detection). Core screens (Settings, `post.php`, term, user, comment) resolve their own keys; `$key` is `''` on any screen without coverage. Return a non-empty string to opt a custom screen in.
+```php
+add_filter( 'wp_presence_current_screen_key', function( $key, $screen ) {
+    if ( 'toplevel_page_my-plugin' === $screen->id ) {
+        return 'options/my-plugin-settings';
+    }
+    return $key; // Leave other screens untouched.
+}, 10, 2 );
+```
+
+Keys follow the plugin's slash-separated room convention and are truncated to 191 characters (`WP_PRESENCE_SCREEN_KEY_LIMIT`). Use the same key when bumping the revision from JS via `wp.presence.markScreenStale()`.
+
+### Actions
+#### `wp_presence_screen_revision_bumped`
+Fires after an admin screen revision has been bumped. Useful for triggering custom sync or WebSocket integrations.
+```php
+add_action( 'wp_presence_screen_revision_bumped', function( $screen_key, $revision, $actor_id ) {
+    // Custom sync logic
+}, 10, 3 );
+```
+
 ## REST API
 
 All endpoints require `edit_posts`. Responses include `Cache-Control: no-store`.
@@ -91,16 +143,6 @@ wp presence list      # List all active presence entries
 wp presence summary   # Summary grouped by room
 wp presence set       # Manually upsert an entry
 wp presence cleanup   # Delete expired entries immediately
-```
-
-## Filters and constants
-
-```php
-// Override the TTL (seconds) used for all queries and cleanup. Default: 60.
-add_filter( 'wp_presence_default_ttl', fn() => 30 );
-
-// Or define the constant before the plugin loads.
-define( 'WP_PRESENCE_DEFAULT_TTL', 30 );
 ```
 
 ## Post-lock bridge
@@ -125,6 +167,8 @@ if (window.wp?.presence?.markScreenStale) {
     wp.presence.markScreenStale('options/my-custom-plugin-settings');
 }
 ```
+
+For a screen to be *watched* in the first place, it needs a screen key — core screens resolve their own, and custom screens supply one via the [`wp_presence_current_screen_key`](#wp_presence_current_screen_key) filter.
 
 ## Maintainers
 
