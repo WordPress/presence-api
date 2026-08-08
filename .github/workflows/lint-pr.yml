@@ -1,0 +1,87 @@
+name: Lint Pull Request
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - edited
+      - synchronize
+
+permissions:
+  contents: read
+
+jobs:
+  # The merge commit's body is this pull request's title, and release-please
+  # parses it alongside the branch commits, so a conventional title puts this
+  # change in the changelog however the branch commits happen to be written.
+  title:
+    name: Validate pull request title
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    # The action reports its result as a commit status, which needs
+    # `statuses: write`. The default token does not have it on
+    # `pull_request_target`, and without it the action fails with
+    # "Resource not accessible by integration" even for a valid title.
+    permissions:
+      pull-requests: read
+      statuses: write
+    steps:
+      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Mirrors the `type` keys in release-please-config.json. A type that
+          # is valid here but missing there would be dropped from the changelog
+          # silently, so the two lists have to stay in sync.
+          types: |
+            build
+            chore
+            ci
+            docs
+            feat
+            fix
+            perf
+            refactor
+            revert
+            style
+            test
+          requireScope: false
+          ignoreLabels: |
+            bot
+            ignore-semantic-pull-request
+
+  # `!` triggers a major bump, but only on types release-please releases from.
+  # `ci!:` or `chore!:` reads as a breaking change in the git history while
+  # bumping nothing, so reject the combination rather than let it mislead.
+  breaking-change:
+    name: Validate breaking change marker
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Check for breaking change marker on non-releasing types
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          ALLOWED_BREAKING_TYPES="feat|fix|perf"
+
+          # Matches "type!:", "type(scope)!:" and "type!(scope):".
+          if [[ "$PR_TITLE" =~ ^([a-z]+)!(\(.+\))?:|^([a-z]+)(\(.+\))?!: ]]; then
+            TYPE="${BASH_REMATCH[1]:-${BASH_REMATCH[3]}}"
+
+            if [[ ! "$TYPE" =~ ^($ALLOWED_BREAKING_TYPES)$ ]]; then
+              echo "::error::Breaking change marker (!) cannot be used with the '$TYPE' prefix."
+              echo ""
+              echo "'!' marks a BREAKING CHANGE and triggers a major version bump, but"
+              echo "'$TYPE' commits do not trigger a release at all, so the marker is ambiguous."
+              echo ""
+              echo "Use 'feat!:', 'fix!:' or 'perf!:' if this is a breaking change,"
+              echo "or drop the '!' if it is not."
+              echo ""
+              echo "Current title: $PR_TITLE"
+              exit 1
+            fi
+          fi
+
+          echo "PR title is valid."

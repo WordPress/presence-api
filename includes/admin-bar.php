@@ -19,7 +19,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 		return;
 	}
 
-	$entries     = wp_get_presence( 'admin/online' );
+	$entries     = wp_get_presence( wp_presence_admin_room() );
 	$current_uid = get_current_user_id();
 
 	// Only show the admin bar node when other users are online.
@@ -98,17 +98,35 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 	usort( $here, $sort_by_name );
 	usort( $elsewhere, $sort_by_name );
 
-	// Build a map of user_id -> post_id for users currently editing a post.
-	$user_editing_post = array();
-	$post_entries      = wp_get_presence_by_room_prefix( 'postType/' );
-	foreach ( $post_entries as $pe ) {
-		// Room format: postType/{type}:{id}.
-		if ( preg_match( '/^postType\/[^:]+:(\d+)$/', $pe->room, $m ) ) {
-			$user_editing_post[ (int) $pe->user_id ] = (int) $m[1];
+	// Build a map of user_id -> post for users currently editing a post.
+	$editing  = array();
+	$post_ids = array();
+	foreach ( wp_get_presence_by_room_prefix( 'postType/' ) as $pe ) {
+		$parsed = wp_presence_parse_room( $pe->room );
+		if ( ! $parsed ) {
+			continue;
 		}
+		$editing[ (int) $pe->user_id ] = array(
+			'room'    => $pe->room,
+			'post_id' => $parsed['post_id'],
+		);
+		$post_ids[]                    = $parsed['post_id'];
 	}
-	if ( ! empty( $user_editing_post ) ) {
-		_prime_post_caches( array_unique( array_values( $user_editing_post ) ) );
+
+	// The capability check below calls get_post() per room, so prime in one go.
+	// It reads neither the term nor the meta cache.
+	if ( ! empty( $post_ids ) ) {
+		_prime_post_caches( array_unique( $post_ids ), false, false );
+	}
+
+	// Drop the posts the current user cannot edit. Without this the menu gives
+	// the title and edit link of every post being worked on to anyone with
+	// `edit_posts`. Those entries keep the generic screen label instead.
+	$user_editing_post = array();
+	foreach ( $editing as $user_id => $post ) {
+		if ( wp_can_access_presence_room( $post['room'], $current_uid ) ) {
+			$user_editing_post[ $user_id ] = $post['post_id'];
+		}
 	}
 
 	// "Here" count includes you.

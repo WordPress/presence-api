@@ -1,0 +1,66 @@
+name: E2E
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: Playwright
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          show-progress: ${{ runner.debug == '1' && 'true' || 'false' }}
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+          restore-keys: ${{ runner.os }}-playwright-
+      # The apt packages are not covered by the cache above, so install-deps
+      # runs unconditionally while the browser download is skipped on a hit.
+      - run: npx playwright install-deps chromium
+      - run: npx playwright install chromium
+        if: ${{ steps.playwright-cache.outputs.cache-hit != 'true' }}
+
+      # The Playwright config declares a `webServer` that would start wp-env on
+      # demand, but starting it here keeps a boot failure in its own step
+      # instead of buried in Playwright's server output. `reuseExistingServer`
+      # is true, so Playwright attaches to this instance rather than a second.
+      - run: npx wp-env start
+
+      - run: npm run test:e2e
+
+      # Screenshots are produced on success too, which is the point of keeping
+      # presence-screenshots.test.js in the run: the plugin is UI-heavy and the
+      # images give reviewers a look at the admin bar and widgets per PR.
+      # `artifacts/storage-states/` is excluded because it holds a session cookie.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: e2e-artifacts
+          path: |
+            artifacts/screenshots/
+            artifacts/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: WordPress debug log
+        if: ${{ failure() }}
+        run: npx wp-env run tests-cli -- cat wp-content/debug.log || true
+
+      - name: Stop the testing environment
+        if: ${{ always() }}
+        run: npx wp-env stop || true

@@ -158,6 +158,24 @@ class WP_Test_Presence_Functions extends WP_UnitTestCase {
 	public function test_logged_out_user_cannot_access_room() {
 		$this->assertFalse( wp_can_access_presence_room( 'test/room', 0 ) );
 	}
+	/**
+	 * @covers ::wp_can_access_presence_room
+	 */
+	public function test_wp_can_access_presence_room_checks_post_type_capabilities() {
+		$author_1 = self::factory()->user->create( array( 'role' => 'author' ) );
+		$author_2 = self::factory()->user->create( array( 'role' => 'author' ) );
+
+		$post_id = self::factory()->post->create( array(
+			'post_author' => $author_1,
+			'post_status' => 'draft',
+		) );
+
+		$room = 'postType/post:' . $post_id;
+
+		$this->assertTrue( wp_can_access_presence_room( $room, $author_1 ) );
+		$this->assertFalse( wp_can_access_presence_room( $room, $author_2 ) );
+		$this->assertTrue( wp_can_access_presence_room( $room, self::$editor_id ) );
+	}
 
 	/**
 	 * @covers ::wp_delete_expired_presence_data
@@ -316,6 +334,25 @@ class WP_Test_Presence_Functions extends WP_UnitTestCase {
 		$this->assertSame( 'admin/online', $rooms[0]['room'] );
 		$this->assertSame( 1, $rooms[0]['user_count'] );
 		$this->assertArrayHasKey( 'users', $rooms[0] );
+	}
+
+	/**
+	 * @covers ::wp_get_active_rooms
+	 */
+	public function test_get_active_rooms_orders_by_entry_count_and_deduplicates_users() {
+		$editor2_id = self::factory()->user->create( array( 'role' => 'editor' ) );
+
+		wp_set_presence( 'admin/online', 'client-1', array(), self::$editor_id );
+		wp_set_presence( 'postType/post:1', 'client-2', array(), self::$editor_id );
+		wp_set_presence( 'postType/post:1', 'client-3', array(), self::$editor_id );
+		wp_set_presence( 'postType/post:1', 'client-4', array(), $editor2_id );
+
+		$rooms = wp_get_active_rooms();
+
+		$this->assertCount( 2, $rooms );
+		$this->assertSame( 'postType/post:1', $rooms[0]['room'] );
+		$this->assertSame( 2, $rooms[0]['user_count'] );
+		$this->assertSame( 'admin/online', $rooms[1]['room'] );
 	}
 
 	/**

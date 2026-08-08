@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
           cache: npm
@@ -24,7 +24,8 @@ jobs:
       - run: npm ci
       - name: Authenticate composer to GitHub
         run: composer config --global --auth github-oauth.github.com '${{ secrets.GITHUB_TOKEN }}'
+      - name: Install Composer dependencies
+        run: composer install --no-interaction
       - run: npx wp-env start
-      - run: npx wp-env run tests-cli -- composer require --dev phpunit/phpunit:^9.6 yoast/phpunit-polyfills:^2.0 --working-dir=/var/www/html --update-with-all-dependencies
       - run: npx wp-env run tests-cli -- wp core multisite-convert --title="Test Network"
-      - run: npx wp-env run tests-cli --env-cwd='wp-content/plugins/presence-api' -- /var/www/html/vendor/bin/phpunit
+      - run: npx wp-env run tests-cli --env-cwd='wp-content/plugins/presence-api' -- ./vendor/bin/phpunit

@@ -2,13 +2,14 @@
 /**
  * Presence API functions.
  *
- * Public API (6 functions):
+ * Public API (7 functions):
  *   wp_get_presence()
  *   wp_set_presence()
  *   wp_remove_presence()
  *   wp_remove_user_presence()
  *   wp_can_access_presence_room()
  *   wp_presence_post_room()
+ *   wp_presence_admin_room()
  *
  * @package Presence_API
  */
@@ -132,6 +133,26 @@ function wp_remove_user_presence( $user_id ) {
 }
 
 /**
+ * Parses a room identifier.
+ *
+ * Room format: `postType/{post_type}:{post_id}`
+ *
+ * @access private
+ * @param string $room The room identifier.
+ * @return array|false An array containing 'post_type' and 'post_id' on success, false otherwise.
+ */
+function wp_presence_parse_room( $room ) {
+	if ( preg_match( '#^postType/([^:]+):(\d+)$#', $room, $matches ) ) {
+		return array(
+			'post_type' => $matches[1],
+			'post_id'   => (int) $matches[2],
+		);
+	}
+
+	return false;
+}
+
+/**
  * Checks if a user can access a presence room.
  *
  * @param string $room    The room identifier.
@@ -145,6 +166,11 @@ function wp_can_access_presence_room( $room, $user_id = 0 ) {
 
 	if ( ! $user_id ) {
 		return false;
+	}
+
+	$parsed = wp_presence_parse_room( $room );
+	if ( $parsed ) {
+		return user_can( $user_id, 'edit_post', $parsed['post_id'] );
 	}
 
 	return user_can( $user_id, 'edit_posts' );
@@ -171,6 +197,15 @@ function wp_presence_post_room( $post ) {
 	}
 
 	return 'postType/' . $post->post_type . ':' . $post->ID;
+}
+
+/**
+ * Returns the presence room identifier for the admin "who's online" list.
+ *
+ * @return string The room identifier.
+ */
+function wp_presence_admin_room() {
+	return 'admin/online';
 }
 
 /*
@@ -283,22 +318,13 @@ function wp_get_presence_summary( $timeout = WP_PRESENCE_DEFAULT_TTL ) {
 	$timeout = wp_presence_get_timeout( $timeout );
 	$cutoff  = gmdate( 'Y-m-d H:i:s', time() - $timeout );
 
-	// Increase GROUP_CONCAT limit to prevent silent truncation with many users per room.
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-	$wpdb->query( 'SET SESSION group_concat_max_len = 1000000' );
-
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-	$rows = $wpdb->get_results(
+	$rows    = $wpdb->get_results(
 		$wpdb->prepare(
-			"SELECT room, COUNT(*) AS entries, COUNT(DISTINCT user_id) AS users, GROUP_CONCAT(DISTINCT user_id) AS user_ids FROM {$wpdb->presence} WHERE date_gmt > %s GROUP BY room",
+			"SELECT room, user_id FROM {$wpdb->presence} WHERE date_gmt > %s ORDER BY room ASC",
 			$cutoff
 		)
 	);
-
-	// Always reset GROUP_CONCAT limit regardless of query success.
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-	$wpdb->query( 'SET SESSION group_concat_max_len = DEFAULT' );
-
 	$summary = array(
 		'total_entries' => 0,
 		'total_users'   => 0,
@@ -325,22 +351,20 @@ function wp_get_presence_summary( $timeout = WP_PRESENCE_DEFAULT_TTL ) {
 			$prefix_user_ids[ $prefix ]      = array();
 		}
 
-		$summary['by_prefix'][ $prefix ]['entries'] += (int) $row->entries;
-		$summary['total_entries']                   += (int) $row->entries;
+		$user_id = (int) $row->user_id;
 
-		if ( ! empty( $row->user_ids ) ) {
-			$room_user_ids              = explode( ',', $row->user_ids );
-			$all_user_ids               = array_merge( $all_user_ids, $room_user_ids );
-			$prefix_user_ids[ $prefix ] = array_merge( $prefix_user_ids[ $prefix ], $room_user_ids );
-		}
+		++$summary['by_prefix'][ $prefix ]['entries'];
+		++$summary['total_entries'];
+
+		$all_user_ids[ $user_id ]               = true;
+		$prefix_user_ids[ $prefix ][ $user_id ] = true;
 	}
 
 	foreach ( $prefix_user_ids as $prefix => $user_ids ) {
-		$summary['by_prefix'][ $prefix ]['users'] = count( array_unique( $user_ids ) );
+		$summary['by_prefix'][ $prefix ]['users'] = count( $user_ids );
 	}
 
-	$summary['total_users'] = count( array_unique( $all_user_ids ) );
-
+	$summary['total_users'] = count( $all_user_ids );
 	return $summary;
 }
 
@@ -419,43 +443,58 @@ function wp_get_active_rooms( $timeout = WP_PRESENCE_DEFAULT_TTL ) {
 	$timeout = wp_presence_get_timeout( $timeout );
 	$cutoff  = gmdate( 'Y-m-d H:i:s', time() - $timeout );
 
-	// Increase GROUP_CONCAT limit to prevent silent truncation with many users per room.
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-	$wpdb->query( 'SET SESSION group_concat_max_len = 1000000' );
-
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	$rows = $wpdb->get_results(
 		$wpdb->prepare(
-			"SELECT room, GROUP_CONCAT(DISTINCT user_id ORDER BY user_id ASC) AS user_ids
+			"SELECT room, user_id
 			FROM {$wpdb->presence}
 			WHERE date_gmt > %s
-			GROUP BY room
-			ORDER BY COUNT(*) DESC",
+			ORDER BY room ASC, user_id ASC",
 			$cutoff
 		)
 	);
-
-	// Always reset GROUP_CONCAT limit regardless of query success.
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-	$wpdb->query( 'SET SESSION group_concat_max_len = DEFAULT' );
-
 	if ( ! $rows ) {
 		return array();
 	}
 
-	// Prime the user object cache in a single query.
-	$all_user_ids = array();
-	foreach ( $rows as $row ) {
-		$all_user_ids = array_merge( $all_user_ids, array_map( 'intval', explode( ',', $row->user_ids ) ) );
-	}
-	cache_users( array_unique( $all_user_ids ) );
+	$rooms_by_name = array();
+	$all_user_ids  = array();
 
+	foreach ( $rows as $row ) {
+		if ( ! isset( $rooms_by_name[ $row->room ] ) ) {
+			$rooms_by_name[ $row->room ] = array(
+				'room'        => $row->room,
+				'entry_count' => 0,
+				'user_ids'    => array(),
+			);
+		}
+
+		$user_id = (int) $row->user_id;
+
+		++$rooms_by_name[ $row->room ]['entry_count'];
+		$rooms_by_name[ $row->room ]['user_ids'][ $user_id ] = true;
+		$all_user_ids[ $user_id ]                            = true;
+	}
+
+	// Prime the user object cache in a single query.
+	cache_users( array_keys( $all_user_ids ) );
+
+	uasort(
+		$rooms_by_name,
+		function ( $room_a, $room_b ) {
+
+			if ( $room_a['entry_count'] === $room_b['entry_count'] ) {
+				return strcmp( $room_a['room'], $room_b['room'] );
+			}
+
+			return $room_b['entry_count'] <=> $room_a['entry_count'];
+		}
+	);
 	$rooms = array();
 
-	foreach ( $rows as $row ) {
-		$user_ids = array_map( 'intval', explode( ',', $row->user_ids ) );
+	foreach ( $rooms_by_name as $room ) {
+		$user_ids = array_keys( $room['user_ids'] );
 		$users    = array();
-
 		foreach ( $user_ids as $uid ) {
 			$user = get_userdata( $uid );
 
@@ -471,7 +510,7 @@ function wp_get_active_rooms( $timeout = WP_PRESENCE_DEFAULT_TTL ) {
 		}
 
 		$rooms[] = array(
-			'room'       => $row->room,
+			'room'       => $room['room'],
 			'user_count' => count( $users ),
 			'users'      => $users,
 		);

@@ -5,12 +5,13 @@
 		"env:start": "wp-env start",
 		"env:stop": "wp-env stop",
 		"env:cli": "wp-env run cli wp",
-		"test": "wp-env run tests-cli --env-cwd='wp-content/plugins/presence-api' -- /var/www/html/vendor/bin/phpunit --testdox",
+		"test": "wp-env run tests-cli --env-cwd='wp-content/plugins/presence-api' -- ./vendor/bin/phpunit --testdox",
+		"test:e2e": "playwright test --config tests/e2e/playwright.config.js",
 		"test:scripts": "node --test .github/scripts/*.test.js"
 	},
 	"devDependencies": {
-		"@playwright/test": "^1.61.1",
+		"@playwright/test": "^1.62.1",
 		"@wordpress/e2e-test-utils-playwright": "^1.51.0",
-		"@wordpress/env": "^11.11.0"
+		"@wordpress/env": "^11.12.0"
 	}
 }

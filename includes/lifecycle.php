@@ -21,7 +21,7 @@ function wp_presence_on_login( $user_login, $user ) {
 	}
 
 	wp_set_presence(
-		'admin/online',
+		wp_presence_admin_room(),
 		'user-' . $user->ID,
 		array(
 			'screen' => 'login',

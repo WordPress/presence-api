@@ -15,13 +15,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 class WP_Presence_Widget_Whos_Online {
 
 	/**
-	 * The presence room used by this widget.
-	 *
-	 * @var string
-	 */
-	const ROOM = 'admin/online';
-
-	/**
 	 * Maximum number of users shown as full rows before collapsing.
 	 *
 	 * @var int
@@ -572,7 +565,7 @@ JS,
 	 * Renders the dashboard widget.
 	 */
 	public static function render() {
-		$entries     = wp_get_presence( self::ROOM );
+		$entries     = wp_get_presence( wp_presence_admin_room() );
 		$current_uid = get_current_user_id();
 		$entries     = array_values(
 			array_filter(
@@ -677,9 +670,13 @@ JS,
 	/**
 	 * Handles the heartbeat received event for presence updates.
 	 *
-	 * Sets the current user's presence and returns structured presence
-	 * data for all users in the room. Returns avatar URLs and timestamps
-	 * rather than pre-rendered HTML, allowing clients to render as needed.
+	 * Returns structured presence data for every user in the room. Returns
+	 * avatar URLs and timestamps rather than pre-rendered HTML, allowing
+	 * clients to render as needed.
+	 *
+	 * The current user's own entry is written by
+	 * wp_presence_admin_heartbeat_received(), which runs at an earlier
+	 * priority on this same filter.
 	 *
 	 * @param array  $response  The Heartbeat response.
 	 * @param array  $data      The $_POST data sent.
@@ -697,58 +694,7 @@ JS,
 			return $response;
 		}
 
-		$user_id   = get_current_user_id();
-		$client_id = 'user-' . $user_id;
-		$screen    = isset( $data['presence-ping']['screen'] ) ? sanitize_text_field( $data['presence-ping']['screen'] ) : '';
-
-		// Enrich post-editing screens with the post status.
-		$post_status = '';
-		if ( in_array( $screen, array( 'post', 'edit-post', 'page' ), true ) ) {
-			// The editor heartbeat includes the post ID in wp-refresh-post-lock.
-			$post_id = 0;
-			if ( ! empty( $data['wp-refresh-post-lock']['post_id'] ) ) {
-				$post_id = absint( $data['wp-refresh-post-lock']['post_id'] );
-			} elseif ( ! empty( $data['presence-editor-ping']['post_id'] ) ) {
-				$post_id = absint( $data['presence-editor-ping']['post_id'] );
-			}
-			if ( $post_id ) {
-				$post = get_post( $post_id );
-				if ( $post && current_user_can( 'edit_post', $post_id ) && isset( get_post_stati()[ $post->post_status ] ) ) {
-					$post_status = $post->post_status;
-				}
-			}
-		}
-
-		$state = array( 'screen' => $screen );
-		if ( $post_status ) {
-			$state['post_status'] = $post_status;
-		}
-
-		// Store the frontend page label whenever the ping is from the public site.
-		// title becomes the row's screen label in Who's Online; post_id is recorded
-		// when the ping carries one (singular views).
-		if ( 'front' === $screen ) {
-			if ( ! empty( $data['presence-ping']['title'] ) ) {
-				$state['title'] = sanitize_text_field( $data['presence-ping']['title'] );
-			}
-			$post_id = (int) ( $data['presence-ping']['post_id'] ?? 0 );
-			if ( $post_id > 0 ) {
-				$front_post = get_post( $post_id );
-				if ( $front_post ) {
-					$state['post_id'] = $front_post->ID;
-				}
-			}
-		}
-
-		wp_set_presence(
-			self::ROOM,
-			$client_id,
-			$state,
-			$user_id
-		);
-
-		// Return the updated presence list.
-		$entries = wp_get_presence( self::ROOM );
+		$entries = wp_get_presence( wp_presence_admin_room() );
 		$online  = array();
 
 		cache_users( wp_list_pluck( $entries, 'user_id' ) );

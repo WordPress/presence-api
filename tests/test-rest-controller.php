@@ -93,14 +93,17 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 	 * @covers WP_REST_Presence_Controller::delete_item_permissions_check
 	 */
 	public function test_rest_delete_allows_own_lock_entries() {
+		$post_id = self::factory()->post->create();
+		$room    = 'postType/post:' . $post_id;
+
 		// Editor sets a lock entry.
-		wp_set_presence( 'postType/post:1', 'lock-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( $room, 'lock-' . self::$editor_id, array(), self::$editor_id );
 
 		// Same editor tries to delete it.
 		wp_set_current_user( self::$editor_id );
 
 		$request = new WP_REST_Request( 'DELETE', '/wp-presence/v1/presence' );
-		$request->set_param( 'room', 'postType/post:1' );
+		$request->set_param( 'room', $room );
 		$request->set_param( 'client_id', 'lock-' . self::$editor_id );
 
 		$controller = new WP_REST_Presence_Controller();
@@ -210,9 +213,12 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 	 * @covers WP_REST_Presence_Controller::get_rooms
 	 */
 	public function test_get_rooms_returns_data() {
+		$post_id = self::factory()->post->create();
+		$room    = 'postType/post:' . $post_id;
+
 		wp_set_current_user( self::$editor_id );
 		wp_set_presence( 'admin/online', 'client-1', array(), self::$editor_id );
-		wp_set_presence( 'postType/post:1', 'client-2', array(), self::$editor_2_id );
+		wp_set_presence( $room, 'client-2', array(), self::$editor_2_id );
 
 		$request  = new WP_REST_Request( 'GET', '/wp-presence/v1/presence/rooms' );
 		$response = rest_get_server()->dispatch( $request );
@@ -227,15 +233,21 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 
 	/**
 	 * @covers WP_REST_Presence_Controller::sanitize_data_param
+	 * @covers WP_REST_Presence_Controller::sanitize_data_recursive
 	 */
-	public function test_sanitize_data_strips_html() {
+	public function test_sanitize_data_does_not_strip_html_or_whitespace() {
 		$controller = new WP_REST_Presence_Controller();
 
-		$input  = array( 'msg' => '<script>alert("xss")</script>' );
+		$input  = array(
+			'html'      => '<script>alert("xss")</script>',
+			'multiline' => "line 1\nline 2",
+			'spaced'    => '  hello world  ',
+		);
 		$result = $controller->sanitize_data_param( $input );
 
-		$this->assertStringNotContainsString( '<script>', $result['msg'] );
-		$this->assertStringNotContainsString( '</script>', $result['msg'] );
+		$this->assertSame( '<script>alert("xss")</script>', $result['html'] );
+		$this->assertSame( "line 1\nline 2", $result['multiline'] );
+		$this->assertSame( '  hello world  ', $result['spaced'] );
 	}
 
 	/**
@@ -368,5 +380,97 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 
 		$this->assertInstanceOf( 'WP_Error', $response );
 		$this->assertSame( 'rest_invalid_screen_key', $response->get_error_code() );
+	}
+
+	/**
+	 * @covers WP_REST_Presence_Controller::get_items
+	 */
+	public function test_get_items_includes_display_name_and_avatar_url() {
+		wp_set_current_user( self::$editor_id );
+
+		wp_set_presence( 'admin/online', 'client-1', array(), self::$editor_id );
+
+		$request = new WP_REST_Request( 'GET', '/wp-presence/v1/presence' );
+		$request->set_param( 'room', 'admin/online' );
+
+		$response = rest_get_server()->dispatch( $request );
+		$data     = $response->get_data();
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertCount( 1, $data );
+
+		$user = get_userdata( self::$editor_id );
+		$this->assertSame( $user->display_name, $data[0]['display_name'] );
+		$this->assertSame( get_avatar_url( self::$editor_id, array( 'size' => 32 ) ), $data[0]['avatar_url'] );
+	}
+
+	/**
+	 * @covers WP_REST_Presence_Controller::get_items
+	 */
+	public function test_get_items_handles_deleted_user() {
+		wp_set_current_user( self::$admin_id );
+
+		// Create a temporary user.
+		$temp_user_id = self::factory()->user->create( array( 'role' => 'editor' ) );
+		wp_set_presence( 'admin/online', 'client-temp', array(), $temp_user_id );
+
+		// Delete the user.
+		wp_delete_user( $temp_user_id );
+
+		$request = new WP_REST_Request( 'GET', '/wp-presence/v1/presence' );
+		$request->set_param( 'room', 'admin/online' );
+
+		$response = rest_get_server()->dispatch( $request );
+		$data     = $response->get_data();
+
+		$this->assertSame( 200, $response->get_status() );
+
+		// The row should still be returned, but with empty fallback fields.
+		$found_temp = null;
+		foreach ( $data as $entry ) {
+			if ( 'client-temp' === $entry['client_id'] ) {
+				$found_temp = $entry;
+				break;
+			}
+		}
+
+		$this->assertNotNull( $found_temp );
+		$this->assertSame( '', $found_temp['display_name'] );
+		$this->assertSame( '', $found_temp['avatar_url'] );
+	}
+
+	/**
+	 * @covers WP_REST_Presence_Controller::get_rooms
+	 */
+	public function test_get_rooms_filters_unauthorized_rooms() {
+		// Create two author users.
+		$author_1 = self::factory()->user->create( array( 'role' => 'author' ) );
+		$author_2 = self::factory()->user->create( array( 'role' => 'author' ) );
+
+		// Create a draft post owned by author 1.
+		$post_id = self::factory()->post->create( array(
+			'post_author' => $author_1,
+			'post_status' => 'draft',
+		) );
+
+		// Set presence for Author 1 in that post room.
+		$room = 'postType/post:' . $post_id;
+		wp_set_presence( $room, 'client-author1', array(), $author_1 );
+
+		// Also set presence in standard admin/online room for Author 2.
+		wp_set_presence( 'admin/online', 'client-author2', array(), $author_2 );
+
+		// Query /presence/rooms as Author 2.
+		wp_set_current_user( $author_2 );
+
+		$request  = new WP_REST_Request( 'GET', '/wp-presence/v1/presence/rooms' );
+		$response = rest_get_server()->dispatch( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$data     = $response->get_data();
+
+		// Author 2 should see 'admin/online' but NOT see the draft post room.
+		$this->assertCount( 1, $data );
+		$this->assertSame( 'admin/online', $data[0]['room'] );
 	}
 }

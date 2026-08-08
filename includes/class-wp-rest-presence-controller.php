@@ -206,10 +206,12 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	}
 
 	/**
-	 * Sanitizes the data parameter values recursively.
+	 * Sanitizes the data parameter structure recursively.
 	 *
-	 * Preserves scalar types (strings, integers, floats, booleans)
-	 * and recurses into nested arrays up to MAX_DATA_DEPTH levels.
+	 * Enforces a type allowlist (strings, integers, floats, booleans,
+	 * and nested arrays) and a depth limit of MAX_DATA_DEPTH levels.
+	 * String values are passed through untouched; output-time encoding
+	 * (e.g. wp_json_encode, esc_html) is responsible for escaping.
 	 *
 	 * @param mixed $value The data parameter value.
 	 * @return array Sanitized data array.
@@ -223,11 +225,15 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	}
 
 	/**
-	 * Recursively sanitizes data values with a depth limit.
+	 * Recursively enforces the type allowlist and depth limit on data values.
 	 *
-	 * @param array $data  The data to sanitize.
+	 * Keys are sanitized via sanitize_text_field(). Scalar values
+	 * (strings, integers, floats, booleans) are preserved as-is;
+	 * unsupported types are silently dropped.
+	 *
+	 * @param array $data  The data to process.
 	 * @param int   $depth Current nesting depth.
-	 * @return array Sanitized data.
+	 * @return array Processed data.
 	 */
 	private static function sanitize_data_recursive( $data, $depth ) {
 		if ( $depth >= self::MAX_DATA_DEPTH ) {
@@ -242,7 +248,7 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 			if ( is_array( $value ) ) {
 				$sanitized[ $key ] = self::sanitize_data_recursive( $value, $depth + 1 );
 			} elseif ( is_string( $value ) ) {
-				$sanitized[ $key ] = sanitize_text_field( $value );
+				$sanitized[ $key ] = $value;
 			} elseif ( is_int( $value ) || is_float( $value ) || is_bool( $value ) ) {
 				$sanitized[ $key ] = $value;
 			}
@@ -312,6 +318,11 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 
 		if ( ! $results ) {
 			$results = array();
+		}
+
+		$user_ids = wp_list_pluck( $results, 'user_id' );
+		if ( ! empty( $user_ids ) ) {
+			cache_users( array_unique( array_map( 'intval', $user_ids ) ) );
 		}
 
 		foreach ( $results as $row ) {
@@ -551,7 +562,32 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 		$per_page = $request->get_param( 'per_page' );
 		$page     = $request->get_param( 'page' );
 
-		$rooms = wp_get_active_rooms();
+		$rooms           = wp_get_active_rooms();
+		$current_user_id = get_current_user_id();
+
+		// Prime post caches to avoid N+1 queries during the wp_can_access_presence_room
+		// filtering loop. The capability check reads neither the term nor the meta
+		// cache, so priming those is two queries spent on nothing.
+		$post_ids = array();
+		foreach ( $rooms as $room ) {
+			$parsed = wp_presence_parse_room( $room['room'] );
+			if ( $parsed ) {
+				$post_ids[] = $parsed['post_id'];
+			}
+		}
+		if ( ! empty( $post_ids ) ) {
+			_prime_post_caches( array_unique( $post_ids ), false, false );
+		}
+
+		$rooms = array_values(
+			array_filter(
+				$rooms,
+				function ( $room ) use ( $current_user_id ) {
+					return wp_can_access_presence_room( $room['room'], $current_user_id );
+				}
+			)
+		);
+
 		$total = count( $rooms );
 
 		// Rooms are aggregated in PHP (GROUP BY + user hydration), so paginate the result.
@@ -589,6 +625,16 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 
 		if ( rest_is_field_included( 'user_id', $fields ) ) {
 			$data['user_id'] = (int) $item->user_id;
+		}
+
+		$user = get_userdata( $item->user_id );
+
+		if ( rest_is_field_included( 'display_name', $fields ) ) {
+			$data['display_name'] = $user ? $user->display_name : '';
+		}
+
+		if ( rest_is_field_included( 'avatar_url', $fields ) ) {
+			$data['avatar_url'] = $user ? get_avatar_url( $item->user_id, array( 'size' => 32 ) ) : '';
 		}
 
 		if ( rest_is_field_included( 'data', $fields ) ) {
@@ -668,31 +714,44 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 			'title'      => 'presence',
 			'type'       => 'object',
 			'properties' => array(
-				'room'      => array(
+				'room'         => array(
 					'description' => __( 'The presence room identifier.', 'presence-api' ),
 					'type'        => 'string',
 					'context'     => array( 'view', 'edit' ),
 					'readonly'    => false,
 				),
-				'client_id' => array(
+				'client_id'    => array(
 					'description' => __( 'The client identifier within the room.', 'presence-api' ),
 					'type'        => 'string',
 					'context'     => array( 'view', 'edit' ),
 					'readonly'    => false,
 				),
-				'user_id'   => array(
+				'user_id'      => array(
 					'description' => __( 'The WordPress user ID associated with this presence entry.', 'presence-api' ),
 					'type'        => 'integer',
 					'context'     => array( 'view', 'edit' ),
 					'readonly'    => true,
 				),
-				'data'      => array(
+				'display_name' => array(
+					'description' => __( 'The display name of the user.', 'presence-api' ),
+					'type'        => 'string',
+					'context'     => array( 'view' ),
+					'readonly'    => true,
+				),
+				'avatar_url'   => array(
+					'description' => __( 'The avatar URL of the user.', 'presence-api' ),
+					'type'        => 'string',
+					'format'      => 'uri',
+					'context'     => array( 'view' ),
+					'readonly'    => true,
+				),
+				'data'         => array(
 					'description'          => __( 'Arbitrary presence state data.', 'presence-api' ),
 					'type'                 => 'object',
 					'context'              => array( 'view', 'edit' ),
 					'additionalProperties' => true,
 				),
-				'date_gmt'  => array(
+				'date_gmt'     => array(
 					'description' => __( 'The date the presence was last updated, in GMT.', 'presence-api' ),
 					'type'        => 'string',
 					'format'      => 'date-time',

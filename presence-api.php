@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Presence API
  * Description: System-wide presence and awareness for WordPress.
- * Version: 0.1.9
+ * Version: 0.1.13
  * Requires at least: 7.0
  * Requires PHP: 7.4
  * Author: WordPress Core Team
@@ -45,7 +45,7 @@ if ( isset( $wpdb->presence ) ) {
 	return;
 }
 
-define( 'WP_PRESENCE_VERSION', '0.1.9' );
+define( 'WP_PRESENCE_VERSION', '0.1.13' );
 define( 'WP_PRESENCE_DB_VERSION', '1' );
 define( 'WP_PRESENCE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WP_PRESENCE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -143,6 +143,27 @@ function wp_presence_deactivate() {
 	wp_clear_scheduled_hook( 'wp_delete_expired_presence_data' );
 }
 
+/**
+ * Adds action links to the plugin list table.
+ *
+ * The plugin has no settings screen, so the link points at the Users list
+ * filtered to the users who are currently online.
+ *
+ * @param string[] $links Existing plugin action links.
+ * @return string[] Action links with the online users link prepended.
+ */
+function wp_presence_plugin_action_links( $links ) {
+	$online_users_link = sprintf(
+		'<a href="%1$s">%2$s</a>',
+		esc_url( admin_url( 'users.php?presence_status=online' ) ),
+		esc_html__( 'View Online Users', 'presence-api' )
+	);
+
+	array_unshift( $links, $online_users_link );
+
+	return $links;
+}
+
 add_action( 'init', 'wp_presence_register_table', 0 );
 add_action( 'init', 'wp_presence_register_post_type_support' );
 
@@ -157,6 +178,8 @@ add_filter( 'cron_schedules', 'wp_presence_cron_schedules' );
 
 add_action( 'admin_enqueue_scripts', 'wp_presence_enqueue_heartbeat_ping' );
 add_action( 'wp_enqueue_scripts', 'wp_presence_enqueue_heartbeat_ping' );
+// Priority 9 so the admin/online write lands before any widget reads the room at 10.
+add_filter( 'heartbeat_received', 'wp_presence_admin_heartbeat_received', 9, 3 );
 add_filter( 'heartbeat_received', 'wp_presence_editor_heartbeat_received', 10, 3 );
 add_filter( 'heartbeat_received', 'wp_presence_bridge_post_lock', 11, 3 );
 add_filter( 'heartbeat_received', 'wp_presence_screen_heartbeat_received', 12, 3 );
@@ -193,5 +216,6 @@ if ( ( defined( 'WP_DEBUG' ) && WP_DEBUG )
 	add_filter( 'heartbeat_received', 'wp_presence_heartbeat_widget_received', 10, 3 );
 }
 
+add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'wp_presence_plugin_action_links' );
 register_activation_hook( __FILE__, 'wp_presence_activate' );
 register_deactivation_hook( __FILE__, 'wp_presence_deactivate' );
