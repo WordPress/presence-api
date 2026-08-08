@@ -5,6 +5,16 @@
  * @package Presence_API
  *
  * @group presence
+ *
+ * Helpers reached through the hook callbacks below. Without these the coverage
+ * driver credits only the annotated entry points and discards everything they call.
+ *
+ * @covers ::wp_presence_get_screen_revisions
+ * @covers ::wp_presence_get_screen_revision
+ * @covers ::wp_presence_normalize_screen_key
+ * @covers ::wp_presence_is_admin_screen_save
+ * @covers ::wp_presence_current_user_can_access_screen
+ * @covers ::wp_presence_enqueue_stale_screen_banner
  */
 class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 
