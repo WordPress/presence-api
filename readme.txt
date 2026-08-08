@@ -3,7 +3,7 @@ Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.0
-Stable tag: 0.1.13
+Stable tag: 0.1.14
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -52,6 +52,16 @@ Or install manually:
 Or [try it in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json) without installing anything.
 
 == Changelog ==
+
+= 0.1.14 =
+* Add display_name and avatar_url to presence response.
+* Add missing alt text to Who's Online widget avatar.
+* Correct heartbeat function name in render test.
+* Filter presence read paths by per-post capability.
+* Restore wp_set_presence, fix assertion quote handling.
+* Use heartbeat path in render test for reliable coverage.
+* Use wp_presence_admin_room() after ROOM constant removed.
+* Write presence via admin handler in render test.
 
 = 0.1.13 =
 * Move inline heartbeat JS to a standalone enqueued script.
