@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.1.14](https://github.com/WordPress/presence-api/compare/v0.1.13...v0.1.14) (2026-08-08)
+
+
+### Features
+
+* add display_name and avatar_url to presence response ([909da07](https://github.com/WordPress/presence-api/commit/909da07f1d464216faa8c8b88c264a9e3f436388))
+
+
+### Bug Fixes
+
+* add missing alt text to Who's Online widget avatar ([d2dd547](https://github.com/WordPress/presence-api/commit/d2dd547e99f43d8bfe8e2d589d3733134bd9d765))
+* correct heartbeat function name in render test ([9ba2c81](https://github.com/WordPress/presence-api/commit/9ba2c81cabb3db71b7d61809c91b9f5ee5f61134))
+* filter presence read paths by per-post capability ([d009a97](https://github.com/WordPress/presence-api/commit/d009a97cc294954bb5a19b1aa339dcae61f47116))
+* restore wp_set_presence, fix assertion quote handling ([e9129df](https://github.com/WordPress/presence-api/commit/e9129df82bb8c72ae63280d92e0bd8b1204ea34a))
+* use heartbeat path in render test for reliable coverage ([da96ad3](https://github.com/WordPress/presence-api/commit/da96ad373528ccdbce557ffabdc7bd83d59f4c9b))
+* use wp_presence_admin_room() after ROOM constant removed ([8ac1ae4](https://github.com/WordPress/presence-api/commit/8ac1ae495f3e1734369e759dbfc2bd3725c5e122))
+* write presence via admin handler in render test ([eed9be1](https://github.com/WordPress/presence-api/commit/eed9be18200d27a11eb75370d914068b3233c3ee))
+
 ## [0.1.13](https://github.com/WordPress/presence-api/compare/v0.1.12...v0.1.13) (2026-08-07)
 
 
