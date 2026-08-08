@@ -86,6 +86,7 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_UnitTestCase {
 
 	/**
 	 * @covers WP_Presence_Widget_Whos_Online::render
+	 * @covers WP_Presence_Widget_Whos_Online::render_user_row
 	 */
 	public function test_render_includes_avatar_with_alt_text() {
 		$user_id = self::factory()->user->create( array(
@@ -110,4 +111,3 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_UnitTestCase {
 		$this->assertMatchesRegularExpression( '/alt=["\']John Doe["\']/', $output );
 	}
 }
-
