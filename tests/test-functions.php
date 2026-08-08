@@ -147,6 +147,9 @@ class WP_Test_Presence_Functions extends WP_UnitTestCase {
 	 * @covers ::wp_get_user_presence
 	 */
 	public function test_get_user_presence_returns_empty_array_when_none_present() {
+		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
+
+		$this->assertCount( 1, wp_get_user_presence( self::$editor_id ) );
 		$this->assertSame( array(), wp_get_user_presence( self::$subscriber_id ) );
 	}
 
@@ -382,6 +385,7 @@ class WP_Test_Presence_Functions extends WP_UnitTestCase {
 	public function test_get_active_rooms_omits_deleted_user() {
 		$temp_user_id = self::factory()->user->create( array( 'role' => 'editor' ) );
 		wp_set_presence( 'admin/online', 'client-temp', array(), $temp_user_id );
+		wp_set_presence( 'admin/online', 'client-live', array(), self::$editor_id );
 
 		if ( is_multisite() ) {
 			require_once ABSPATH . 'wp-admin/includes/ms.php';
@@ -393,8 +397,8 @@ class WP_Test_Presence_Functions extends WP_UnitTestCase {
 		$rooms = wp_get_active_rooms();
 
 		$this->assertCount( 1, $rooms );
-		$this->assertSame( 0, $rooms[0]['user_count'] );
-		$this->assertSame( array(), $rooms[0]['users'] );
+		$this->assertSame( 1, $rooms[0]['user_count'] );
+		$this->assertSame( self::$editor_id, $rooms[0]['users'][0]['user_id'] );
 	}
 
 	/**
