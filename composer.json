@@ -17,7 +17,13 @@
 		"allow-plugins": {
 			"dealerdirect/phpcodesniffer-composer-installer": true
 		},
-		"lock": false
+		"lock": false,
+		"audit": {
+			"ignore": {
+				"PKSA-rdkp-vv9z-mjkg": "XSS in PHPCS HTML report output; not triggered by CI linting use",
+				"PKSA-6vdd-n4sx-knhy": "XSS in PHPCS HTML report output; not triggered by CI linting use"
+			}
+		}
 	},
 	"scripts": {
 		"phpcs": "@php ./vendor/bin/phpcs",
