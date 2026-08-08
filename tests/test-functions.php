@@ -405,7 +405,7 @@ class WP_Test_Presence_Functions extends WP_UnitTestCase {
 		// After migration, the version should match the current constant.
 		$this->assertSame(
 			WP_PRESENCE_DB_VERSION,
-			get_option( 'wp_presence_db_version' ),
+			(int) get_option( 'wp_presence_db_version' ),
 			'Database version option should be updated after migration.'
 		);
 
@@ -431,7 +431,7 @@ class WP_Test_Presence_Functions extends WP_UnitTestCase {
 
 		$this->assertSame(
 			WP_PRESENCE_DB_VERSION,
-			get_option( 'wp_presence_db_version' ),
+			(int) get_option( 'wp_presence_db_version' ),
 			'Database version should remain unchanged when already current.'
 		);
 	}
