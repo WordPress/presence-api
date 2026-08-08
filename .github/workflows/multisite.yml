@@ -25,7 +25,7 @@ jobs:
       - name: Authenticate composer to GitHub
         run: composer config --global --auth github-oauth.github.com '${{ secrets.GITHUB_TOKEN }}'
       - name: Install Composer dependencies
-        run: composer install --no-interaction
+        run: composer install --no-interaction --no-audit
       - run: npx wp-env start
       - run: npx wp-env run tests-cli -- wp core multisite-convert --title="Test Network"
       - run: npx wp-env run tests-cli --env-cwd='wp-content/plugins/presence-api' -- ./vendor/bin/phpunit
