@@ -16,7 +16,16 @@ If this is your first time contributing, the following may be helpful:
 
 <!-- Insert a description of your changes here -->
 
-Related: <!-- link a GitHub issue here, e.g. #12 -->
+Fixes #
+
+<!--
+Put the issue number directly after the keyword, e.g. "Fixes #12", so the issue
+closes when this Pull Request merges. GitHub only parses the keyword when the
+reference follows it on the same line, so "Resolves Issue: #12" and a "Fixes"
+line followed by a bulleted "- #12" both leave the issue open.
+
+If this Pull Request should not close an issue, use "Related: #12" instead.
+-->
 
 ## Use of AI Tools
 
