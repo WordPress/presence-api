@@ -525,7 +525,7 @@ JS,
 		$idle_class = $elapsed >= self::IDLE_THRESHOLD ? ' is-idle' : '';
 
 		echo '<li class="presence-user-item" data-user-id="' . (int) $entry->user_id . '">';
-		echo wp_kses_post( get_avatar( $user->ID, 24 ) );
+		echo wp_kses_post( get_avatar( $user->ID, 24, '', $user->display_name ) );
 		echo '<div class="presence-user-info">';
 		echo '<span class="presence-name">' . esc_html( $user->display_name ) . '</span>';
 

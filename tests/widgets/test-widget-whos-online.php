@@ -82,4 +82,31 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_UnitTestCase {
 		// date_gmt should be a datetime string, not pre-formatted.
 		$this->assertMatchesRegularExpression( '/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $entry['date_gmt'] );
 	}
+
+	/**
+	 * @covers WP_Presence_Widget_Whos_Online::render
+	 * @covers WP_Presence_Widget_Whos_Online::render_user_row
+	 */
+	public function test_render_includes_avatar_with_alt_text() {
+		$user_id = self::factory()->user->create( array(
+			'role'         => 'editor',
+			'display_name' => 'John Doe',
+		) );
+
+		wp_set_presence(
+			wp_presence_admin_room(),
+			'client-1',
+			array(),
+			$user_id
+		);
+
+		wp_set_current_user( self::$editor_id );
+
+		ob_start();
+		WP_Presence_Widget_Whos_Online::render();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString( 'class="presence-user-item"', $output );
+		$this->assertMatchesRegularExpression( '/alt=["\']John Doe["\']/', $output );
+	}
 }
