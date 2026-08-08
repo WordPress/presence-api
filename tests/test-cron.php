@@ -77,7 +77,7 @@ class WP_Test_Presence_Cron extends WP_UnitTestCase {
 	}
 
 	/**
-	 * The guard on line 16 of includes/cron.php must prevent a second event.
+	 * The guard in wp_presence_schedule_cleanup() must prevent a second event.
 	 *
 	 * @covers ::wp_presence_schedule_cleanup
 	 */
