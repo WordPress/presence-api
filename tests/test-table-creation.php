@@ -98,6 +98,8 @@ class WP_Test_Presence_Table_Creation extends WP_UnitTestCase {
 
 	/**
 	 * @covers ::wp_presence_activate
+	 * @covers ::wp_presence_provision_site
+	 * @covers ::wp_presence_schedule_cleanup
 	 */
 	public function test_activation_provisions_the_current_site() {
 		$this->drop_presence_table();
@@ -112,6 +114,8 @@ class WP_Test_Presence_Table_Creation extends WP_UnitTestCase {
 
 	/**
 	 * @covers ::wp_presence_on_initialize_site
+	 * @covers ::wp_presence_provision_site
+	 * @covers ::wp_presence_schedule_cleanup
 	 */
 	public function test_new_site_is_provisioned_on_initialize_site() {
 		if ( ! is_multisite() ) {
@@ -141,6 +145,9 @@ class WP_Test_Presence_Table_Creation extends WP_UnitTestCase {
 	 * fires wp_initialize_site for them, so activation is their only chance.
 	 *
 	 * @covers ::wp_presence_activate
+	 * @covers ::wp_presence_get_network_site_ids
+	 * @covers ::wp_presence_provision_site
+	 * @covers ::wp_presence_schedule_cleanup
 	 */
 	public function test_network_activation_provisions_every_site() {
 		if ( ! is_multisite() ) {
@@ -180,6 +187,7 @@ class WP_Test_Presence_Table_Creation extends WP_UnitTestCase {
 	 * current one would leave every other site rescheduling a dead callback.
 	 *
 	 * @covers ::wp_presence_deactivate
+	 * @covers ::wp_presence_get_network_site_ids
 	 */
 	public function test_network_deactivation_clears_cleanup_on_every_site() {
 		if ( ! is_multisite() ) {
@@ -257,6 +265,15 @@ class WP_Test_Presence_Table_Creation extends WP_UnitTestCase {
 	 * It must not raise a database error.
 	 *
 	 * @covers ::wp_presence_has_table
+	 * @covers ::wp_set_presence
+	 * @covers ::wp_remove_presence
+	 * @covers ::wp_remove_user_presence
+	 * @covers ::wp_get_presence
+	 * @covers ::wp_get_user_presence
+	 * @covers ::wp_get_presence_by_room_prefix
+	 * @covers ::wp_get_active_rooms
+	 * @covers ::wp_get_presence_summary
+	 * @covers ::wp_delete_expired_presence_data
 	 */
 	public function test_reads_and_writes_are_a_no_op_without_a_table() {
 		global $wpdb;
@@ -274,6 +291,7 @@ class WP_Test_Presence_Table_Creation extends WP_UnitTestCase {
 		$this->assertSame( array(), wp_get_presence_by_room_prefix( 'postType/' ) );
 		$this->assertSame( array(), wp_get_active_rooms() );
 		$this->assertSame( 0, wp_get_presence_summary()['total_entries'] );
+		$this->assertNull( wp_delete_expired_presence_data() );
 
 		// The symptom this guards against: a wpdb error surfaced to the page.
 		$this->assertSame( '', $wpdb->last_error, 'No query should have reached the missing table.' );
@@ -300,6 +318,7 @@ class WP_Test_Presence_Table_Creation extends WP_UnitTestCase {
 
 	/**
 	 * @covers WP_REST_Presence_Controller::get_items
+	 * @covers WP_REST_Presence_Controller::empty_collection_response
 	 */
 	public function test_rest_read_returns_an_empty_collection_without_a_table() {
 		$this->drop_presence_table();
@@ -334,5 +353,29 @@ class WP_Test_Presence_Table_Creation extends WP_UnitTestCase {
 		$this->assertInstanceOf( 'WP_Error', $response );
 		$this->assertSame( 'rest_presence_unavailable', $response->get_error_code() );
 		$this->assertSame( 503, $response->get_error_data()['status'] );
+	}
+
+	/**
+	 * The ownership lookup needs storage to read from, so a non-admin deleting
+	 * against a missing table has to short-circuit rather than query.
+	 *
+	 * @covers WP_REST_Presence_Controller::delete_item_permissions_check
+	 */
+	public function test_rest_delete_is_permitted_without_a_table() {
+		global $wpdb;
+
+		$this->drop_presence_table();
+		$wpdb->last_error = '';
+
+		wp_set_current_user( self::$editor_id );
+
+		$request = new WP_REST_Request( 'DELETE', '/wp-presence/v1/presence' );
+		$request->set_param( 'room', 'admin/online' );
+		$request->set_param( 'client_id', 'user-' . self::$editor_id );
+
+		$controller = new WP_REST_Presence_Controller();
+
+		$this->assertTrue( $controller->delete_item_permissions_check( $request ) );
+		$this->assertSame( '', $wpdb->last_error, 'The ownership lookup should not have run.' );
 	}
 }

@@ -70,8 +70,9 @@ class WP_Test_Presence_Functions extends WP_UnitTestCase {
 		global $wpdb;
 
 		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-2', array(), self::$editor_id );
 
-		// Manually backdate the entry to simulate expiration.
+		// Manually backdate one entry to simulate expiration.
 		$wpdb->update(
 			$wpdb->presence,
 			array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - 120 ) ),
@@ -82,7 +83,8 @@ class WP_Test_Presence_Functions extends WP_UnitTestCase {
 
 		$entries = wp_get_presence( 'test/room', 60 );
 
-		$this->assertCount( 0, $entries );
+		$this->assertCount( 1, $entries, 'Only the current entry should survive the cutoff.' );
+		$this->assertSame( 'client-2', $entries[0]->client_id );
 	}
 
 	/**
@@ -103,11 +105,14 @@ class WP_Test_Presence_Functions extends WP_UnitTestCase {
 	 */
 	public function test_remove_presence() {
 		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-2', array(), self::$editor_id );
+
 		wp_remove_presence( 'test/room', 'client-1' );
 
 		$entries = wp_get_presence( 'test/room' );
 
-		$this->assertCount( 0, $entries );
+		$this->assertCount( 1, $entries, 'Only the named client should be removed.' );
+		$this->assertSame( 'client-2', $entries[0]->client_id );
 	}
 
 	/**
@@ -125,10 +130,12 @@ class WP_Test_Presence_Functions extends WP_UnitTestCase {
 	public function test_remove_user_presence_clears_all_rooms() {
 		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), self::$editor_id );
 		wp_set_presence( 'postType/post:1', 'lock-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( 'admin/online', 'user-' . self::$subscriber_id, array(), self::$subscriber_id );
 
 		wp_remove_user_presence( self::$editor_id );
 
 		$this->assertCount( 0, wp_get_user_presence( self::$editor_id ) );
+		$this->assertCount( 1, wp_get_user_presence( self::$subscriber_id ), 'Another user\'s entries should be left alone.' );
 	}
 
 	/**
@@ -247,9 +254,11 @@ class WP_Test_Presence_Functions extends WP_UnitTestCase {
 	 * @covers ::wp_get_presence_by_room_prefix
 	 */
 	public function test_get_presence_by_room_prefix_empty() {
+		wp_set_presence( 'postType/post:1', 'client-1', array(), self::$editor_id );
+
 		$entries = wp_get_presence_by_room_prefix( 'nonexistent/' );
 
-		$this->assertCount( 0, $entries );
+		$this->assertCount( 0, $entries, 'A room under a different prefix should not match.' );
 	}
 
 	/**
@@ -259,6 +268,7 @@ class WP_Test_Presence_Functions extends WP_UnitTestCase {
 		global $wpdb;
 
 		wp_set_presence( 'postType/post:1', 'client-1', array(), self::$editor_id );
+		wp_set_presence( 'postType/post:2', 'client-2', array(), self::$editor_id );
 
 		$wpdb->update(
 			$wpdb->presence,
@@ -270,7 +280,8 @@ class WP_Test_Presence_Functions extends WP_UnitTestCase {
 
 		$entries = wp_get_presence_by_room_prefix( 'postType/', 60 );
 
-		$this->assertCount( 0, $entries );
+		$this->assertCount( 1, $entries, 'Only the current entry should survive the cutoff.' );
+		$this->assertSame( 'client-2', $entries[0]->client_id );
 	}
 
 	/**

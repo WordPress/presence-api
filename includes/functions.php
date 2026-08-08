@@ -461,7 +461,7 @@ function wp_maybe_create_presence_table() {
 	global $wpdb;
 
 	$charset_collate  = $wpdb->get_charset_collate();
-	$max_index_length = 191;
+	$max_index_length = WP_PRESENCE_MAX_KEY_LENGTH;
 
 	require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 

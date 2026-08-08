@@ -5,6 +5,8 @@
  * @package Presence_API
  *
  * @group presence
+ *
+ * @covers ::wp_presence_admin_bar_node
  */
 class WP_Test_Presence_Admin_Bar extends WP_UnitTestCase {
 

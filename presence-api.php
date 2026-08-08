@@ -49,6 +49,12 @@ define( 'WP_PRESENCE_VERSION', '0.1.16' );
 define( 'WP_PRESENCE_DB_VERSION', 2 );
 define( 'WP_PRESENCE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WP_PRESENCE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+
+// Width of the room and client_id columns, and therefore the longest value the
+// REST layer accepts. MySQL would otherwise truncate silently, which collapses
+// two distinct clients onto one UNIQUE KEY (room, client_id) row.
+define( 'WP_PRESENCE_MAX_KEY_LENGTH', 191 );
+
 if ( ! defined( 'WP_PRESENCE_DEFAULT_TTL' ) ) {
 	define( 'WP_PRESENCE_DEFAULT_TTL', 60 );
 }

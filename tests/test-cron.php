@@ -83,13 +83,15 @@ class WP_Test_Presence_Cron extends WP_UnitTestCase {
 	 * @covers ::wp_presence_schedule_cleanup
 	 */
 	public function test_schedule_cleanup_does_not_double_schedule() {
-		wp_presence_schedule_cleanup();
-		$first = wp_next_scheduled( self::HOOK );
+		// Seed at an earlier timestamp. Calling the function twice in one second
+		// is not enough: the cron array keys on timestamp, hook and args hash, so
+		// the second write collapses onto the first even with no guard at all.
+		$seeded = time() - HOUR_IN_SECONDS;
+		wp_schedule_event( $seeded, 'wp_presence_every_minute', self::HOOK );
 
 		wp_presence_schedule_cleanup();
-		$second = wp_next_scheduled( self::HOOK );
 
-		$this->assertSame( $first, $second, 'Scheduling twice should not move or duplicate the event.' );
+		$this->assertSame( $seeded, wp_next_scheduled( self::HOOK ), 'The existing event should not move.' );
 		$this->assertSame( 1, $this->count_scheduled_events( self::HOOK ), 'Exactly one cleanup event should be scheduled.' );
 	}
 
