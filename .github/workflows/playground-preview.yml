@@ -45,7 +45,7 @@ jobs:
 
       # `--no-scripts` prevents a hostile fork PR from running arbitrary
       # PHP via composer.json's `scripts` block during install.
-      - run: composer install --no-dev --no-interaction --optimize-autoloader --no-scripts
+      - run: composer install --no-dev --no-interaction --optimize-autoloader --no-scripts --no-audit
 
       - name: Build presence-api.zip
         run: |

@@ -19,7 +19,7 @@ jobs:
           php-version: '8.3'
           tools: composer
 
-      - run: composer install --no-dev --no-interaction --optimize-autoloader --no-scripts
+      - run: composer install --no-dev --no-interaction --optimize-autoloader --no-scripts --no-audit
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
