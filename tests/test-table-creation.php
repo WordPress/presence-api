@@ -15,6 +15,13 @@ class WP_Test_Presence_Table_Creation extends WP_UnitTestCase {
 
 	private static $editor_id;
 
+	/**
+	 * The network's active plugin list as it stood before the test.
+	 *
+	 * @var array|false
+	 */
+	private $network_plugins;
+
 	public static function wpSetUpBeforeClass( WP_UnitTest_Factory $factory ) {
 		self::$editor_id = $factory->user->create( array( 'role' => 'editor' ) );
 	}
@@ -27,15 +34,29 @@ class WP_Test_Presence_Table_Creation extends WP_UnitTestCase {
 		// the table to genuinely disappear, so they opt out.
 		remove_filter( 'query', array( $this, '_create_temporary_tables' ) );
 		remove_filter( 'query', array( $this, '_drop_temporary_tables' ) );
+
+		// Network options survive the rolled-back transaction, so tests that
+		// pretend the plugin is network active have to put this back by hand.
+		if ( is_multisite() ) {
+			$this->network_plugins = get_site_option( 'active_sitewide_plugins' );
+		}
 	}
 
 	public function tear_down() {
 		global $wpdb;
 
+		if ( is_multisite() ) {
+			if ( false === $this->network_plugins ) {
+				delete_site_option( 'active_sitewide_plugins' );
+			} else {
+				update_site_option( 'active_sitewide_plugins', $this->network_plugins );
+			}
+		}
+
 		// DDL commits the surrounding transaction, so clean up by hand.
 		wp_presence_register_table();
 		delete_option( 'wp_presence_db_version' );
-		wp_maybe_create_presence_table();
+		wp_presence_provision_site();
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->query( "TRUNCATE TABLE {$wpdb->presence}" );
 
@@ -112,9 +133,76 @@ class WP_Test_Presence_Table_Creation extends WP_UnitTestCase {
 		$exists = $this->presence_table_exists();
 		restore_current_blog();
 
-		delete_site_option( 'active_sitewide_plugins' );
-
 		$this->assertTrue( $exists, 'A newly created site should get its own presence table.' );
+	}
+
+	/**
+	 * A network activation has to reach the sites that already exist. Nothing
+	 * fires wp_initialize_site for them, so activation is their only chance.
+	 *
+	 * @covers ::wp_presence_activate
+	 */
+	public function test_network_activation_provisions_every_site() {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		// Left out of active_sitewide_plugins on purpose: with the plugin not yet
+		// network active, wp_presence_on_initialize_site() ignores these sites, so
+		// a table on either one can only have come from the activation below.
+		delete_site_option( 'active_sitewide_plugins' );
+		$blog_ids = array(
+			self::factory()->blog->create(),
+			self::factory()->blog->create(),
+		);
+
+		$this->drop_presence_table();
+		wp_clear_scheduled_hook( 'wp_delete_expired_presence_data' );
+
+		wp_presence_activate( true );
+
+		$this->assertTrue( $this->presence_table_exists(), 'The site running the activation should be provisioned.' );
+		$this->assertNotFalse( wp_next_scheduled( 'wp_delete_expired_presence_data' ), 'The site running the activation should have cleanup scheduled.' );
+
+		foreach ( $blog_ids as $blog_id ) {
+			switch_to_blog( $blog_id );
+			$exists    = $this->presence_table_exists();
+			$scheduled = wp_next_scheduled( 'wp_delete_expired_presence_data' );
+			restore_current_blog();
+
+			$this->assertTrue( $exists, "Site {$blog_id} should have been given its own presence table." );
+			$this->assertNotFalse( $scheduled, "Site {$blog_id} should have cleanup scheduled." );
+		}
+	}
+
+	/**
+	 * Cron events are per site, so a network deactivation that only cleared the
+	 * current one would leave every other site rescheduling a dead callback.
+	 *
+	 * @covers ::wp_presence_deactivate
+	 */
+	public function test_network_deactivation_clears_cleanup_on_every_site() {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		$blog_id = self::factory()->blog->create();
+
+		wp_presence_activate( true );
+
+		switch_to_blog( $blog_id );
+		$scheduled_before = wp_next_scheduled( 'wp_delete_expired_presence_data' );
+		restore_current_blog();
+		$this->assertNotFalse( $scheduled_before, 'Precondition: the other site starts with cleanup scheduled.' );
+
+		wp_presence_deactivate( true );
+
+		switch_to_blog( $blog_id );
+		$scheduled_after = wp_next_scheduled( 'wp_delete_expired_presence_data' );
+		restore_current_blog();
+
+		$this->assertFalse( $scheduled_after, "Site {$blog_id} should have had its cleanup cleared." );
+		$this->assertFalse( wp_next_scheduled( 'wp_delete_expired_presence_data' ), 'The site running the deactivation should have its cleanup cleared.' );
 	}
 
 	/**
