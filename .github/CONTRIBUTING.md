@@ -31,15 +31,13 @@ npm run test:e2e
 
 ## Claiming an issue
 
-Anything open and unassigned is up for grabs. [This search](https://github.com/WordPress/presence-api/issues?q=is%3Aissue+is%3Aopen+no%3Aassignee+-label%3A%22Needs+Discussion%22+-label%3Ablocked+-label%3A%22Close+Candidate%22+-label%3Amaybelater) is the current list, and `Good First Issue` marks the ones that make a gentle entry point.
+[Open and unassigned](https://github.com/WordPress/presence-api/issues?q=is%3Aissue+is%3Aopen+no%3Aassignee+-label%3A%22Needs+Discussion%22+-label%3Ablocked+-label%3A%22Close+Candidate%22+-label%3Amaybelater) is up for grabs. `Good First Issue` flags the gentler ones.
 
-Comment on the issue you would like to work on and a maintainer will assign it to you. The comment is not a formality: GitHub only allows issues to be assigned to people who have already commented on them, so there is nothing for us to click until you do.
+Comment on the one you want and a maintainer will assign it. GitHub only lets us assign people who have commented, so the comment is what makes it possible.
 
-Being assigned tells everyone else the issue is spoken for. It is not a commitment. If you find you cannot continue, for any reason, just say so on the issue and we will unassign it. No explanation needed.
+Assignment means the issue is taken, not that you are committed. If you stop, say so and we will unassign it, no explanation needed. A note on what you tried saves the next person starting over, and props-bot credits everyone who interacted with an issue or its pull request, so you keep your props either way.
 
-If you got partway, a short note on what you tried and what you found out is genuinely useful. It saves the next person from starting over, and props-bot credits everyone who interacted with an issue or its linked pull request, so you stay in the props list for the work you did.
-
-Issues that stay assigned and quiet for a couple of weeks may be unassigned so the backlog reflects reality. Comment again any time to pick one back up.
+Assigned and quiet for two weeks may be unassigned. Comment to pick it back up.
 
 ## Pull requests
 
@@ -50,14 +48,12 @@ Issues that stay assigned and quiet for a couple of weeks may be unassigned so t
 
 ## Getting credited
 
-WordPress credits contributors with props, which are tied to WordPress.org profiles rather than to GitHub accounts. Props-bot comments on every pull request with the running list of everyone who has contributed to it.
+Props are tied to WordPress.org profiles, not GitHub accounts. Props-bot comments the running list on every pull request. Two things let it find you:
 
-Two things have to be true for it to find you:
+1. **A commit email tied to your GitHub account.** Your `@users.noreply.github.com` address is simplest, and keeps your real one out of public history.
+2. **Your GitHub account [linked to your WordPress.org profile](https://make.wordpress.org/core/2020/03/19/associating-github-accounts-with-wordpress-org-profiles/).** Until then you sit under "Unlinked Accounts" and cannot be propped in a release.
 
-1. **The email on your commits is associated with your GitHub account.** If it is not, props-bot cannot resolve the commit to a person. Using your GitHub `@users.noreply.github.com` address is the simplest way to satisfy this, and it keeps your real address out of the public commit history.
-2. **Your GitHub account is linked to your WordPress.org profile.** Follow [associating GitHub accounts with WordPress.org profiles](https://make.wordpress.org/core/2020/03/19/associating-github-accounts-with-wordpress-org-profiles/). Until this is done you will show up under "Unlinked Accounts" in the props-bot comment and cannot be included in the props for a release.
-
-Both are worth doing before your first pull request is ready to merge, so nothing is held up at the end. Once linked, add the `props-bot` label to the pull request to refresh the list.
+Do both before your first pull request is ready, so nothing stalls at the end. Add the `props-bot` label to refresh the list.
 
 ## Releases
 
