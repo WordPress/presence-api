@@ -31,6 +31,8 @@ npm run test:e2e
 
 ## Claiming an issue
 
+Anything open and unassigned is up for grabs. [This search](https://github.com/WordPress/presence-api/issues?q=is%3Aissue+is%3Aopen+no%3Aassignee+-label%3A%22Needs+Discussion%22+-label%3Ablocked+-label%3A%22Close+Candidate%22+-label%3Amaybelater) is the current list, and `Good First Issue` marks the ones that make a gentle entry point.
+
 Comment on the issue you would like to work on and a maintainer will assign it to you. The comment is not a formality: GitHub only allows issues to be assigned to people who have already commented on them, so there is nothing for us to click until you do.
 
 Being assigned tells everyone else the issue is spoken for. It is not a commitment. If you find you cannot continue, for any reason, just say so on the issue and we will unassign it. No explanation needed.
