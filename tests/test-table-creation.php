@@ -354,4 +354,28 @@ class WP_Test_Presence_Table_Creation extends WP_UnitTestCase {
 		$this->assertSame( 'rest_presence_unavailable', $response->get_error_code() );
 		$this->assertSame( 503, $response->get_error_data()['status'] );
 	}
+
+	/**
+	 * The ownership lookup needs storage to read from, so a non-admin deleting
+	 * against a missing table has to short-circuit rather than query.
+	 *
+	 * @covers WP_REST_Presence_Controller::delete_item_permissions_check
+	 */
+	public function test_rest_delete_is_permitted_without_a_table() {
+		global $wpdb;
+
+		$this->drop_presence_table();
+		$wpdb->last_error = '';
+
+		wp_set_current_user( self::$editor_id );
+
+		$request = new WP_REST_Request( 'DELETE', '/wp-presence/v1/presence' );
+		$request->set_param( 'room', 'admin/online' );
+		$request->set_param( 'client_id', 'user-' . self::$editor_id );
+
+		$controller = new WP_REST_Presence_Controller();
+
+		$this->assertTrue( $controller->delete_item_permissions_check( $request ) );
+		$this->assertSame( '', $wpdb->last_error, 'The ownership lookup should not have run.' );
+	}
 }
