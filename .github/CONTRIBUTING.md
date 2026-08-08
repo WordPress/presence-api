@@ -29,12 +29,31 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
+## Claiming an issue
+
+[Open and unassigned](https://github.com/WordPress/presence-api/issues?q=is%3Aissue+is%3Aopen+no%3Aassignee+-label%3A%22Needs+Discussion%22) issues are available. `Good First Issue` marks the ones suited to new contributors.
+
+Comment on the issue you want and a maintainer will assign it. GitHub only allows assignment to people who have commented.
+
+Assignment is not a commitment. If you stop, comment and we will unassign it. If you got partway, note what you tried. Props-bot credits everyone who interacted with an issue or its pull request.
+
+Assigned issues left quiet for two weeks may be unassigned. Comment to pick one back up.
+
 ## Pull requests
 
 1. Branch off `main`.
 2. Title the pull request as a [Conventional Commit](https://www.conventionalcommits.org/). Pull requests are merged with a merge commit whose subject is the pull request title, so the title is what release-please reads. `lint-pr.yml` enforces this.
 3. All CI checks must pass before merge (PHPCS, PHPStan, PHPUnit across PHP 7.4 + 8.3, multisite, Playwright).
-4. Keep commits focused — one logical change per commit.
+4. Keep commits focused, one logical change per commit.
+
+## Getting credited
+
+Props are tied to WordPress.org profiles, not GitHub accounts. Props-bot comments the running list on every pull request. Two things let it find you:
+
+1. **A commit email tied to your GitHub account.** Your `@users.noreply.github.com` address works and keeps your real one out of public history.
+2. **Your GitHub account [linked to your WordPress.org profile](https://make.wordpress.org/core/2020/03/19/associating-github-accounts-with-wordpress-org-profiles/).** Until then you appear under "Unlinked Accounts" and cannot be propped in a release.
+
+Do both before your first pull request is ready. Add the `props-bot` label to refresh the list.
 
 ## Releases
 
