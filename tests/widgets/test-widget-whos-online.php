@@ -88,30 +88,27 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_UnitTestCase {
 	 * @covers WP_Presence_Widget_Whos_Online::render
 	 */
 	public function test_render_includes_avatar_with_alt_text() {
-		// Create a user and set their display name.
 		$user_id = self::factory()->user->create( array(
 			'role'         => 'editor',
-			'display_name' => 'John Doe',
+			'display_name' => 'Jane Doe',
 		) );
 
-		// Set presence for this user in the "Who's Online" room.
-		wp_set_presence(
-			wp_presence_admin_room(),
-			'client-1',
+		wp_set_current_user( $user_id );
+
+		WP_Presence_Widget_Whos_Online::heartbeat_received(
 			array(),
-			$user_id
+			array( 'presence-ping' => array( 'screen' => 'dashboard' ) ),
+			'dashboard'
 		);
 
-		// Make sure the current logged-in user is different so John Doe is listed.
 		wp_set_current_user( self::$editor_id );
 
-		// Capture the output of render().
 		ob_start();
 		WP_Presence_Widget_Whos_Online::render();
 		$output = ob_get_clean();
 
-		// Verify that the avatar includes alt="John Doe".
-		$this->assertStringContainsString( 'alt="John Doe"', $output );
+		$this->assertStringContainsString( 'class="presence-user-item"', $output );
+		$this->assertMatchesRegularExpression( '/alt=["\']Jane Doe["\']/', $output );
 	}
 }
 
