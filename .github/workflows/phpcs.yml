@@ -21,5 +21,5 @@ jobs:
         with:
           path: ~/.composer/cache
           key: composer-${{ hashFiles('composer.json') }}
-      - run: composer install --no-interaction --no-audit
+      - run: composer install --no-interaction
       - run: ./vendor/bin/phpcs --standard=phpcs.xml.dist
