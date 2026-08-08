@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.16](https://github.com/WordPress/presence-api/compare/v0.1.15...v0.1.16) (2026-08-08)
+
+
+### Bug Fixes
+
+* store presence data as longtext and compare schema version as an integer ([06f12a7](https://github.com/WordPress/presence-api/commit/06f12a789136bdd92139780f2999440ad80506a4))
+
 ## [0.1.15](https://github.com/WordPress/presence-api/compare/v0.1.14...v0.1.15) (2026-08-08)
 
 
