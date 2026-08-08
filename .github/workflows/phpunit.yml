@@ -36,7 +36,7 @@ jobs:
       - name: Authenticate composer to GitHub
         run: composer config --global --auth github-oauth.github.com '${{ secrets.GITHUB_TOKEN }}'
       - name: Install Composer dependencies
-        run: composer install --no-interaction --no-audit
+        run: composer install --no-interaction
       - run: npx wp-env start ${{ matrix.coverage && '--xdebug=coverage' || '' }}
         env:
           WP_ENV_PHP_VERSION: ${{ matrix.php }}
