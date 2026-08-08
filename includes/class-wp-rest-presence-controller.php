@@ -286,6 +286,10 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	public function get_items( $request ) {
 		global $wpdb;
 
+		if ( ! wp_presence_has_table() ) {
+			return $this->empty_collection_response();
+		}
+
 		$room     = $request->get_param( 'room' );
 		$per_page = $request->get_param( 'per_page' );
 		$page     = $request->get_param( 'page' );
@@ -345,6 +349,21 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	}
 
 	/**
+	 * Builds the response used when this site has no presence storage yet.
+	 *
+	 * @return WP_REST_Response Empty collection with pagination headers.
+	 */
+	private function empty_collection_response() {
+		$response = rest_ensure_response( array() );
+
+		$response->header( 'X-WP-Total', 0 );
+		$response->header( 'X-WP-TotalPages', 0 );
+		$response->header( 'Cache-Control', 'no-store' );
+
+		return $response;
+	}
+
+	/**
 	 * Checks if the current user has permission to create a presence entry.
 	 *
 	 * @param WP_REST_Request $request Full details about the request.
@@ -375,6 +394,14 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	 */
 	public function create_item( $request ) {
 		global $wpdb;
+
+		if ( ! wp_presence_has_table() ) {
+			return new WP_Error(
+				'rest_presence_unavailable',
+				__( 'Presence is not available on this site yet.', 'presence-api' ),
+				array( 'status' => 503 )
+			);
+		}
 
 		$room      = $request->get_param( 'room' );
 		$client_id = $request->get_param( 'client_id' );
@@ -485,6 +512,11 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 
 		// Admins can delete any entry.
 		if ( current_user_can( 'manage_options' ) ) {
+			return true;
+		}
+
+		// No storage means no entry to own, so the delete is a no-op.
+		if ( ! wp_presence_has_table() ) {
 			return true;
 		}
 
