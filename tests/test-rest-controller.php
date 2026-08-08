@@ -416,8 +416,16 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 		$temp_user_id = self::factory()->user->create( array( 'role' => 'editor' ) );
 		wp_set_presence( 'admin/online', 'client-temp', array(), $temp_user_id );
 
-		// Delete the user.
-		wp_delete_user( $temp_user_id );
+		// Delete the user. On multisite, wp_delete_user() only removes the user
+		// from the current site, leaving them on the network and still
+		// resolvable by get_userdata(), so the network-level delete is needed
+		// to reach the "user no longer exists" state this test is about.
+		if ( is_multisite() ) {
+			require_once ABSPATH . 'wp-admin/includes/ms.php';
+			wpmu_delete_user( $temp_user_id );
+		} else {
+			wp_delete_user( $temp_user_id );
+		}
 
 		$request = new WP_REST_Request( 'GET', '/wp-presence/v1/presence' );
 		$request->set_param( 'room', 'admin/online' );
