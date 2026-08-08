@@ -28,4 +28,8 @@ jobs:
         run: composer install --no-interaction
       - run: npx wp-env start
       - run: npx wp-env run tests-cli -- wp core multisite-convert --title="Test Network"
-      - run: npx wp-env run tests-cli --env-cwd='wp-content/plugins/presence-api' -- ./vendor/bin/phpunit
+      # WP_MULTISITE=1 is what actually puts the test bootstrap into network
+      # mode. `multisite-convert` only rewrites wp-config.php, which the
+      # bootstrap does not read, so without this the suite prints
+      # "Running as single site..." and every is_multisite() test is skipped.
+      - run: npx wp-env run tests-cli --env-cwd='wp-content/plugins/presence-api' -- env WP_MULTISITE=1 ./vendor/bin/phpunit

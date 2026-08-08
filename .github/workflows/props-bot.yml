@@ -104,13 +104,27 @@ jobs:
               });
             }
 
-            // Filter bot accounts from Unlinked Accounts; drop the section if nothing real remains.
+            // Filter bot accounts and raw email addresses from Unlinked Accounts;
+            // drop the section if nothing real remains.
             body = body.replace(
               /## Unlinked Accounts\n\n([\s\S]*?)\n\nCore Committers/,
               (_, section) => {
-                const lineMatch = section.match(/accounts: ([^.]+)\./);
+                // Capture to the end of the line rather than to the first period.
+                // `[^.]+` stopped inside email domains and at usernames containing
+                // periods, which made the replace below a silent no-op.
+                const lineMatch = section.match(/accounts: (.+?)\.?\s*$/m);
                 if (!lineMatch) return _;
-                const real = lineMatch[1].split(', ').map(n => n.trim()).filter(n => !n.includes('[bot]'));
+                const real = lineMatch[1]
+                  .split(', ')
+                  .map(n => n.trim())
+                  .filter(n => {
+                    if (!n || n.includes('[bot]')) return false;
+                    // Entries arrive "@"-prefixed, so "@someone" is a handle.
+                    // props-bot falls back to the raw commit author email when
+                    // GitHub cannot resolve the account, which leaves a second
+                    // "@" behind. Drop those rather than echo an address.
+                    return !n.replace(/^@/, '').includes('@');
+                  });
                 if (!real.length) return 'Core Committers';
                 return '## Unlinked Accounts\n\n' + section.replace(lineMatch[1], real.join(', ')) + '\n\nCore Committers';
               }

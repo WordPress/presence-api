@@ -1,0 +1,76 @@
+name: Bug report
+description: An existing feature is broken.
+labels: ["[Type] Bug", "Needs Dev"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a report.
+
+        If you are using AI tooling to help write this issue, you must disclose it in the last field. See the [WordPress AI Guidelines](https://make.wordpress.org/ai/handbook/ai-guidelines/).
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What is broken?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual behavior
+      description: What did you expect to happen, and what happened instead?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Which part of the plugin does this affect? A maintainer will apply the matching `[Area]` label.
+      options:
+        - Not sure
+        - Heartbeat
+        - REST API
+        - Widgets
+        - Admin UI
+        - Post Lock Bridge
+        - CLI
+        - Database
+    validations:
+      required: true
+
+  - type: input
+    id: versions
+    attributes:
+      label: Environment
+      description: Plugin version, WordPress version, PHP version, and whether the site is multisite.
+      placeholder: "presence-api 0.4.0, WP 7.0.3, PHP 8.3, single site"
+    validations:
+      required: true
+
+  - type: textarea
+    id: ai
+    attributes:
+      label: Use of AI Tools
+      description: Required. If you did not use AI tooling, set "AI assistance" to No and leave the rest blank.
+      value: |
+        AI assistance: No
+        Tool(s):
+        Model(s):
+        Used for:
+    validations:
+      required: true

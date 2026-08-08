@@ -5,6 +5,8 @@
  * @package Presence_API
  *
  * @group presence
+ *
+ * @covers WP_Presence_Widget_Active_Posts
  */
 class WP_Test_Presence_Widget_Active_Posts extends WP_UnitTestCase {
 

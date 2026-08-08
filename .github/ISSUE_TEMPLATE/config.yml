@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Design discussion or proposal feedback
+    url: https://make.wordpress.org/core/?s=presence-api
+    about: Broader design conversation about presence in core happens on Make Core under the #presence-api tag, not in this tracker.
+  - name: Security vulnerability
+    url: https://make.wordpress.org/core/handbook/testing/reporting-security-vulnerabilities/
+    about: Please report security issues through the WordPress HackerOne program rather than filing a public issue.
