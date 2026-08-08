@@ -31,7 +31,7 @@ npm run test:e2e
 
 ## Claiming an issue
 
-[Open and unassigned](https://github.com/WordPress/presence-api/issues?q=is%3Aissue+is%3Aopen+no%3Aassignee+-label%3A%22Needs+Discussion%22+-label%3Ablocked+-label%3A%22Close+Candidate%22+-label%3Amaybelater) issues are available. `Good First Issue` marks the ones suited to new contributors.
+[Open and unassigned](https://github.com/WordPress/presence-api/issues?q=is%3Aissue+is%3Aopen+no%3Aassignee+-label%3A%22Needs+Discussion%22) issues are available. `Good First Issue` marks the ones suited to new contributors.
 
 Comment on the issue you want and a maintainer will assign it. GitHub only allows assignment to people who have commented.
 
