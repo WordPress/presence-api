@@ -5,6 +5,11 @@
  * @package Presence_API
  *
  * @group presence
+ *
+ * Helpers reached through the public API functions below.
+ *
+ * @covers ::wp_presence_parse_room
+ * @covers ::wp_presence_admin_room
  */
 class WP_Test_Presence_Functions extends WP_UnitTestCase {
 

@@ -5,6 +5,8 @@
  * @package Presence_API
  *
  * @group presence
+ *
+ * @covers WP_REST_Presence_Controller
  */
 class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 
