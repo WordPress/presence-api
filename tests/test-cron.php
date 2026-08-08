@@ -74,6 +74,7 @@ class WP_Test_Presence_Cron extends WP_UnitTestCase {
 		wp_presence_schedule_cleanup();
 
 		$this->assertNotFalse( wp_next_scheduled( self::HOOK ), 'The cleanup event should be scheduled.' );
+		$this->assertSame( 'wp_presence_every_minute', wp_get_schedule( self::HOOK ), 'Cleanup should run on the one-minute interval.' );
 	}
 
 	/**
