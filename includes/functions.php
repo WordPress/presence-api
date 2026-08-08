@@ -454,7 +454,7 @@ function wp_delete_expired_presence_data() {
  * @access private
  */
 function wp_maybe_create_presence_table() {
-	if ( get_option( 'wp_presence_db_version' ) === WP_PRESENCE_DB_VERSION ) {
+	if ( (int) get_option( 'wp_presence_db_version' ) === WP_PRESENCE_DB_VERSION ) {
 		return;
 	}
 
@@ -471,7 +471,7 @@ function wp_maybe_create_presence_table() {
 			room varchar({$max_index_length}) NOT NULL default '',
 			client_id varchar({$max_index_length}) NOT NULL default '',
 			user_id bigint(20) unsigned NOT NULL default '0',
-			data text NOT NULL,
+			data longtext NOT NULL,
 			date_gmt datetime NOT NULL default '0000-00-00 00:00:00',
 			PRIMARY KEY  (id),
 			UNIQUE KEY room_client (room, client_id),

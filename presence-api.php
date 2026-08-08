@@ -46,7 +46,7 @@ if ( isset( $wpdb->presence ) ) {
 }
 
 define( 'WP_PRESENCE_VERSION', '0.1.15' );
-define( 'WP_PRESENCE_DB_VERSION', '1' );
+define( 'WP_PRESENCE_DB_VERSION', 2 );
 define( 'WP_PRESENCE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WP_PRESENCE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 if ( ! defined( 'WP_PRESENCE_DEFAULT_TTL' ) ) {
