@@ -31,13 +31,13 @@ npm run test:e2e
 
 ## Claiming an issue
 
-[Open and unassigned](https://github.com/WordPress/presence-api/issues?q=is%3Aissue+is%3Aopen+no%3Aassignee+-label%3A%22Needs+Discussion%22+-label%3Ablocked+-label%3A%22Close+Candidate%22+-label%3Amaybelater) is up for grabs. `Good First Issue` flags the gentler ones.
+[Open and unassigned](https://github.com/WordPress/presence-api/issues?q=is%3Aissue+is%3Aopen+no%3Aassignee+-label%3A%22Needs+Discussion%22) issues are available. `Good First Issue` marks the ones suited to new contributors.
 
-Comment on the one you want and a maintainer will assign it. GitHub only lets us assign people who have commented, so the comment is what makes it possible.
+Comment on the issue you want and a maintainer will assign it. GitHub only allows assignment to people who have commented.
 
-Assignment means the issue is taken, not that you are committed. If you stop, say so and we will unassign it, no explanation needed. A note on what you tried saves the next person starting over, and props-bot credits everyone who interacted with an issue or its pull request, so you keep your props either way.
+Assignment is not a commitment. If you stop, comment and we will unassign it. If you got partway, note what you tried. Props-bot credits everyone who interacted with an issue or its pull request.
 
-Assigned and quiet for two weeks may be unassigned. Comment to pick it back up.
+Assigned issues left quiet for two weeks may be unassigned. Comment to pick one back up.
 
 ## Pull requests
 
@@ -50,10 +50,10 @@ Assigned and quiet for two weeks may be unassigned. Comment to pick it back up.
 
 Props are tied to WordPress.org profiles, not GitHub accounts. Props-bot comments the running list on every pull request. Two things let it find you:
 
-1. **A commit email tied to your GitHub account.** Your `@users.noreply.github.com` address is simplest, and keeps your real one out of public history.
-2. **Your GitHub account [linked to your WordPress.org profile](https://make.wordpress.org/core/2020/03/19/associating-github-accounts-with-wordpress-org-profiles/).** Until then you sit under "Unlinked Accounts" and cannot be propped in a release.
+1. **A commit email tied to your GitHub account.** Your `@users.noreply.github.com` address works and keeps your real one out of public history.
+2. **Your GitHub account [linked to your WordPress.org profile](https://make.wordpress.org/core/2020/03/19/associating-github-accounts-with-wordpress-org-profiles/).** Until then you appear under "Unlinked Accounts" and cannot be propped in a release.
 
-Do both before your first pull request is ready, so nothing stalls at the end. Add the `props-bot` label to refresh the list.
+Do both before your first pull request is ready. Add the `props-bot` label to refresh the list.
 
 ## Releases
 
