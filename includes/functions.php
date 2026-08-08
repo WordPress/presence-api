@@ -446,15 +446,44 @@ function wp_delete_expired_presence_data() {
 }
 
 /**
+ * Checks the database directly for the presence table.
+ *
+ * Only for the provisioning path. Request paths use wp_presence_has_table(),
+ * which reads an autoloaded option and costs nothing.
+ *
+ * @access private
+ * @return bool Whether the table exists on the current site.
+ */
+function wp_presence_table_exists() {
+	global $wpdb;
+
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+	$found = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $wpdb->presence ) ) );
+
+	return $found === $wpdb->presence;
+}
+
+/**
  * Creates or updates the presence table if needed.
  *
  * Feature plugin shim — in core, this table would be created by dbDelta()
  * during the database upgrade routine in wp-admin/includes/upgrade-schema.php.
  *
+ * The version option alone is not enough to skip the work. If the table is
+ * dropped while the option survives, a partial restore or a hand-run DROP,
+ * every read and write fails and nothing reconciles the two.
+ *
+ * Ajax is excluded from that reconciliation. admin-ajax.php fires admin_init
+ * too, and presence heartbeats through it every 15 seconds per open admin tab,
+ * so checking there would bill every site continuously for a state almost none
+ * of them will reach. The next real admin page load repairs it instead.
+ *
  * @access private
  */
 function wp_maybe_create_presence_table() {
-	if ( (int) get_option( 'wp_presence_db_version' ) === WP_PRESENCE_DB_VERSION ) {
+	$provisioned = (int) get_option( 'wp_presence_db_version' ) === WP_PRESENCE_DB_VERSION;
+
+	if ( $provisioned && ( wp_doing_ajax() || wp_presence_table_exists() ) ) {
 		return;
 	}
 

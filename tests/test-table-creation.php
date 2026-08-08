@@ -97,6 +97,85 @@ class WP_Test_Presence_Table_Creation extends WP_UnitTestCase {
 	}
 
 	/**
+	 * The option says storage is available, the database disagrees. Reads and
+	 * writes trust the option, so the two drifting apart is what kills presence.
+	 *
+	 * @covers ::wp_presence_table_exists
+	 */
+	public function test_table_exists_reports_the_database_not_the_option() {
+		$this->drop_presence_table();
+		update_option( 'wp_presence_db_version', WP_PRESENCE_DB_VERSION, true );
+
+		$this->assertTrue( wp_presence_has_table(), 'The option-based check reads the option, so it is fooled.' );
+		$this->assertFalse( wp_presence_table_exists(), 'The direct check should not be.' );
+
+		wp_maybe_create_presence_table();
+
+		$this->assertTrue( wp_presence_table_exists(), 'And it should see the table once it is back.' );
+	}
+
+	/**
+	 * A partial restore or a hand-run DROP removes the table while the version
+	 * option survives. Nothing else reconciles the two, so provisioning has to,
+	 * otherwise presence stays dead on that site until someone deletes the
+	 * option by hand.
+	 *
+	 * @covers ::wp_maybe_create_presence_table
+	 * @covers ::wp_presence_table_exists
+	 */
+	public function test_a_dropped_table_is_rebuilt_when_the_version_option_survives() {
+		$this->drop_presence_table();
+		update_option( 'wp_presence_db_version', WP_PRESENCE_DB_VERSION, true );
+
+		wp_maybe_create_presence_table();
+
+		$this->assertTrue( $this->presence_table_exists(), 'Provisioning should rebuild the missing table.' );
+
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), self::$editor_id );
+
+		$this->assertCount( 1, wp_get_presence( 'admin/online' ), 'Presence should work again after the rebuild.' );
+	}
+
+	/**
+	 * admin-ajax.php fires admin_init too, and presence heartbeats through it
+	 * every 15 seconds per open admin tab. Checking there would bill every site
+	 * continuously for a state almost none of them will reach.
+	 *
+	 * @covers ::wp_maybe_create_presence_table
+	 */
+	public function test_ajax_requests_do_not_pay_for_the_table_check() {
+		global $wpdb;
+
+		// Warm the autoloaded option so it cannot account for a query below.
+		get_option( 'wp_presence_db_version' );
+
+		add_filter( 'wp_doing_ajax', '__return_true' );
+
+		$before = $wpdb->num_queries;
+		wp_maybe_create_presence_table();
+
+		$this->assertSame( $before, $wpdb->num_queries, 'A heartbeat request should not query at all.' );
+	}
+
+	/**
+	 * The other half of that trade, stated so it cannot be dropped by accident.
+	 * A site in the broken state stays broken through heartbeat traffic alone
+	 * and waits for the next real admin page load to repair.
+	 *
+	 * @covers ::wp_maybe_create_presence_table
+	 */
+	public function test_ajax_requests_do_not_rebuild_a_dropped_table() {
+		$this->drop_presence_table();
+		update_option( 'wp_presence_db_version', WP_PRESENCE_DB_VERSION, true );
+
+		add_filter( 'wp_doing_ajax', '__return_true' );
+
+		wp_maybe_create_presence_table();
+
+		$this->assertFalse( $this->presence_table_exists(), 'Heartbeat should not trigger a rebuild.' );
+	}
+
+	/**
 	 * @covers ::wp_presence_activate
 	 * @covers ::wp_presence_provision_site
 	 * @covers ::wp_presence_schedule_cleanup
