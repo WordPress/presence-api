@@ -90,13 +90,15 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_UnitTestCase {
 	public function test_render_includes_avatar_with_alt_text() {
 		$user_id = self::factory()->user->create( array(
 			'role'         => 'editor',
-			'display_name' => 'Jane Doe',
+			'display_name' => 'John Doe',
 		) );
 
-		wp_set_current_user( $user_id );
-
-		$data = array( 'presence-ping' => array( 'screen' => 'dashboard' ) );
-		WP_Presence_Widget_Whos_Online::heartbeat_received( array(), $data, 'dashboard' );
+		wp_set_presence(
+			wp_presence_admin_room(),
+			'client-1',
+			array(),
+			$user_id
+		);
 
 		wp_set_current_user( self::$editor_id );
 
@@ -105,7 +107,7 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_UnitTestCase {
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( 'class="presence-user-item"', $output );
-		$this->assertMatchesRegularExpression( '/alt=["\']Jane Doe["\']/', $output );
+		$this->assertMatchesRegularExpression( '/alt=["\']John Doe["\']/', $output );
 	}
 }
 
