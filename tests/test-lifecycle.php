@@ -53,10 +53,12 @@ class WP_Test_Presence_Lifecycle extends WP_UnitTestCase {
 	public function test_logout_clears_all_rooms() {
 		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), self::$editor_id );
 		wp_set_presence( 'postType/post:1', 'lock-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( 'admin/online', 'user-' . self::$subscriber_id, array(), self::$subscriber_id );
 
 		wp_presence_on_logout( self::$editor_id );
 
 		$this->assertCount( 0, wp_get_user_presence( self::$editor_id ) );
+		$this->assertCount( 1, wp_get_user_presence( self::$subscriber_id ), 'Logging one user out should not clear anybody else.' );
 	}
 
 	/**
@@ -79,6 +81,7 @@ class WP_Test_Presence_Lifecycle extends WP_UnitTestCase {
 	public function test_logout_clears_presence_without_current_user() {
 		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), self::$editor_id );
 		wp_set_presence( 'postType/post:1', 'lock-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( 'admin/online', 'user-' . self::$subscriber_id, array(), self::$subscriber_id );
 
 		// Simulate real wp_logout timing.
 		// Auth cookie has been cleared, so get_current_user_id() would return 0.
@@ -87,5 +90,6 @@ class WP_Test_Presence_Lifecycle extends WP_UnitTestCase {
 		wp_presence_on_logout( self::$editor_id );
 
 		$this->assertCount( 0, wp_get_user_presence( self::$editor_id ) );
+		$this->assertCount( 1, wp_get_user_presence( self::$subscriber_id ), 'Logging one user out should not clear anybody else.' );
 	}
 }

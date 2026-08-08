@@ -98,6 +98,8 @@ class WP_Test_Presence_Table_Creation extends WP_UnitTestCase {
 
 	/**
 	 * @covers ::wp_presence_activate
+	 * @covers ::wp_presence_provision_site
+	 * @covers ::wp_presence_schedule_cleanup
 	 */
 	public function test_activation_provisions_the_current_site() {
 		$this->drop_presence_table();
@@ -112,6 +114,8 @@ class WP_Test_Presence_Table_Creation extends WP_UnitTestCase {
 
 	/**
 	 * @covers ::wp_presence_on_initialize_site
+	 * @covers ::wp_presence_provision_site
+	 * @covers ::wp_presence_schedule_cleanup
 	 */
 	public function test_new_site_is_provisioned_on_initialize_site() {
 		if ( ! is_multisite() ) {
@@ -141,6 +145,9 @@ class WP_Test_Presence_Table_Creation extends WP_UnitTestCase {
 	 * fires wp_initialize_site for them, so activation is their only chance.
 	 *
 	 * @covers ::wp_presence_activate
+	 * @covers ::wp_presence_get_network_site_ids
+	 * @covers ::wp_presence_provision_site
+	 * @covers ::wp_presence_schedule_cleanup
 	 */
 	public function test_network_activation_provisions_every_site() {
 		if ( ! is_multisite() ) {
@@ -180,6 +187,7 @@ class WP_Test_Presence_Table_Creation extends WP_UnitTestCase {
 	 * current one would leave every other site rescheduling a dead callback.
 	 *
 	 * @covers ::wp_presence_deactivate
+	 * @covers ::wp_presence_get_network_site_ids
 	 */
 	public function test_network_deactivation_clears_cleanup_on_every_site() {
 		if ( ! is_multisite() ) {
