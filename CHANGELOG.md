@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.15](https://github.com/WordPress/presence-api/compare/v0.1.14...v0.1.15) (2026-08-08)
+
+
+### Bug Fixes
+
+* replace 404ing Playground badge with the one used in PR previews ([4581d8f](https://github.com/WordPress/presence-api/commit/4581d8f26a5e8c9b6c40786bf26e97f1d39da15b))
+* stop props bot echoing raw commit author emails in unlinked accounts ([8198fa9](https://github.com/WordPress/presence-api/commit/8198fa9c29d390f5d0b9d2cfa92dd7f4e9f884be))
+
 ## [0.1.14](https://github.com/WordPress/presence-api/compare/v0.1.13...v0.1.14) (2026-08-08)
 
 

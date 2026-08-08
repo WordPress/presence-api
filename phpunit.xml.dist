@@ -18,6 +18,15 @@
 	<coverage>
 		<include>
 			<directory suffix=".php">includes/</directory>
+			<file>presence-api.php</file>
 		</include>
+		<exclude>
+			<!--
+			WP_DEBUG-only developer tools. Excluded from the distributed zip via
+			.distignore, so they are not measured as shipped product code either.
+			-->
+			<file>includes/db-viewer.php</file>
+			<file>includes/debugger-widget.php</file>
+		</exclude>
 	</coverage>
 </phpunit>

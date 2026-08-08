@@ -5,6 +5,8 @@
  * @package Presence_API
  *
  * @group presence
+ *
+ * @covers WP_Presence_Widget_Whos_Online
  */
 class WP_Test_Presence_Widget_Whos_Online extends WP_UnitTestCase {
 
