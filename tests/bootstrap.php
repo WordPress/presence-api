@@ -31,3 +31,9 @@ tests_add_filter( 'muplugins_loaded', '_manually_load_plugin' );
 
 // Start up the WP testing environment.
 require "{$_tests_dir}/includes/bootstrap.php";
+
+// The suite reinstalls WordPress on every run, which empties the options table
+// but leaves the plugin's own table in place. Provision the site the way
+// activation does so tests start from the state a real site is in, rather than
+// from a table with no schema version recorded against it.
+wp_presence_provision_site();
