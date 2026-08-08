@@ -48,3 +48,23 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.xml
           flags: phpunit
+      # The run above skips every is_multisite() test, so the network
+      # provisioning paths in presence-api.php report as uncovered no matter how
+      # well tested they are. Running the suite a second time here is close to
+      # free, since wp-env is already up with xdebug, and Codecov merges the two
+      # reports for the commit.
+      #
+      # WP_MULTISITE=1 is what puts the test bootstrap into network mode. The
+      # bootstrap installs its own test database and never reads wp-config.php,
+      # so no `multisite-convert` is needed here. Without the variable the suite
+      # prints "Running as single site..." and this report adds nothing.
+      - name: Run the suite as multisite
+        if: ${{ matrix.coverage }}
+        run: npx wp-env run tests-cli --env-cwd='wp-content/plugins/presence-api' -- env WP_MULTISITE=1 ./vendor/bin/phpunit --coverage-clover coverage-multisite.xml
+      - name: Upload multisite coverage to Codecov
+        if: ${{ matrix.coverage }}
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage-multisite.xml
+          flags: multisite
