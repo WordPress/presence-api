@@ -48,11 +48,14 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.xml
           flags: phpunit
-      # The run above skips every is_multisite() test, so the network
-      # provisioning paths in presence-api.php report as uncovered no matter how
-      # well tested they are. Running the suite a second time here is close to
-      # free, since wp-env is already up with xdebug, and Codecov merges the two
-      # reports for the commit.
+      # This is the only multisite run in CI. It lives here rather than in its
+      # own workflow because the run above skips every is_multisite() test, so
+      # the network provisioning paths in presence-api.php reported as uncovered
+      # no matter how well tested they were. Reusing this job's environment
+      # costs seconds, and Codecov merges the two reports for the commit.
+      #
+      # Keep the multisite suite running if this job's coverage matrix ever
+      # changes, otherwise network behaviour stops being tested at all.
       #
       # WP_MULTISITE=1 is what puts the test bootstrap into network mode. The
       # bootstrap installs its own test database and never reads wp-config.php,
