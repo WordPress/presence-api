@@ -185,4 +185,124 @@ class WP_Test_Presence_CLI_Command extends WP_UnitTestCase {
 
 		$this->assertSame( array(), WP_CLI::messages( 'success' ) );
 	}
+
+	/**
+	 * @covers WP_Presence_CLI_Command::list_
+	 */
+	public function test_list_requires_a_room() {
+		$this->assert_halts_with(
+			function () {
+				$this->command->list_( array(), array() );
+			},
+			'Please specify a room. Usage: wp presence list <room>'
+		);
+
+		$this->assertSame( array(), WP_CLI::$formatted, 'Nothing should be rendered without a room.' );
+	}
+
+	/**
+	 * @covers WP_Presence_CLI_Command::list_
+	 */
+	public function test_list_reports_an_empty_room() {
+		$this->command->list_( array( 'admin/online' ), array() );
+
+		$this->assertSame( array( 'No presence entries in room "admin/online".' ), WP_CLI::messages( 'log' ) );
+		$this->assertSame( array(), WP_CLI::$formatted, 'An empty room should not reach the formatter.' );
+	}
+
+	/**
+	 * @covers WP_Presence_CLI_Command::list_
+	 */
+	public function test_list_renders_the_entries_in_a_room() {
+		wp_set_presence( 'admin/online', 'cli-1', array( 'action' => 'editing' ), self::$user_id );
+		wp_set_presence( 'admin/online', 'cli-2', array(), 0 );
+		wp_set_presence( 'postType/post:42', 'other', array(), 0 );
+
+		$this->command->list_( array( 'admin/online' ), array() );
+
+		$this->assertCount( 1, WP_CLI::$formatted );
+		$rendered = WP_CLI::$formatted[0];
+
+		$this->assertSame( 'table', $rendered['format'], 'table is the documented default.' );
+		$this->assertSame( array( 'room', 'client_id', 'user_id', 'data', 'date_gmt' ), $rendered['fields'] );
+		$this->assertCount( 2, $rendered['items'], 'Only the requested room should be listed.' );
+
+		$by_client = array_column( $rendered['items'], null, 'client_id' );
+
+		$this->assertSame( 'admin/online', $by_client['cli-1']['room'] );
+		$this->assertSame( self::$user_id, (int) $by_client['cli-1']['user_id'] );
+		$this->assertSame( '{"action":"editing"}', $by_client['cli-1']['data'], 'Data is re-encoded for display.' );
+		$this->assertNotEmpty( $by_client['cli-1']['date_gmt'] );
+		$this->assertSame( '[]', $by_client['cli-2']['data'], 'An empty state round-trips as an empty JSON array.' );
+	}
+
+	/**
+	 * @covers WP_Presence_CLI_Command::list_
+	 */
+	public function test_list_passes_the_requested_format_through() {
+		wp_set_presence( 'admin/online', 'cli-1', array(), 0 );
+
+		$this->command->list_( array( 'admin/online' ), array( 'format' => 'json' ) );
+
+		$this->assertSame( 'json', WP_CLI::$formatted[0]['format'] );
+	}
+
+	/**
+	 * @covers WP_Presence_CLI_Command::summary
+	 */
+	public function test_summary_reports_totals_and_prefixes() {
+		wp_set_presence( 'admin/online', 'cli-1', array(), self::$user_id );
+		wp_set_presence( 'admin/dashboard', 'cli-2', array(), self::$user_id );
+		wp_set_presence( 'postType/post:42', 'cli-3', array(), 0 );
+
+		$this->command->summary( array(), array() );
+
+		$logs = WP_CLI::messages( 'log' );
+
+		$this->assertContains( 'Total entries: 3', $logs );
+		$this->assertContains( 'Total users:   2', $logs, 'The same user in two rooms counts once.' );
+
+		$this->assertCount( 1, WP_CLI::$formatted );
+		$rendered = WP_CLI::$formatted[0];
+
+		$this->assertSame( 'table', $rendered['format'] );
+		$this->assertSame( array( 'prefix', 'entries', 'users' ), $rendered['fields'] );
+
+		$by_prefix = array_column( $rendered['items'], null, 'prefix' );
+
+		$this->assertSame( 2, $by_prefix['admin']['entries'] );
+		$this->assertSame( 1, $by_prefix['admin']['users'] );
+		$this->assertSame( 1, $by_prefix['postType']['entries'] );
+	}
+
+	/**
+	 * @covers WP_Presence_CLI_Command::summary
+	 */
+	public function test_summary_reports_no_data() {
+		$this->command->summary( array(), array() );
+
+		$logs = WP_CLI::messages( 'log' );
+
+		$this->assertContains( 'Total entries: 0', $logs );
+		$this->assertContains( 'No presence data.', $logs );
+		$this->assertSame( array(), WP_CLI::$formatted, 'There is no prefix table to render.' );
+	}
+
+	/**
+	 * The json format bypasses the formatter entirely and prints the summary
+	 * structure as one document, so it is asserted separately from the table.
+	 *
+	 * @covers WP_Presence_CLI_Command::summary
+	 */
+	public function test_summary_prints_json_in_one_document() {
+		wp_set_presence( 'admin/online', 'cli-1', array(), self::$user_id );
+
+		$this->command->summary( array(), array( 'format' => 'json' ) );
+
+		$logs = WP_CLI::messages( 'log' );
+
+		$this->assertCount( 1, $logs );
+		$this->assertSame( wp_get_presence_summary(), json_decode( $logs[0], true ) );
+		$this->assertSame( array(), WP_CLI::$formatted );
+	}
 }
