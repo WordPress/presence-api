@@ -1,0 +1,7 @@
+# Contributors who would rather not appear in the Playground demos.
+#
+# The demos seed themselves with a random sample of this repository's
+# contributors, shown with their GitHub name and avatar. Add your login here to
+# be left out. One per line, no reason needed, takes effect at the next release.
+#
+# Read by .github/scripts/update-demo-contributors.js.

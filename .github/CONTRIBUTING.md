@@ -55,6 +55,12 @@ Props are tied to WordPress.org profiles, not GitHub accounts. Props-bot comment
 
 Do both before your first pull request is ready. Add the `props-bot` label to refresh the list.
 
+### In the demos
+
+Once you have landed a change, you become one of the people the [Playground demos](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json) seed themselves with, shown with your GitHub avatar. Each boot samples a different handful, so the demo shows a different room every time. You appear as soon as your pull request merges, under your login until the next release fills in your display name.
+
+If you would rather not appear, add your GitHub login to [`.github/demo-contributors-optout.txt`](demo-contributors-optout.txt). No reason needed, and it takes effect at the next release.
+
 ## Releases
 
 Releases are automated by [release-please](https://github.com/googleapis/release-please). Use [Conventional Commits](https://www.conventionalcommits.org/) in the pull request title — release-please reads it to decide the next version and to generate the changelog:
