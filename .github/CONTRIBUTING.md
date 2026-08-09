@@ -53,7 +53,9 @@ Props are tied to WordPress.org profiles, not GitHub accounts. Props-bot comment
 1. **A commit email tied to your GitHub account.** Your `@users.noreply.github.com` address works and keeps your real one out of public history.
 2. **Your GitHub account [linked to your WordPress.org profile](https://make.wordpress.org/core/2020/03/19/associating-github-accounts-with-wordpress-org-profiles/).** Until then you appear under "Unlinked Accounts" and cannot be propped in a release.
 
-Do both before your first pull request is ready. Add the `props-bot` label to refresh the list.
+Do both before your first pull request is ready. Add the `props-bot` label to refresh the list, on an open or an already merged pull request.
+
+Linking late still counts. Release props are assembled when the release goes out, and anyone listed under "Unlinked Accounts" is checked again at that point, so a profile linked between your merge and the release picks up the credit.
 
 ## Releases
 
