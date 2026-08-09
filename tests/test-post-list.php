@@ -35,6 +35,9 @@ class WP_Test_Presence_Post_List extends WP_UnitTestCase {
 		return ob_get_clean();
 	}
 
+	/**
+	 * @covers ::wp_presence_register_post_list_columns
+	 */
 	public function test_registers_columns_only_for_presence_supporting_post_types() {
 		register_post_type( 'no_presence', array( 'public' => true ) );
 
@@ -49,6 +52,9 @@ class WP_Test_Presence_Post_List extends WP_UnitTestCase {
 		unregister_post_type( 'no_presence' );
 	}
 
+	/**
+	 * @covers ::wp_presence_register_post_list_columns
+	 */
 	public function test_does_not_register_columns_without_edit_posts_capability() {
 		wp_set_current_user( self::$subscriber_id );
 		wp_presence_register_post_list_columns();
@@ -56,6 +62,9 @@ class WP_Test_Presence_Post_List extends WP_UnitTestCase {
 		$this->assertFalse( has_filter( 'manage_post_posts_columns', 'wp_presence_add_editors_column' ) );
 	}
 
+	/**
+	 * @covers ::wp_presence_add_editors_column
+	 */
 	public function test_add_editors_column_inserts_before_date_and_preserves_others() {
 		$columns = array(
 			'cb'    => '<input type="checkbox" />',
@@ -70,6 +79,9 @@ class WP_Test_Presence_Post_List extends WP_UnitTestCase {
 		$this->assertSame( 'Title', $result['title'] );
 	}
 
+	/**
+	 * @covers ::wp_presence_add_editors_column
+	 */
 	public function test_add_editors_column_appends_when_no_date_column() {
 		$columns = array(
 			'cb'    => '<input type="checkbox" />',
@@ -89,6 +101,8 @@ class WP_Test_Presence_Post_List extends WP_UnitTestCase {
 	 * escaping, and the column-name guard — is exercised in one pass here,
 	 * matching how the list table actually calls it: once per row within a
 	 * single request.
+	 *
+	 * @covers ::wp_presence_render_editors_column
 	 */
 	public function test_render_editors_column() {
 		$post_none = self::factory()->post->create();
@@ -120,6 +134,9 @@ class WP_Test_Presence_Post_List extends WP_UnitTestCase {
 		$this->assertSame( '', ob_get_clean() );
 	}
 
+	/**
+	 * @covers ::wp_presence_editors_column_css
+	 */
 	public function test_editors_column_css_enqueues_only_on_edit_php() {
 		wp_presence_editors_column_css( 'upload.php' );
 		$this->assertFalse( wp_style_is( 'presence-post-list', 'enqueued' ) );

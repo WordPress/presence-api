@@ -24,6 +24,9 @@ class WP_Test_Presence_User_List extends WP_UnitTestCase {
 		parent::tear_down();
 	}
 
+	/**
+	 * @covers ::wp_presence_users_views
+	 */
 	public function test_users_views_adds_online_view_with_count() {
 		wp_set_current_user( self::$editor_id );
 
@@ -36,6 +39,9 @@ class WP_Test_Presence_User_List extends WP_UnitTestCase {
 		$this->assertStringContainsString( '(2)', $views['presence_online'] );
 	}
 
+	/**
+	 * @covers ::wp_presence_users_views
+	 */
 	public function test_users_views_counts_current_user_when_nobody_else_online() {
 		wp_set_current_user( self::$editor_id );
 
@@ -44,6 +50,9 @@ class WP_Test_Presence_User_List extends WP_UnitTestCase {
 		$this->assertStringContainsString( '(1)', $views['presence_online'] );
 	}
 
+	/**
+	 * @covers ::wp_presence_users_views
+	 */
 	public function test_users_views_marks_online_view_current() {
 		wp_set_current_user( self::$editor_id );
 		$_GET['presence_status'] = 'online';
@@ -54,6 +63,9 @@ class WP_Test_Presence_User_List extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'class="current"', $views['all'] );
 	}
 
+	/**
+	 * @covers ::wp_presence_users_views
+	 */
 	public function test_users_views_unchanged_without_edit_posts_capability() {
 		wp_set_current_user( self::$subscriber_id );
 
@@ -74,6 +86,9 @@ class WP_Test_Presence_User_List extends WP_UnitTestCase {
 		$_GET['_wpnonce']        = wp_create_nonce( 'presence_online_filter' );
 	}
 
+	/**
+	 * @covers ::wp_presence_filter_online_users
+	 */
 	public function test_filter_online_users_restricts_query_to_online_users() {
 		$this->go_to_online_users_screen();
 
@@ -87,6 +102,9 @@ class WP_Test_Presence_User_List extends WP_UnitTestCase {
 		$this->assertEqualsCanonicalizing( array( $other_id, self::$editor_id ), $query->get( 'include' ) );
 	}
 
+	/**
+	 * @covers ::wp_presence_filter_online_users
+	 */
 	public function test_filter_online_users_includes_only_current_user_when_nobody_else_online() {
 		$this->go_to_online_users_screen();
 
@@ -96,6 +114,9 @@ class WP_Test_Presence_User_List extends WP_UnitTestCase {
 		$this->assertSame( array( self::$editor_id ), $query->get( 'include' ) );
 	}
 
+	/**
+	 * @covers ::wp_presence_filter_online_users
+	 */
 	public function test_filter_online_users_ignored_outside_admin() {
 		wp_set_current_user( self::$editor_id );
 		$_GET['presence_status'] = 'online';
@@ -107,6 +128,9 @@ class WP_Test_Presence_User_List extends WP_UnitTestCase {
 		$this->assertNull( $query->get( 'include' ) );
 	}
 
+	/**
+	 * @covers ::wp_presence_filter_online_users
+	 */
 	public function test_filter_online_users_ignored_when_status_not_online() {
 		$this->go_to_online_users_screen();
 		unset( $_GET['presence_status'] );
@@ -117,6 +141,9 @@ class WP_Test_Presence_User_List extends WP_UnitTestCase {
 		$this->assertNull( $query->get( 'include' ) );
 	}
 
+	/**
+	 * @covers ::wp_presence_filter_online_users
+	 */
 	public function test_filter_online_users_ignored_with_invalid_nonce() {
 		$this->go_to_online_users_screen();
 		$_GET['_wpnonce'] = 'invalid';
