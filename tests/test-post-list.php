@@ -39,7 +39,11 @@ class WP_Test_Presence_Post_List extends WP_UnitTestCase {
 	 * @covers ::wp_presence_register_post_list_columns
 	 */
 	public function test_registers_columns_only_for_presence_supporting_post_types() {
+		// Public, but does not support presence: excluded by the in-loop check.
 		register_post_type( 'no_presence', array( 'public' => true ) );
+		// Not public: excluded before the loop even sees it, by get_post_types( array( 'public' => true ) ).
+		register_post_type( 'private_type', array( 'public' => false ) );
+		add_post_type_support( 'private_type', 'presence' );
 
 		wp_set_current_user( self::$editor_id );
 		wp_presence_register_post_list_columns();
@@ -47,9 +51,11 @@ class WP_Test_Presence_Post_List extends WP_UnitTestCase {
 		$this->assertNotFalse( has_filter( 'manage_post_posts_columns', 'wp_presence_add_editors_column' ) );
 		$this->assertNotFalse( has_action( 'manage_post_posts_custom_column', 'wp_presence_render_editors_column' ) );
 		$this->assertFalse( has_filter( 'manage_no_presence_posts_columns', 'wp_presence_add_editors_column' ) );
+		$this->assertFalse( has_filter( 'manage_private_type_posts_columns', 'wp_presence_add_editors_column' ) );
 		$this->assertNotFalse( has_action( 'admin_enqueue_scripts', 'wp_presence_editors_column_css' ) );
 
 		unregister_post_type( 'no_presence' );
+		unregister_post_type( 'private_type' );
 	}
 
 	/**
