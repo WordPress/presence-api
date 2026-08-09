@@ -111,9 +111,10 @@ class WP_Test_Presence_Post_List extends WP_UnitTestCase {
 	 * @covers ::wp_presence_render_editors_column
 	 */
 	public function test_render_editors_column() {
-		$post_none = self::factory()->post->create();
-		$post_one  = self::factory()->post->create();
-		$post_many = self::factory()->post->create();
+		$post_none    = self::factory()->post->create();
+		$post_one     = self::factory()->post->create();
+		$post_many    = self::factory()->post->create();
+		$post_deleted = self::factory()->post->create();
 
 		$editor_2_id = self::factory()->user->create(
 			array(
@@ -121,10 +122,23 @@ class WP_Test_Presence_Post_List extends WP_UnitTestCase {
 				'display_name' => 'Bob "><script>alert(1)</script>',
 			)
 		);
+		$deleted_id  = self::factory()->user->create( array( 'role' => 'editor' ) );
 
 		wp_set_presence( wp_presence_post_room( $post_one ), 'lock-1', array(), self::$editor_id );
 		wp_set_presence( wp_presence_post_room( $post_many ), 'lock-1', array(), self::$editor_id );
 		wp_set_presence( wp_presence_post_room( $post_many ), 'lock-2', array(), $editor_2_id );
+		wp_set_presence( wp_presence_post_room( $post_deleted ), 'lock-3', array(), $deleted_id );
+
+		// Matches the postType/ prefix query but not the room format, so it is
+		// skipped while the map is built rather than mapped to a post.
+		wp_set_presence( 'postType/malformed', 'lock-4', array(), self::$editor_id );
+
+		if ( is_multisite() ) {
+			require_once ABSPATH . 'wp-admin/includes/ms.php';
+			wpmu_delete_user( $deleted_id );
+		} else {
+			wp_delete_user( $deleted_id );
+		}
 
 		$this->assertSame( '', $this->render_column( $post_none ) );
 
@@ -134,6 +148,11 @@ class WP_Test_Presence_Post_List extends WP_UnitTestCase {
 		$many_output = $this->render_column( $post_many );
 		$this->assertSame( 2, substr_count( $many_output, '<img' ) );
 		$this->assertStringNotContainsString( '<script>', $many_output );
+
+		// The row survives its user, so the stack renders but holds no avatar.
+		$deleted_output = $this->render_column( $post_deleted );
+		$this->assertStringContainsString( 'presence-editors-stack', $deleted_output );
+		$this->assertStringNotContainsString( '<img', $deleted_output );
 
 		ob_start();
 		wp_presence_render_editors_column( 'some_other_column', $post_many );

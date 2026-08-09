@@ -53,6 +53,18 @@ class WP_Test_Presence_User_List extends WP_UnitTestCase {
 	/**
 	 * @covers ::wp_presence_users_views
 	 */
+	public function test_users_views_does_not_double_count_the_current_user() {
+		wp_set_current_user( self::$editor_id );
+		wp_set_presence( wp_presence_admin_room(), 'client-self', array(), self::$editor_id );
+
+		$views = wp_presence_users_views( array() );
+
+		$this->assertStringContainsString( '(1)', $views['presence_online'] );
+	}
+
+	/**
+	 * @covers ::wp_presence_users_views
+	 */
 	public function test_users_views_marks_online_view_current() {
 		wp_set_current_user( self::$editor_id );
 		$_GET['presence_status'] = 'online';
@@ -118,7 +130,24 @@ class WP_Test_Presence_User_List extends WP_UnitTestCase {
 	 * @covers ::wp_presence_filter_online_users
 	 */
 	public function test_filter_online_users_ignored_outside_admin() {
-		wp_set_current_user( self::$editor_id );
+		$this->go_to_online_users_screen();
+		set_current_screen( 'front' );
+
+		$query = new WP_User_Query();
+		wp_presence_filter_online_users( $query );
+
+		$this->assertNull( $query->get( 'include' ) );
+	}
+
+	/**
+	 * @covers ::wp_presence_filter_online_users
+	 */
+	public function test_filter_online_users_ignored_without_edit_posts_capability() {
+		// The nonce is bound to the user it was created for, so the subscriber
+		// has to be current before it is issued. Otherwise the nonce check
+		// fails first and the capability guard is never reached.
+		wp_set_current_user( self::$subscriber_id );
+		set_current_screen( 'users' );
 		$_GET['presence_status'] = 'online';
 		$_GET['_wpnonce']        = wp_create_nonce( 'presence_online_filter' );
 
