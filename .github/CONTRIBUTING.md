@@ -57,9 +57,9 @@ Do both before your first pull request is ready. Add the `props-bot` label to re
 
 ### In the demos
 
-Once you have landed a change, you become one of the people the [Playground demos](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json) seed themselves with, shown with your GitHub avatar. Each boot samples a different handful, so the demo shows a different room every time. You appear as soon as your pull request merges, under your login until the next release fills in your display name.
+Getting onto the `Contributors` line in `readme.txt` also puts you in the [Playground demos](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json), which seed themselves from it, shown under your WordPress.org username and avatar. Each boot samples a different handful, so the demo shows a different room every time.
 
-If you would rather not appear, add your GitHub login to [`.github/demo-contributors-optout.txt`](demo-contributors-optout.txt). No reason needed, and it takes effect at the next release.
+If you would rather not appear, add your username, lowercased, to `WP_PRESENCE_DEMO_OPTOUT` in [`tests/e2e/demo-seeder.php`](../tests/e2e/demo-seeder.php). No reason needed, and it does not affect your props.
 
 ## Releases
 

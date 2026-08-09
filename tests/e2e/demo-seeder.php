@@ -14,74 +14,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * The people who have contributed to this repository.
+ * Lowercased WordPress.org usernames that would rather not appear in the demos.
  *
- * Demo users are sampled from this list first, so contributors run into
- * themselves in the demo they helped build, with their own avatars.
- *
- * This is the fallback, not the source of truth. wp_presence_demo_contributors()
- * asks GitHub who has contributed and only falls back to this list when that
- * request fails. A release can sit for a long time, and the WordPress.org
- * blueprint pins this file to a release tag, so a purely baked list would go on
- * showing the same cast long after it stopped being accurate.
- *
- * What it is still good for: real names. The contributors endpoint returns
- * logins, not names, and resolving those would cost one request per person on
- * every boot. Names are matched in from here by GitHub ID.
- *
- * Generated. Do not edit by hand. Refreshed on every release PR by the
- * sync-versions job in .github/workflows/release-please.yml, or on demand:
- *
- *     GH_TOKEN=$( gh auth token ) node .github/scripts/update-demo-contributors.js
- */
-// BEGIN GENERATED CONTRIBUTORS
-const WP_PRESENCE_DEMO_CONTRIBUTORS = array(
-	array(
-		'login' => 'josephfusco',
-		'name'  => 'Joe Fusco',
-		'id'    => 6676674,
-	),
-	array(
-		'login' => 'i-am-chitti',
-		'name'  => 'Deepak Kumar',
-		'id'    => 60139930,
-	),
-	array(
-		'login' => 'Intenzi',
-		'name'  => 'Ritvik Bhutani',
-		'id'    => 62426443,
-	),
-	array(
-		'login' => 'iqbal-web',
-		'name'  => 'Iqbal Hossain',
-		'id'    => 71224856,
-	),
-	array(
-		'login' => 'aldorizona10-glitch',
-		'name'  => 'Aldo Rizona',
-		'id'    => 250669805,
-	),
-	array(
-		'login' => 'AshishJii',
-		'name'  => 'Ashish Verma',
-		'id'    => 88656163,
-	),
-	array(
-		'login' => 'asllanmaciel',
-		'name'  => 'Asllan Maciel',
-		'id'    => 397983,
-	),
-);
-
-/**
- * Lowercased GitHub logins that have asked not to appear in the demos.
- *
- * Baked in from .github/demo-contributors-optout.txt so that the opt-out is
- * still honoured when the contributor list comes back live from GitHub, which
- * knows nothing about that file.
+ * The demo list is read from the Contributors line in readme.txt, which exists
+ * to credit people and should not be edited to remove them. Opting out of the
+ * demo is a separate thing from being credited, so it gets its own list.
  */
 const WP_PRESENCE_DEMO_OPTOUT = array();
-// END GENERATED CONTRIBUTORS
 
 /**
  * First and last name pools for demo users.
@@ -252,117 +191,64 @@ function wp_presence_demo_name( $index ) {
 }
 
 /**
- * Asks GitHub who has contributed to the repository.
- *
- * One request, not one per person. Cached for twelve hours so a persistent
- * install does not re-ask on every seed, though a Playground boot starts with
- * an empty database and always pays for it once.
- *
- * Returns an empty array on any failure, including a throttled response.
- * Unauthenticated callers get sixty requests an hour, and the caller treats
- * empty as "use the baked list" rather than as "nobody contributed", so a
- * throttle costs freshness and never an empty demo.
- *
- * @since 7.1.0
- *
- * @return array List of array{login: string, id: int}.
- */
-function wp_presence_demo_fetch_contributors() {
-	$cached = get_transient( 'wp_presence_demo_contributors' );
-
-	if ( is_array( $cached ) ) {
-		return $cached;
-	}
-
-	$response = wp_remote_get(
-		'https://api.github.com/repos/WordPress/presence-api/contributors?per_page=100',
-		array(
-			'timeout' => 5,
-			'headers' => array(
-				'Accept'     => 'application/vnd.github+json',
-				'User-Agent' => 'presence-api-demo-seeder',
-			),
-		)
-	);
-
-	if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
-		// Cache the miss briefly too. Without this, a rate-limited demo re-asks
-		// on every boot and stays rate limited.
-		set_transient( 'wp_presence_demo_contributors', array(), 5 * MINUTE_IN_SECONDS );
-		return array();
-	}
-
-	$decoded = json_decode( wp_remote_retrieve_body( $response ), true );
-
-	if ( ! is_array( $decoded ) ) {
-		return array();
-	}
-
-	$contributors = array();
-
-	foreach ( $decoded as $entry ) {
-		if ( empty( $entry['login'] ) || empty( $entry['id'] ) ) {
-			continue;
-		}
-
-		// Bots are typed, except for the older app identities that are not,
-		// which is what the suffix catches.
-		if ( ! empty( $entry['type'] ) && 'User' !== $entry['type'] ) {
-			continue;
-		}
-
-		if ( str_ends_with( strtolower( $entry['login'] ), '[bot]' ) ) {
-			continue;
-		}
-
-		if ( in_array( strtolower( $entry['login'] ), WP_PRESENCE_DEMO_OPTOUT, true ) ) {
-			continue;
-		}
-
-		$contributors[] = array(
-			'login' => (string) $entry['login'],
-			'id'    => (int) $entry['id'],
-		);
-	}
-
-	set_transient( 'wp_presence_demo_contributors', $contributors, 12 * HOUR_IN_SECONDS );
-
-	return $contributors;
-}
-
-/**
  * The contributors to draw demo users from.
  *
- * Live membership from GitHub, with real names matched in from the baked list
- * by GitHub ID. Someone who has contributed since the list was last generated
- * appears immediately under their login and picks up their display name at the
- * next regeneration.
+ * Read from the Contributors line in readme.txt, which the release flow already
+ * keeps current, so contributors run into themselves in the demo they helped
+ * build. Nothing else has to be maintained, and there is no request to make:
+ * readme.txt ships inside the plugin, so it is already on disk by the time the
+ * seeder runs.
+ *
+ * These are WordPress.org usernames rather than GitHub logins, which is the
+ * identity this plugin is credited under anyway.
  *
  * @since 7.1.0
  *
- * @return array List of array{login: string, name: string, id: int}.
+ * @return array List of WordPress.org usernames. Empty when readme.txt is not
+ *               readable, which leaves the demo on synthetic names.
  */
 function wp_presence_demo_contributors() {
-	$baked = WP_PRESENCE_DEMO_CONTRIBUTORS;
-	$live  = wp_presence_demo_fetch_contributors();
+	// The seeder sits beside readme.txt in a built plugin, and two directories
+	// below it in the repository. Both are checked so the same file works in
+	// Playground, in wp-env, and under the Playwright suite.
+	$candidates = array(
+		__DIR__ . '/readme.txt',
+		dirname( __DIR__, 2 ) . '/readme.txt',
+	);
 
-	if ( ! $live ) {
-		return $baked;
+	$readme = '';
+
+	foreach ( $candidates as $candidate ) {
+		if ( is_readable( $candidate ) ) {
+			$readme = (string) file_get_contents( $candidate ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+			break;
+		}
 	}
 
-	$names = array();
-	foreach ( $baked as $contributor ) {
-		$names[ $contributor['id'] ] = $contributor['name'];
+	if ( '' === $readme ) {
+		return array();
+	}
+
+	if ( ! preg_match( '/^Contributors:(.*)$/mi', $readme, $matches ) ) {
+		return array();
 	}
 
 	$contributors = array();
 
-	foreach ( $live as $contributor ) {
-		$contributors[] = array(
-			'login' => $contributor['login'],
-			'name'  => isset( $names[ $contributor['id'] ] ) ? $names[ $contributor['id'] ] : '',
-			'id'    => $contributor['id'],
-		);
+	foreach ( explode( ',', $matches[1] ) as $username ) {
+		$username = strtolower( trim( $username ) );
+
+		// WordPress.org usernames are alphanumeric plus hyphens and
+		// underscores. Anything else is a malformed line, not a person.
+		if ( '' === $username || ! preg_match( '/^[a-z0-9_-]+$/', $username ) ) {
+			continue;
+		}
+
+		if ( in_array( $username, WP_PRESENCE_DEMO_OPTOUT, true ) ) {
+			continue;
+		}
+
+		$contributors[] = $username;
 	}
 
 	return $contributors;
@@ -372,9 +258,9 @@ function wp_presence_demo_contributors() {
  * Builds the list of people to seed.
  *
  * Contributors are shuffled and sampled, then synthetic names fill whatever is
- * left over. Sampled rather than taken in commit order so that the five-user
- * demo is not the same five faces on every boot; two people looking at the
- * demo side by side should see different rooms.
+ * left over. Sampled rather than taken in credit order so that the five-user
+ * demo is not the same five faces on every boot; two people looking at the demo
+ * side by side should see different rooms.
  *
  * Deliberately not deterministic. The Playwright suite captures screenshot
  * artifacts rather than comparing against baselines, so a different cast each
@@ -384,11 +270,10 @@ function wp_presence_demo_contributors() {
  *
  * @param int $count Number of identities to build.
  * @return array List of {
- *     @type string $first     First name.
- *     @type string $last      Last name. Empty for a one-word name.
- *     @type string $display   Display name.
- *     @type string $login     GitHub login, or '' for a synthetic name.
- *     @type int    $github_id GitHub user ID, or 0 for a synthetic name.
+ *     @type string $first    First name.
+ *     @type string $last     Last name. Empty for a one-word name.
+ *     @type string $display  Display name.
+ *     @type string $username WordPress.org username, or '' for a synthetic name.
  * }
  */
 function wp_presence_demo_identities( $count ) {
@@ -397,20 +282,12 @@ function wp_presence_demo_identities( $count ) {
 
 	$identities = array();
 
-	foreach ( array_slice( $contributors, 0, $count ) as $contributor ) {
-		$display = '' !== $contributor['name'] ? $contributor['name'] : $contributor['login'];
-
-		// first_name and last_name feed WordPress's name-format dropdown. A
-		// mononym or a three-part name should not be forced into two fields,
-		// so only split on the first space and accept an empty last name.
-		$parts = explode( ' ', $display, 2 );
-
+	foreach ( array_slice( $contributors, 0, $count ) as $username ) {
 		$identities[] = array(
-			'first'     => $parts[0],
-			'last'      => isset( $parts[1] ) ? $parts[1] : '',
-			'display'   => $display,
-			'login'     => $contributor['login'],
-			'github_id' => (int) $contributor['id'],
+			'first'    => $username,
+			'last'     => '',
+			'display'  => $username,
+			'username' => $username,
 		);
 	}
 
@@ -418,11 +295,10 @@ function wp_presence_demo_identities( $count ) {
 		$name = wp_presence_demo_name( $i );
 
 		$identities[] = array(
-			'first'     => $name['first'],
-			'last'      => $name['last'],
-			'display'   => $name['display'],
-			'login'     => '',
-			'github_id' => 0,
+			'first'    => $name['first'],
+			'last'     => $name['last'],
+			'display'  => $name['display'],
+			'username' => '',
 		);
 	}
 
@@ -430,27 +306,28 @@ function wp_presence_demo_identities( $count ) {
 }
 
 /**
- * Builds the avatar URL for a GitHub user ID.
+ * Builds the avatar URL for a WordPress.org username.
  *
- * GitHub resizes server-side, so each widget gets an image at the size it
- * actually renders instead of one 460px original scaled down twenty times.
+ * grav-redirect.php is how WordPress.org turns a username into that person's
+ * Gravatar without exposing the address behind it, and it passes the size
+ * through, so each widget gets an image at the size it actually renders.
  *
  * @since 7.1.0
  *
- * @param int $github_id GitHub user ID.
- * @param int $size      Requested size in pixels.
+ * @param string $username WordPress.org username.
+ * @param int    $size     Requested size in pixels.
  * @return string
  */
-function wp_presence_demo_avatar_url( $github_id, $size = 96 ) {
+function wp_presence_demo_avatar_url( $username, $size = 96 ) {
 	return sprintf(
-		'https://avatars.githubusercontent.com/u/%d?v=4&s=%d',
-		(int) $github_id,
+		'https://wordpress.org/grav-redirect.php?user=%s&s=%d',
+		rawurlencode( (string) $username ),
 		max( 1, (int) $size )
 	);
 }
 
 /**
- * Installs the mu-plugin that maps demo users to their GitHub avatars.
+ * Installs the mu-plugin that maps demo users to their WordPress.org avatars.
  *
  * The seeder itself only runs for the length of one seeding request. Avatars
  * have to resolve on every subsequent page load, and every avatar in the
@@ -479,8 +356,8 @@ function wp_presence_demo_install_avatar_filter() {
 /**
  * Plugin Name: Presence Demo Avatars
  *
- * Serves GitHub avatars for demo users seeded by demo-seeder.php. Installed
- * by wp_presence_demo_install_avatar_filter() and removed by
+ * Serves WordPress.org avatars for demo users seeded by demo-seeder.php.
+ * Installed by wp_presence_demo_install_avatar_filter() and removed by
  * wp_presence_demo_cleanup(). Not part of the Presence API.
  *
  * @package Presence_API
@@ -491,12 +368,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Resolves an avatar identifier to a demo user's GitHub ID.
+ * Resolves an avatar identifier to a demo user's WordPress.org username.
  *
  * @param mixed $id_or_email User ID, WP_User, WP_Post, WP_Comment, or email.
- * @return int GitHub user ID, or 0 when this is not a demo contributor.
+ * @return string Username, or '' when this is not a demo contributor.
  */
-function presence_demo_github_id_for( $id_or_email ) {
+function presence_demo_username_for( $id_or_email ) {
 	$user_id = 0;
 
 	if ( is_numeric( $id_or_email ) ) {
@@ -513,10 +390,10 @@ function presence_demo_github_id_for( $id_or_email ) {
 	}
 
 	if ( ! $user_id ) {
-		return 0;
+		return '';
 	}
 
-	return (int) get_user_meta( $user_id, 'presence_demo_github_id', true );
+	return (string) get_user_meta( $user_id, 'presence_demo_wporg_username', true );
 }
 
 /**
@@ -535,15 +412,21 @@ function presence_demo_avatar_data( $args, $id_or_email ) {
 		return $args;
 	}
 
-	$github_id = presence_demo_github_id_for( $id_or_email );
+	$username = presence_demo_username_for( $id_or_email );
 
-	if ( ! $github_id ) {
+	if ( '' === $username ) {
 		return $args;
 	}
 
 	$size = isset( $args['size'] ) ? (int) $args['size'] : 96;
 
-	$args['url']          = sprintf( 'https://avatars.githubusercontent.com/u/%d?v=4&s=%d', $github_id, max( 1, $size ) );
+	$url = sprintf(
+		'https://wordpress.org/grav-redirect.php?user=%s&s=%d',
+		rawurlencode( $username ),
+		max( 1, $size )
+	);
+
+	$args['url']          = $url;
 	$args['found_avatar'] = true;
 
 	return $args;
@@ -686,14 +569,12 @@ function wp_presence_demo_seed( $count ) {
 			$user_ids[] = $user_id;
 		}
 
-		// The avatar mu-plugin reads these. Synthetic users get the meta
-		// cleared so they fall through to the Gravatar default.
-		if ( $identity['github_id'] ) {
-			update_user_meta( $user_id, 'presence_demo_github_id', $identity['github_id'] );
-			update_user_meta( $user_id, 'presence_demo_github_login', $identity['login'] );
+		// The avatar mu-plugin reads this. Synthetic users get the meta cleared
+		// so they fall through to the Gravatar default.
+		if ( '' !== $identity['username'] ) {
+			update_user_meta( $user_id, 'presence_demo_wporg_username', $identity['username'] );
 		} else {
-			delete_user_meta( $user_id, 'presence_demo_github_id' );
-			delete_user_meta( $user_id, 'presence_demo_github_login' );
+			delete_user_meta( $user_id, 'presence_demo_wporg_username' );
 		}
 
 		if ( $has_cli ) {

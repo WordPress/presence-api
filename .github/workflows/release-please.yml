@@ -64,15 +64,6 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           PR_NUMBER: ${{ fromJSON(needs.release-please.outputs.pr).number }}
         run: node .github/scripts/sync-contributors.js readme.txt
-      # Refresh the contributor list the Playground demos seed themselves from,
-      # so anyone who landed a change this cycle is in the demo they shipped
-      # into. Baked in rather than fetched at boot: seeding blocks the landing
-      # page, and an unauthenticated GitHub caller gets 60 requests an hour.
-      - name: Sync demo contributors from the repository
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-        run: node .github/scripts/update-demo-contributors.js tests/e2e/demo-seeder.php
       - name: Commit synced versions back to the release PR
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -80,7 +71,7 @@ jobs:
           if ! git diff --quiet; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add presence-api.php readme.txt CHANGELOG.md .wordpress-org/blueprints/blueprint.json tests/e2e/demo-seeder.php
+            git add presence-api.php readme.txt CHANGELOG.md .wordpress-org/blueprints/blueprint.json
             git commit -m "chore: sync versions and remove duplicate changelog entries"
             gh auth setup-git
             git push
