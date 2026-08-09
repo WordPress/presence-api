@@ -186,6 +186,78 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 	}
 
 	/**
+	 * room and client_id are varchar(191). Anything longer would be truncated by
+	 * MySQL, so two distinct clients could collapse onto one UNIQUE KEY row.
+	 *
+	 * @covers WP_REST_Presence_Controller::register_routes
+	 */
+	public function test_rest_create_rejects_keys_wider_than_the_column() {
+		wp_set_current_user( self::$editor_id );
+
+		$request = new WP_REST_Request( 'POST', '/wp-presence/v1/presence' );
+		$request->set_param( 'room', str_repeat( 'a', WP_PRESENCE_MAX_KEY_LENGTH + 1 ) );
+		$request->set_param( 'client_id', 'client-1' );
+
+		$response = rest_get_server()->dispatch( $request );
+
+		$this->assertSame( 400, $response->get_status() );
+		$this->assertSame( 'rest_invalid_param', $response->get_data()['code'] );
+		$this->assertCount( 0, wp_get_presence( str_repeat( 'a', WP_PRESENCE_MAX_KEY_LENGTH ) ), 'Nothing should have been written.' );
+	}
+
+	/**
+	 * @covers WP_REST_Presence_Controller::register_routes
+	 */
+	public function test_rest_create_accepts_keys_at_the_column_width() {
+		wp_set_current_user( self::$editor_id );
+
+		$room = str_repeat( 'a', WP_PRESENCE_MAX_KEY_LENGTH );
+
+		$request = new WP_REST_Request( 'POST', '/wp-presence/v1/presence' );
+		$request->set_param( 'room', $room );
+		$request->set_param( 'client_id', str_repeat( 'b', WP_PRESENCE_MAX_KEY_LENGTH ) );
+
+		$response = rest_get_server()->dispatch( $request );
+
+		$this->assertSame( 200, $response->get_status(), 'The boundary itself must still be accepted.' );
+		$this->assertCount( 1, wp_get_presence( $room ) );
+	}
+
+	/**
+	 * @covers WP_REST_Presence_Controller::register_routes
+	 */
+	public function test_rest_create_rejects_an_empty_room() {
+		wp_set_current_user( self::$editor_id );
+
+		$request = new WP_REST_Request( 'POST', '/wp-presence/v1/presence' );
+		$request->set_param( 'room', '' );
+		$request->set_param( 'client_id', 'client-1' );
+
+		$response = rest_get_server()->dispatch( $request );
+
+		$this->assertSame( 400, $response->get_status() );
+		$this->assertSame( 'rest_invalid_param', $response->get_data()['code'] );
+	}
+
+	/**
+	 * The custom validate_callback on screen_key replaces the default one, so the
+	 * schema's maxLength only applies if that callback delegates to it.
+	 *
+	 * @covers WP_REST_Presence_Controller::register_routes
+	 */
+	public function test_rest_screen_key_is_bounded_by_the_schema() {
+		wp_set_current_user( self::$editor_id );
+
+		$request = new WP_REST_Request( 'POST', '/wp-presence/v1/presence/screen-revisions/stale' );
+		$request->set_param( 'screen_key', str_repeat( 'a', WP_PRESENCE_SCREEN_KEY_LIMIT + 1 ) );
+
+		$response = rest_get_server()->dispatch( $request );
+
+		$this->assertSame( 400, $response->get_status() );
+		$this->assertSame( 'rest_invalid_param', $response->get_data()['code'] );
+	}
+
+	/**
 	 * @covers WP_REST_Presence_Controller::get_rooms_permissions_check
 	 */
 	public function test_get_rooms_requires_edit_posts() {

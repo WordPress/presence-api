@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Presence API
  * Description: System-wide presence and awareness for WordPress.
- * Version: 0.1.14
+ * Version: 0.1.16
  * Requires at least: 7.0
  * Requires PHP: 7.4
  * Author: WordPress Core Team
@@ -45,10 +45,16 @@ if ( isset( $wpdb->presence ) ) {
 	return;
 }
 
-define( 'WP_PRESENCE_VERSION', '0.1.14' );
-define( 'WP_PRESENCE_DB_VERSION', '1' );
+define( 'WP_PRESENCE_VERSION', '0.1.16' );
+define( 'WP_PRESENCE_DB_VERSION', 2 );
 define( 'WP_PRESENCE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WP_PRESENCE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+
+// Width of the room and client_id columns, and therefore the longest value the
+// REST layer accepts. MySQL would otherwise truncate silently, which collapses
+// two distinct clients onto one UNIQUE KEY (room, client_id) row.
+define( 'WP_PRESENCE_MAX_KEY_LENGTH', 191 );
+
 if ( ! defined( 'WP_PRESENCE_DEFAULT_TTL' ) ) {
 	define( 'WP_PRESENCE_DEFAULT_TTL', 60 );
 }
@@ -113,11 +119,78 @@ function wp_presence_register_rest_routes() {
 }
 
 /**
- * Handles plugin activation.
+ * Creates the presence table and schedules cleanup for the current site.
+ *
+ * @access private
  */
-function wp_presence_activate() {
+function wp_presence_provision_site() {
 	wp_maybe_create_presence_table();
 	wp_presence_schedule_cleanup();
+}
+
+/**
+ * Handles plugin activation.
+ *
+ * Follows how core provisions per-site tables: they are created up front, at
+ * activation for sites that already exist and at site creation for sites added
+ * later. Nothing creates schema from a front-end request.
+ *
+ * Large networks are skipped, matching core's own guard against iterating every
+ * site in one request. Those sites are provisioned the first time an admin
+ * screen loads, and presence reads and writes are a no-op until then.
+ *
+ * @param bool $network_wide Whether the plugin is being activated for the network.
+ */
+function wp_presence_activate( $network_wide = false ) {
+	if ( $network_wide && is_multisite() && ! wp_is_large_network() ) {
+		foreach ( wp_presence_get_network_site_ids() as $site_id ) {
+			switch_to_blog( $site_id );
+			wp_presence_provision_site();
+			restore_current_blog();
+		}
+
+		return;
+	}
+
+	wp_presence_provision_site();
+}
+
+/**
+ * Provisions a site created after the plugin was network activated.
+ *
+ * Core hooks its own wp_initialize_site() onto this action at priority 10 to
+ * create the site's tables, so this runs after it. The action fires from
+ * wp_insert_site() outside of any blog switch, hence the switch here.
+ *
+ * @param WP_Site $site The site that was just created.
+ */
+function wp_presence_on_initialize_site( $site ) {
+	$network_plugins = get_site_option( 'active_sitewide_plugins', array() );
+
+	// A site-by-site activation says nothing about this new site, so leave it alone.
+	if ( ! isset( $network_plugins[ plugin_basename( __FILE__ ) ] ) ) {
+		return;
+	}
+
+	switch_to_blog( $site->id );
+	wp_presence_provision_site();
+	restore_current_blog();
+}
+
+/**
+ * Returns every site ID on the current network.
+ *
+ * @access private
+ * @return int[] Site IDs.
+ */
+function wp_presence_get_network_site_ids() {
+	return get_sites(
+		array(
+			'fields'                 => 'ids',
+			'number'                 => 0,
+			'update_site_meta_cache' => false,
+		)
+	);
 }
 
 /**
@@ -138,8 +211,23 @@ function wp_presence_default_widget_order( $result ) {
 
 /**
  * Cleans up on plugin deactivation.
+ *
+ * Cron events are stored per site, so a network deactivation has to clear each
+ * one or every site keeps rescheduling an event with no callback behind it.
+ *
+ * @param bool $network_wide Whether the plugin is being deactivated for the network.
  */
-function wp_presence_deactivate() {
+function wp_presence_deactivate( $network_wide = false ) {
+	if ( $network_wide && is_multisite() && ! wp_is_large_network() ) {
+		foreach ( wp_presence_get_network_site_ids() as $site_id ) {
+			switch_to_blog( $site_id );
+			wp_clear_scheduled_hook( 'wp_delete_expired_presence_data' );
+			restore_current_blog();
+		}
+
+		return;
+	}
+
 	wp_clear_scheduled_hook( 'wp_delete_expired_presence_data' );
 }
 
@@ -167,8 +255,13 @@ function wp_presence_plugin_action_links( $links ) {
 add_action( 'init', 'wp_presence_register_table', 0 );
 add_action( 'init', 'wp_presence_register_post_type_support' );
 
+// Schema work stays in the admin and CLI, the way core keeps its own upgrade
+// routine out of the front end. Sites are provisioned at activation and at site
+// creation instead; this is the fallback for a site that missed both.
 add_action( 'admin_init', 'wp_maybe_create_presence_table' );
 add_action( 'cli_init', 'wp_maybe_create_presence_table' );
+// Priority 99 to run after core's wp_initialize_site() at 10.
+add_action( 'wp_initialize_site', 'wp_presence_on_initialize_site', 99 );
 add_action( 'rest_api_init', 'wp_presence_register_rest_routes' );
 
 add_action( 'wp_delete_expired_presence_data', 'wp_delete_expired_presence_data' );

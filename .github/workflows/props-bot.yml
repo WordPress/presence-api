@@ -60,6 +60,12 @@ jobs:
     # - A review is created or commented on (unless PR originates from a fork).
     # - The pull request is opened, synchronized, marked ready for review, or reopened.
     # - The `props-bot` label is added to the pull request.
+    #
+    # The `props-bot` label is also honoured on a closed pull request. The
+    # comment is a snapshot, and a contributor who links their WordPress.org
+    # account after their own pull request merges has no other way to have it
+    # redrawn. Applying a label needs write access and this job only posts a
+    # comment, so the open-state gate is not carrying security weight there.
     if: |
       (
         github.event_name == 'issue_comment' && github.event.issue.pull_request ||
@@ -67,7 +73,11 @@ jobs:
         github.event_name == 'pull_request_target' && github.event.action != 'labeled' ||
         'props-bot' == github.event.label.name
       ) &&
-      ( ! github.event.pull_request.draft && github.event.pull_request.state == 'open' || ! github.event.issue.draft && github.event.issue.state == 'open' ) &&
+      (
+        'props-bot' == github.event.label.name ||
+        ! github.event.pull_request.draft && github.event.pull_request.state == 'open' ||
+        ! github.event.issue.draft && github.event.issue.state == 'open'
+      ) &&
       ! startsWith( github.event.pull_request.head.ref, 'docs/add-' ) &&
       ! startsWith( github.event.pull_request.head.ref, 'release-please--' )
 

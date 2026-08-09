@@ -21,6 +21,27 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 
 /**
+ * Whether the current site has a presence table to query.
+ *
+ * Sites are provisioned at activation and at site creation, but a site on a
+ * large network, or one added while the plugin was not network active, can
+ * serve requests before either has happened. Presence is not essential to
+ * rendering a page, so those requests return nothing instead of raising a
+ * database error.
+ *
+ * The option is set by wp_maybe_create_presence_table() and is autoloaded, so
+ * this costs nothing beyond a cache lookup. Any value counts, including one
+ * from an older schema: the table is there, and the admin upgrade path will
+ * bring it current.
+ *
+ * @access private
+ * @return bool Whether presence storage is available on this site.
+ */
+function wp_presence_has_table() {
+	return (bool) get_option( 'wp_presence_db_version' );
+}
+
+/**
  * Gets all present clients in a room, filtered by TTL.
  *
  * @param string $room    The room identifier.
@@ -29,6 +50,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 function wp_get_presence( $room, $timeout = WP_PRESENCE_DEFAULT_TTL ) {
 	global $wpdb;
+
+	if ( ! wp_presence_has_table() ) {
+		return array();
+	}
 
 	$timeout = wp_presence_get_timeout( $timeout );
 	$cutoff  = gmdate( 'Y-m-d H:i:s', time() - $timeout );
@@ -70,6 +95,10 @@ function wp_get_presence( $room, $timeout = WP_PRESENCE_DEFAULT_TTL ) {
 function wp_set_presence( $room, $client_id, $state, $user_id = 0 ) {
 	global $wpdb;
 
+	if ( ! wp_presence_has_table() ) {
+		return false;
+	}
+
 	$data_json = wp_json_encode( $state );
 	$now       = gmdate( 'Y-m-d H:i:s' );
 
@@ -100,6 +129,10 @@ function wp_set_presence( $room, $client_id, $state, $user_id = 0 ) {
 function wp_remove_presence( $room, $client_id ) {
 	global $wpdb;
 
+	if ( ! wp_presence_has_table() ) {
+		return false;
+	}
+
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	$result = $wpdb->delete(
 		$wpdb->presence,
@@ -121,6 +154,10 @@ function wp_remove_presence( $room, $client_id ) {
  */
 function wp_remove_user_presence( $user_id ) {
 	global $wpdb;
+
+	if ( ! wp_presence_has_table() ) {
+		return false;
+	}
 
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	$result = $wpdb->delete(
@@ -242,6 +279,10 @@ function wp_presence_get_timeout( $timeout ) {
 function wp_get_user_presence( $user_id, $timeout = WP_PRESENCE_DEFAULT_TTL ) {
 	global $wpdb;
 
+	if ( ! wp_presence_has_table() ) {
+		return array();
+	}
+
 	$timeout = wp_presence_get_timeout( $timeout );
 	$cutoff  = gmdate( 'Y-m-d H:i:s', time() - $timeout );
 
@@ -276,6 +317,10 @@ function wp_get_user_presence( $user_id, $timeout = WP_PRESENCE_DEFAULT_TTL ) {
  */
 function wp_get_presence_by_room_prefix( $prefix, $timeout = WP_PRESENCE_DEFAULT_TTL ) {
 	global $wpdb;
+
+	if ( ! wp_presence_has_table() ) {
+		return array();
+	}
 
 	$timeout = wp_presence_get_timeout( $timeout );
 	$cutoff  = gmdate( 'Y-m-d H:i:s', time() - $timeout );
@@ -315,20 +360,25 @@ function wp_get_presence_by_room_prefix( $prefix, $timeout = WP_PRESENCE_DEFAULT
 function wp_get_presence_summary( $timeout = WP_PRESENCE_DEFAULT_TTL ) {
 	global $wpdb;
 
-	$timeout = wp_presence_get_timeout( $timeout );
-	$cutoff  = gmdate( 'Y-m-d H:i:s', time() - $timeout );
-
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-	$rows    = $wpdb->get_results(
-		$wpdb->prepare(
-			"SELECT room, user_id FROM {$wpdb->presence} WHERE date_gmt > %s ORDER BY room ASC",
-			$cutoff
-		)
-	);
 	$summary = array(
 		'total_entries' => 0,
 		'total_users'   => 0,
 		'by_prefix'     => array(),
+	);
+
+	if ( ! wp_presence_has_table() ) {
+		return $summary;
+	}
+
+	$timeout = wp_presence_get_timeout( $timeout );
+	$cutoff  = gmdate( 'Y-m-d H:i:s', time() - $timeout );
+
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+	$rows = $wpdb->get_results(
+		$wpdb->prepare(
+			"SELECT room, user_id FROM {$wpdb->presence} WHERE date_gmt > %s ORDER BY room ASC",
+			$cutoff
+		)
 	);
 
 	if ( ! $rows ) {
@@ -376,6 +426,10 @@ function wp_get_presence_summary( $timeout = WP_PRESENCE_DEFAULT_TTL ) {
 function wp_delete_expired_presence_data() {
 	global $wpdb;
 
+	if ( ! wp_presence_has_table() ) {
+		return;
+	}
+
 	$timeout = wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL );
 	$cutoff  = gmdate( 'Y-m-d H:i:s', time() - $timeout );
 
@@ -392,22 +446,51 @@ function wp_delete_expired_presence_data() {
 }
 
 /**
+ * Checks the database directly for the presence table.
+ *
+ * Only for the provisioning path. Request paths use wp_presence_has_table(),
+ * which reads an autoloaded option and costs nothing.
+ *
+ * @access private
+ * @return bool Whether the table exists on the current site.
+ */
+function wp_presence_table_exists() {
+	global $wpdb;
+
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+	$found = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $wpdb->presence ) ) );
+
+	return $found === $wpdb->presence;
+}
+
+/**
  * Creates or updates the presence table if needed.
  *
  * Feature plugin shim — in core, this table would be created by dbDelta()
  * during the database upgrade routine in wp-admin/includes/upgrade-schema.php.
  *
+ * The version option alone is not enough to skip the work. If the table is
+ * dropped while the option survives, a partial restore or a hand-run DROP,
+ * every read and write fails and nothing reconciles the two.
+ *
+ * Ajax is excluded from that reconciliation. admin-ajax.php fires admin_init
+ * too, and presence heartbeats through it every 15 seconds per open admin tab,
+ * so checking there would bill every site continuously for a state almost none
+ * of them will reach. The next real admin page load repairs it instead.
+ *
  * @access private
  */
 function wp_maybe_create_presence_table() {
-	if ( get_option( 'wp_presence_db_version' ) === WP_PRESENCE_DB_VERSION ) {
+	$provisioned = (int) get_option( 'wp_presence_db_version' ) === WP_PRESENCE_DB_VERSION;
+
+	if ( $provisioned && ( wp_doing_ajax() || wp_presence_table_exists() ) ) {
 		return;
 	}
 
 	global $wpdb;
 
 	$charset_collate  = $wpdb->get_charset_collate();
-	$max_index_length = 191;
+	$max_index_length = WP_PRESENCE_MAX_KEY_LENGTH;
 
 	require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
@@ -417,7 +500,7 @@ function wp_maybe_create_presence_table() {
 			room varchar({$max_index_length}) NOT NULL default '',
 			client_id varchar({$max_index_length}) NOT NULL default '',
 			user_id bigint(20) unsigned NOT NULL default '0',
-			data text NOT NULL,
+			data longtext NOT NULL,
 			date_gmt datetime NOT NULL default '0000-00-00 00:00:00',
 			PRIMARY KEY  (id),
 			UNIQUE KEY room_client (room, client_id),
@@ -427,7 +510,9 @@ function wp_maybe_create_presence_table() {
 		) {$charset_collate};"
 	);
 
-	update_option( 'wp_presence_db_version', WP_PRESENCE_DB_VERSION );
+	// Autoloaded explicitly: wp_presence_has_table() reads this on every request
+	// that touches presence, so it must not cost a query.
+	update_option( 'wp_presence_db_version', WP_PRESENCE_DB_VERSION, true );
 }
 
 /**
@@ -439,6 +524,10 @@ function wp_maybe_create_presence_table() {
  */
 function wp_get_active_rooms( $timeout = WP_PRESENCE_DEFAULT_TTL ) {
 	global $wpdb;
+
+	if ( ! wp_presence_has_table() ) {
+		return array();
+	}
 
 	$timeout = wp_presence_get_timeout( $timeout );
 	$cutoff  = gmdate( 'Y-m-d H:i:s', time() - $timeout );
