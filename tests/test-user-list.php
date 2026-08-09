@@ -5,6 +5,9 @@
  * @package Presence_API
  *
  * @group presence
+ *
+ * @covers ::wp_presence_users_views
+ * @covers ::wp_presence_filter_online_users
  */
 class WP_Test_Presence_User_List extends WP_UnitTestCase {
 

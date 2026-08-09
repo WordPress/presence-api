@@ -5,6 +5,11 @@
  * @package Presence_API
  *
  * @group presence
+ *
+ * @covers ::wp_presence_register_post_list_columns
+ * @covers ::wp_presence_add_editors_column
+ * @covers ::wp_presence_render_editors_column
+ * @covers ::wp_presence_editors_column_css
  */
 class WP_Test_Presence_Post_List extends WP_UnitTestCase {
 
