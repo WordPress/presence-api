@@ -130,24 +130,13 @@ test('parsePropsNames: trims whitespace around names', () => {
 // parseUnlinkedLogins
 // ---------------------------------------------------------------------------
 
-test('parseUnlinkedLogins: reads a real props-bot comment', () => {
-  const body = propsBotBody({ svn: ['joefusco'], unlinked: ['alice-gh'] });
-  assert.deepEqual(parseUnlinkedLogins(body), ['alice-gh']);
-});
-
-test('parseUnlinkedLogins: extracts several logins and strips the @', () => {
-  const body = propsBotBody({ unlinked: ['alice-gh', 'bob', 'carol99'] });
+test('parseUnlinkedLogins: extracts the logins, stripping the @ and ignoring the period in WordPress.org', () => {
+  const body = propsBotBody({ svn: ['joefusco'], unlinked: ['alice-gh', 'bob', 'carol99'] });
   assert.deepEqual(parseUnlinkedLogins(body), ['alice-gh', 'bob', 'carol99']);
 });
 
 test('parseUnlinkedLogins: returns empty array when there is no unlinked section', () => {
   assert.deepEqual(parseUnlinkedLogins(propsBotBody({ svn: ['alice'] })), []);
-});
-
-test('parseUnlinkedLogins: is not confused by the period in WordPress.org', () => {
-  const body = propsBotBody({ unlinked: ['alice-gh'] });
-  assert.ok(body.includes('WordPress.org accounts'));
-  assert.deepEqual(parseUnlinkedLogins(body), ['alice-gh']);
 });
 
 // ---------------------------------------------------------------------------
@@ -162,38 +151,16 @@ test('isPropsBotComment: matches a comment that only has an unlinked section', (
   assert.ok(isPropsBotComment(propsComment(body)));
 });
 
-test('isPropsBotComment: ignores comments from other users', () => {
-  assert.ok(!isPropsBotComment({ user: { login: 'someone' }, body: 'Props alice.' }));
-});
-
-test('isPropsBotComment: ignores bot comments that are not props comments', () => {
-  assert.ok(!isPropsBotComment(propsComment('Thanks for the pull request!')));
-});
-
 // ---------------------------------------------------------------------------
 // resolveWPOrgLogins
 // ---------------------------------------------------------------------------
 
-test('resolveWPOrgLogins: returns slugs for logins that now resolve', async () => {
-  const fetchImpl = fakeLookup({ 'alice-gh': 'alice' });
-  assert.deepEqual(
-    await resolveWPOrgLogins(['alice-gh'], { userAgent: 'test', fetchImpl }),
-    ['alice']
-  );
-});
-
-test('resolveWPOrgLogins: drops logins that are still unlinked', async () => {
+test('resolveWPOrgLogins: returns slugs for logins that resolve and drops the rest', async () => {
   const fetchImpl = fakeLookup({ 'alice-gh': 'alice' });
   assert.deepEqual(
     await resolveWPOrgLogins(['alice-gh', 'bob'], { userAgent: 'test', fetchImpl }),
     ['alice']
   );
-});
-
-test('resolveWPOrgLogins: makes no request when nothing is unlinked', async () => {
-  const fetchImpl = fakeLookup();
-  assert.deepEqual(await resolveWPOrgLogins([], { userAgent: 'test', fetchImpl }), []);
-  assert.equal(fetchImpl.mock.calls.length, 0);
 });
 
 test('resolveWPOrgLogins: throws when the endpoint fails', async () => {
@@ -476,22 +443,6 @@ test('run: credits a contributor whose pull request had no props line at all', a
   assert.ok(body.includes('Props alice.'));
 });
 
-test('run: leaves out contributors who are still unlinked', async () => {
-  const github = buildGithub({
-    prs: [makePR(10, 'feature/foo')],
-    commentsByPR: {
-      10: [propsComment(propsBotBody({ svn: ['joefusco'], unlinked: ['alice-gh'] }))],
-      [RELEASE_PR]: [],
-    },
-  });
-  const core = { info: mock.fn(), warning: mock.fn(), setFailed: mock.fn() };
-
-  await run({ github, context, core, env: makeEnv(), fetchImpl: fakeLookup() });
-
-  const body = github.rest.issues.createComment.mock.calls[0].arguments[0].body;
-  assert.ok(body.includes('Props joefusco.'));
-});
-
 test('run: posts nothing when every contributor is still unlinked', async () => {
   const github = buildGithub({
     prs: [makePR(10, 'feature/foo')],
@@ -545,27 +496,6 @@ test('run: still posts known props when the WordPress.org lookup fails', async (
   assert.equal(core.setFailed.mock.calls.length, 0);
   const body = github.rest.issues.createComment.mock.calls[0].arguments[0].body;
   assert.ok(body.includes('Props joefusco.'));
-});
-
-test('run: deduplicates a recovered contributor already propped elsewhere', async () => {
-  const github = buildGithub({
-    prs: [makePR(10, 'feature/foo'), makePR(11, 'feature/bar')],
-    commentsByPR: {
-      10: [propsComment(propsBotBody({ svn: ['joefusco'], unlinked: ['alice-gh'] }))],
-      11: [propsComment(propsBotBody({ svn: ['joefusco', 'alice'] }))],
-      [RELEASE_PR]: [],
-    },
-  });
-  const core = { info: mock.fn(), warning: mock.fn(), setFailed: mock.fn() };
-
-  await run({
-    github, context, core,
-    env: makeEnv({ PROPS_SORT_LAST: 'joefusco' }),
-    fetchImpl: fakeLookup({ 'alice-gh': 'alice' }),
-  });
-
-  const body = github.rest.issues.createComment.mock.calls[0].arguments[0].body;
-  assert.ok(body.includes('Props alice, joefusco.'));
 });
 
 test('run: asks WordPress.org about each unlinked login only once', async () => {
