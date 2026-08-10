@@ -2,10 +2,6 @@
 /**
  * Tests for the WP-CLI command (includes/cli/class-wp-presence-cli-command.php).
  *
- * presence-api.php only requires the command class when the WP_CLI constant is
- * defined, which it never is under PHPUnit, so both the class and the WP-CLI
- * runtime it depends on are pulled in explicitly here.
- *
  * @package Presence_API
  *
  * @group presence
@@ -17,18 +13,8 @@ require_once dirname( __DIR__ ) . '/includes/cli/class-wp-presence-cli-command.p
 
 class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 
-	/**
-	 * The command under test.
-	 *
-	 * @var WP_Presence_CLI_Command
-	 */
 	private $command;
 
-	/**
-	 * A real user, for the paths that look one up.
-	 *
-	 * @var int
-	 */
 	private static $user_id;
 
 	public static function wpSetUpBeforeClass( WP_UnitTest_Factory $factory ) {
@@ -41,12 +27,6 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 		$this->command = new WP_Presence_CLI_Command();
 	}
 
-	/**
-	 * Runs a command expected to end in WP_CLI::error() and asserts the message.
-	 *
-	 * @param callable $run      Invokes the subcommand.
-	 * @param string   $expected The expected error message.
-	 */
 	private function assert_halts_with( callable $run, $expected ) {
 		try {
 			$run();
@@ -57,6 +37,12 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 		}
 
 		$this->fail( 'Expected WP_CLI::error() to halt the command.' );
+	}
+
+	private function presence_row_count() {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->presence}" );
 	}
 
 	/**
@@ -88,9 +74,6 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * With no --user the command runs as user 0, which is the state a real CLI
-	 * invocation starts in.
-	 *
 	 * @covers WP_Presence_CLI_Command::set
 	 */
 	public function test_set_defaults_to_user_zero() {
@@ -156,13 +139,8 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * wp_set_presence() returns false when presence storage is unavailable,
-	 * which wp_presence_has_table() determines from the version option alone.
-	 *
-	 * The option is filtered rather than deleted. WP_Presence_UnitTestCase
-	 * truncates in tear_down(), and TRUNCATE is DDL, so it implicitly commits
-	 * the transaction the test case wraps each test in — a deleted option would
-	 * survive into every test that follows instead of rolling back.
+	 * Filtered rather than deleted: the base class truncates in tear_down(), and
+	 * TRUNCATE implicitly commits, so a deleted option would not roll back.
 	 *
 	 * @covers WP_Presence_CLI_Command::set
 	 */
@@ -282,9 +260,6 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * The json format bypasses the formatter entirely and prints the summary
-	 * structure as one document, so it is asserted separately from the table.
-	 *
 	 * @covers WP_Presence_CLI_Command::summary
 	 */
 	public function test_summary_prints_json_in_one_document() {
@@ -300,21 +275,6 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * Counts every row in the table, ignoring the TTL.
-	 *
-	 * cleanup() deletes unconditionally, so the reader-side helpers are the
-	 * wrong instrument here — they would filter out exactly the stale rows the
-	 * command is meant to remove.
-	 *
-	 * @return int The row count.
-	 */
-	private function presence_row_count() {
-		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->presence}" );
-	}
-
-	/**
 	 * @covers WP_Presence_CLI_Command::cleanup
 	 */
 	public function test_cleanup_deletes_every_entry_regardless_of_age() {
@@ -323,7 +283,6 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 		wp_set_presence( 'admin/online', 'cli-1', array(), self::$user_id );
 		wp_set_presence( 'postType/post:42', 'cli-2', array(), 0 );
 
-		// Older than the TTL, so no reader would return it, but cleanup still must.
 		$wpdb->insert(
 			$wpdb->presence,
 			array(
@@ -353,9 +312,6 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * The stub records the prompt and proceeds, standing in for an operator
-	 * answering yes. What matters is that the prompt is reached at all.
-	 *
 	 * @covers WP_Presence_CLI_Command::cleanup
 	 */
 	public function test_cleanup_prompts_without_the_yes_flag() {
