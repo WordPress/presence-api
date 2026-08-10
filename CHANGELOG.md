@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.17](https://github.com/WordPress/presence-api/compare/v0.1.16...v0.1.17) (2026-08-10)
+
+
+### Bug Fixes
+
+* bound presence keys to the column width and validate REST args ([fb436fb](https://github.com/WordPress/presence-api/commit/fb436fb7760196a64ebf8afba0fa368eb138d07d))
+* bound presence keys to the column width and validate REST args ([acff7a0](https://github.com/WordPress/presence-api/commit/acff7a0172a95723055c53f612bd9fc7d5388a3e))
+* provision the presence table per site instead of on admin_init only ([56cf948](https://github.com/WordPress/presence-api/commit/56cf948d8928ab20bd99423f3877c933766e9dbe))
+* rebuild the presence table when the version option outlives it ([3105f3b](https://github.com/WordPress/presence-api/commit/3105f3b4248f8825a9fbf404b9ef20aa3a9e1414))
+* rebuild the presence table when the version option outlives it ([5e6b15a](https://github.com/WordPress/presence-api/commit/5e6b15a092807d0f548d371843af5ad89c4545a3))
+
 ## [0.1.16](https://github.com/WordPress/presence-api/compare/v0.1.15...v0.1.16) (2026-08-08)
 
 
