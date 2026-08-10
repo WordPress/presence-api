@@ -1,3 +1,12 @@
+codecov:
+  notify:
+    # Each PHP 8.3 run uploads two reports for the same commit: the standard
+    # suite (flag: phpunit) and the multisite suite (flag: multisite), a few
+    # seconds apart. Without this, Codecov can finalize the status check after
+    # the first upload lands, computing project coverage from half the data
+    # and reporting a large, spurious drop.
+    after_n_builds: 2
+
 comment:
   layout: "condensed_header, diff, flags, components"
   require_changes: true
