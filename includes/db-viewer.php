@@ -29,14 +29,22 @@ add_action(
 
 		global $wpdb;
 
-		// No user input in these queries; table name comes from $wpdb->presence (controlled).
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$rows = $wpdb->get_results(
-			"SELECT room, user_id, data, date_gmt FROM {$wpdb->presence} ORDER BY date_gmt DESC"
-		);
+		// The provisioning path runs before this can be reached, so the table
+		// normally exists. Guard anyway to match every other read path and
+		// degrade to an empty view instead of a raw wpdb error if it is missing.
+		if ( wp_presence_has_table() ) {
+			// No user input in these queries; table name comes from $wpdb->presence (controlled).
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$rows = $wpdb->get_results(
+				"SELECT room, user_id, data, date_gmt FROM {$wpdb->presence} ORDER BY date_gmt DESC"
+			);
 
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->presence}" );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->presence}" );
+		} else {
+			$rows  = array();
+			$count = 0;
+		}
 
 		$ttl         = wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL );
 		$now_ms      = (int) ( microtime( true ) * 1000 );

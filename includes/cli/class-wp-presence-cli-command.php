@@ -202,6 +202,12 @@ class WP_Presence_CLI_Command extends WP_CLI_Command {
 	public function cleanup( $args, $assoc_args ) {
 		global $wpdb;
 
+		if ( ! wp_presence_has_table() ) {
+			/* translators: %d: Number of deleted entries. */
+			WP_CLI::success( sprintf( __( '%d entries deleted.', 'presence-api' ), 0 ) );
+			return;
+		}
+
 		if ( ! WP_CLI\Utils\get_flag_value( $assoc_args, 'yes', false ) ) {
 			WP_CLI::confirm( __( 'This will delete all presence data. Continue?', 'presence-api' ) );
 		}
