@@ -23,7 +23,9 @@
 		<exclude>
 			<!--
 			WP_DEBUG-only developer tools. Excluded from the distributed zip via
-			.distignore, so they are not measured as shipped product code either.
+			.distignore and from codecov.yml, so they are not measured as shipped
+			product code either. scripts/check-debug-exclusions.sh checks all three
+			lists agree.
 			-->
 			<file>includes/db-viewer.php</file>
 			<file>includes/debugger-widget.php</file>
