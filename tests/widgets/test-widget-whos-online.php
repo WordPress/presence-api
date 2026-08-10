@@ -8,19 +8,12 @@
  *
  * @covers WP_Presence_Widget_Whos_Online
  */
-class WP_Test_Presence_Widget_Whos_Online extends WP_UnitTestCase {
+class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 
 	private static $editor_id;
 
 	public static function wpSetUpBeforeClass( WP_UnitTest_Factory $factory ) {
 		self::$editor_id = $factory->user->create( array( 'role' => 'editor' ) );
-	}
-
-	public function tear_down() {
-		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->query( "TRUNCATE TABLE {$wpdb->presence}" );
-		parent::tear_down();
 	}
 
 	/**

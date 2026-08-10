@@ -9,7 +9,7 @@
  * @covers ::wp_presence_users_views
  * @covers ::wp_presence_filter_online_users
  */
-class WP_Test_Presence_User_List extends WP_UnitTestCase {
+class WP_Test_Presence_User_List extends WP_Presence_UnitTestCase {
 
 	private static $editor_id;
 	private static $subscriber_id;
@@ -20,9 +20,6 @@ class WP_Test_Presence_User_List extends WP_UnitTestCase {
 	}
 
 	public function tear_down() {
-		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->query( "TRUNCATE TABLE {$wpdb->presence}" );
 		unset( $_GET['presence_status'], $_GET['_wpnonce'] );
 		parent::tear_down();
 	}

@@ -11,7 +11,7 @@
  * @covers ::wp_presence_parse_room
  * @covers ::wp_presence_admin_room
  */
-class WP_Test_Presence_Functions extends WP_UnitTestCase {
+class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 	private static $editor_id;
 	private static $subscriber_id;
@@ -19,13 +19,6 @@ class WP_Test_Presence_Functions extends WP_UnitTestCase {
 	public static function wpSetUpBeforeClass( WP_UnitTest_Factory $factory ) {
 		self::$editor_id     = $factory->user->create( array( 'role' => 'editor' ) );
 		self::$subscriber_id = $factory->user->create( array( 'role' => 'subscriber' ) );
-	}
-
-	public function tear_down() {
-		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->query( "TRUNCATE TABLE {$wpdb->presence}" );
-		parent::tear_down();
 	}
 
 	/**

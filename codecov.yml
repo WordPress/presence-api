@@ -1,3 +1,13 @@
+codecov:
+  notify:
+    # The coverage job uploads two reports per commit: the standard suite
+    # (flag: phpunit) and the multisite suite (flag: multisite), a few
+    # seconds apart. Without this, Codecov can finalize the status check
+    # after the first upload lands, computing project coverage from half
+    # the data and reporting a large, spurious drop. Keep this equal to the
+    # number of `codecov-action` uploads in phpunit.yml.
+    after_n_builds: 2
+
 comment:
   layout: "condensed_header, diff, flags, components"
   require_changes: true
@@ -26,7 +36,8 @@ coverage:
         informational: true
 
 # Files excluded here are also excluded from PHPUnit's coverage measurement in
-# phpunit.xml.dist. Keep the two lists in sync.
+# phpunit.xml.dist and from the distributed zip in .distignore. All three lists
+# are checked for agreement by scripts/check-debug-exclusions.sh in CI.
 ignore:
   # WP_DEBUG-only developer tools, not part of the distributed zip (.distignore).
   - "includes/db-viewer.php"

@@ -8,7 +8,7 @@
  *
  * @covers WP_Presence_Widget_Active_Posts
  */
-class WP_Test_Presence_Widget_Active_Posts extends WP_UnitTestCase {
+class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 
 	private static $editor_id;
 	private static $editor2_id;
@@ -25,13 +25,6 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_UnitTestCase {
 				'post_type'  => 'post',
 			)
 		);
-	}
-
-	public function tear_down() {
-		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->query( "TRUNCATE TABLE {$wpdb->presence}" );
-		parent::tear_down();
 	}
 
 	/**

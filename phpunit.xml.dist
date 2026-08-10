@@ -14,6 +14,7 @@
 			<exclude>tests/e2e</exclude>
 			<exclude>tests/stubs</exclude>
 			<exclude>tests/bootstrap.php</exclude>
+			<exclude>tests/class-wp-presence-unittestcase.php</exclude>
 		</testsuite>
 	</testsuites>
 	<coverage>
@@ -24,7 +25,9 @@
 		<exclude>
 			<!--
 			WP_DEBUG-only developer tools. Excluded from the distributed zip via
-			.distignore, so they are not measured as shipped product code either.
+			.distignore and from codecov.yml, so they are not measured as shipped
+			product code either. scripts/check-debug-exclusions.sh checks all three
+			lists agree.
 			-->
 			<file>includes/db-viewer.php</file>
 			<file>includes/debugger-widget.php</file>
