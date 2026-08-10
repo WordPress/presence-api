@@ -482,7 +482,7 @@ function wp_delete_expired_presence_data() {
 
 		// IDs are cast to integers above and passed to prepare() as %d
 		// replacements, so the interpolated placeholder list is safe.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 		$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->presence} WHERE id IN ( $placeholders )", $ids ) );
 
 		if ( count( $ids ) < $batch_size ) {
