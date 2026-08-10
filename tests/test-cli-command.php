@@ -15,7 +15,7 @@
 require_once __DIR__ . '/stubs/wp-cli.php';
 require_once dirname( __DIR__ ) . '/includes/cli/class-wp-presence-cli-command.php';
 
-class WP_Test_Presence_CLI_Command extends WP_UnitTestCase {
+class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 
 	/**
 	 * The command under test.
@@ -39,13 +39,6 @@ class WP_Test_Presence_CLI_Command extends WP_UnitTestCase {
 		parent::set_up();
 		WP_CLI::reset();
 		$this->command = new WP_Presence_CLI_Command();
-	}
-
-	public function tear_down() {
-		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->query( "TRUNCATE TABLE {$wpdb->presence}" );
-		parent::tear_down();
 	}
 
 	/**
@@ -166,10 +159,10 @@ class WP_Test_Presence_CLI_Command extends WP_UnitTestCase {
 	 * wp_set_presence() returns false when presence storage is unavailable,
 	 * which wp_presence_has_table() determines from the version option alone.
 	 *
-	 * The option is filtered rather than deleted. tear_down() truncates, and
-	 * TRUNCATE is DDL, so it implicitly commits the transaction the test case
-	 * wraps each test in — a deleted option would survive into every test that
-	 * follows instead of rolling back.
+	 * The option is filtered rather than deleted. WP_Presence_UnitTestCase
+	 * truncates in tear_down(), and TRUNCATE is DDL, so it implicitly commits
+	 * the transaction the test case wraps each test in — a deleted option would
+	 * survive into every test that follows instead of rolling back.
 	 *
 	 * @covers WP_Presence_CLI_Command::set
 	 */
