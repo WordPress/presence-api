@@ -305,4 +305,81 @@ class WP_Test_Presence_CLI_Command extends WP_UnitTestCase {
 		$this->assertSame( wp_get_presence_summary(), json_decode( $logs[0], true ) );
 		$this->assertSame( array(), WP_CLI::$formatted );
 	}
+
+	/**
+	 * Counts every row in the table, ignoring the TTL.
+	 *
+	 * cleanup() deletes unconditionally, so the reader-side helpers are the
+	 * wrong instrument here — they would filter out exactly the stale rows the
+	 * command is meant to remove.
+	 *
+	 * @return int The row count.
+	 */
+	private function presence_row_count() {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->presence}" );
+	}
+
+	/**
+	 * @covers WP_Presence_CLI_Command::cleanup
+	 */
+	public function test_cleanup_deletes_every_entry_regardless_of_age() {
+		global $wpdb;
+
+		wp_set_presence( 'admin/online', 'cli-1', array(), self::$user_id );
+		wp_set_presence( 'postType/post:42', 'cli-2', array(), 0 );
+
+		// Older than the TTL, so no reader would return it, but cleanup still must.
+		$wpdb->insert(
+			$wpdb->presence,
+			array(
+				'room'      => 'admin/stale',
+				'client_id' => 'expired',
+				'user_id'   => 0,
+				'data'      => '[]',
+				'date_gmt'  => gmdate( 'Y-m-d H:i:s', time() - HOUR_IN_SECONDS ),
+			)
+		);
+
+		$this->assertSame( 3, $this->presence_row_count(), 'Guard: the fixture should be in place.' );
+
+		$this->command->cleanup( array(), array( 'yes' => true ) );
+
+		$this->assertSame( 0, $this->presence_row_count() );
+		$this->assertSame( array( '3 entries deleted.' ), WP_CLI::messages( 'success' ) );
+	}
+
+	/**
+	 * @covers WP_Presence_CLI_Command::cleanup
+	 */
+	public function test_cleanup_skips_the_prompt_with_the_yes_flag() {
+		$this->command->cleanup( array(), array( 'yes' => true ) );
+
+		$this->assertSame( array(), WP_CLI::messages( 'confirm' ) );
+	}
+
+	/**
+	 * The stub records the prompt and proceeds, standing in for an operator
+	 * answering yes. What matters is that the prompt is reached at all.
+	 *
+	 * @covers WP_Presence_CLI_Command::cleanup
+	 */
+	public function test_cleanup_prompts_without_the_yes_flag() {
+		wp_set_presence( 'admin/online', 'cli-1', array(), self::$user_id );
+
+		$this->command->cleanup( array(), array() );
+
+		$this->assertSame( array( 'This will delete all presence data. Continue?' ), WP_CLI::messages( 'confirm' ) );
+		$this->assertSame( 0, $this->presence_row_count(), 'Confirming should carry on into the delete.' );
+	}
+
+	/**
+	 * @covers WP_Presence_CLI_Command::cleanup
+	 */
+	public function test_cleanup_reports_zero_on_an_empty_table() {
+		$this->command->cleanup( array(), array( 'yes' => true ) );
+
+		$this->assertSame( array( '0 entries deleted.' ), WP_CLI::messages( 'success' ) );
+	}
 }
