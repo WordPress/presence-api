@@ -8,7 +8,7 @@
  *
  * @covers WP_REST_Presence_Controller
  */
-class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
+class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 
 	private static $editor_id;
 	private static $editor_2_id;
@@ -21,10 +21,7 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 	}
 
 	public function tear_down() {
-		global $wpdb;
 		delete_option( 'wp_presence_screen_revisions' );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->query( "TRUNCATE TABLE {$wpdb->presence}" );
 		parent::tear_down();
 	}
 

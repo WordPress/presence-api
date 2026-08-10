@@ -11,7 +11,7 @@
  *
  * @group presence
  */
-class WP_Test_Presence_Table_Creation extends WP_UnitTestCase {
+class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 
 	private static $editor_id;
 
@@ -43,8 +43,6 @@ class WP_Test_Presence_Table_Creation extends WP_UnitTestCase {
 	}
 
 	public function tear_down() {
-		global $wpdb;
-
 		if ( is_multisite() ) {
 			if ( false === $this->network_plugins ) {
 				delete_site_option( 'active_sitewide_plugins' );
@@ -53,12 +51,11 @@ class WP_Test_Presence_Table_Creation extends WP_UnitTestCase {
 			}
 		}
 
-		// DDL commits the surrounding transaction, so clean up by hand.
+		// DDL commits the surrounding transaction, so clean up by hand. The
+		// truncate itself is handled by the parent tear_down.
 		wp_presence_register_table();
 		delete_option( 'wp_presence_db_version' );
 		wp_presence_provision_site();
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->query( "TRUNCATE TABLE {$wpdb->presence}" );
 
 		parent::tear_down();
 	}

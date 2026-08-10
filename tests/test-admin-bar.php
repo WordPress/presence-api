@@ -8,7 +8,7 @@
  *
  * @covers ::wp_presence_admin_bar_node
  */
-class WP_Test_Presence_Admin_Bar extends WP_UnitTestCase {
+class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 
 	private static $editor_id;
 	private static $contributor_id;
@@ -30,13 +30,6 @@ class WP_Test_Presence_Admin_Bar extends WP_UnitTestCase {
 		parent::set_up();
 		// Only loaded on requests that actually render the bar.
 		require_once ABSPATH . WPINC . '/class-wp-admin-bar.php';
-	}
-
-	public function tear_down() {
-		global $wpdb;
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->query( "TRUNCATE TABLE {$wpdb->presence}" );
-		parent::tear_down();
 	}
 
 	/**
