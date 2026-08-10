@@ -3,7 +3,7 @@ Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas,
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.0
-Stable tag: 0.1.16
+Stable tag: 0.1.17
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -52,6 +52,11 @@ Or install manually:
 Or [try it in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json) without installing anything.
 
 == Changelog ==
+
+= 0.1.17 =
+* Bound presence keys to the column width and validate REST args.
+* Provision the presence table per site instead of on admin_init only.
+* Rebuild the presence table when the version option outlives it.
 
 = 0.1.16 =
 * Store presence data as longtext and compare schema version as an integer.
