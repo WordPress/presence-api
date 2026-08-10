@@ -38,10 +38,6 @@ namespace {
 			self::record( 'log', $message );
 		}
 
-		public static function warning( $message ) {
-			self::record( 'warning', $message );
-		}
-
 		public static function confirm( $question ) {
 			self::record( 'confirm', $question );
 		}
@@ -52,10 +48,6 @@ namespace {
 		public static function error( $message ) {
 			self::record( 'error', $message );
 			throw new WP_Presence_CLI_Halt( $message );
-		}
-
-		public static function add_command( $name, $callable ) {
-			self::record( 'add_command', $name );
 		}
 
 		public static function messages( $type ) {
