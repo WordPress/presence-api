@@ -555,4 +555,134 @@ class WP_Test_Presence_REST_Controller extends WP_UnitTestCase {
 		$this->assertCount( 1, $data );
 		$this->assertSame( 'admin/online', $data[0]['room'] );
 	}
+
+	/**
+	 * @covers WP_REST_Presence_Controller::validate_data_param
+	 */
+	public function test_validate_data_param_rejects_non_object() {
+		$controller = new WP_REST_Presence_Controller();
+
+		$request = new WP_REST_Request( 'POST', '/wp-presence/v1/presence' );
+		$result  = $controller->validate_data_param( 'not an object', $request, 'data' );
+
+		$this->assertInstanceOf( 'WP_Error', $result );
+		$this->assertSame( 'rest_invalid_type', $result->get_error_code() );
+		$this->assertSame( 400, $result->get_error_data()['status'] );
+	}
+
+	/**
+	 * @covers WP_REST_Presence_Controller::validate_data_param
+	 */
+	public function test_validate_data_param_rejects_oversized_payload() {
+		$controller = new WP_REST_Presence_Controller();
+
+		$request   = new WP_REST_Request( 'POST', '/wp-presence/v1/presence' );
+		$oversized = array( 'padding' => str_repeat( 'a', WP_REST_Presence_Controller::MAX_DATA_SIZE ) );
+		$result    = $controller->validate_data_param( $oversized, $request, 'data' );
+
+		$this->assertInstanceOf( 'WP_Error', $result );
+		$this->assertSame( 'rest_presence_data_too_large', $result->get_error_code() );
+		$this->assertSame( 400, $result->get_error_data()['status'] );
+	}
+
+	/**
+	 * @covers WP_REST_Presence_Controller::validate_data_param
+	 */
+	public function test_validate_data_param_accepts_an_object_within_the_size_limit() {
+		$controller = new WP_REST_Presence_Controller();
+
+		$request = new WP_REST_Request( 'POST', '/wp-presence/v1/presence' );
+		$result  = $controller->validate_data_param( array( 'screen' => 'dashboard' ), $request, 'data' );
+
+		$this->assertTrue( $result );
+	}
+
+	/**
+	 * @covers WP_REST_Presence_Controller::delete_item
+	 */
+	public function test_delete_item_removes_the_entry_and_returns_expected_shape() {
+		wp_set_current_user( self::$editor_id );
+		wp_set_presence( 'admin/online', 'client-1', array(), self::$editor_id );
+
+		$request = new WP_REST_Request( 'DELETE', '/wp-presence/v1/presence' );
+		$request->set_param( 'room', 'admin/online' );
+		$request->set_param( 'client_id', 'client-1' );
+
+		$controller = new WP_REST_Presence_Controller();
+		$response   = $controller->delete_item( $request );
+
+		$this->assertSame(
+			array(
+				'deleted' => true,
+				'room'    => 'admin/online',
+			),
+			$response->get_data()
+		);
+		$this->assertCount( 0, wp_get_presence( 'admin/online' ) );
+	}
+
+	/**
+	 * rest_authorization_required_code() reports 401 when logged out and 403
+	 * when authenticated but lacking the capability, so the two states must
+	 * be checked separately rather than just asserting "not allowed".
+	 *
+	 * @covers WP_REST_Presence_Controller::get_items_permissions_check
+	 */
+	public function test_get_items_permissions_check_distinguishes_401_from_403() {
+		$request    = new WP_REST_Request( 'GET', '/wp-presence/v1/presence' );
+		$controller = new WP_REST_Presence_Controller();
+		$request->set_param( 'room', 'admin/online' );
+
+		wp_set_current_user( 0 );
+		$logged_out = $controller->get_items_permissions_check( $request );
+		$this->assertInstanceOf( 'WP_Error', $logged_out );
+		$this->assertSame( 401, $logged_out->get_error_data()['status'] );
+
+		$subscriber_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $subscriber_id );
+		$forbidden = $controller->get_items_permissions_check( $request );
+		$this->assertInstanceOf( 'WP_Error', $forbidden );
+		$this->assertSame( 403, $forbidden->get_error_data()['status'] );
+	}
+
+	/**
+	 * @covers WP_REST_Presence_Controller::create_item_permissions_check
+	 */
+	public function test_create_item_permissions_check_distinguishes_401_from_403() {
+		$request    = new WP_REST_Request( 'POST', '/wp-presence/v1/presence' );
+		$controller = new WP_REST_Presence_Controller();
+		$request->set_param( 'room', 'admin/online' );
+
+		wp_set_current_user( 0 );
+		$logged_out = $controller->create_item_permissions_check( $request );
+		$this->assertInstanceOf( 'WP_Error', $logged_out );
+		$this->assertSame( 401, $logged_out->get_error_data()['status'] );
+
+		$subscriber_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $subscriber_id );
+		$forbidden = $controller->create_item_permissions_check( $request );
+		$this->assertInstanceOf( 'WP_Error', $forbidden );
+		$this->assertSame( 403, $forbidden->get_error_data()['status'] );
+	}
+
+	/**
+	 * @covers WP_REST_Presence_Controller::delete_item_permissions_check
+	 */
+	public function test_delete_item_permissions_check_distinguishes_401_from_403() {
+		$request    = new WP_REST_Request( 'DELETE', '/wp-presence/v1/presence' );
+		$controller = new WP_REST_Presence_Controller();
+		$request->set_param( 'room', 'admin/online' );
+		$request->set_param( 'client_id', 'client-1' );
+
+		wp_set_current_user( 0 );
+		$logged_out = $controller->delete_item_permissions_check( $request );
+		$this->assertInstanceOf( 'WP_Error', $logged_out );
+		$this->assertSame( 401, $logged_out->get_error_data()['status'] );
+
+		$subscriber_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $subscriber_id );
+		$forbidden = $controller->delete_item_permissions_check( $request );
+		$this->assertInstanceOf( 'WP_Error', $forbidden );
+		$this->assertSame( 403, $forbidden->get_error_data()['status'] );
+	}
 }
