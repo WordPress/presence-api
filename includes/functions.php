@@ -421,6 +421,15 @@ function wp_get_presence_summary( $timeout = WP_PRESENCE_DEFAULT_TTL ) {
 /**
  * Deletes stale presence entries older than the default TTL.
  *
+ * Runs on the every-minute cron event. Rather than looping without a ceiling
+ * over the MySQL-only `DELETE ... LIMIT` construct, this selects a bounded
+ * page of primary keys older than the cutoff and deletes them by key, for a
+ * fixed number of passes per invocation. Any remaining backlog is left for the
+ * next cron run, so a single request cannot run until `max_execution_time`
+ * when a site returns from a cron outage with a large backlog. Deleting by
+ * primary key also keeps the query portable to non-MySQL backends, such as the
+ * SQLite integration Playground uses to run the demo blueprints.
+ *
  * @access private
  */
 function wp_delete_expired_presence_data() {
@@ -433,16 +442,53 @@ function wp_delete_expired_presence_data() {
 	$timeout = wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL );
 	$cutoff  = gmdate( 'Y-m-d H:i:s', time() - $timeout );
 
-	// Delete in batches to avoid locking the table on large datasets.
-	do {
+	/**
+	 * Filters the number of expired rows deleted per pass.
+	 *
+	 * @param int $batch_size Rows per pass. Default 1000.
+	 */
+	$batch_size = (int) apply_filters( 'wp_presence_cleanup_batch_size', 1000 );
+
+	/**
+	 * Filters the maximum number of delete passes per cron invocation.
+	 *
+	 * The remainder is left for the next scheduled run, bounding the work a
+	 * single request performs.
+	 *
+	 * @param int $max_passes Passes per invocation. Default 10.
+	 */
+	$max_passes = (int) apply_filters( 'wp_presence_cleanup_max_passes', 10 );
+
+	if ( $batch_size < 1 || $max_passes < 1 ) {
+		return;
+	}
+
+	for ( $pass = 0; $pass < $max_passes; $pass++ ) {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$deleted = $wpdb->query(
+		$ids = $wpdb->get_col(
 			$wpdb->prepare(
-				"DELETE FROM {$wpdb->presence} WHERE date_gmt < %s LIMIT 1000",
-				$cutoff
+				"SELECT id FROM {$wpdb->presence} WHERE date_gmt < %s ORDER BY id ASC LIMIT %d",
+				$cutoff,
+				$batch_size
 			)
 		);
-	} while ( $deleted > 0 );
+
+		if ( empty( $ids ) ) {
+			break;
+		}
+
+		$ids          = array_map( 'intval', $ids );
+		$placeholders = implode( ', ', array_fill( 0, count( $ids ), '%d' ) );
+
+		// IDs are cast to integers above and passed to prepare() as %d
+		// replacements, so the interpolated placeholder list is safe.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+		$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->presence} WHERE id IN ( $placeholders )", $ids ) );
+
+		if ( count( $ids ) < $batch_size ) {
+			break;
+		}
+	}
 }
 
 /**
