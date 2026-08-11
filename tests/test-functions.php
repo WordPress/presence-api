@@ -219,6 +219,77 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * A single invocation deletes at most batch_size * max_passes rows and
+	 * leaves the remainder for the next scheduled run.
+	 *
+	 * @covers ::wp_delete_expired_presence_data
+	 */
+	public function test_cleanup_is_bounded_per_invocation() {
+		global $wpdb;
+
+		// Seed five expired entries.
+		for ( $i = 1; $i <= 5; $i++ ) {
+			wp_set_presence( 'test/room', "old-{$i}", array(), self::$editor_id );
+		}
+		$wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$wpdb->presence} SET date_gmt = %s",
+				gmdate( 'Y-m-d H:i:s', time() - 120 )
+			)
+		);
+
+		// Two rows per pass, two passes per run: one run clears at most four.
+		$two = static function () {
+			return 2;
+		};
+		add_filter( 'wp_presence_cleanup_batch_size', $two );
+		add_filter( 'wp_presence_cleanup_max_passes', $two );
+
+		wp_delete_expired_presence_data();
+		$this->assertSame(
+			1,
+			(int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->presence}" ),
+			'One invocation should delete batch_size * max_passes (4) rows and leave the rest.'
+		);
+
+		// The next scheduled run clears the remainder.
+		wp_delete_expired_presence_data();
+		$this->assertSame(
+			0,
+			(int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->presence}" )
+		);
+
+		remove_filter( 'wp_presence_cleanup_batch_size', $two );
+		remove_filter( 'wp_presence_cleanup_max_passes', $two );
+	}
+
+	/**
+	 * Fresh entries are never removed, even with a batch size of one.
+	 *
+	 * @covers ::wp_delete_expired_presence_data
+	 */
+	public function test_cleanup_leaves_fresh_entries_untouched() {
+		global $wpdb;
+
+		wp_set_presence( 'test/room', 'fresh-1', array(), self::$editor_id );
+		wp_set_presence( 'test/room', 'fresh-2', array(), self::$editor_id );
+
+		$one = static function () {
+			return 1;
+		};
+		add_filter( 'wp_presence_cleanup_batch_size', $one );
+
+		wp_delete_expired_presence_data();
+
+		$this->assertSame(
+			2,
+			(int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->presence}" )
+		);
+
+		remove_filter( 'wp_presence_cleanup_batch_size', $one );
+	}
+
+	/**
 	 * @covers ::wp_set_presence
 	 */
 	public function test_multiple_clients_in_room() {
