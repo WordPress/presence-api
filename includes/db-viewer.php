@@ -29,14 +29,15 @@ add_action(
 
 		global $wpdb;
 
-		// No user input in these queries; table name comes from $wpdb->presence (controlled).
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$rows = $wpdb->get_results(
-			"SELECT room, user_id, data, date_gmt FROM {$wpdb->presence} ORDER BY date_gmt DESC"
-		);
+		$rows = array();
 
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->presence}" );
+		if ( wp_presence_has_table() ) {
+			// No user input in this query; table name comes from $wpdb->presence (controlled).
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$rows = $wpdb->get_results(
+				"SELECT room, user_id, data, date_gmt FROM {$wpdb->presence} ORDER BY date_gmt DESC"
+			);
+		}
 
 		$ttl         = wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL );
 		$now_ms      = (int) ( microtime( true ) * 1000 );
