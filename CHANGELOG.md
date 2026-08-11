@@ -7,7 +7,6 @@
 
 * check table availability in the CLI command and debug viewer ([cfd705b](https://github.com/WordPress/presence-api/commit/cfd705bc66e352c4b56e301500848edd87eec08d))
 * delete expired presence rows by key in bounded passes ([fc624e2](https://github.com/WordPress/presence-api/commit/fc624e2405e077f57858230f276def8544eb5430))
-* delete expired presence rows by key in bounded passes ([b4a19a0](https://github.com/WordPress/presence-api/commit/b4a19a072c7bcb68669dcd0c27e210cce1877020))
 * guard the CLI cleanup command with a table availability check ([a932652](https://github.com/WordPress/presence-api/commit/a9326529ef3cb8570062b37c2dd54290f578926c))
 * guard the debug DB viewer query and drop the unused row count ([453bb12](https://github.com/WordPress/presence-api/commit/453bb12ce65b145a5dabc12c53e4a7f5fa066d52))
 
