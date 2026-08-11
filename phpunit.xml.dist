@@ -12,6 +12,7 @@
 		<testsuite name="presence-api">
 			<directory suffix=".php">tests/</directory>
 			<exclude>tests/e2e</exclude>
+			<exclude>tests/stubs</exclude>
 			<exclude>tests/bootstrap.php</exclude>
 			<exclude>tests/class-wp-presence-unittestcase.php</exclude>
 		</testsuite>
