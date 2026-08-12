@@ -3,7 +3,7 @@ Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas,
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.0
-Stable tag: 0.1.17
+Stable tag: 0.1.18
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -52,6 +52,12 @@ Or install manually:
 Or [try it in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json) without installing anything.
 
 == Changelog ==
+
+= 0.1.18 =
+* Check table availability in the CLI command and debug viewer.
+* Delete expired presence rows by key in bounded passes.
+* Guard the CLI cleanup command with a table availability check.
+* Guard the debug DB viewer query and drop the unused row count.
 
 = 0.1.17 =
 * Bound presence keys to the column width and validate REST args.
