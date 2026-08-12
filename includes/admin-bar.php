@@ -181,7 +181,10 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 			'id'     => 'presence-group-here',
 			'title'  => '<span class="presence-bar-group-label">' . esc_html__( 'On this page', 'presence-api' ) . '</span>',
 			'href'   => false,
-			'meta'   => array( 'class' => 'presence-bar-group-header' ),
+			'meta'   => array(
+				'class'    => 'presence-bar-group-header',
+				'tabindex' => 0,
+			),
 		)
 	);
 
@@ -192,6 +195,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 			'id'     => 'presence-user-self',
 			'title'  => esc_html( $current_user ? $current_user->display_name : __( 'You', 'presence-api' ) ) . ' <span class="presence-bar-you">(' . esc_html__( 'you', 'presence-api' ) . ')</span>',
 			'href'   => false,
+			'meta'   => array( 'tabindex' => 0 ),
 		)
 	);
 
@@ -209,6 +213,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 					/* translators: %d: Number of additional online users. */
 					'title'  => '<span class="presence-bar-screen">' . esc_html( sprintf( __( '+%d more', 'presence-api' ), $remaining ) ) . '</span>',
 					'href'   => false,
+					'meta'   => array( 'tabindex' => 0 ),
 				)
 			);
 			break;
@@ -224,6 +229,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 				'id'     => 'presence-user-' . $entry->user_id,
 				'title'  => esc_html( $user->display_name ),
 				'href'   => false,
+				'meta'   => array( 'tabindex' => 0 ),
 			)
 		);
 		++$shown;
@@ -236,7 +242,10 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 				'id'     => 'presence-group-elsewhere',
 				'title'  => '<span class="presence-bar-group-label">' . esc_html__( 'Elsewhere', 'presence-api' ) . '</span>',
 				'href'   => false,
-				'meta'   => array( 'class' => 'presence-bar-group-header' ),
+				'meta'   => array(
+					'class'    => 'presence-bar-group-header',
+					'tabindex' => 0,
+				),
 			)
 		);
 
@@ -308,6 +317,9 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 					'id'     => 'presence-user-' . $entry->user_id,
 					'title'  => $item_title,
 					'href'   => $screen_url ? $screen_url : false,
+					// Non-link items need an explicit tabindex; WP_Admin_Bar only
+					// renders one when it's set, otherwise the item is skipped by Tab.
+					'meta'   => $screen_url ? array() : array( 'tabindex' => 0 ),
 				)
 			);
 			++$shown;
