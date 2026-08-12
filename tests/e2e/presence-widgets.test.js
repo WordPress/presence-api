@@ -22,6 +22,14 @@ function wpCli( command ) {
 	} );
 }
 
+function wpCliOutput( command ) {
+	const raw = execSync( `npx wp-env run cli wp ${ command }`, {
+		encoding: 'utf8',
+		timeout: 30_000,
+	} );
+	return raw.trim().split( '\n' ).pop().trim();
+}
+
 const TEST_USERS = [
 	{
 		username: 'presence_test_b',
@@ -125,6 +133,34 @@ test.describe( 'Presence Widgets', () => {
 		}
 	} );
 
+	test( "Focus stays on the user's row in Who's Online widget across a heartbeat re-render", async ( {
+		admin,
+		page,
+		testUsers,
+	} ) => {
+		const userBId = wpCliOutput( `user get ${ testUsers[ 0 ].username } --field=ID` );
+
+		await admin.visitAdminPage( '/' );
+		await page.evaluate( () => wp.heartbeat.connectNow() );
+
+		wpCli( `eval 'wp_set_presence( wp_presence_admin_room(), "session-b", array( "screen" => "dashboard" ), ${ userBId } );'` );
+		await page.evaluate( () => wp.heartbeat.connectNow() );
+
+		const userRow = page.locator( `#presence-whos-online-list [data-user-id="${ userBId }"]` );
+		await expect( userRow ).toBeVisible( { timeout: 30_000 } );
+
+		const userLink = userRow.locator( 'a' ).first();
+		await userLink.focus();
+		await expect( userLink ).toBeFocused();
+
+		wpCli( `eval 'wp_set_presence( wp_presence_admin_room(), "session-b", array( "screen" => "edit" ), ${ userBId } );'` );
+		await page.evaluate( () => wp.heartbeat.connectNow() );
+
+		await expect(
+			page.locator( `#presence-whos-online-list [data-user-id="${ userBId }"] a` ).first()
+		).toBeFocused( { timeout: 30_000 } );
+	} );
+
 	test( 'Post editing presence appears in Active Posts widget', async ( {
 		admin,
 		page,
@@ -147,5 +183,44 @@ test.describe( 'Presence Widgets', () => {
 			'E2E Presence Test Post',
 			{ timeout: 30_000 }
 		);
+	} );
+
+	test( 'Focus stays on the post link in Active Posts widget across a heartbeat re-render', async ( {
+		admin,
+		page,
+		requestUtils,
+	} ) => {
+		const post = await requestUtils.createPost( {
+			title: 'E2E Focus Test Post',
+			status: 'draft',
+		} );
+
+		wpCli( `eval 'wp_set_presence( "postType/post:${ post.id }", "session-a", array( "action" => "editing", "screen" => "post" ), 1 );'` );
+
+		await admin.visitAdminPage( '/' );
+		await page.evaluate( () => wp.heartbeat.connectNow() );
+
+		// Match by edit href, not title text — leftover draft posts from
+		// earlier runs can share the same title.
+		const postLink = page.locator(
+			`#presence-active-posts-list a[href$="post=${ post.id }&action=edit"]`
+		);
+		await expect( postLink ).toBeVisible( { timeout: 30_000 } );
+
+		await postLink.focus();
+		await expect( postLink ).toBeFocused();
+
+		// Backdate the entry past the idle threshold so the next tick's
+		// signature differs and the list markup gets rebuilt.
+		wpCli(
+			`eval 'global $wpdb; $wpdb->update( $wpdb->presence, array( "date_gmt" => gmdate( "Y-m-d H:i:s", time() - 45 ) ), array( "client_id" => "session-a" ), array( "%s" ), array( "%s" ) );'`
+		);
+		await page.evaluate( () => wp.heartbeat.connectNow() );
+
+		await expect( page.locator( '#presence-active-posts-list' ) ).toContainText(
+			'Idle',
+			{ timeout: 30_000 }
+		);
+		await expect( postLink ).toBeFocused();
 	} );
 } );
