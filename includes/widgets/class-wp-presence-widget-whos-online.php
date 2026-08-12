@@ -337,8 +337,6 @@ class WP_Presence_Widget_Whos_Online {
 	var lastSignature = '';
 	var lastEntries = [];
 
-	// Heartbeat swaps the whole list via .html() on every change; without
-	// this, focus inside the widget silently drops to <body> mid-tick.
 	function captureFocus(container) {
 		var active = document.activeElement;
 		if (!active || !$.contains(container[0], active)) {
