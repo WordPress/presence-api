@@ -337,6 +337,42 @@ class WP_Presence_Widget_Whos_Online {
 	var lastSignature = '';
 	var lastEntries = [];
 
+	// Heartbeat swaps the whole list via .html() on every change; without
+	// this, focus inside the widget silently drops to <body> mid-tick.
+	function captureFocus(container) {
+		var active = document.activeElement;
+		if (!active || !$.contains(container[0], active)) {
+			return null;
+		}
+		var $active = $(active);
+		var item = $active.closest('[data-user-id]');
+		if (item.length) {
+			return { type: 'user', id: item.data('user-id') };
+		}
+		var action = $active.data('action');
+		if (action) {
+			return { type: 'action', action: action };
+		}
+		return { type: 'none' };
+	}
+
+	function restoreFocus(container, info) {
+		if (!info) {
+			return;
+		}
+		var target = null;
+		if (info.type === 'user') {
+			target = container.find('[data-user-id="' + info.id + '"] a, [data-user-id="' + info.id + '"] button').first();
+		} else if (info.type === 'action') {
+			target = container.find('[data-action="' + info.action + '"]');
+		}
+		if (target && target.length) {
+			target.trigger('focus');
+		} else {
+			container.trigger('focus');
+		}
+	}
+
 	function buildRowHtml(entry) {
 		var html = '';
 		if (entry.avatar_url) {
@@ -427,7 +463,9 @@ class WP_Presence_Widget_Whos_Online {
 
 		if (!entries.length) {
 			if (lastSignature !== '') {
+				var clearFocus = captureFocus(container);
 				container.html('<p>' + esc(i18n.noUsersOnline) + '</p>');
+				restoreFocus(container, clearFocus);
 				lastSignature = '';
 			}
 			return;
@@ -447,7 +485,9 @@ class WP_Presence_Widget_Whos_Online {
 
 		if (sig !== lastSignature) {
 			// Content changed — swap HTML instantly.
+			var focusInfo = captureFocus(container);
 			container.html(buildFullHtml(visible, overflow));
+			restoreFocus(container, focusInfo);
 			lastSignature = sig;
 		} else {
 			// Same users, same screens — update only dot tooltips.
@@ -576,7 +616,7 @@ JS,
 			)
 		);
 
-		echo '<div id="presence-whos-online-list" aria-live="polite">';
+		echo '<div id="presence-whos-online-list" aria-live="polite" tabindex="-1">';
 
 		if ( empty( $entries ) ) {
 			echo '<p>' . esc_html__( 'No other users are online.', 'presence-api' ) . '</p>';
