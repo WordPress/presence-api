@@ -374,47 +374,55 @@ function wp_get_presence_summary( $timeout = WP_PRESENCE_DEFAULT_TTL ) {
 	$cutoff  = gmdate( 'Y-m-d H:i:s', time() - $timeout );
 
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-	$rows = $wpdb->get_results(
+	$room_rows = $wpdb->get_results(
 		$wpdb->prepare(
-			"SELECT room, user_id FROM {$wpdb->presence} WHERE date_gmt > %s ORDER BY room ASC",
+			"SELECT room, COUNT(*) AS entries FROM {$wpdb->presence} WHERE date_gmt > %s GROUP BY room",
 			$cutoff
 		)
 	);
 
-	if ( ! $rows ) {
+	if ( ! $room_rows ) {
 		return $summary;
 	}
 
-	// Group by prefix in PHP to avoid MySQL-specific SUBSTRING_INDEX().
-	// Collect all user IDs across rooms to compute distinct totals in PHP.
-	$all_user_ids    = array();
-	$prefix_user_ids = array();
+	// Grouped by prefix in PHP to avoid MySQL-specific SUBSTRING_INDEX().
+	// Distinct user counts aren't additive across rooms, so those come from
+	// a per-prefix query below rather than being summed here.
+	$rooms_by_prefix = array();
 
-	foreach ( $rows as $row ) {
-		$prefix = explode( '/', $row->room, 2 )[0];
+	foreach ( $room_rows as $row ) {
+		$prefix  = explode( '/', $row->room, 2 )[0];
+		$entries = (int) $row->entries;
 
 		if ( ! isset( $summary['by_prefix'][ $prefix ] ) ) {
 			$summary['by_prefix'][ $prefix ] = array(
 				'entries' => 0,
 				'users'   => 0,
 			);
-			$prefix_user_ids[ $prefix ]      = array();
+			$rooms_by_prefix[ $prefix ]      = array();
 		}
 
-		$user_id = (int) $row->user_id;
-
-		++$summary['by_prefix'][ $prefix ]['entries'];
-		++$summary['total_entries'];
-
-		$all_user_ids[ $user_id ]               = true;
-		$prefix_user_ids[ $prefix ][ $user_id ] = true;
+		$summary['by_prefix'][ $prefix ]['entries'] += $entries;
+		$summary['total_entries']                   += $entries;
+		$rooms_by_prefix[ $prefix ][]                = $row->room;
 	}
 
-	foreach ( $prefix_user_ids as $prefix => $user_ids ) {
-		$summary['by_prefix'][ $prefix ]['users'] = count( $user_ids );
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+	$summary['total_users'] = (int) $wpdb->get_var(
+		$wpdb->prepare(
+			"SELECT COUNT(DISTINCT user_id) FROM {$wpdb->presence} WHERE date_gmt > %s",
+			$cutoff
+		)
+	);
+
+	foreach ( $rooms_by_prefix as $prefix => $rooms ) {
+		$placeholders = implode( ', ', array_fill( 0, count( $rooms ), '%s' ) );
+
+		// $placeholders holds only %s tokens generated above, so the interpolation is safe.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+		$summary['by_prefix'][ $prefix ]['users'] = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(DISTINCT user_id) FROM {$wpdb->presence} WHERE date_gmt > %s AND room IN ( $placeholders )", array_merge( array( $cutoff ), $rooms ) ) );
 	}
 
-	$summary['total_users'] = count( $all_user_ids );
 	return $summary;
 }
 

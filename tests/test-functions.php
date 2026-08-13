@@ -384,6 +384,29 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * @covers ::wp_get_presence_summary
+	 */
+	public function test_get_presence_summary_query_count_scales_with_rooms_not_entries() {
+		global $wpdb;
+
+		wp_set_presence( 'admin/online', 'client-1', array(), self::$editor_id );
+		wp_set_presence( 'postType/post:1', 'client-2', array(), self::$editor_id );
+
+		$before   = $wpdb->num_queries;
+		wp_get_presence_summary();
+		$baseline = $wpdb->num_queries - $before;
+
+		for ( $i = 3; $i <= 20; $i++ ) {
+			wp_set_presence( 'postType/post:1', 'client-' . $i, array(), self::$editor_id );
+		}
+
+		$before = $wpdb->num_queries;
+		wp_get_presence_summary();
+
+		$this->assertSame( $baseline, $wpdb->num_queries - $before, 'Query count should scale with room/prefix count, not entry count.' );
+	}
+
+	/**
 	 * @covers ::wp_presence_post_room
 	 */
 	public function test_presence_post_room() {
