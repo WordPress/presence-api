@@ -453,12 +453,13 @@ class WP_Presence_Widget_Whos_Online {
 	// Update the widget when heartbeat response comes back.
 	$(document).on('heartbeat-tick', function(event, data) {
 		if (data['presence-online-unchanged']) {
-			// An unchanged room means every cached entry is still ticking, so
-			// advance the timestamps the idle sweep reads or it greys out users
-			// who are still here.
-			var nowGmt = new Date().toISOString().slice(0, 19).replace('T', ' ');
+			// Same users on the same screens, so only freshness can have moved.
+			// Feed it to the idle sweep and leave the DOM alone.
+			var seen = data['presence-online-unchanged'];
 			for (var i = 0; i < lastEntries.length; i++) {
-				lastEntries[i].date_gmt = nowGmt;
+				if (seen[lastEntries[i].user_id]) {
+					lastEntries[i].date_gmt = seen[lastEntries[i].user_id];
+				}
 			}
 			return;
 		}
@@ -758,7 +759,7 @@ JS,
 		$client_hash = isset( $data['presence-online-hash'] ) ? sanitize_text_field( $data['presence-online-hash'] ) : '';
 
 		if ( $client_hash && $client_hash === $hash ) {
-			$response['presence-online-unchanged'] = true;
+			$response['presence-online-unchanged'] = self::build_seen_timestamps( $entries );
 
 			return $response;
 		}
@@ -795,6 +796,28 @@ JS,
 		sort( $state );
 
 		return md5( (string) wp_json_encode( $state ) );
+	}
+
+	/**
+	 * Maps each present user to the time they were last seen.
+	 *
+	 * Sent instead of the full payload when the room is unchanged. Without it
+	 * the client has no way to tell a user who is still ticking from one whose
+	 * tab went hidden, and would keep showing the latter as active until their
+	 * entry expires.
+	 *
+	 * @param array $entries Presence entry objects from wp_get_presence().
+	 * @return object User ID to last-seen GMT datetime.
+	 */
+	private static function build_seen_timestamps( $entries ) {
+		$seen = array();
+
+		foreach ( $entries as $entry ) {
+			$seen[ (int) $entry->user_id ] = $entry->date_gmt;
+		}
+
+		// Cast so an empty room encodes as {} rather than [].
+		return (object) $seen;
 	}
 
 	/**

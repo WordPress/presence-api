@@ -136,8 +136,35 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 
 		$response = $this->tick( array( 'screen' => 'dashboard' ), array( 'presence-online-hash' => $hash ) );
 
-		$this->assertTrue( $response['presence-online-unchanged'] );
+		$this->assertArrayHasKey( 'presence-online-unchanged', $response );
 		$this->assertArrayNotHasKey( 'presence-online', $response );
+	}
+
+	/**
+	 * The unchanged reply is the only thing keeping the idle dots honest, so it
+	 * has to carry each user's real last-seen time rather than a bare flag.
+	 *
+	 * @covers WP_Presence_Widget_Whos_Online::heartbeat_received
+	 */
+	public function test_unchanged_response_carries_last_seen_timestamps() {
+		$idle_id = $this->add_user_to_room( 'dashboard', 40 );
+
+		wp_set_current_user( self::$editor_id );
+
+		$hash = $this->tick()['presence-online-hash'];
+
+		$seen = $this->tick( array( 'screen' => 'dashboard' ), array( 'presence-online-hash' => $hash ) )['presence-online-unchanged'];
+
+		$this->assertSame(
+			gmdate( 'Y-m-d H:i:s', time() - 40 ),
+			$seen->{$idle_id},
+			'A user who stopped pinging must keep their stale timestamp.'
+		);
+		$this->assertSame(
+			gmdate( 'Y-m-d H:i:s' ),
+			$seen->{self::$editor_id},
+			'The pinging user must be reported as current.'
+		);
 	}
 
 	/**
