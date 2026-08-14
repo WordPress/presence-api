@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.1.20](https://github.com/WordPress/presence-api/compare/v0.1.19...v0.1.20) (2026-08-14)
+
+
+### Bug Fixes
+
+* correct query cost and timezone bug in post revision lookup ([b78b8a9](https://github.com/WordPress/presence-api/commit/b78b8a9775612ce7611f0c62467a889256f73542))
+* count people rather than rows in the Active Posts widget ([da77dfb](https://github.com/WordPress/presence-api/commit/da77dfb262e1b74d23defea4cb07905387abb5cf)), closes [#134](https://github.com/WordPress/presence-api/issues/134)
+* guard the presence table upgrade with a provisioning lock ([41fb068](https://github.com/WordPress/presence-api/commit/41fb068e741324500de959b0fd2b73fd2742c26f))
+* guard the presence table upgrade with a provisioning lock ([ee4e671](https://github.com/WordPress/presence-api/commit/ee4e671eaafca04be6105f0d1b8ba50049dc72df))
+* merge the post lock entry into the editor's presence entry ([ea060d6](https://github.com/WordPress/presence-api/commit/ea060d651456b7fbd4446ee0486e0c32263015bf))
+* merge the post lock entry into the editor's presence entry ([b0d1a83](https://github.com/WordPress/presence-api/commit/b0d1a83165f64efdcf8b396f99ad0bb0cfb60420)), closes [#134](https://github.com/WordPress/presence-api/issues/134)
+* reindent get_metadata() case with tabs ([bc70eaa](https://github.com/WordPress/presence-api/commit/bc70eaa3528f66c53afa35092ca6dc1a5562a9f7))
+* stop funneling screen-revision bumps through one shared option ([2380263](https://github.com/WordPress/presence-api/commit/23802633d0c4593d8aa17201bc8351c66551d899))
+* stop funneling screen-revision bumps through one shared option ([0f92898](https://github.com/WordPress/presence-api/commit/0f92898be994672c25776d0b2614ef5f9c673a7b))
+
+
+### Performance Improvements
+
+* aggregate wp_get_presence_summary() in SQL ([a0570e5](https://github.com/WordPress/presence-api/commit/a0570e537069eebf4d60be9138822594d4c01141))
+
 ## [0.1.19](https://github.com/WordPress/presence-api/compare/v0.1.18...v0.1.19) (2026-08-14)
 
 
