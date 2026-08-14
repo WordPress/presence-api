@@ -1,9 +1,9 @@
 === Presence API ===
-Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas, aldorza
+Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas, aldorza, bejignesh
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.0
-Stable tag: 0.1.19
+Stable tag: 0.1.20
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -52,6 +52,15 @@ Or install manually:
 Or [try it in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json) without installing anything.
 
 == Changelog ==
+
+= 0.1.20 =
+* Correct query cost and timezone bug in post revision lookup.
+* Count people rather than rows in the Active Posts widget ([da77dfb](https://github.com/WordPress/presence-api/commit/da77dfb262e1b74d23defea4cb07905387abb5cf)), closes [#134](https://github.com/WordPress/presence-api/issues/134).
+* Guard the presence table upgrade with a provisioning lock.
+* Merge the post lock entry into the editor's presence entry.
+* Reindent get_metadata() case with tabs.
+* Stop funneling screen-revision bumps through one shared option.
+* Aggregate wp_get_presence_summary() in SQL.
 
 = 0.1.19 =
 * Keyboard users can't reach non-link items in the admin bar presence flyout.
