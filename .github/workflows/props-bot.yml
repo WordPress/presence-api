@@ -87,7 +87,7 @@ jobs:
         with:
           format: 'svn'
 
-      - name: Sort props
+      - name: Sort props and sync the "Needs WP.org Link" label
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           PROPS_SORT_LAST: ${{ vars.PROPS_SORT_LAST }}
@@ -157,13 +157,43 @@ jobs:
               );
             }
 
-            if (body === propsComment.body) return;
-            await github.rest.issues.updateComment({
+            if (body !== propsComment.body) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: propsComment.id,
+                body,
+              });
+            }
+
+            // Keep a label in sync with whether anyone here still needs to
+            // link a WordPress.org account, so unlinked PRs are visible
+            // without opening the props comment. This is repo-specific and
+            // not something the upstream props-bot-action does.
+            const LINK_LABEL = 'Needs WP.org Link';
+            const needsLink = body.includes('## Unlinked Accounts');
+            const { data: labels } = await github.rest.issues.listLabelsOnIssue({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              comment_id: propsComment.id,
-              body,
+              issue_number: context.issue.number,
             });
+            const hasLabel = labels.some(l => l.name === LINK_LABEL);
+
+            if (needsLink && !hasLabel) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: [LINK_LABEL],
+              });
+            } else if (!needsLink && hasLabel) {
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                name: LINK_LABEL,
+              });
+            }
 
       - name: Remove the props-bot label
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
