@@ -16,7 +16,6 @@
 ### Dependencies
 
 * **deps-dev:** update phpstan/phpstan requirement from 2.2.7 to 2.2.8 ([1c817f6](https://github.com/WordPress/presence-api/commit/1c817f60acef7d19b1725d8d380e4d18533d2256))
-* **deps-dev:** update phpstan/phpstan requirement from 2.2.7 to 2.2.8 ([1bb432e](https://github.com/WordPress/presence-api/commit/1bb432efaf25a016bdcc6759f237d836294b63f5))
 
 ## [0.1.18](https://github.com/WordPress/presence-api/compare/v0.1.17...v0.1.18) (2026-08-11)
 
