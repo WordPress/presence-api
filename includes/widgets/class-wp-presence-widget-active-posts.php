@@ -371,8 +371,16 @@ JS,
 				);
 			}
 
-			$by_post[ $post_id ]['editors'][] = array(
-				'user_id'      => (int) $entry->user_id,
+			$editor_id = (int) $entry->user_id;
+
+			// A user can hold more than one entry in a room. Rows arrive newest
+			// first, so the one already seen is the freshest.
+			if ( isset( $by_post[ $post_id ]['editors'][ $editor_id ] ) ) {
+				continue;
+			}
+
+			$by_post[ $post_id ]['editors'][ $editor_id ] = array(
+				'user_id'      => $editor_id,
 				'display_name' => $user->display_name,
 				'avatar_url'   => get_avatar_url( $user->ID, array( 'size' => 24 ) ),
 				'status'       => $status,
@@ -386,6 +394,11 @@ JS,
 				return count( $b['editors'] ) - count( $a['editors'] );
 			}
 		);
+
+		// Keyed by user id above; the response is JSON, so hand back a list.
+		foreach ( $by_post as $index => $post_data ) {
+			$by_post[ $index ]['editors'] = array_values( $post_data['editors'] );
+		}
 
 		return array_values( $by_post );
 	}
