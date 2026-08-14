@@ -3,9 +3,9 @@
  * Stale-screen detection: alert users when an admin screen they're viewing is out of date.
  *
  * When a user saves a Settings page, a post, a user, a term, or a comment, a
- * per-screen revision counter is bumped. Other users currently viewing the
- * same screen receive the new revision on the next Heartbeat tick and render
- * a non-blocking notice prompting them to reload.
+ * per-screen revision is recorded. Other users currently viewing the same
+ * screen receive the new revision on the next Heartbeat tick and render a
+ * non-blocking notice prompting them to reload.
  *
  * Coverage in this first cut: classic admin screens that submit via POST and
  * redirect on success — Settings → General/Writing/Reading/Discussion/Media/Permalinks,
@@ -122,6 +122,8 @@ function wp_presence_parse_screen_key_target( $screen_key ) {
  * @return array|null
  */
 function wp_presence_get_screen_revision( $screen_key ) {
+	global $wpdb;
+
 	$screen_key = wp_presence_normalize_screen_key( $screen_key );
 	if ( '' === $screen_key ) {
 		return null;
@@ -131,14 +133,37 @@ function wp_presence_get_screen_revision( $screen_key ) {
 
 	switch ( $target['type'] ) {
 		case 'post':
-			$post = get_post( $target['id'] );
-			if ( ! $post ) {
+			// get_post() + get_post_meta() would be free here if the post and
+			// its meta were already cached, but a Heartbeat tick is its own
+			// request with a cold cache, so that's two queries where the old
+			// shared option cost one. A single joined query keeps this to
+			// one query in the case that actually happens on every tick, at
+			// the cost of one query instead of a cache hit on the rare path
+			// where wp_presence_on_post_updated() reads this back right
+			// after its own save.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$row = $wpdb->get_row(
+				$wpdb->prepare(
+					"SELECT p.post_modified_gmt, pm.meta_value AS edit_last
+					FROM {$wpdb->posts} p
+					LEFT JOIN {$wpdb->postmeta} pm ON pm.post_id = p.ID AND pm.meta_key = '_edit_last'
+					WHERE p.ID = %d
+					LIMIT 1",
+					$target['id']
+				)
+			);
+			if ( ! $row ) {
 				return null;
 			}
-			$revision = (int) mysql2date( 'U', $post->post_modified_gmt, false );
+			// mysql2date( 'U', ... ) adds the site's timezone offset even when
+			// $translate is false — core's own get_post_time() skips that add
+			// only for its $gmt branch. post_modified_gmt is already a naive
+			// UTC string, and WordPress forces PHP's default timezone to UTC
+			// at bootstrap, so a plain strtotime() is the correct conversion.
+			$revision = (int) strtotime( $row->post_modified_gmt );
 			return array(
 				'rev'      => $revision,
-				'actor_id' => (int) get_post_meta( $target['id'], '_edit_last', true ),
+				'actor_id' => (int) $row->edit_last,
 				'time'     => $revision,
 			);
 

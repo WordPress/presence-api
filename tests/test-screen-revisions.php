@@ -159,6 +159,29 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A Heartbeat tick is its own request with a cold cache, unlike the write
+	 * path, which reads the post right after saving it, while it's still
+	 * warm. Reading the revision here must cost the same one query the old
+	 * shared option cost on every tick, not one for the post row and another
+	 * for its meta, or this trades a write-side saving for a read-side
+	 * regression on the far more frequent path.
+	 *
+	 * @covers ::wp_presence_get_screen_revision
+	 */
+	public function test_post_revision_lookup_costs_one_query_cold() {
+		global $wpdb;
+
+		$post_id = self::factory()->post->create( array( 'post_status' => 'publish' ) );
+		clean_post_cache( $post_id );
+
+		$before  = $wpdb->num_queries;
+		wp_presence_get_screen_revision( 'post/' . $post_id );
+		$queries = $wpdb->num_queries - $before;
+
+		$this->assertSame( 1, $queries );
+	}
+
+	/**
 	 * @covers ::wp_presence_on_post_updated
 	 */
 	public function test_post_updated_skips_autosave_and_revision() {
