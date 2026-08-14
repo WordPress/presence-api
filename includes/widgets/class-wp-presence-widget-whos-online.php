@@ -336,6 +336,7 @@ class WP_Presence_Widget_Whos_Online {
 	var isExpanded = false;
 	var lastSignature = '';
 	var lastEntries = [];
+	var lastHash = '';
 
 	function captureFocus(container) {
 		var active = document.activeElement;
@@ -443,11 +444,30 @@ class WP_Presence_Widget_Whos_Online {
 		return html;
 	}
 
+	$(document).on('heartbeat-send', function(event, data) {
+		if (lastHash) {
+			data['presence-online-hash'] = lastHash;
+		}
+	});
+
 	// Update the widget when heartbeat response comes back.
 	$(document).on('heartbeat-tick', function(event, data) {
+		if (data['presence-online-unchanged']) {
+			// An unchanged room means every cached entry is still ticking, so
+			// advance the timestamps the idle sweep reads or it greys out users
+			// who are still here.
+			var nowGmt = new Date().toISOString().slice(0, 19).replace('T', ' ');
+			for (var i = 0; i < lastEntries.length; i++) {
+				lastEntries[i].date_gmt = nowGmt;
+			}
+			return;
+		}
+
 		if (!data['presence-online']) {
 			return;
 		}
+
+		lastHash = data['presence-online-hash'] || '';
 
 		var container = $('#presence-whos-online-list');
 		if (!container.length) {
