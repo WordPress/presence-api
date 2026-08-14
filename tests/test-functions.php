@@ -384,6 +384,53 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Query *count* stays flat either way here: the pre-fix version issued a
+	 * single SELECT regardless of row count, so comparing num_queries before
+	 * and after adding rows can't tell the two implementations apart. What
+	 * actually changed is that every query now aggregates in SQL instead of
+	 * returning one row per entry, so assert on the query shape instead.
+	 *
+	 * @covers ::wp_get_presence_summary
+	 */
+	public function test_get_presence_summary_aggregates_in_sql() {
+		global $wpdb;
+
+		wp_set_presence( 'admin/online', 'client-1', array(), self::$editor_id );
+		for ( $i = 2; $i <= 20; $i++ ) {
+			wp_set_presence( 'postType/post:1', 'client-' . $i, array(), self::$editor_id );
+		}
+
+		$queries = array();
+		$capture = function ( $query ) use ( &$queries ) {
+			$queries[] = $query;
+			return $query;
+		};
+
+		add_filter( 'query', $capture );
+		wp_get_presence_summary();
+		remove_filter( 'query', $capture );
+
+		$presence_queries = array_values(
+			array_filter(
+				$queries,
+				function ( $query ) use ( $wpdb ) {
+					return false !== strpos( $query, $wpdb->presence );
+				}
+			)
+		);
+
+		$this->assertNotEmpty( $presence_queries, 'Expected at least one query against the presence table.' );
+
+		foreach ( $presence_queries as $query ) {
+			$this->assertMatchesRegularExpression(
+				'/GROUP BY|COUNT\(/',
+				$query,
+				"Every presence summary query should aggregate in SQL rather than return one row per entry: {$query}"
+			);
+		}
+	}
+
+	/**
 	 * @covers ::wp_presence_post_room
 	 */
 	public function test_presence_post_room() {

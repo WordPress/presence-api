@@ -6,11 +6,14 @@
  *
  * @group presence
  *
- * Helpers reached through the hook callbacks below. Without these the coverage
- * driver credits only the annotated entry points and discards everything they call.
+ * Helpers reached indirectly — through hook callbacks, or called internally
+ * by an annotated entry point. Without these the coverage driver credits
+ * only the annotated entry points and discards everything they call.
  *
  * @covers ::wp_presence_get_screen_revisions
  * @covers ::wp_presence_get_screen_revision
+ * @covers ::wp_presence_known_options_pages
+ * @covers ::wp_presence_parse_screen_key_target
  * @covers ::wp_presence_normalize_screen_key
  * @covers ::wp_presence_is_admin_screen_save
  * @covers ::wp_presence_current_user_can_access_screen
@@ -30,6 +33,16 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 
 	public function tear_down() {
 		delete_option( 'wp_presence_screen_revisions' );
+		foreach ( wp_presence_known_options_pages() as $page ) {
+			delete_option( 'wp_presence_screen_rev_options_' . $page );
+		}
+		// These three users are created once for the whole class rather than
+		// per test, so their meta survives a test's DB-transaction rollback
+		// in the object cache even though the row itself is gone. Clear it
+		// explicitly, the same reason the option above needs it.
+		foreach ( array( self::$admin_id, self::$admin2_id, self::$editor_id ) as $user_id ) {
+			delete_user_meta( $user_id, '_wp_presence_screen_rev' );
+		}
 		unset( $_POST['option_page'] );
 		parent::tear_down();
 	}
@@ -37,23 +50,36 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 	/**
 	 * @covers ::wp_presence_bump_screen_revision
 	 */
-	public function test_bump_increments_revision_and_records_actor() {
+	public function test_bump_writes_timestamp_and_actor_for_known_options_page() {
 		wp_set_current_user( self::$admin_id );
 
-		$first  = wp_presence_bump_screen_revision( 'options/general' );
-		$second = wp_presence_bump_screen_revision( 'options/general' );
+		$before   = time();
+		$revision = wp_presence_bump_screen_revision( 'options/general' );
 
-		$this->assertSame( 1, $first );
-		$this->assertSame( 2, $second );
+		$this->assertGreaterThanOrEqual( $before, $revision );
 
 		$entry = wp_presence_get_screen_revision( 'options/general' );
 		$this->assertNotNull( $entry );
-		$this->assertSame( 2, (int) $entry['rev'] );
+		$this->assertSame( $revision, (int) $entry['rev'] );
 		$this->assertSame( self::$admin_id, (int) $entry['actor_id'] );
 		$this->assertArrayNotHasKey(
 			'actor_name',
 			$entry,
-			'Display name is resolved fresh on heartbeat — not stored — so renames show immediately.'
+			'Display name is resolved fresh on heartbeat, not stored, so renames show immediately.'
+		);
+	}
+
+	/**
+	 * @covers ::wp_presence_bump_screen_revision
+	 */
+	public function test_bumping_one_options_page_does_not_touch_another() {
+		wp_set_current_user( self::$admin_id );
+
+		wp_presence_bump_screen_revision( 'options/writing' );
+
+		$this->assertNull(
+			wp_presence_get_screen_revision( 'options/general' ),
+			'Each Settings page now has its own option, so bumping one must not create or touch another.'
 		);
 	}
 
@@ -75,11 +101,12 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 		set_current_screen( 'options-general' );
 		$_POST['option_page'] = 'general';
 
+		$before = time();
 		update_option( 'blogname', 'New Title ' . wp_generate_password( 6, false ) );
 
 		$entry = wp_presence_get_screen_revision( 'options/general' );
 		$this->assertNotNull( $entry );
-		$this->assertSame( 1, (int) $entry['rev'] );
+		$this->assertGreaterThanOrEqual( $before, (int) $entry['rev'] );
 	}
 
 	/**
@@ -92,7 +119,7 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 
 		update_option( 'blogname', 'Side Effect ' . wp_generate_password( 6, false ) );
 
-		$this->assertSame( array(), wp_presence_get_screen_revisions() );
+		$this->assertNull( wp_presence_get_screen_revision( 'options/general' ) );
 	}
 
 	/**
@@ -104,9 +131,19 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 
 		$post_id = self::factory()->post->create( array( 'post_status' => 'publish' ) );
 
-		// factory->post->create() runs save_post; assert it produced a bump.
-		$entry = wp_presence_get_screen_revision( 'post/' . $post_id );
-		$this->assertNull( $entry, 'A fresh insert is not "post_updated" — only updates bump.' );
+		// Posts store no revision of their own — this reads core's own
+		// post_modified_gmt, which every post has from the moment it's
+		// created, so there is no "not yet touched" state to assert here
+		// the way the old counter had.
+		$created_entry = wp_presence_get_screen_revision( 'post/' . $post_id );
+		$this->assertNotNull( $created_entry );
+
+		// _edit_last is written by wp-admin's edit_post(), not by
+		// wp_update_post() directly, so set it the way that flow would to
+		// test our read of it.
+		update_post_meta( $post_id, '_edit_last', self::$admin_id );
+
+		sleep( 1 ); // post_modified_gmt has second granularity.
 
 		wp_update_post(
 			array(
@@ -115,9 +152,33 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 			)
 		);
 
-		$entry = wp_presence_get_screen_revision( 'post/' . $post_id );
-		$this->assertNotNull( $entry );
-		$this->assertSame( 1, (int) $entry['rev'] );
+		$updated_entry = wp_presence_get_screen_revision( 'post/' . $post_id );
+		$this->assertNotNull( $updated_entry );
+		$this->assertGreaterThan( (int) $created_entry['rev'], (int) $updated_entry['rev'] );
+		$this->assertSame( self::$admin_id, (int) $updated_entry['actor_id'] );
+	}
+
+	/**
+	 * A Heartbeat tick is its own request with a cold cache, unlike the write
+	 * path, which reads the post right after saving it, while it's still
+	 * warm. Reading the revision here must cost the same one query the old
+	 * shared option cost on every tick, not one for the post row and another
+	 * for its meta, or this trades a write-side saving for a read-side
+	 * regression on the far more frequent path.
+	 *
+	 * @covers ::wp_presence_get_screen_revision
+	 */
+	public function test_post_revision_lookup_costs_one_query_cold() {
+		global $wpdb;
+
+		$post_id = self::factory()->post->create( array( 'post_status' => 'publish' ) );
+		clean_post_cache( $post_id );
+
+		$before  = $wpdb->num_queries;
+		wp_presence_get_screen_revision( 'post/' . $post_id );
+		$queries = $wpdb->num_queries - $before;
+
+		$this->assertSame( 1, $queries );
 	}
 
 	/**
@@ -128,10 +189,13 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 		set_current_screen( 'post' );
 
 		$post_id = self::factory()->post->create( array( 'post_status' => 'publish' ) );
-		delete_option( 'wp_presence_screen_revisions' );
+		$before  = wp_presence_get_screen_revision( 'post/' . $post_id );
 
 		// Autosaves and revisions go through post_updated too, so the hook
-		// must filter them out — otherwise every autosave tick would bump.
+		// must filter them out — otherwise every autosave tick would report
+		// a change. Posts store nothing of their own now, so "filtered out"
+		// means the underlying post row, and the revision read from it, is
+		// untouched by the autosave.
 		wp_create_post_autosave(
 			array(
 				'post_ID'      => $post_id,
@@ -141,10 +205,8 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 			)
 		);
 
-		$this->assertNull(
-			wp_presence_get_screen_revision( 'post/' . $post_id ),
-			'Autosaves should not bump the parent post\'s screen revision.'
-		);
+		$after = wp_presence_get_screen_revision( 'post/' . $post_id );
+		$this->assertSame( $before, $after, 'Autosaves should not change the parent post\'s reported revision.' );
 	}
 
 	/**
@@ -154,6 +216,7 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 		wp_set_current_user( self::$admin_id );
 		set_current_screen( 'user-edit' );
 
+		$before = time();
 		wp_update_user(
 			array(
 				'ID'           => self::$editor_id,
@@ -163,7 +226,7 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 
 		$entry = wp_presence_get_screen_revision( 'user-edit/' . self::$editor_id );
 		$this->assertNotNull( $entry );
-		$this->assertSame( 1, (int) $entry['rev'] );
+		$this->assertGreaterThanOrEqual( $before, (int) $entry['rev'] );
 		$this->assertSame( self::$admin_id, (int) $entry['actor_id'] );
 	}
 
@@ -175,13 +238,13 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 		set_current_screen( 'edit-tags' );
 
 		$term_id = self::factory()->term->create( array( 'taxonomy' => 'category' ) );
-		delete_option( 'wp_presence_screen_revisions' );
 
+		$before = time();
 		wp_update_term( $term_id, 'category', array( 'description' => 'Updated' ) );
 
 		$entry = wp_presence_get_screen_revision( 'term/category/' . $term_id );
 		$this->assertNotNull( $entry );
-		$this->assertSame( 1, (int) $entry['rev'] );
+		$this->assertGreaterThanOrEqual( $before, (int) $entry['rev'] );
 	}
 
 	/**
@@ -192,8 +255,8 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 		set_current_screen( 'comment' );
 
 		$comment_id = self::factory()->comment->create();
-		delete_option( 'wp_presence_screen_revisions' );
 
+		$before = time();
 		wp_update_comment(
 			array(
 				'comment_ID'      => $comment_id,
@@ -203,7 +266,7 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 
 		$entry = wp_presence_get_screen_revision( 'comment/' . $comment_id );
 		$this->assertNotNull( $entry );
-		$this->assertSame( 1, (int) $entry['rev'] );
+		$this->assertGreaterThanOrEqual( $before, (int) $entry['rev'] );
 	}
 
 	/**
@@ -218,13 +281,14 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 		};
 		add_action( 'wp_presence_screen_revision_bumped', $callback, 10, 3 );
 
+		$before = time();
 		wp_presence_bump_screen_revision( 'options/general' );
 
 		remove_action( 'wp_presence_screen_revision_bumped', $callback, 10 );
 
 		$this->assertCount( 1, $captured );
 		$this->assertSame( 'options/general', $captured[0]['key'] );
-		$this->assertSame( 1, $captured[0]['rev'] );
+		$this->assertGreaterThanOrEqual( $before, $captured[0]['rev'] );
 		$this->assertSame( self::$admin_id, $captured[0]['actor_id'] );
 	}
 
@@ -233,15 +297,17 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 	 */
 	public function test_heartbeat_requires_edit_posts_capability() {
 		// Use a non-`options/*` key so the viewer is gated on `edit_posts`
-		// (the `options/*` prefix is gated on `manage_options` instead).
-		wp_presence_bump_screen_revision( 'post/1', self::$admin_id );
+		// (the `options/*` prefix is gated on `manage_options` instead). Any
+		// existing post already has a revision to read, since posts derive
+		// theirs from post_modified_gmt rather than needing a bump first.
+		$post_id = self::factory()->post->create();
 
 		$subscriber_id = self::factory()->user->create( array( 'role' => 'subscriber' ) );
 		wp_set_current_user( $subscriber_id );
 
 		$response = wp_presence_screen_heartbeat_received(
 			array(),
-			array( 'presence-screen-ping' => array( 'key' => 'post/1' ) ),
+			array( 'presence-screen-ping' => array( 'key' => 'post/' . $post_id ) ),
 			'post'
 		);
 
@@ -275,6 +341,7 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 	 */
 	public function test_heartbeat_returns_current_revision_for_screen() {
 		wp_set_current_user( self::$admin_id );
+		$before = time();
 		wp_presence_bump_screen_revision( 'options/general', self::$admin_id );
 
 		// View as a *different* admin so the viewer can read an `options/*`
@@ -291,7 +358,7 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'presence-screen-rev', $response );
 		$payload = $response['presence-screen-rev'];
 		$this->assertSame( 'options/general', $payload['key'] );
-		$this->assertSame( 1, (int) $payload['rev'] );
+		$this->assertGreaterThanOrEqual( $before, (int) $payload['rev'] );
 		$this->assertSame( self::$admin_id, (int) $payload['actor_id'] );
 		$this->assertFalse( $payload['actor_is_me'] );
 		$this->assertNotEmpty( $payload['actor_name'], 'Heartbeat should resolve the actor display name fresh.' );
@@ -358,6 +425,21 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 			'options-general'
 		);
 		$this->assertArrayNotHasKey( 'presence-screen-rev', $response );
+	}
+
+	/**
+	 * options/never-saved isn't one of the six known Settings pages, so it
+	 * falls into the shared, size-bounded fallback option along with every
+	 * other custom key — not a dedicated option of its own.
+	 *
+	 * @covers ::wp_presence_parse_screen_key_target
+	 */
+	public function test_unknown_options_page_is_treated_as_a_custom_key() {
+		wp_set_current_user( self::$admin_id );
+
+		wp_presence_bump_screen_revision( 'options/never-saved' );
+
+		$this->assertArrayHasKey( 'options/never-saved', wp_presence_get_screen_revisions() );
 	}
 
 	/**

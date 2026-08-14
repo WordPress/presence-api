@@ -27,12 +27,12 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 		$this->command = new WP_Presence_CLI_Command();
 	}
 
-	private function assert_halts_with( callable $run, $expected ) {
+	private function assert_halts_with( callable $run, $expected, $type = 'error' ) {
 		try {
 			$run();
 		} catch ( WP_Presence_CLI_Halt $e ) {
 			$this->assertSame( $expected, $e->getMessage() );
-			$this->assertSame( array( $expected ), WP_CLI::messages( 'error' ) );
+			$this->assertSame( array( $expected ), WP_CLI::messages( $type ) );
 			return;
 		}
 
@@ -333,6 +333,25 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 
 		$this->assertSame( array( 'This will delete all presence data. Continue?' ), WP_CLI::messages( 'confirm' ) );
 		$this->assertSame( 0, $this->presence_row_count(), 'Confirming should carry on into the delete.' );
+	}
+
+	/**
+	 * @covers WP_Presence_CLI_Command::cleanup
+	 */
+	public function test_cleanup_leaves_the_table_untouched_when_the_prompt_is_declined() {
+		wp_set_presence( 'admin/online', 'cli-1', array(), self::$user_id );
+
+		WP_CLI::$confirm_declines = true;
+
+		$this->assert_halts_with(
+			function () {
+				$this->command->cleanup( array(), array() );
+			},
+			'This will delete all presence data. Continue?',
+			'confirm'
+		);
+
+		$this->assertSame( 1, $this->presence_row_count(), 'Declining the prompt should leave the table untouched.' );
 	}
 
 	/**

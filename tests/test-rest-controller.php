@@ -22,6 +22,7 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 
 	public function tear_down() {
 		delete_option( 'wp_presence_screen_revisions' );
+		delete_option( 'wp_presence_screen_rev_options_general' );
 		parent::tear_down();
 	}
 
@@ -408,6 +409,8 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 	public function test_bump_screen_revision_success() {
 		wp_set_current_user( self::$admin_id );
 
+		$before = time();
+
 		$request = new WP_REST_Request( 'POST', '/wp-presence/v1/presence/screen-revisions/stale' );
 		$request->set_param( 'screen_key', 'options/general' );
 
@@ -418,7 +421,7 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 		$data = $response->get_data();
 
 		$this->assertSame( 'options/general', $data['screen_key'] );
-		$this->assertSame( 1, $data['rev'] );
+		$this->assertGreaterThanOrEqual( $before, $data['rev'] );
 	}
 
 	/**

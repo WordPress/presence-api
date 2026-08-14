@@ -125,12 +125,36 @@ class WP_Presence_Widget_Active_Posts {
 
 	var lastSignature = '';
 
+	function captureFocus(container) {
+		var active = document.activeElement;
+		if (!active || !$.contains(container[0], active)) {
+			return null;
+		}
+		var item = $(active).closest('[data-post-id]');
+		return { postId: item.length ? item.data('post-id') : null };
+	}
+
+	function restoreFocus(container, info) {
+		if (!info) {
+			return;
+		}
+		var target = null;
+		if (info.postId !== null && info.postId !== undefined) {
+			target = container.find('[data-post-id="' + info.postId + '"] a').first();
+		}
+		if (target && target.length) {
+			target.trigger('focus');
+		} else {
+			container.trigger('focus');
+		}
+	}
+
 	function buildFullPostsHtml(posts) {
 		var html = '<ul class="presence-active-posts-list" aria-label="' + esc(i18n.postsBeingEdited) + '">';
 		posts.forEach(function(post) {
 			var anyActive = post.editors.some(function(e) { return e.status === 'active'; });
 			var statusLabel = anyActive ? '' : i18n.statusIdle;
-			html += '<li class="presence-active-post-item">';
+			html += '<li class="presence-active-post-item" data-post-id="' + post.post_id + '">';
 			html += '<span class="presence-editor-stack">';
 			var stackMax = Math.min(post.editors.length, 4);
 			post.editors.slice(0, stackMax).forEach(function(editor, idx) {
@@ -167,7 +191,9 @@ class WP_Presence_Widget_Active_Posts {
 		var posts = data['presence-active-posts'];
 		if (!posts.length) {
 			if (lastSignature !== '') {
+				var clearFocus = captureFocus(container);
 				container.html('<p>' + esc(i18n.noPostsEdited) + '</p>');
+				restoreFocus(container, clearFocus);
 				lastSignature = '';
 			}
 			return;
@@ -177,7 +203,9 @@ class WP_Presence_Widget_Active_Posts {
 			return p.post_id + ':' + p.editors.map(function(e) { return e.user_id + '/' + e.status; }).join('+');
 		}).join(',');
 		if (sig !== lastSignature) {
+			var focusInfo = captureFocus(container);
 			container.html(buildFullPostsHtml(posts));
+			restoreFocus(container, focusInfo);
 			lastSignature = sig;
 		}
 	});
@@ -193,7 +221,7 @@ JS,
 	public static function render() {
 		$posts = self::build_active_posts_data();
 
-		echo '<div id="presence-active-posts-list" aria-live="polite">';
+		echo '<div id="presence-active-posts-list" aria-live="polite" tabindex="-1">';
 
 		if ( empty( $posts ) ) {
 			echo '<p>' . esc_html__( 'All quiet.', 'presence-api' ) . '</p>';
@@ -343,8 +371,16 @@ JS,
 				);
 			}
 
-			$by_post[ $post_id ]['editors'][] = array(
-				'user_id'      => (int) $entry->user_id,
+			$editor_id = (int) $entry->user_id;
+
+			// A user can hold more than one entry in a room. Rows arrive newest
+			// first, so the one already seen is the freshest.
+			if ( isset( $by_post[ $post_id ]['editors'][ $editor_id ] ) ) {
+				continue;
+			}
+
+			$by_post[ $post_id ]['editors'][ $editor_id ] = array(
+				'user_id'      => $editor_id,
 				'display_name' => $user->display_name,
 				'avatar_url'   => get_avatar_url( $user->ID, array( 'size' => 24 ) ),
 				'status'       => $status,
@@ -358,6 +394,11 @@ JS,
 				return count( $b['editors'] ) - count( $a['editors'] );
 			}
 		);
+
+		// Keyed by user id above; the response is JSON, so hand back a list.
+		foreach ( $by_post as $index => $post_data ) {
+			$by_post[ $index ]['editors'] = array_values( $post_data['editors'] );
+		}
 
 		return array_values( $by_post );
 	}

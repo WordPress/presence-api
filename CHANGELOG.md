@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.1.19](https://github.com/WordPress/presence-api/compare/v0.1.18...v0.1.19) (2026-08-14)
+
+
+### Bug Fixes
+
+* keyboard users can't reach non-link items in the admin bar presence flyout ([d73bbf7](https://github.com/WordPress/presence-api/commit/d73bbf7a1ac4bf77290e21074749fc5af6055af8))
+* let core's focus color show through admin bar group headers ([4eb9fe8](https://github.com/WordPress/presence-api/commit/4eb9fe8da96787272ffddf94c2853ee9cf1738a4))
+* make non-link admin bar flyout items reachable by keyboard ([bd77c8e](https://github.com/WordPress/presence-api/commit/bd77c8efe3bf959d7060f2bfa2a545ea287dfbdf))
+* preserve focus across heartbeat re-renders in Active Posts widget ([07846f7](https://github.com/WordPress/presence-api/commit/07846f747494a930211625194165c9eea64475e6))
+* preserve focus across heartbeat re-renders in dashboard widgets ([8310ba7](https://github.com/WordPress/presence-api/commit/8310ba724d1af7d99c8d8f5ca3f648cbd3959a38))
+* preserve focus across heartbeat re-renders in Who's Online widget ([45e4f13](https://github.com/WordPress/presence-api/commit/45e4f13ea83be665a8daa3f98a8e4f73bf9dcec7))
+
+
+### Dependencies
+
+* **deps-dev:** update phpstan/phpstan requirement from 2.2.7 to 2.2.8 ([1c817f6](https://github.com/WordPress/presence-api/commit/1c817f60acef7d19b1725d8d380e4d18533d2256))
+
+## [0.1.18](https://github.com/WordPress/presence-api/compare/v0.1.17...v0.1.18) (2026-08-11)
+
+
+### Bug Fixes
+
+* check table availability in the CLI command and debug viewer ([cfd705b](https://github.com/WordPress/presence-api/commit/cfd705bc66e352c4b56e301500848edd87eec08d))
+* delete expired presence rows by key in bounded passes ([fc624e2](https://github.com/WordPress/presence-api/commit/fc624e2405e077f57858230f276def8544eb5430))
+* guard the CLI cleanup command with a table availability check ([a932652](https://github.com/WordPress/presence-api/commit/a9326529ef3cb8570062b37c2dd54290f578926c))
+* guard the debug DB viewer query and drop the unused row count ([453bb12](https://github.com/WordPress/presence-api/commit/453bb12ce65b145a5dabc12c53e4a7f5fa066d52))
+
 ## [0.1.17](https://github.com/WordPress/presence-api/compare/v0.1.16...v0.1.17) (2026-08-10)
 
 

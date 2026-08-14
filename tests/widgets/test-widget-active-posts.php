@@ -236,4 +236,83 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 		$this->assertCount( 1, $response['presence-active-posts'] );
 		$this->assertSame( $draft_id, $response['presence-active-posts'][0]['post_id'] );
 	}
+
+	/**
+	 * Nothing guarantees one row per user in a room, so the widget counts
+	 * people rather than rows.
+	 *
+	 * @covers WP_Presence_Widget_Active_Posts::heartbeat_received
+	 */
+	public function test_a_user_holding_two_entries_is_counted_once() {
+		wp_set_current_user( self::$editor_id );
+
+		$room = wp_presence_post_room( self::$post_id );
+		wp_set_presence( $room, 'editor-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( $room, 'other-' . self::$editor_id, array(), self::$editor_id );
+
+		$response = WP_Presence_Widget_Active_Posts::heartbeat_received(
+			array(),
+			array( 'presence-active-posts-ping' => true ),
+			'dashboard'
+		);
+
+		$this->assertCount( 1, $response['presence-active-posts'][0]['editors'] );
+		$this->assertSame( self::$editor_id, $response['presence-active-posts'][0]['editors'][0]['user_id'] );
+	}
+
+	/**
+	 * @covers WP_Presence_Widget_Active_Posts::heartbeat_received
+	 */
+	public function test_a_users_freshest_entry_decides_their_status() {
+		global $wpdb;
+
+		wp_set_current_user( self::$editor_id );
+
+		$room = wp_presence_post_room( self::$post_id );
+
+		wp_set_presence( $room, 'stale-' . self::$editor_id, array(), self::$editor_id );
+		$wpdb->update(
+			$wpdb->presence,
+			array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - 45 ) ),
+			array( 'client_id' => 'stale-' . self::$editor_id ),
+			array( '%s' ),
+			array( '%s' )
+		);
+
+		wp_set_presence( $room, 'editor-' . self::$editor_id, array(), self::$editor_id );
+
+		$response = WP_Presence_Widget_Active_Posts::heartbeat_received(
+			array(),
+			array( 'presence-active-posts-ping' => true ),
+			'dashboard'
+		);
+
+		$editors = $response['presence-active-posts'][0]['editors'];
+
+		$this->assertCount( 1, $editors );
+		$this->assertSame( 'active', $editors[0]['status'] );
+	}
+
+	/**
+	 * The response is JSON, so the editors list has to stay a list.
+	 *
+	 * @covers WP_Presence_Widget_Active_Posts::heartbeat_received
+	 */
+	public function test_editors_encode_as_a_json_array() {
+		wp_set_current_user( self::$editor_id );
+
+		$room = wp_presence_post_room( self::$post_id );
+		wp_set_presence( $room, 'editor-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( $room, 'other-' . self::$editor_id, array(), self::$editor_id );
+
+		$response = WP_Presence_Widget_Active_Posts::heartbeat_received(
+			array(),
+			array( 'presence-active-posts-ping' => true ),
+			'dashboard'
+		);
+
+		$encoded = wp_json_encode( $response['presence-active-posts'][0]['editors'] );
+
+		$this->assertStringStartsWith( '[', $encoded );
+	}
 }

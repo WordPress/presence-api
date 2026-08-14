@@ -72,12 +72,13 @@
 		if ( rev <= baselineRev ) {
 			return;
 		}
-		// If the latest save was by the current user AND the revision jumped
-		// by exactly one, advance the baseline silently so we don't yell at
-		// them about their own save. A jump of more than one means someone
-		// else saved in between and only the latest actor reaches us — fall
-		// through to render the notice in that case.
-		if ( info.actor_is_me && rev === baselineRev + 1 ) {
+		// If the latest save was by the current user, advance the baseline
+		// silently so we don't yell at them about their own save. Only the
+		// latest bump's actor reaches us, so this can't tell a lone self-save
+		// apart from a self-save that landed after someone else's, but the
+		// revision itself is a timestamp now rather than a counter, so there
+		// is no increment-by-one to check against.
+		if ( info.actor_is_me ) {
 			baselineRev = rev;
 			return;
 		}

@@ -25,9 +25,12 @@ namespace {
 
 		public static $formatted = array();
 
+		public static $confirm_declines = false;
+
 		public static function reset() {
-			self::$calls     = array();
-			self::$formatted = array();
+			self::$calls            = array();
+			self::$formatted        = array();
+			self::$confirm_declines = false;
 		}
 
 		public static function success( $message ) {
@@ -38,8 +41,15 @@ namespace {
 			self::record( 'log', $message );
 		}
 
+		/**
+		 * @throws WP_Presence_CLI_Halt Standing in for the process exit, when $confirm_declines is set.
+		 */
 		public static function confirm( $question ) {
 			self::record( 'confirm', $question );
+
+			if ( self::$confirm_declines ) {
+				throw new WP_Presence_CLI_Halt( $question );
+			}
 		}
 
 		/**
