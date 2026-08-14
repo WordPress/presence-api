@@ -12,10 +12,6 @@ WordPress has no way to know who is logged in, what screen they are on, or which
 
 > "This idea of presence I think is really cool and seeing where people are... you log into your WordPress, I see oh Matias is moderating some comments, Lynn is on the dashboard maybe reading some news... that idea of like you log in and you can kind of see the neighborhood of like who else is also there." — [Matt Mullenweg, WordPress 7.0 planning session](https://youtu.be/F-xMPY9WqG4?si=YK0rIUM2nuYy7x45&t=2435)
 
-[![Watch the demo on YouTube](https://img.youtube.com/vi/Xa5WkZdjBD4/maxresdefault.jpg)](https://youtu.be/Xa5WkZdjBD4)
-
-▶ [Watch the demo on YouTube](https://youtu.be/Xa5WkZdjBD4) (no audio)
-
 ## Try it
 
 [![Open in WordPress Playground](https://img.shields.io/badge/Open%20in-WordPress%20Playground-3858E9?logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json)
