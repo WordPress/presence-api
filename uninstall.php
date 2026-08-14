@@ -13,6 +13,10 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 
 /**
  * Drops the presence table and deletes options for a single site.
+ *
+ * Terms and comments are per-site, like the table itself, so their meta is
+ * cleaned up here. Users are shared across a network; that cleanup runs once,
+ * below, rather than once per site.
  */
 function wp_presence_uninstall_site() {
 	global $wpdb;
@@ -24,6 +28,16 @@ function wp_presence_uninstall_site() {
 
 	delete_option( 'wp_presence_db_version' );
 	delete_option( 'wp_presence_screen_revisions' );
+
+	// Matches wp_presence_known_options_pages() in includes/screen-revisions.php.
+	// Not required here, since this file runs standalone without the rest of
+	// the plugin loaded.
+	foreach ( array( 'general', 'writing', 'reading', 'discussion', 'media', 'permalink' ) as $page ) {
+		delete_option( 'wp_presence_screen_rev_options_' . $page );
+	}
+
+	delete_metadata( 'term', 0, '_wp_presence_screen_rev', '', true );
+	delete_metadata( 'comment', 0, '_wp_presence_screen_rev', '', true );
 }
 
 if ( is_multisite() ) {
@@ -42,3 +56,5 @@ if ( is_multisite() ) {
 } else {
 	wp_presence_uninstall_site();
 }
+
+delete_metadata( 'user', 0, '_wp_presence_screen_rev', '', true );

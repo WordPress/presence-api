@@ -2,11 +2,12 @@
 /**
  * Post-lock bridge: writes presence entries alongside post lock heartbeats.
  *
- * This bridge is transitional. It creates presence entries alongside the
- * existing _edit_lock postmeta so both systems coexist. The intent is for
- * the block editor (Gutenberg) to consume presence data directly in the
- * future — enabling real-time awareness (cursors, selections, who's editing
- * which block) rather than the current blunt lock/takeover model.
+ * This bridge is transitional. It records the lock on the editing user's
+ * presence entry alongside the existing _edit_lock postmeta so both systems
+ * coexist. The intent is for the block editor (Gutenberg) to consume presence
+ * data directly in the future — enabling real-time awareness (cursors,
+ * selections, who's editing which block) rather than the current blunt
+ * lock/takeover model.
  *
  * @package Presence_API
  */
@@ -18,8 +19,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Bridges post-lock heartbeats into presence entries.
  *
- * Writes a presence entry alongside the existing _edit_lock postmeta
- * whenever a post lock is refreshed via Heartbeat.
+ * Marks the user's entry in the post room as holding the lock whenever a post
+ * lock is refreshed via Heartbeat, alongside the existing _edit_lock postmeta.
+ *
+ * Fallback path, for a client that refreshes the core lock without sending
+ * presence-editor-ping.
  *
  * @param array  $response  The Heartbeat response.
  * @param array  $data      The $_POST data sent.
@@ -34,6 +38,13 @@ function wp_presence_bridge_post_lock( $response, $data, $screen_id ) {
 	}
 
 	$post_id = absint( $data['wp-refresh-post-lock']['post_id'] );
+
+	// The editor handler already wrote this entry from this same payload.
+	if ( ! empty( $data['presence-editor-ping']['post_id'] )
+		&& absint( $data['presence-editor-ping']['post_id'] ) === $post_id ) {
+		return $response;
+	}
+
 	$user_id = get_current_user_id();
 
 	if ( ! $user_id || ! current_user_can( 'edit_post', $post_id ) ) {
@@ -48,11 +59,8 @@ function wp_presence_bridge_post_lock( $response, $data, $screen_id ) {
 
 	wp_set_presence(
 		$room,
-		'lock-' . $user_id,
-		array(
-			'action' => 'editing',
-			'screen' => $screen_id,
-		),
+		'editor-' . $user_id,
+		wp_presence_editor_state( $screen_id, true ),
 		$user_id
 	);
 
