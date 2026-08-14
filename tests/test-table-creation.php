@@ -13,6 +13,11 @@
  */
 class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 
+	/**
+	 * The option backing the provisioning lock.
+	 */
+	private const LOCK_OPTION = 'wp_presence_table.lock';
+
 	private static $editor_id;
 
 	/**
@@ -35,6 +40,11 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 		remove_filter( 'query', array( $this, '_create_temporary_tables' ) );
 		remove_filter( 'query', array( $this, '_drop_temporary_tables' ) );
 
+		// DDL commits the surrounding transaction, so a provisioning lock left
+		// behind by an earlier run survives into this one and would block every
+		// test that provisions. Start from a known-free lock.
+		delete_option( self::LOCK_OPTION );
+
 		// Network options survive the rolled-back transaction, so tests that
 		// pretend the plugin is network active have to put this back by hand.
 		if ( is_multisite() ) {
@@ -54,6 +64,7 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 		// DDL commits the surrounding transaction, so clean up by hand. The
 		// truncate itself is handled by the parent tear_down.
 		wp_presence_register_table();
+		delete_option( self::LOCK_OPTION );
 		delete_option( 'wp_presence_db_version' );
 		wp_presence_provision_site();
 
@@ -131,6 +142,79 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), self::$editor_id );
 
 		$this->assertCount( 1, wp_get_presence( 'admin/online' ), 'Presence should work again after the rebuild.' );
+	}
+
+	/**
+	 * Two admin requests can enter provisioning at the same time, and neither
+	 * has a confirmation step to serialize them the way wp-admin/upgrade.php
+	 * does for core. The one that arrives second has to return rather than run
+	 * a second, overlapping dbDelta().
+	 *
+	 * @covers ::wp_maybe_create_presence_table
+	 * @covers ::wp_presence_create_lock
+	 */
+	public function test_a_locked_request_does_not_run_the_schema_change() {
+		$this->drop_presence_table();
+
+		// Stand in for the request that got there first and is still working.
+		$this->assertTrue( wp_presence_create_lock( 'wp_presence_table' ), 'Precondition: the lock starts free.' );
+
+		wp_maybe_create_presence_table();
+
+		$this->assertFalse( $this->presence_table_exists(), 'The second request should not have run dbDelta().' );
+		$this->assertFalse( get_option( 'wp_presence_db_version' ), 'And it should not have claimed the site is provisioned.' );
+	}
+
+	/**
+	 * Holding the lock past the work would block provisioning for every later
+	 * request, which is a worse failure than the race it guards against.
+	 *
+	 * @covers ::wp_maybe_create_presence_table
+	 * @covers ::wp_presence_release_lock
+	 */
+	public function test_provisioning_releases_the_lock_for_the_next_request() {
+		$this->drop_presence_table();
+		wp_maybe_create_presence_table();
+		$this->assertTrue( $this->presence_table_exists(), 'Precondition: the first request provisions.' );
+
+		$this->drop_presence_table();
+		wp_maybe_create_presence_table();
+
+		$this->assertTrue( $this->presence_table_exists(), 'A later request should not be blocked by a lock nobody holds.' );
+	}
+
+	/**
+	 * A request that dies between taking the lock and releasing it would
+	 * otherwise leave the site unprovisionable. Core's upgrader lock reclaims
+	 * on age for the same reason.
+	 *
+	 * @covers ::wp_maybe_create_presence_table
+	 * @covers ::wp_presence_create_lock
+	 */
+	public function test_an_abandoned_lock_stops_blocking_once_it_ages_out() {
+		$this->drop_presence_table();
+
+		// A lock left behind by a request that never got to release it.
+		update_option( self::LOCK_OPTION, time() - ( 2 * MINUTE_IN_SECONDS ), false );
+
+		wp_maybe_create_presence_table();
+
+		$this->assertTrue( $this->presence_table_exists(), 'An expired lock should be reclaimed, not respected forever.' );
+	}
+
+	/**
+	 * The lock has to be exclusive, or it is not a lock.
+	 *
+	 * @covers ::wp_presence_create_lock
+	 * @covers ::wp_presence_release_lock
+	 */
+	public function test_only_one_caller_holds_the_lock_at_a_time() {
+		$this->assertTrue( wp_presence_create_lock( 'wp_presence_table' ), 'The first caller should take the lock.' );
+		$this->assertFalse( wp_presence_create_lock( 'wp_presence_table' ), 'The second should be refused while it is held.' );
+
+		wp_presence_release_lock( 'wp_presence_table' );
+
+		$this->assertTrue( wp_presence_create_lock( 'wp_presence_table' ), 'And it should be free again once released.' );
 	}
 
 	/**
