@@ -112,4 +112,30 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 
 		$this->assertStringContainsString( 'Secret Draft', $markup );
 	}
+
+	/**
+	 * WP_Admin_Bar only renders a `tabindex` attribute on a non-link node
+	 * when `meta.tabindex` is explicitly set — otherwise it's a `<div>`
+	 * outside the tab order entirely.
+	 */
+	public function test_non_link_nodes_are_keyboard_reachable() {
+		$this->put_editor_on_post( self::$post_id );
+
+		wp_set_current_user( self::$contributor_id );
+
+		$bar = new WP_Admin_Bar();
+		wp_presence_admin_bar_node( $bar );
+
+		foreach ( $bar->get_nodes() as $node ) {
+			if ( ! empty( $node->href ) ) {
+				continue;
+			}
+
+			$this->assertSame(
+				0,
+				$node->meta['tabindex'] ?? null,
+				"Node '{$node->id}' has no href and needs meta.tabindex => 0 to stay reachable by Tab."
+			);
+		}
+	}
 }
