@@ -132,6 +132,8 @@ jobs:
   deploy-to-wporg:
     needs: [release-please, build-release-asset]
     if: ${{ needs.release-please.outputs.release_created }}
+    permissions:
+      contents: read
     uses: ./.github/workflows/deploy-wporg.yml
     with:
       tag: ${{ needs.release-please.outputs.tag_name }}
