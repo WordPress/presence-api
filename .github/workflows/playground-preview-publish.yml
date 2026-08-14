@@ -16,7 +16,7 @@ name: Playground Preview Publish
 #     this workflow.
 
 on:
-  workflow_run:
+  workflow_run: # zizmor: ignore[dangerous-triggers]
     workflows: ["Playground Preview"]
     types: [completed]
 
