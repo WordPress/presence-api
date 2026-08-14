@@ -10,6 +10,25 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Builds the state stored on a user's entry in a post room.
+ *
+ * Shared so the two writers of that entry cannot drift apart on its shape.
+ *
+ * @access private
+ *
+ * @param string $screen_id The screen ID.
+ * @param bool   $locked    Whether this write carries a post lock refresh.
+ * @return array The state to store.
+ */
+function wp_presence_editor_state( $screen_id, $locked ) {
+	return array(
+		'action' => 'editing',
+		'screen' => $screen_id,
+		'locked' => (bool) $locked,
+	);
+}
+
+/**
  * Enqueues heartbeat and the presence ping script on all admin pages.
  */
 function wp_presence_enqueue_heartbeat_ping() {
@@ -75,11 +94,6 @@ function wp_presence_enqueue_heartbeat_ping() {
 						'room'      => $room,
 						'client_id' => 'editor-' . $user_id,
 					);
-					// The post-lock bridge writes this entry via the wp-refresh-post-lock heartbeat.
-					$entries[] = array(
-						'room'      => $room,
-						'client_id' => 'lock-' . $user_id,
-					);
 				}
 			}
 		}
@@ -105,13 +119,12 @@ function wp_presence_enqueue_heartbeat_ping() {
 	if ( $editor_post_id ) {
 		$editor_room = wp_presence_post_room( $editor_post_id );
 		if ( $editor_room ) {
+			// No tick has carried a lock refresh yet. connectNow() on load makes
+			// that a single request, not a visible state.
 			wp_set_presence(
 				$editor_room,
 				'editor-' . $user_id,
-				array(
-					'action' => 'editing',
-					'screen' => $screen_id,
-				),
+				wp_presence_editor_state( $screen_id, false ),
 				$user_id
 			);
 		}
@@ -235,13 +248,15 @@ function wp_presence_editor_heartbeat_received( $response, $data, $screen_id ) {
 		return $response;
 	}
 
+	// Read per tick: a tick carrying no refresh means the lock is no longer
+	// being held open, which is what the separate row's expiry used to say.
+	$locked = ! empty( $data['wp-refresh-post-lock']['post_id'] )
+		&& absint( $data['wp-refresh-post-lock']['post_id'] ) === $post_id;
+
 	wp_set_presence(
 		$room,
 		'editor-' . $user_id,
-		array(
-			'action' => 'editing',
-			'screen' => $screen_id,
-		),
+		wp_presence_editor_state( $screen_id, $locked ),
 		$user_id
 	);
 
