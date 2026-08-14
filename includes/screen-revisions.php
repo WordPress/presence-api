@@ -3,9 +3,9 @@
  * Stale-screen detection: alert users when an admin screen they're viewing is out of date.
  *
  * When a user saves a Settings page, a post, a user, a term, or a comment, a
- * per-screen revision counter is bumped. Other users currently viewing the
- * same screen receive the new revision on the next Heartbeat tick and render
- * a non-blocking notice prompting them to reload.
+ * per-screen revision is recorded. Other users currently viewing the same
+ * screen receive the new revision on the next Heartbeat tick and render a
+ * non-blocking notice prompting them to reload.
  *
  * Coverage in this first cut: classic admin screens that submit via POST and
  * redirect on success — Settings → General/Writing/Reading/Discussion/Media/Permalinks,
@@ -31,11 +31,17 @@ if ( ! defined( 'WP_PRESENCE_SCREEN_KEY_LIMIT' ) ) {
 }
 
 /**
- * Returns the full screen-revision map.
+ * Returns the full screen-revision map for keys with no dedicated storage.
  *
  * Shape: array( '<screen_key>' => array( 'rev' => int, 'actor_id' => int, 'time' => int ) ).
  * The actor's display name and avatar are looked up fresh on each heartbeat
  * tick — not stored — so renames and avatar changes show immediately.
+ *
+ * Only screen keys that don't map to a post, user, term, comment, or a known
+ * Settings page land here — see wp_presence_parse_screen_key_target(). Those
+ * write straight to the object they describe instead of this shared option,
+ * so a save on one screen doesn't invalidate the cache entry for every other
+ * screen in the map.
  *
  * @return array
  */
@@ -45,18 +51,136 @@ function wp_presence_get_screen_revisions() {
 }
 
 /**
+ * Returns the six Settings pages that get their own dedicated revision option.
+ *
+ * Matches the switch in wp_presence_current_screen_key() and core's own
+ * $allowed_options gate in wp-admin/options.php. Anything outside this list
+ * still matches the `options/` prefix but is treated as a custom key instead,
+ * so an arbitrary options/{page} value from the REST endpoint can't create an
+ * unbounded number of option rows.
+ *
+ * @return string[]
+ */
+function wp_presence_known_options_pages() {
+	return array( 'general', 'writing', 'reading', 'discussion', 'media', 'permalink' );
+}
+
+/**
+ * Resolves what a screen key's revision is stored on.
+ *
+ * @param string $screen_key Normalized screen key.
+ * @return array {
+ *     @type string $type     One of 'post', 'user', 'term', 'comment', 'options', 'custom'.
+ *     @type int    $id       Object ID. Present for 'post', 'user', 'term', 'comment'.
+ *     @type string $taxonomy Taxonomy slug. Present for 'term'.
+ *     @type string $page     Settings page slug. Present for 'options'.
+ * }
+ */
+function wp_presence_parse_screen_key_target( $screen_key ) {
+	if ( preg_match( '#^post/(\d+)$#', $screen_key, $m ) ) {
+		return array(
+			'type' => 'post',
+			'id'   => (int) $m[1],
+		);
+	}
+	if ( preg_match( '#^user-edit/(\d+)$#', $screen_key, $m ) ) {
+		return array(
+			'type' => 'user',
+			'id'   => (int) $m[1],
+		);
+	}
+	if ( preg_match( '#^term/([^/]+)/(\d+)$#', $screen_key, $m ) ) {
+		return array(
+			'type'     => 'term',
+			'taxonomy' => $m[1],
+			'id'       => (int) $m[2],
+		);
+	}
+	if ( preg_match( '#^comment/(\d+)$#', $screen_key, $m ) ) {
+		return array(
+			'type' => 'comment',
+			'id'   => (int) $m[1],
+		);
+	}
+	if ( 0 === strpos( $screen_key, 'options/' ) ) {
+		$page = substr( $screen_key, strlen( 'options/' ) );
+		if ( in_array( $page, wp_presence_known_options_pages(), true ) ) {
+			return array(
+				'type' => 'options',
+				'page' => $page,
+			);
+		}
+	}
+
+	return array( 'type' => 'custom' );
+}
+
+/**
  * Returns the revision entry for a single screen, or null if none.
  *
  * @param string $screen_key Screen key to look up.
  * @return array|null
  */
 function wp_presence_get_screen_revision( $screen_key ) {
+	global $wpdb;
+
 	$screen_key = wp_presence_normalize_screen_key( $screen_key );
 	if ( '' === $screen_key ) {
 		return null;
 	}
-	$map = wp_presence_get_screen_revisions();
-	return isset( $map[ $screen_key ] ) ? $map[ $screen_key ] : null;
+
+	$target = wp_presence_parse_screen_key_target( $screen_key );
+
+	switch ( $target['type'] ) {
+		case 'post':
+			// get_post() + get_post_meta() would be free here if the post and
+			// its meta were already cached, but a Heartbeat tick is its own
+			// request with a cold cache, so that's two queries where the old
+			// shared option cost one. A single joined query keeps this to
+			// one query in the case that actually happens on every tick, at
+			// the cost of one query instead of a cache hit on the rare path
+			// where wp_presence_on_post_updated() reads this back right
+			// after its own save.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$row = $wpdb->get_row(
+				$wpdb->prepare(
+					"SELECT p.post_modified_gmt, pm.meta_value AS edit_last
+					FROM {$wpdb->posts} p
+					LEFT JOIN {$wpdb->postmeta} pm ON pm.post_id = p.ID AND pm.meta_key = '_edit_last'
+					WHERE p.ID = %d
+					LIMIT 1",
+					$target['id']
+				)
+			);
+			if ( ! $row ) {
+				return null;
+			}
+			// mysql2date( 'U', ... ) adds the site's timezone offset even when
+			// $translate is false — core's own get_post_time() skips that add
+			// only for its $gmt branch. post_modified_gmt is already a naive
+			// UTC string, and WordPress forces PHP's default timezone to UTC
+			// at bootstrap, so a plain strtotime() is the correct conversion.
+			$revision = (int) strtotime( $row->post_modified_gmt );
+			return array(
+				'rev'      => $revision,
+				'actor_id' => (int) $row->edit_last,
+				'time'     => $revision,
+			);
+
+		case 'user':
+		case 'term':
+		case 'comment':
+			$entry = get_metadata( $target['type'], $target['id'], '_wp_presence_screen_rev', true );
+			return $entry ? $entry : null;
+
+		case 'options':
+			$entry = get_option( 'wp_presence_screen_rev_options_' . $target['page'], null );
+			return $entry ? $entry : null;
+
+		default:
+			$map = wp_presence_get_screen_revisions();
+			return isset( $map[ $screen_key ] ) ? $map[ $screen_key ] : null;
+	}
 }
 
 /**
@@ -70,11 +194,23 @@ function wp_presence_normalize_screen_key( $screen_key ) {
 }
 
 /**
- * Increments the revision counter for a screen and records the actor.
+ * Records a screen's revision and actor.
+ *
+ * Posts, users, terms, comments, and the six known Settings pages each write
+ * straight to the object (or their own option) they describe, with no prior
+ * read — the revision is the current time, not an incremented counter, so
+ * there's nothing to read-modify-write and nothing for two overlapping saves
+ * to race over. Posts write nothing at all: post_modified_gmt and _edit_last
+ * are already set by core on the same save.
+ *
+ * Anything else falls back to a shared, size-bounded option keyed by screen
+ * key, the same storage this function used for every key before this split.
  *
  * @param string $screen_key Screen key to bump.
  * @param int    $actor_id   Optional. Defaults to the current user.
- * @return int|false New revision number, or false when the key is empty.
+ * @return int|false New revision (a Unix timestamp for dedicated storage, an
+ *                    incrementing counter for the shared-option fallback), or
+ *                    false when the key is empty.
  */
 function wp_presence_bump_screen_revision( $screen_key, $actor_id = 0 ) {
 	$screen_key = wp_presence_normalize_screen_key( $screen_key );
@@ -85,30 +221,94 @@ function wp_presence_bump_screen_revision( $screen_key, $actor_id = 0 ) {
 		$actor_id = get_current_user_id();
 	}
 
-	$map      = wp_presence_get_screen_revisions();
-	$previous = isset( $map[ $screen_key ]['rev'] ) ? (int) $map[ $screen_key ]['rev'] : 0;
-	$revision = $previous + 1;
+	$target = wp_presence_parse_screen_key_target( $screen_key );
 
-	$map[ $screen_key ] = array(
-		'rev'      => $revision,
-		'actor_id' => (int) $actor_id,
-		'time'     => time(),
-	);
+	switch ( $target['type'] ) {
+		case 'post':
+			// Nothing to write. Read back what core already recorded on this save.
+			$entry    = wp_presence_get_screen_revision( $screen_key );
+			$revision = $entry ? $entry['rev'] : time();
+			break;
 
-	// LRU-ish trim by oldest update time when over the limit.
-	if ( count( $map ) > WP_PRESENCE_SCREEN_REV_LIMIT ) {
-		uasort(
-			$map,
-			static function ( $a, $b ) {
-				$at = isset( $a['time'] ) ? (int) $a['time'] : 0;
-				$bt = isset( $b['time'] ) ? (int) $b['time'] : 0;
-				return $at <=> $bt;
+		case 'user':
+			$revision = time();
+			update_user_meta(
+				$target['id'],
+				'_wp_presence_screen_rev',
+				array(
+					'rev'      => $revision,
+					'actor_id' => (int) $actor_id,
+					'time'     => $revision,
+				)
+			);
+			break;
+
+		case 'term':
+			$revision = time();
+			update_term_meta(
+				$target['id'],
+				'_wp_presence_screen_rev',
+				array(
+					'rev'      => $revision,
+					'actor_id' => (int) $actor_id,
+					'time'     => $revision,
+				)
+			);
+			break;
+
+		case 'comment':
+			$revision = time();
+			update_comment_meta(
+				$target['id'],
+				'_wp_presence_screen_rev',
+				array(
+					'rev'      => $revision,
+					'actor_id' => (int) $actor_id,
+					'time'     => $revision,
+				)
+			);
+			break;
+
+		case 'options':
+			$revision = time();
+			update_option(
+				'wp_presence_screen_rev_options_' . $target['page'],
+				array(
+					'rev'      => $revision,
+					'actor_id' => (int) $actor_id,
+					'time'     => $revision,
+				),
+				false
+			);
+			break;
+
+		default:
+			$map      = wp_presence_get_screen_revisions();
+			$previous = isset( $map[ $screen_key ]['rev'] ) ? (int) $map[ $screen_key ]['rev'] : 0;
+			$revision = $previous + 1;
+
+			$map[ $screen_key ] = array(
+				'rev'      => $revision,
+				'actor_id' => (int) $actor_id,
+				'time'     => time(),
+			);
+
+			// LRU-ish trim by oldest update time when over the limit.
+			if ( count( $map ) > WP_PRESENCE_SCREEN_REV_LIMIT ) {
+				uasort(
+					$map,
+					static function ( $a, $b ) {
+						$at = isset( $a['time'] ) ? (int) $a['time'] : 0;
+						$bt = isset( $b['time'] ) ? (int) $b['time'] : 0;
+						return $at <=> $bt;
+					}
+				);
+				$map = array_slice( $map, - WP_PRESENCE_SCREEN_REV_LIMIT, null, true );
 			}
-		);
-		$map = array_slice( $map, - WP_PRESENCE_SCREEN_REV_LIMIT, null, true );
-	}
 
-	update_option( 'wp_presence_screen_revisions', $map, false );
+			update_option( 'wp_presence_screen_revisions', $map, false );
+			break;
+	}
 
 	/**
 	 * Fires after a screen revision is bumped.
