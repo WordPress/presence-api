@@ -733,7 +733,58 @@ JS,
 		}
 
 		$entries = wp_get_presence( wp_presence_admin_room() );
-		$online  = array();
+		$hash    = self::hash_online_state( $entries );
+
+		$client_hash = isset( $data['presence-online-hash'] ) ? sanitize_text_field( $data['presence-online-hash'] ) : '';
+
+		if ( $client_hash && $client_hash === $hash ) {
+			$response['presence-online-unchanged'] = true;
+
+			return $response;
+		}
+
+		$response['presence-online']      = self::build_online_entries( $entries );
+		$response['presence-online-hash'] = $hash;
+
+		return $response;
+	}
+
+	/**
+	 * Hashes the meaningful state of a room's presence entries.
+	 *
+	 * Excludes date_gmt, which every tick rewrites for the pinging user and so
+	 * would flip the hash on every tick.
+	 *
+	 * @param array $entries Presence entry objects from wp_get_presence().
+	 * @return string The state hash.
+	 */
+	private static function hash_online_state( $entries ) {
+		$state = array();
+
+		foreach ( $entries as $entry ) {
+			$state[] = array(
+				(int) $entry->user_id,
+				isset( $entry->data['screen'] ) ? $entry->data['screen'] : '',
+				isset( $entry->data['post_status'] ) ? $entry->data['post_status'] : '',
+				isset( $entry->data['title'] ) ? $entry->data['title'] : '',
+				isset( $entry->data['post_id'] ) ? (int) $entry->data['post_id'] : 0,
+			);
+		}
+
+		// wp_get_presence() orders by date_gmt, which reshuffles as clients ping.
+		sort( $state );
+
+		return md5( (string) wp_json_encode( $state ) );
+	}
+
+	/**
+	 * Builds the structured presence payload for a room's entries.
+	 *
+	 * @param array $entries Presence entry objects from wp_get_presence().
+	 * @return array Presence data for client consumption.
+	 */
+	private static function build_online_entries( $entries ) {
+		$online = array();
 
 		cache_users( wp_list_pluck( $entries, 'user_id' ) );
 
@@ -763,8 +814,6 @@ JS,
 			);
 		}
 
-		$response['presence-online'] = $online;
-
-		return $response;
+		return $online;
 	}
 }
