@@ -17,6 +17,8 @@ Presence API gives WordPress a system-wide awareness layer. It tracks which user
 
 Data flows through the Heartbeat API and is stored in a dedicated `wp_presence` table with a 60-second TTL. No writes to `wp_postmeta` means no post-cache invalidation on every heartbeat.
 
+[Test in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json) without installing anything.
+
 = Features =
 
 * Who's Online dashboard widget with idle detection
@@ -24,12 +26,6 @@ Data flows through the Heartbeat API and is stored in a dedicated `wp_presence` 
 * Admin bar indicator showing other users on the same page
 * Editors column in the post list
 * Online filter in the Users list
-
-= Try it =
-
-[Test in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json) without installing anything.
-
-[Watch the demo on YouTube](https://youtu.be/Xa5WkZdjBD4)
 
 = For Developers =
 
