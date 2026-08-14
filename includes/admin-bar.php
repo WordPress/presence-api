@@ -181,7 +181,10 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 			'id'     => 'presence-group-here',
 			'title'  => '<span class="presence-bar-group-label">' . esc_html__( 'On this page', 'presence-api' ) . '</span>',
 			'href'   => false,
-			'meta'   => array( 'class' => 'presence-bar-group-header' ),
+			'meta'   => array(
+				'class'    => 'presence-bar-group-header',
+				'tabindex' => 0,
+			),
 		)
 	);
 
@@ -192,6 +195,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 			'id'     => 'presence-user-self',
 			'title'  => esc_html( $current_user ? $current_user->display_name : __( 'You', 'presence-api' ) ) . ' <span class="presence-bar-you">(' . esc_html__( 'you', 'presence-api' ) . ')</span>',
 			'href'   => false,
+			'meta'   => array( 'tabindex' => 0 ),
 		)
 	);
 
@@ -209,6 +213,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 					/* translators: %d: Number of additional online users. */
 					'title'  => '<span class="presence-bar-screen">' . esc_html( sprintf( __( '+%d more', 'presence-api' ), $remaining ) ) . '</span>',
 					'href'   => false,
+					'meta'   => array( 'tabindex' => 0 ),
 				)
 			);
 			break;
@@ -224,6 +229,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 				'id'     => 'presence-user-' . $entry->user_id,
 				'title'  => esc_html( $user->display_name ),
 				'href'   => false,
+				'meta'   => array( 'tabindex' => 0 ),
 			)
 		);
 		++$shown;
@@ -236,7 +242,10 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 				'id'     => 'presence-group-elsewhere',
 				'title'  => '<span class="presence-bar-group-label">' . esc_html__( 'Elsewhere', 'presence-api' ) . '</span>',
 				'href'   => false,
-				'meta'   => array( 'class' => 'presence-bar-group-header' ),
+				'meta'   => array(
+					'class'    => 'presence-bar-group-header',
+					'tabindex' => 0,
+				),
 			)
 		);
 
@@ -308,6 +317,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 					'id'     => 'presence-user-' . $entry->user_id,
 					'title'  => $item_title,
 					'href'   => $screen_url ? $screen_url : false,
+					'meta'   => $screen_url ? array() : array( 'tabindex' => 0 ),
 				)
 			);
 			++$shown;
@@ -342,11 +352,12 @@ function wp_presence_admin_bar_assets() {
 		#wp-admin-bar-presence-online .presence-bar-you { color: #a7aaad; font-weight: normal; }
 		#wp-admin-bar-presence-online .presence-bar-screen { color: #a7aaad; font-size: 12px; }
 		#wp-admin-bar-presence-online .presence-bar-screen em { font-style: italic; }
-		#wp-admin-bar-presence-online .presence-bar-group-header > .ab-item { color: #a7aaad !important; font-size: 11px !important; text-transform: uppercase; letter-spacing: 0.5px; pointer-events: none; padding-bottom: 0 !important; }
+		#wp-admin-bar-presence-online .presence-bar-group-header > .ab-item { font-size: 11px !important; text-transform: uppercase; letter-spacing: 0.5px; pointer-events: none; padding-bottom: 0 !important; }
+		#wp-admin-bar-presence-online .presence-bar-group-header > .ab-item:not(:focus) { color: #a7aaad !important; }
 		.admin-color-light #wpadminbar #wp-admin-bar-presence-online .presence-bar-count,
 		.admin-color-light #wpadminbar #wp-admin-bar-presence-online .presence-bar-you,
-		.admin-color-light #wpadminbar #wp-admin-bar-presence-online .presence-bar-screen,
-		.admin-color-light #wpadminbar #wp-admin-bar-presence-online .presence-bar-group-header > .ab-item { color: #50575e !important; }
+		.admin-color-light #wpadminbar #wp-admin-bar-presence-online .presence-bar-screen { color: #50575e !important; }
+		.admin-color-light #wpadminbar #wp-admin-bar-presence-online .presence-bar-group-header > .ab-item:not(:focus) { color: #50575e !important; }
 		#wp-admin-bar-presence-group-elsewhere > .ab-item { border-top: 1px solid #3c4043 !important; margin-top: 4px !important; padding-top: 8px !important; }
 		#wp-admin-bar-presence-view-all .ab-item { border-top: 1px solid #3c4043 !important; font-style: italic; }
 	';
