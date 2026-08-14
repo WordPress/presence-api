@@ -168,10 +168,10 @@ function wp_presence_get_screen_revision( $screen_key ) {
 			);
 
 		case 'user':
-        case 'term':
-        case 'comment':
-       $entry = get_metadata( $target['type'], $target['id'], '_wp_presence_screen_rev', true );
-       return $entry ? $entry : null;
+		case 'term':
+		case 'comment':
+			$entry = get_metadata( $target['type'], $target['id'], '_wp_presence_screen_rev', true );
+			return $entry ? $entry : null;
 
 		case 'options':
 			$entry = get_option( 'wp_presence_screen_rev_options_' . $target['page'], null );
