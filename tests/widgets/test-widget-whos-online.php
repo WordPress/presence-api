@@ -141,8 +141,8 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * The unchanged reply is the only thing keeping the idle dots honest, so it
-	 * has to carry each user's real last-seen time rather than a bare flag.
+	 * The unchanged reply is all that keeps the idle dots honest, so it has to
+	 * carry real last-seen times rather than a bare flag.
 	 *
 	 * @covers WP_Presence_Widget_Whos_Online::heartbeat_received
 	 */

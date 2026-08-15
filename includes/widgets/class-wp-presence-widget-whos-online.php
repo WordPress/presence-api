@@ -453,8 +453,8 @@ class WP_Presence_Widget_Whos_Online {
 	// Update the widget when heartbeat response comes back.
 	$(document).on('heartbeat-tick', function(event, data) {
 		if (data['presence-online-unchanged']) {
-			// Same users on the same screens, so only freshness can have moved.
-			// Feed it to the idle sweep and leave the DOM alone.
+			// Only freshness can have moved, so feed the idle sweep and leave
+			// the DOM alone.
 			var seen = data['presence-online-unchanged'];
 			for (var i = 0; i < lastEntries.length; i++) {
 				if (seen[lastEntries[i].user_id]) {
@@ -729,9 +729,8 @@ JS,
 	/**
 	 * Handles the heartbeat received event for presence updates.
 	 *
-	 * Returns structured presence data for every user in the room. Returns
-	 * avatar URLs and timestamps rather than pre-rendered HTML, allowing
-	 * clients to render as needed.
+	 * Returns avatar URLs and timestamps rather than pre-rendered HTML, or only
+	 * last-seen times when the client's hash still matches the room.
 	 *
 	 * The current user's own entry is written by
 	 * wp_presence_admin_heartbeat_received(), which runs at an earlier
@@ -801,10 +800,8 @@ JS,
 	/**
 	 * Maps each present user to the time they were last seen.
 	 *
-	 * Sent instead of the full payload when the room is unchanged. Without it
-	 * the client has no way to tell a user who is still ticking from one whose
-	 * tab went hidden, and would keep showing the latter as active until their
-	 * entry expires.
+	 * Replaces the full payload when the room is unchanged, so the client can
+	 * still tell a user who is ticking from one whose tab went hidden.
 	 *
 	 * @param array $entries Presence entry objects from wp_get_presence().
 	 * @return object User ID to last-seen GMT datetime.
