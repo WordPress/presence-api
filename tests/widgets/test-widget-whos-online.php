@@ -153,18 +153,20 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 
 		$hash = $this->tick()['presence-online-hash'];
 
-		$seen = $this->tick( array( 'screen' => 'dashboard' ), array( 'presence-online-hash' => $hash ) )['presence-online-unchanged'];
+		$before = time();
+		$seen   = $this->tick( array( 'screen' => 'dashboard' ), array( 'presence-online-hash' => $hash ) )['presence-online-unchanged'];
+		$after  = time();
 
 		$this->assertSame(
 			gmdate( 'Y-m-d H:i:s', time() - 40 ),
 			$seen->{$idle_id},
 			'A user who stopped pinging must keep their stale timestamp.'
 		);
-		$this->assertSame(
-			gmdate( 'Y-m-d H:i:s' ),
-			$seen->{self::$editor_id},
-			'The pinging user must be reported as current.'
-		);
+
+		// The pinging user's timestamp should be within the tick window.
+		$actual   = strtotime( $seen->{self::$editor_id} );
+		$this->assertGreaterThanOrEqual( $before, $actual, 'Timestamp should not be before tick started.' );
+		$this->assertLessThanOrEqual( $after, $actual, 'Timestamp should not be after tick finished.' );
 	}
 
 	/**
