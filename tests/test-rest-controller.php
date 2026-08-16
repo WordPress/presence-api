@@ -685,4 +685,78 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 		$this->assertInstanceOf( 'WP_Error', $forbidden );
 		$this->assertSame( 403, $forbidden->get_error_data()['status'] );
 	}
+
+	/**
+	 * @covers WP_REST_Presence_Controller::get_items
+	 */
+	public function test_get_items_includes_collaboration_headers_for_post_rooms() {
+		$post_id = self::factory()->post->create();
+		$room    = 'postType/post:' . $post_id;
+
+		wp_set_current_user( self::$editor_id );
+
+		// Set up 2 editors in the room.
+		wp_set_presence( $room, 'editor-' . self::$editor_id, array( 'action' => 'editing' ), self::$editor_id );
+		wp_set_presence( $room, 'editor-' . self::$editor_2_id, array( 'action' => 'editing' ), self::$editor_2_id );
+
+		$request = new WP_REST_Request( 'GET', '/wp-presence/v1/presence' );
+		$request->set_param( 'room', $room );
+
+		$controller = new WP_REST_Presence_Controller();
+		$response   = $controller->get_items( $request );
+
+		$this->assertInstanceOf( 'WP_REST_Response', $response );
+
+		$headers = $response->get_headers();
+
+		$this->assertArrayHasKey( 'X-WP-Collaboration-Active', $headers );
+		$this->assertArrayHasKey( 'X-WP-Editor-Count', $headers );
+
+		$this->assertSame( 'true', $headers['X-WP-Collaboration-Active'] );
+		$this->assertSame( '2', $headers['X-WP-Editor-Count'] );
+	}
+
+	/**
+	 * @covers WP_REST_Presence_Controller::get_items
+	 */
+	public function test_get_items_collaboration_inactive_with_single_editor() {
+		$post_id = self::factory()->post->create();
+		$room    = 'postType/post:' . $post_id;
+
+		wp_set_current_user( self::$editor_id );
+
+		// Only one editor.
+		wp_set_presence( $room, 'editor-' . self::$editor_id, array( 'action' => 'editing' ), self::$editor_id );
+
+		$request = new WP_REST_Request( 'GET', '/wp-presence/v1/presence' );
+		$request->set_param( 'room', $room );
+
+		$controller = new WP_REST_Presence_Controller();
+		$response   = $controller->get_items( $request );
+
+		$headers = $response->get_headers();
+
+		$this->assertSame( 'false', $headers['X-WP-Collaboration-Active'] );
+		$this->assertSame( '1', $headers['X-WP-Editor-Count'] );
+	}
+
+	/**
+	 * @covers WP_REST_Presence_Controller::get_items
+	 */
+	public function test_get_items_no_collaboration_headers_for_non_post_rooms() {
+		wp_set_current_user( self::$editor_id );
+
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'dashboard' ), self::$editor_id );
+
+		$request = new WP_REST_Request( 'GET', '/wp-presence/v1/presence' );
+		$request->set_param( 'room', 'admin/online' );
+
+		$controller = new WP_REST_Presence_Controller();
+		$response   = $controller->get_items( $request );
+
+		$headers = $response->get_headers();
+
+		$this->assertArrayNotHasKey( 'X-WP-Collaboration-Active', $headers );
+		$this->assertArrayNotHasKey( 'X-WP-Editor-Count', $headers );
+	}
 }
