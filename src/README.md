@@ -17,10 +17,10 @@ Dependencies: `@wordpress/element`, `@wordpress/data`, `@wordpress/api-fetch` (a
 
 Subscribes to WordPress Heartbeat to poll for presence room occupants.
 
-### Usage
+### Example
 
 ```js
-const { usePresenceUsers } = window.wp.presenceApi;
+import { usePresenceUsers } from '@presence-api/src';
 
 function MyComponent( { postId } ) {
 	const { isPresent, isLoading, users, error } = usePresenceUsers( 
