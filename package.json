@@ -8,17 +8,19 @@
 		"env:cli": "wp-env run cli wp",
 		"test": "wp-env run tests-cli --env-cwd='wp-content/plugins/presence-api' -- ./vendor/bin/phpunit --testdox",
 		"test:e2e": "playwright test --config tests/e2e/playwright.config.js",
-		"test:scripts": "node --test .github/scripts/*.test.js"
+		"test:scripts": "node --test .github/scripts/*.test.js",
+		"test:unit": "wp-scripts test-unit-js"
 	},
 	"devDependencies": {
 		"@playwright/test": "^1.62.1",
+		"@testing-library/react": "^14.0.0",
 		"@wordpress/e2e-test-utils-playwright": "^1.51.0",
 		"@wordpress/env": "^11.12.0",
 		"@wordpress/scripts": "^31.8.0"
 	},
-	"dependencies": {
-		"@wordpress/api-fetch": "^7.14.0",
-		"@wordpress/data": "^10.14.0",
-		"@wordpress/element": "^6.14.0"
+	"peerDependencies": {
+		"@wordpress/api-fetch": "^7.0.0",
+		"@wordpress/data": "^10.0.0",
+		"@wordpress/element": "^6.0.0"
 	}
 }
