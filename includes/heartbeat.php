@@ -253,12 +253,80 @@ function wp_presence_editor_heartbeat_received( $response, $data, $screen_id ) {
 	$locked = ! empty( $data['wp-refresh-post-lock']['post_id'] )
 		&& absint( $data['wp-refresh-post-lock']['post_id'] ) === $post_id;
 
+	$state = wp_presence_editor_state( $screen_id, $locked );
+
+	/**
+	 * Filters the editor presence state before it's saved.
+	 *
+	 * Allows plugins to enrich the state data with additional metadata
+	 * (e.g., cursor position, selected blocks, collaboration status).
+	 *
+	 * @since 0.1.21
+	 *
+	 * @param array $state   The presence state data.
+	 * @param int   $post_id The post ID being edited.
+	 * @param int   $user_id The user ID.
+	 */
+	$state = apply_filters( 'wp_presence_editor_state', $state, $post_id, $user_id );
+
 	wp_set_presence(
 		$room,
 		'editor-' . $user_id,
-		wp_presence_editor_state( $screen_id, $locked ),
+		$state,
 		$user_id
 	);
 
+	wp_presence_check_collaboration_threshold( $room );
+
 	return $response;
+}
+
+/**
+ * Checks if the collaboration threshold has been crossed and fires appropriate actions.
+ *
+ * Fires 'wp_presence_collaboration_started' when editor count goes from 1 to 2+.
+ * Fires 'wp_presence_collaboration_ended' when editor count goes from 2+ to 1.
+ *
+ * @since 0.1.21
+ *
+ * @param string $room The presence room identifier.
+ */
+function wp_presence_check_collaboration_threshold( $room ) {
+	$entries = wp_get_presence( $room );
+
+	$editor_count = count(
+		array_filter(
+			$entries,
+			static function ( $entry ) {
+				return str_starts_with( $entry->client_id, 'editor-' );
+			}
+		)
+	);
+
+	static $previous = array();
+	$prev_count      = $previous[ $room ] ?? 1;
+
+	if ( 1 === $prev_count && $editor_count >= 2 ) {
+		/**
+		 * Fires when collaboration starts (1 to 2+ editors).
+		 *
+		 * @since 0.1.21
+		 *
+		 * @param string $room    The presence room identifier.
+		 * @param array  $entries The current presence entries.
+		 */
+		do_action( 'wp_presence_collaboration_started', $room, $entries );
+	} elseif ( $prev_count >= 2 && 1 === $editor_count ) {
+		/**
+		 * Fires when collaboration ends (2+ to 1 editor).
+		 *
+		 * @since 0.1.21
+		 *
+		 * @param string $room    The presence room identifier.
+		 * @param array  $entries The current presence entries.
+		 */
+		do_action( 'wp_presence_collaboration_ended', $room, $entries );
+	}
+
+	$previous[ $room ] = $editor_count;
 }

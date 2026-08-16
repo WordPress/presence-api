@@ -336,6 +336,7 @@ class WP_Presence_Widget_Whos_Online {
 	var isExpanded = false;
 	var lastSignature = '';
 	var lastEntries = [];
+	var lastHash = '';
 
 	function captureFocus(container) {
 		var active = document.activeElement;
@@ -443,11 +444,31 @@ class WP_Presence_Widget_Whos_Online {
 		return html;
 	}
 
+	$(document).on('heartbeat-send', function(event, data) {
+		if (lastHash) {
+			data['presence-online-hash'] = lastHash;
+		}
+	});
+
 	// Update the widget when heartbeat response comes back.
 	$(document).on('heartbeat-tick', function(event, data) {
+		if (data['presence-online-unchanged']) {
+			// Only freshness can have moved, so feed the idle sweep and leave
+			// the DOM alone.
+			var seen = data['presence-online-unchanged'];
+			for (var i = 0; i < lastEntries.length; i++) {
+				if (seen[lastEntries[i].user_id]) {
+					lastEntries[i].date_gmt = seen[lastEntries[i].user_id];
+				}
+			}
+			return;
+		}
+
 		if (!data['presence-online']) {
 			return;
 		}
+
+		lastHash = data['presence-online-hash'] || '';
 
 		var container = $('#presence-whos-online-list');
 		if (!container.length) {
@@ -708,9 +729,8 @@ JS,
 	/**
 	 * Handles the heartbeat received event for presence updates.
 	 *
-	 * Returns structured presence data for every user in the room. Returns
-	 * avatar URLs and timestamps rather than pre-rendered HTML, allowing
-	 * clients to render as needed.
+	 * Returns avatar URLs and timestamps rather than pre-rendered HTML, or only
+	 * last-seen times when the client's hash still matches the room.
 	 *
 	 * The current user's own entry is written by
 	 * wp_presence_admin_heartbeat_received(), which runs at an earlier
@@ -733,7 +753,78 @@ JS,
 		}
 
 		$entries = wp_get_presence( wp_presence_admin_room() );
-		$online  = array();
+		$hash    = self::hash_online_state( $entries );
+
+		$client_hash = isset( $data['presence-online-hash'] ) ? sanitize_text_field( $data['presence-online-hash'] ) : '';
+
+		if ( $client_hash && $client_hash === $hash ) {
+			$response['presence-online-unchanged'] = self::build_seen_timestamps( $entries );
+
+			return $response;
+		}
+
+		$response['presence-online']      = self::build_online_entries( $entries );
+		$response['presence-online-hash'] = $hash;
+
+		return $response;
+	}
+
+	/**
+	 * Hashes the meaningful state of a room's presence entries.
+	 *
+	 * Excludes date_gmt, which every tick rewrites for the pinging user and so
+	 * would flip the hash on every tick.
+	 *
+	 * @param array $entries Presence entry objects from wp_get_presence().
+	 * @return string The state hash.
+	 */
+	private static function hash_online_state( $entries ) {
+		$state = array();
+
+		foreach ( $entries as $entry ) {
+			$state[] = array(
+				(int) $entry->user_id,
+				isset( $entry->data['screen'] ) ? $entry->data['screen'] : '',
+				isset( $entry->data['post_status'] ) ? $entry->data['post_status'] : '',
+				isset( $entry->data['title'] ) ? $entry->data['title'] : '',
+				isset( $entry->data['post_id'] ) ? (int) $entry->data['post_id'] : 0,
+			);
+		}
+
+		// wp_get_presence() orders by date_gmt, which reshuffles as clients ping.
+		sort( $state );
+
+		return md5( (string) wp_json_encode( $state ) );
+	}
+
+	/**
+	 * Maps each present user to the time they were last seen.
+	 *
+	 * Replaces the full payload when the room is unchanged, so the client can
+	 * still tell a user who is ticking from one whose tab went hidden.
+	 *
+	 * @param array $entries Presence entry objects from wp_get_presence().
+	 * @return object User ID to last-seen GMT datetime.
+	 */
+	private static function build_seen_timestamps( $entries ) {
+		$seen = array();
+
+		foreach ( $entries as $entry ) {
+			$seen[ (int) $entry->user_id ] = $entry->date_gmt;
+		}
+
+		// Cast so an empty room encodes as {} rather than [].
+		return (object) $seen;
+	}
+
+	/**
+	 * Builds the structured presence payload for a room's entries.
+	 *
+	 * @param array $entries Presence entry objects from wp_get_presence().
+	 * @return array Presence data for client consumption.
+	 */
+	private static function build_online_entries( $entries ) {
+		$online = array();
 
 		cache_users( wp_list_pluck( $entries, 'user_id' ) );
 
@@ -763,8 +854,6 @@ JS,
 			);
 		}
 
-		$response['presence-online'] = $online;
-
-		return $response;
+		return $online;
 	}
 }
