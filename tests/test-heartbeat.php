@@ -366,6 +366,174 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * @covers ::wp_presence_editor_heartbeat_received
+	 */
+	public function test_editor_state_filter() {
+		$post_id = self::factory()->post->create();
+
+		wp_set_current_user( self::$editor_id );
+
+		$filter_ran = false;
+		add_filter(
+			'wp_presence_editor_state',
+			function ( $state, $passed_post_id, $passed_user_id ) use ( $post_id, &$filter_ran ) {
+				$filter_ran           = true;
+				$state['custom_data'] = 'test';
+				$this->assertSame( $post_id, $passed_post_id );
+				$this->assertSame( self::$editor_id, $passed_user_id );
+				return $state;
+			},
+			10,
+			3
+		);
+
+		wp_presence_editor_heartbeat_received(
+			array(),
+			array(
+				'presence-editor-ping' => array(
+					'post_id' => $post_id,
+				),
+			),
+			'post'
+		);
+
+		$this->assertTrue( $filter_ran );
+
+		$entries = wp_get_presence( wp_presence_post_room( $post_id ) );
+
+		$this->assertCount( 1, $entries );
+		$this->assertSame( 'test', $entries[0]->data['custom_data'] );
+	}
+
+	/**
+	 * @covers ::wp_presence_check_collaboration_threshold
+	 */
+	public function test_collaboration_started_action() {
+		$post_id  = self::factory()->post->create();
+		$editor_2 = self::factory()->user->create( array( 'role' => 'editor' ) );
+
+		$room = wp_presence_post_room( $post_id );
+
+		$action_ran      = false;
+		$passed_room     = null;
+		$passed_entries  = null;
+
+		add_action(
+			'wp_presence_collaboration_started',
+			function ( $room, $entries ) use ( &$action_ran, &$passed_room, &$passed_entries ) {
+				$action_ran     = true;
+				$passed_room    = $room;
+				$passed_entries = $entries;
+			},
+			10,
+			2
+		);
+
+		// First editor joins.
+		wp_set_current_user( self::$editor_id );
+		wp_presence_editor_heartbeat_received(
+			array(),
+			array(
+				'presence-editor-ping' => array(
+					'post_id' => $post_id,
+				),
+			),
+			'post'
+		);
+
+		$this->assertFalse( $action_ran, 'Action should not fire with only 1 editor' );
+
+		// Second editor joins.
+		wp_set_current_user( $editor_2 );
+		wp_presence_editor_heartbeat_received(
+			array(),
+			array(
+				'presence-editor-ping' => array(
+					'post_id' => $post_id,
+				),
+			),
+			'post'
+		);
+
+		$this->assertTrue( $action_ran, 'Action should fire when 2nd editor joins' );
+		$this->assertSame( $room, $passed_room );
+		$this->assertCount( 2, $passed_entries );
+	}
+
+	/**
+	 * @covers ::wp_presence_check_collaboration_threshold
+	 */
+	public function test_collaboration_ended_action() {
+		$post_id  = self::factory()->post->create();
+		$editor_2 = self::factory()->user->create( array( 'role' => 'editor' ) );
+
+		$room = wp_presence_post_room( $post_id );
+
+		// Set up 2 editors.
+		wp_set_current_user( self::$editor_id );
+		wp_presence_editor_heartbeat_received(
+			array(),
+			array(
+				'presence-editor-ping' => array(
+					'post_id' => $post_id,
+				),
+			),
+			'post'
+		);
+
+		wp_set_current_user( $editor_2 );
+		wp_presence_editor_heartbeat_received(
+			array(),
+			array(
+				'presence-editor-ping' => array(
+					'post_id' => $post_id,
+				),
+			),
+			'post'
+		);
+
+		$action_ran     = false;
+		$passed_room    = null;
+		$passed_entries = null;
+
+		add_action(
+			'wp_presence_collaboration_ended',
+			function ( $room, $entries ) use ( &$action_ran, &$passed_room, &$passed_entries ) {
+				$action_ran     = true;
+				$passed_room    = $room;
+				$passed_entries = $entries;
+			},
+			10,
+			2
+		);
+
+		// Remove second editor by letting their presence expire.
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->delete(
+			$wpdb->presence,
+			array( 'client_id' => 'editor-' . $editor_2 ),
+			array( '%s' )
+		);
+
+		// First editor ticks again (now alone).
+		wp_set_current_user( self::$editor_id );
+		wp_presence_editor_heartbeat_received(
+			array(),
+			array(
+				'presence-editor-ping' => array(
+					'post_id' => $post_id,
+				),
+			),
+			'post'
+		);
+
+		$this->assertTrue( $action_ran, 'Action should fire when going from 2 to 1 editor' );
+		$this->assertSame( $room, $passed_room );
+		$this->assertCount( 1, $passed_entries );
+	}
+
+	/**
 	 * Decodes the wpPresenceConfig object handed to presence-ping.js.
 	 *
 	 * @return array The decoded config.
