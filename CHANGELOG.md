@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.1.21](https://github.com/WordPress/presence-api/compare/v0.1.20...v0.1.21) (2026-08-16)
+
+
+### Features
+
+* add RTC collaboration hooks and server authority ([97ff370](https://github.com/WordPress/presence-api/commit/97ff370e7064d8f8ce77504a080f83ebcb07878e))
+* add RTC collaboration hooks and server authority ([4ab248d](https://github.com/WordPress/presence-api/commit/4ab248dc2584f7fff6985a8419b27baeb40a1c69))
+
+
+### Bug Fixes
+
+* eliminate race condition in timestamp test ([9bcf82c](https://github.com/WordPress/presence-api/commit/9bcf82caece5fdabc3326ce2843fa5c81465dd50))
+* restore admin bar contrast in Light scheme ([c81da59](https://github.com/WordPress/presence-api/commit/c81da59ed75f2e27152d99731091a51ee51219b7))
+* set page parameter in REST controller tests ([cb6d44c](https://github.com/WordPress/presence-api/commit/cb6d44c9603cb11a000ae40710ab112a8db3c103))
+* set per_page parameter in REST controller tests ([8c3e141](https://github.com/WordPress/presence-api/commit/8c3e14155f57705e405485005f5f9b1f566b6959))
+
+
+### Performance Improvements
+
+* skip Who's Online payload when room state is unchanged ([555a383](https://github.com/WordPress/presence-api/commit/555a38364ae8da58f8d950b17e214fcd16af869d))
+
 ## [0.1.20](https://github.com/WordPress/presence-api/compare/v0.1.19...v0.1.20) (2026-08-14)
 
 
