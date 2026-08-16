@@ -26,6 +26,6 @@ phpstan.neon.dist
 phpunit.xml.dist
 release-please-config.json
 scripts/
-src/
+src/hooks/test/
 includes/db-viewer.php
 includes/debugger-widget.php

@@ -1,36 +1,17 @@
 # React Hooks
 
-## Installation
+## Usage
 
-Build the hooks with:
+The hooks are shipped as source in the plugin. Import them in your block editor code:
 
-```bash
-npm install
-npm run build
+```js
+import { usePresenceUsers } from './path/to/presence-api/src';
+
+// Or if you've aliased the plugin path:
+import { usePresenceUsers } from '@presence-api/src';
 ```
 
-This generates `assets/js/build/index.js` and `assets/js/build/index.asset.php`.
-
-## Enqueuing
-
-The built JavaScript is exposed as `window.wp.presenceApi` for use in the block editor and other WordPress admin screens.
-
-```php
-<?php
-add_action( 'enqueue_block_editor_assets', function() {
-	$asset_file = include plugin_dir_path( __FILE__ ) . 'assets/js/build/index.asset.php';
-	
-	wp_enqueue_script(
-		'wp-presence-hooks',
-		plugins_url( 'assets/js/build/index.js', __FILE__ ),
-		$asset_file['dependencies'],
-		$asset_file['version'],
-		true
-	);
-} );
-```
-
-The build system automatically tracks dependencies (wp-api-fetch, wp-data, wp-element) in the `.asset.php` file.
+Dependencies: `@wordpress/element`, `@wordpress/data`, `@wordpress/api-fetch` (available in Gutenberg/block editor context).
 
 ## usePresenceUsers
 

@@ -2,7 +2,6 @@
 	"name": "presence-api",
 	"private": true,
 	"scripts": {
-		"build": "wp-scripts build src/index.js --output-path=assets/js/build",
 		"env:start": "wp-env start",
 		"env:stop": "wp-env stop",
 		"env:cli": "wp-env run cli wp",
