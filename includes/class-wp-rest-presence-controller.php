@@ -372,6 +372,20 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 		$response->header( 'X-WP-TotalPages', (int) ceil( $total / $per_page ) );
 		$response->header( 'Cache-Control', 'no-store' );
 
+		// Add collaboration status headers for post rooms.
+		if ( str_starts_with( $room, 'postType/' ) ) {
+			$editor_count = 0;
+
+			foreach ( $results as $entry ) {
+				if ( str_starts_with( $entry->client_id, 'editor-' ) ) {
+					++$editor_count;
+				}
+			}
+
+			$response->header( 'X-WP-Collaboration-Active', $editor_count >= 2 ? 'true' : 'false' );
+			$response->header( 'X-WP-Editor-Count', (string) $editor_count );
+		}
+
 		return $response;
 	}
 
