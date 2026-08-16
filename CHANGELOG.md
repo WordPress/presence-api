@@ -6,7 +6,6 @@
 ### Features
 
 * add RTC collaboration hooks and server authority ([97ff370](https://github.com/WordPress/presence-api/commit/97ff370e7064d8f8ce77504a080f83ebcb07878e))
-* add RTC collaboration hooks and server authority ([4ab248d](https://github.com/WordPress/presence-api/commit/4ab248dc2584f7fff6985a8419b27baeb40a1c69))
 
 
 ### Bug Fixes

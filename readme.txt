@@ -3,7 +3,7 @@ Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas,
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.0
-Stable tag: 0.1.20
+Stable tag: 0.1.21
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -49,11 +49,19 @@ Or [try it in WordPress Playground](https://playground.wordpress.net/?blueprint-
 
 == Changelog ==
 
+= 0.1.21 =
+* Add RTC collaboration hooks and server authority.
+* Eliminate race condition in timestamp test.
+* Restore admin bar contrast in Light scheme.
+* Set page parameter in REST controller tests.
+* Set per_page parameter in REST controller tests.
+* Skip Who's Online payload when room state is unchanged.
+
 = 0.1.20 =
 * Correct query cost and timezone bug in post revision lookup.
 * Count people rather than rows in the Active Posts widget ([da77dfb](https://github.com/WordPress/presence-api/commit/da77dfb262e1b74d23defea4cb07905387abb5cf)), closes [#134](https://github.com/WordPress/presence-api/issues/134).
 * Guard the presence table upgrade with a provisioning lock.
-* Merge the post lock entry into the editor's presence entry.
+* Merge the post lock entry into the editor's presence entry ([b0d1a83](https://github.com/WordPress/presence-api/commit/b0d1a83165f64efdcf8b396f99ad0bb0cfb60420)), closes [#134](https://github.com/WordPress/presence-api/issues/134).
 * Reindent get_metadata() case with tabs.
 * Stop funneling screen-revision bumps through one shared option.
 * Aggregate wp_get_presence_summary() in SQL.
