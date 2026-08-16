@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.22](https://github.com/WordPress/presence-api/compare/v0.1.21...v0.1.22) (2026-08-16)
+
+
+### Features
+
+* add usePresenceUsers React hook ([6e3b2b3](https://github.com/WordPress/presence-api/commit/6e3b2b3e94be34f1a4b416d1567057d5c05377eb))
+
+
+### Bug Fixes
+
+* prevent unnecessary heartbeat re-subscription on param changes ([0bd12bd](https://github.com/WordPress/presence-api/commit/0bd12bd6b0f161d8f240efedfa3edbd0d2a963cf))
+* resolve ref-in-render and stale closure issues ([4e684f7](https://github.com/WordPress/presence-api/commit/4e684f7786210f0e8f888c36fd26be7fd766112c))
+
 ## [0.1.21](https://github.com/WordPress/presence-api/compare/v0.1.20...v0.1.21) (2026-08-16)
 
 
