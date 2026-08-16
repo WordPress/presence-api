@@ -4,3 +4,4 @@ artifacts/
 .cache/
 .phpunit.result.cache
 coverage.xml
+assets/js/build/

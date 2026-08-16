@@ -2,6 +2,7 @@
 	"name": "presence-api",
 	"private": true,
 	"scripts": {
+		"build": "wp-scripts build src/index.js --output-path=assets/js/build",
 		"env:start": "wp-env start",
 		"env:stop": "wp-env stop",
 		"env:cli": "wp-env run cli wp",
@@ -12,6 +13,12 @@
 	"devDependencies": {
 		"@playwright/test": "^1.62.1",
 		"@wordpress/e2e-test-utils-playwright": "^1.51.0",
-		"@wordpress/env": "^11.12.0"
+		"@wordpress/env": "^11.12.0",
+		"@wordpress/scripts": "^31.8.0"
+	},
+	"dependencies": {
+		"@wordpress/api-fetch": "^7.14.0",
+		"@wordpress/data": "^10.14.0",
+		"@wordpress/element": "^6.14.0"
 	}
 }
