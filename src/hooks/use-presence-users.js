@@ -41,12 +41,85 @@ export default function usePresenceUsers( room, options = {} ) {
 	const [ isLoading, setIsLoading ] = useState( true );
 	const [ error, setError ] = useState( null );
 	const fetchInProgress = useRef( false );
+	const fetchPresenceRef = useRef();
 
 	const currentUserId = useSelect(
 		( select ) => select( 'core' ).getCurrentUser()?.id,
 		[]
 	);
 
+	// Keep fetch function in a ref so it doesn't trigger effect re-runs.
+	fetchPresenceRef.current = async ( isInitial = false ) => {
+		if ( ! room || fetchInProgress.current ) {
+			return;
+		}
+
+		fetchInProgress.current = true;
+
+		try {
+			const params = new URLSearchParams( {
+				room,
+				_fields: fields,
+			} );
+
+			const entries = await apiFetch( {
+				path: `/wp-presence/v1/presence?${ params }`,
+			} );
+
+			if ( ! Array.isArray( entries ) ) {
+				setUsers( [] );
+				setError( null );
+				if ( isInitial ) {
+					setIsLoading( false );
+				}
+				fetchInProgress.current = false;
+				return;
+			}
+
+			const presentUsers = [];
+			const seen = new Set();
+
+			for ( const entry of entries ) {
+				const userId = Number( entry.user_id );
+
+				if (
+					userId <= 0 ||
+					seen.has( userId ) ||
+					( ! includeSelf && userId === currentUserId )
+				) {
+					continue;
+				}
+
+				seen.add( userId );
+				presentUsers.push( {
+					id: userId,
+					displayName: entry.display_name || `User ${ userId }`,
+					avatarUrl: entry.avatar_url || '',
+				} );
+			}
+
+			setUsers( presentUsers );
+			setError( null );
+			if ( isInitial ) {
+				setIsLoading( false );
+			}
+		} catch ( err ) {
+			setUsers( [] );
+			setError( err );
+			if ( isInitial ) {
+				setIsLoading( false );
+			}
+
+			if ( process.env.NODE_ENV === 'development' ) {
+				// eslint-disable-next-line no-console
+				console.error( 'usePresenceUsers: fetch failed', err );
+			}
+		} finally {
+			fetchInProgress.current = false;
+		}
+	};
+
+	// Effect for subscription: only runs when room changes.
 	useEffect( () => {
 		if ( ! room ) {
 			setUsers( [] );
@@ -64,78 +137,14 @@ export default function usePresenceUsers( room, options = {} ) {
 			return;
 		}
 
-		const fetchPresence = async () => {
-			if ( fetchInProgress.current ) {
-				return;
-			}
-
-			fetchInProgress.current = true;
-
-			try {
-				const params = new URLSearchParams( {
-					room,
-					_fields: fields,
-				} );
-
-				const entries = await apiFetch( {
-					path: `/wp-presence/v1/presence?${ params }`,
-				} );
-
-				if ( ! Array.isArray( entries ) ) {
-					setUsers( [] );
-					setError( null );
-					setIsLoading( false );
-					fetchInProgress.current = false;
-					return;
-				}
-
-				const presentUsers = [];
-				const seen = new Set();
-
-				for ( const entry of entries ) {
-					const userId = Number( entry.user_id );
-
-					if (
-						userId <= 0 ||
-						seen.has( userId ) ||
-						( ! includeSelf && userId === currentUserId )
-					) {
-						continue;
-					}
-
-					seen.add( userId );
-					presentUsers.push( {
-						id: userId,
-						displayName: entry.display_name || `User ${ userId }`,
-						avatarUrl: entry.avatar_url || '',
-					} );
-				}
-
-				setUsers( presentUsers );
-				setError( null );
-				setIsLoading( false );
-			} catch ( err ) {
-				setUsers( [] );
-				setError( err );
-				setIsLoading( false );
-
-				if ( process.env.NODE_ENV === 'development' ) {
-					// eslint-disable-next-line no-console
-					console.error( 'usePresenceUsers: fetch failed', err );
-				}
-			} finally {
-				fetchInProgress.current = false;
-			}
-		};
-
-		fetchPresence();
+		fetchPresenceRef.current( true );
 
 		const cleanup = onHeartbeatTick( () => {
-			fetchPresence();
+			fetchPresenceRef.current();
 		} );
 
 		return cleanup;
-	}, [ room, currentUserId, includeSelf, fields ] );
+	}, [ room ] );
 
 	return {
 		isPresent: users.length > 0,
