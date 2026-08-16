@@ -406,47 +406,6 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * @covers ::wp_presence_editor_heartbeat_received
-	 */
-	public function test_editor_active_action() {
-		$post_id = self::factory()->post->create();
-
-		wp_set_current_user( self::$editor_id );
-
-		$action_ran      = false;
-		$passed_post_id  = null;
-		$passed_user_id  = null;
-		$passed_room     = null;
-
-		add_action(
-			'wp_presence_editor_active',
-			function ( $post_id, $user_id, $room ) use ( &$action_ran, &$passed_post_id, &$passed_user_id, &$passed_room ) {
-				$action_ran     = true;
-				$passed_post_id = $post_id;
-				$passed_user_id = $user_id;
-				$passed_room    = $room;
-			},
-			10,
-			3
-		);
-
-		wp_presence_editor_heartbeat_received(
-			array(),
-			array(
-				'presence-editor-ping' => array(
-					'post_id' => $post_id,
-				),
-			),
-			'post'
-		);
-
-		$this->assertTrue( $action_ran );
-		$this->assertSame( $post_id, $passed_post_id );
-		$this->assertSame( self::$editor_id, $passed_user_id );
-		$this->assertSame( wp_presence_post_room( $post_id ), $passed_room );
-	}
-
-	/**
 	 * @covers ::wp_presence_check_collaboration_threshold
 	 */
 	public function test_collaboration_started_action() {

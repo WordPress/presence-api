@@ -276,17 +276,6 @@ function wp_presence_editor_heartbeat_received( $response, $data, $screen_id ) {
 		$user_id
 	);
 
-	/**
-	 * Fires when an editor's presence is updated via heartbeat.
-	 *
-	 * @since 0.1.21
-	 *
-	 * @param int    $post_id The post ID being edited.
-	 * @param int    $user_id The user ID.
-	 * @param string $room    The presence room identifier.
-	 */
-	do_action( 'wp_presence_editor_active', $post_id, $user_id, $room );
-
 	wp_presence_check_collaboration_threshold( $room );
 
 	return $response;
