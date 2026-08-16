@@ -702,6 +702,7 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 		$request = new WP_REST_Request( 'GET', '/wp-presence/v1/presence' );
 		$request->set_param( 'room', $room );
 		$request->set_param( 'per_page', 100 );
+		$request->set_param( 'page', 1 );
 
 		$controller = new WP_REST_Presence_Controller();
 		$response   = $controller->get_items( $request );
@@ -732,6 +733,7 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 		$request = new WP_REST_Request( 'GET', '/wp-presence/v1/presence' );
 		$request->set_param( 'room', $room );
 		$request->set_param( 'per_page', 100 );
+		$request->set_param( 'page', 1 );
 
 		$controller = new WP_REST_Presence_Controller();
 		$response   = $controller->get_items( $request );
@@ -753,6 +755,7 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 		$request = new WP_REST_Request( 'GET', '/wp-presence/v1/presence' );
 		$request->set_param( 'room', 'admin/online' );
 		$request->set_param( 'per_page', 100 );
+		$request->set_param( 'page', 1 );
 
 		$controller = new WP_REST_Presence_Controller();
 		$response   = $controller->get_items( $request );
