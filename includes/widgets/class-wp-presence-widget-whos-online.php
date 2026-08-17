@@ -764,7 +764,7 @@ JS,
 		}
 
 		// Cap to visible rows plus overflow threshold (expandable list max).
-		$cap = self::VISIBLE_ROWS + self::get_overflow_threshold();
+		$cap                               = self::VISIBLE_ROWS + self::get_overflow_threshold();
 		$response['presence-online']       = self::build_online_entries(
 			array_slice( $entries, 0, $cap )
 		);
