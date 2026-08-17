@@ -685,4 +685,55 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 		$this->assertInstanceOf( 'WP_Error', $forbidden );
 		$this->assertSame( 403, $forbidden->get_error_data()['status'] );
 	}
+
+	/**
+	 * Rooms endpoint only hydrates users for the requested page.
+	 *
+	 * @covers WP_REST_Presence_Controller::get_rooms
+	 */
+	public function test_get_rooms_paginates_before_hydration() {
+		global $wpdb;
+
+		wp_set_current_user( self::$editor_id );
+
+		// Create 15 rooms with unique users per room.
+		$created_users = array();
+		for ( $i = 0; $i < 15; $i++ ) {
+			$user_id         = self::factory()->user->create( array( 'role' => 'editor' ) );
+			$created_users[] = $user_id;
+			$post_id         = self::factory()->post->create();
+			wp_set_presence( 'postType/post:' . $post_id, 'client-' . $i, array(), $user_id );
+		}
+
+		// Request only first page with per_page=5.
+		$request = new WP_REST_Request( 'GET', '/wp-presence/v1/presence/rooms' );
+		$request->set_param( 'per_page', 5 );
+		$request->set_param( 'page', 1 );
+
+		// Track queries to verify we're not querying all rooms.
+		$before_queries = $wpdb->num_queries;
+
+		$response = rest_get_server()->dispatch( $request );
+		$data     = $response->get_data();
+
+		$after_queries = $wpdb->num_queries;
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertCount( 5, $data, 'Should return exactly per_page rooms' );
+		$this->assertSame( 15, (int) $response->get_headers()['X-WP-Total'], 'Total should reflect all rooms' );
+
+		// Verify all returned rooms have hydrated users.
+		$returned_user_ids = array();
+		foreach ( $data as $room ) {
+			$this->assertArrayHasKey( 'users', $room );
+			$this->assertCount( 1, $room['users'], 'Each room should have exactly one user' );
+			$returned_user_ids[] = $room['users'][0]['user_id'];
+		}
+
+		// Verify we only got users from the first page, not all 15.
+		$this->assertCount( 5, $returned_user_ids );
+		foreach ( array_slice( $created_users, 5 ) as $unused_user_id ) {
+			$this->assertNotContains( $unused_user_id, $returned_user_ids, 'Users from rooms outside page 1 should not be queried' );
+		}
+	}
 }

@@ -621,7 +621,8 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 		$per_page = $request->get_param( 'per_page' );
 		$page     = $request->get_param( 'page' );
 
-		$rooms           = wp_get_active_rooms();
+		// Fetch rooms without hydrating users yet.
+		$rooms           = wp_get_active_rooms( WP_PRESENCE_DEFAULT_TTL, false );
 		$current_user_id = get_current_user_id();
 
 		// Prime post caches to avoid N+1 queries during the wp_can_access_presence_room
@@ -649,8 +650,11 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 
 		$total = count( $rooms );
 
-		// Rooms are aggregated in PHP (GROUP BY + user hydration), so paginate the result.
+		// Paginate before hydrating users, so we only pay for the requested page.
 		$paged_rooms = array_slice( $rooms, ( $page - 1 ) * $per_page, $per_page );
+
+		// Hydrate users only for the paginated subset.
+		$paged_rooms = wp_presence_hydrate_room_users( $paged_rooms );
 
 		$response = rest_ensure_response( $paged_rooms );
 
