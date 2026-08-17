@@ -777,12 +777,12 @@ function wp_presence_hydrate_room_users( $rooms, $timeout = WP_PRESENCE_DEFAULT_
 	$placeholders = implode( ', ', array_fill( 0, count( $room_names ), '%s' ) );
 
 	// Dynamic IN clause: $placeholders is "%s, %s, ..." built from count, not user data.
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	$rows = $wpdb->get_results(
 		$wpdb->prepare(
 			"SELECT room, user_id
 			FROM {$wpdb->presence}
-			WHERE room IN ($placeholders) AND date_gmt > %s", // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+			WHERE room IN ($placeholders) AND date_gmt > %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 			array_merge( $room_names, array( $cutoff ) )
 		)
 	);
