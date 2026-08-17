@@ -763,8 +763,13 @@ JS,
 			return $response;
 		}
 
-		$response['presence-online']      = self::build_online_entries( $entries );
-		$response['presence-online-hash'] = $hash;
+		// Cap to visible rows plus overflow threshold (expandable list max).
+		$cap                               = self::VISIBLE_ROWS + self::get_overflow_threshold();
+		$response['presence-online']       = self::build_online_entries(
+			array_slice( $entries, 0, $cap )
+		);
+		$response['presence-online-total'] = count( $entries );
+		$response['presence-online-hash']  = $hash;
 
 		return $response;
 	}
