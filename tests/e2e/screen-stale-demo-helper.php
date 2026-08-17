@@ -115,6 +115,24 @@ function presence_demo_handle_bump() {
 	if ( '' === $key || ! $actor ) {
 		wp_send_json_error( array( 'reason' => 'bad-input' ), 400 );
 	}
+
+	// Post screens require an actual save to bump the revision.
+	if ( preg_match( '#^post/(\d+)$#', $key, $matches ) ) {
+		$post_id = (int) $matches[1];
+		if ( ! current_user_can( 'edit_post', $post_id ) ) {
+			wp_send_json_error( array( 'reason' => 'forbidden' ), 403 );
+		}
+		$original_user = get_current_user_id();
+		wp_set_current_user( $actor );
+		wp_update_post(
+			array(
+				'ID'           => $post_id,
+				'post_content' => get_post_field( 'post_content', $post_id ),
+			)
+		);
+		wp_set_current_user( $original_user );
+	}
+
 	wp_presence_bump_screen_revision( $key, $actor );
 	wp_send_json_success();
 }
