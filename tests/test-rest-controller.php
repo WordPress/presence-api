@@ -710,7 +710,7 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 
 		$this->assertSame( 200, $response->get_status() );
 		$this->assertCount( 5, $data, 'Should return exactly per_page rooms' );
-		$this->assertSame( '15', $response->get_headers()['X-WP-Total'], 'Total should reflect all rooms' );
+		$this->assertSame( 15, (int) $response->get_headers()['X-WP-Total'], 'Total should reflect all rooms' );
 
 		// Verify all returned rooms have hydrated users.
 		foreach ( $data as $room ) {
