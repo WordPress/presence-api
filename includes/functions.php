@@ -760,6 +760,9 @@ function wp_get_active_rooms( $timeout = WP_PRESENCE_DEFAULT_TTL, $hydrate_users
 			$room_data['users'] = $users;
 			// Recount after filtering out invalid users.
 			$room_data['user_count'] = count( $users );
+		} else {
+			// Keep user_ids for later hydration.
+			$room_data['user_ids'] = $room['user_ids'];
 		}
 
 		$rooms[] = $room_data;
