@@ -763,8 +763,12 @@ JS,
 			return $response;
 		}
 
-		$response['presence-online']      = self::build_online_entries( $entries );
-		$response['presence-online-hash'] = $hash;
+		$visible_count = self::VISIBLE_ROWS + 2;
+		$response['presence-online']       = self::build_online_entries(
+			array_slice( $entries, 0, $visible_count )
+		);
+		$response['presence-online-total'] = count( $entries );
+		$response['presence-online-hash']  = $hash;
 
 		return $response;
 	}

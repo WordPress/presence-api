@@ -240,6 +240,31 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Heartbeat payload is capped to visible rows plus a small buffer.
+	 *
+	 * @covers WP_Presence_Widget_Whos_Online::heartbeat_received
+	 */
+	public function test_heartbeat_payload_is_capped_to_visible_rows() {
+		wp_set_current_user( self::$editor_id );
+
+		// Create more users than VISIBLE_ROWS + 2 (3 + 2 = 5).
+		for ( $i = 0; $i < 10; $i++ ) {
+			$this->add_user_to_room( 'dashboard', 0 );
+		}
+
+		$response = $this->tick();
+
+		$this->assertArrayHasKey( 'presence-online', $response );
+		$this->assertArrayHasKey( 'presence-online-total', $response );
+
+		// Should only send VISIBLE_ROWS + 2 entries.
+		$this->assertCount( 5, $response['presence-online'] );
+
+		// Total should reflect all users.
+		$this->assertSame( 11, $response['presence-online-total'] );
+	}
+
+	/**
 	 * @covers WP_Presence_Widget_Whos_Online::render
 	 * @covers WP_Presence_Widget_Whos_Online::render_user_row
 	 */
