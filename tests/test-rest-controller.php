@@ -685,4 +685,37 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 		$this->assertInstanceOf( 'WP_Error', $forbidden );
 		$this->assertSame( 403, $forbidden->get_error_data()['status'] );
 	}
+
+	/**
+	 * Rooms endpoint only hydrates users for the requested page.
+	 *
+	 * @covers WP_REST_Presence_Controller::get_rooms
+	 */
+	public function test_get_rooms_paginates_before_hydration() {
+		wp_set_current_user( self::$editor_id );
+
+		// Create more rooms than one page.
+		for ( $i = 0; $i < 15; $i++ ) {
+			$post_id = self::factory()->post->create();
+			wp_set_presence( 'postType/post:' . $post_id, 'client-' . $i, array(), self::$editor_id );
+		}
+
+		// Request only first page with per_page=5.
+		$request = new WP_REST_Request( 'GET', '/wp-presence/v1/presence/rooms' );
+		$request->set_param( 'per_page', 5 );
+		$request->set_param( 'page', 1 );
+
+		$response = rest_get_server()->dispatch( $request );
+		$data     = $response->get_data();
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertCount( 5, $data, 'Should return exactly per_page rooms' );
+		$this->assertSame( '15', $response->get_headers()['X-WP-Total'], 'Total should reflect all rooms' );
+
+		// Verify all returned rooms have hydrated users.
+		foreach ( $data as $room ) {
+			$this->assertArrayHasKey( 'users', $room );
+			$this->assertNotEmpty( $room['users'] );
+		}
+	}
 }

@@ -668,7 +668,7 @@ function wp_maybe_create_presence_table() {
  * @param int $timeout Optional. Timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL.
  * @return array Array of room objects, each with 'room', 'user_count', and 'users'.
  */
-function wp_get_active_rooms( $timeout = WP_PRESENCE_DEFAULT_TTL ) {
+function wp_get_active_rooms( $timeout = WP_PRESENCE_DEFAULT_TTL, $hydrate_users = true ) {
 	global $wpdb;
 
 	if ( ! wp_presence_has_table() ) {
@@ -708,11 +708,16 @@ function wp_get_active_rooms( $timeout = WP_PRESENCE_DEFAULT_TTL ) {
 
 		++$rooms_by_name[ $row->room ]['entry_count'];
 		$rooms_by_name[ $row->room ]['user_ids'][ $user_id ] = true;
-		$all_user_ids[ $user_id ]                            = true;
+
+		if ( $hydrate_users ) {
+			$all_user_ids[ $user_id ] = true;
+		}
 	}
 
-	// Prime the user object cache in a single query.
-	cache_users( array_keys( $all_user_ids ) );
+	if ( $hydrate_users ) {
+		// Prime the user object cache in a single query.
+		cache_users( array_keys( $all_user_ids ) );
+	}
 
 	uasort(
 		$rooms_by_name,
@@ -728,27 +733,92 @@ function wp_get_active_rooms( $timeout = WP_PRESENCE_DEFAULT_TTL ) {
 	$rooms = array();
 
 	foreach ( $rooms_by_name as $room ) {
-		$user_ids = array_keys( $room['user_ids'] );
-		$users    = array();
-		foreach ( $user_ids as $uid ) {
-			$user = get_userdata( $uid );
+		$room_data = array(
+			'room'       => $room['room'],
+			'user_count' => count( $room['user_ids'] ),
+		);
 
-			if ( ! $user ) {
-				continue;
+		if ( $hydrate_users ) {
+			$user_ids = array_keys( $room['user_ids'] );
+			$users    = array();
+			foreach ( $user_ids as $uid ) {
+				$user = get_userdata( $uid );
+
+				if ( ! $user ) {
+					continue;
+				}
+
+				$users[] = array(
+					'user_id'      => $uid,
+					'display_name' => $user->display_name,
+					'avatar_url'   => get_avatar_url( $uid, array( 'size' => 32 ) ),
+				);
 			}
 
-			$users[] = array(
-				'user_id'      => $uid,
-				'display_name' => $user->display_name,
-				'avatar_url'   => get_avatar_url( $uid, array( 'size' => 32 ) ),
-			);
+			$room_data['users'] = $users;
+			// Recount after filtering out invalid users.
+			$room_data['user_count'] = count( $users );
 		}
 
-		$rooms[] = array(
-			'room'       => $room['room'],
-			'user_count' => count( $users ),
-			'users'      => $users,
-		);
+		$rooms[] = $room_data;
+	}
+
+	return $rooms;
+}
+
+/**
+ * Hydrates user data for a list of rooms.
+ *
+ * @access private
+ *
+ * @param array $rooms Array of room data from wp_get_active_rooms().
+ * @return array Rooms with hydrated user arrays.
+ */
+function wp_presence_hydrate_room_users( $rooms ) {
+	if ( empty( $rooms ) ) {
+		return $rooms;
+	}
+
+	// Collect all user IDs across all rooms.
+	$all_user_ids = array();
+	foreach ( $rooms as $room ) {
+		if ( isset( $room['user_ids'] ) ) {
+			$all_user_ids = array_merge( $all_user_ids, array_keys( $room['user_ids'] ) );
+		}
+	}
+
+	if ( empty( $all_user_ids ) ) {
+		return $rooms;
+	}
+
+	// Prime user cache.
+	cache_users( array_unique( $all_user_ids ) );
+
+	// Hydrate users for each room.
+	foreach ( $rooms as &$room ) {
+		$users = array();
+
+		if ( isset( $room['user_ids'] ) ) {
+			foreach ( array_keys( $room['user_ids'] ) as $uid ) {
+				$user = get_userdata( $uid );
+
+				if ( ! $user ) {
+					continue;
+				}
+
+				$users[] = array(
+					'user_id'      => $uid,
+					'display_name' => $user->display_name,
+					'avatar_url'   => get_avatar_url( $uid, array( 'size' => 32 ) ),
+				);
+			}
+		}
+
+		$room['users']      = $users;
+		$room['user_count'] = count( $users );
+
+		// Clean up the internal user_ids array.
+		unset( $room['user_ids'] );
 	}
 
 	return $rooms;
