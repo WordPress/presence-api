@@ -665,8 +665,10 @@ function wp_maybe_create_presence_table() {
  * Returns all active rooms with their user counts and member lists.
  *
  * @access private
- * @param int $timeout Optional. Timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL.
- * @return array Array of room objects, each with 'room', 'user_count', and 'users'.
+ *
+ * @param int  $timeout        Optional. Timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL.
+ * @param bool $hydrate_users  Optional. Whether to hydrate user data. Default true.
+ * @return array Array of room objects, each with 'room', 'user_count', and optionally 'users'.
  */
 function wp_get_active_rooms( $timeout = WP_PRESENCE_DEFAULT_TTL, $hydrate_users = true ) {
 	global $wpdb;
