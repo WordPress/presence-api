@@ -240,15 +240,15 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * Heartbeat payload is capped to visible rows plus a small buffer.
+	 * Heartbeat payload is capped to visible rows plus overflow threshold.
 	 *
 	 * @covers WP_Presence_Widget_Whos_Online::heartbeat_received
 	 */
-	public function test_heartbeat_payload_is_capped_to_visible_rows() {
+	public function test_heartbeat_payload_is_capped_to_expandable_list_max() {
 		wp_set_current_user( self::$editor_id );
 
-		// Create more users than VISIBLE_ROWS + 2 (3 + 2 = 5).
-		for ( $i = 0; $i < 10; $i++ ) {
+		// Create more users than VISIBLE_ROWS + OVERFLOW_THRESHOLD (3 + 20 = 23).
+		for ( $i = 0; $i < 30; $i++ ) {
 			$this->add_user_to_room( 'dashboard', 0 );
 		}
 
@@ -257,11 +257,11 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 		$this->assertArrayHasKey( 'presence-online', $response );
 		$this->assertArrayHasKey( 'presence-online-total', $response );
 
-		// Should only send VISIBLE_ROWS + 2 entries.
-		$this->assertCount( 5, $response['presence-online'] );
+		// Should only send VISIBLE_ROWS + OVERFLOW_THRESHOLD entries.
+		$this->assertCount( 23, $response['presence-online'] );
 
 		// Total should reflect all users.
-		$this->assertSame( 11, $response['presence-online-total'] );
+		$this->assertSame( 31, $response['presence-online-total'] );
 	}
 
 	/**
