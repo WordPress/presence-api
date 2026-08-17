@@ -680,89 +680,71 @@ function wp_get_active_rooms( $timeout = WP_PRESENCE_DEFAULT_TTL, $hydrate_users
 	$timeout = wp_presence_get_timeout( $timeout );
 	$cutoff  = gmdate( 'Y-m-d H:i:s', time() - $timeout );
 
+	// First pass: get room names and counts only (no user IDs).
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-	$rows = $wpdb->get_results(
+	$room_stats = $wpdb->get_results(
 		$wpdb->prepare(
-			"SELECT room, user_id
+			"SELECT room, COUNT(DISTINCT user_id) as user_count
 			FROM {$wpdb->presence}
 			WHERE date_gmt > %s
-			ORDER BY room ASC, user_id ASC",
+			GROUP BY room",
 			$cutoff
 		)
 	);
-	if ( ! $rows ) {
+
+	if ( ! $room_stats ) {
 		return array();
 	}
 
-	$rooms_by_name = array();
-	$all_user_ids  = array();
-
-	foreach ( $rows as $row ) {
-		if ( ! isset( $rooms_by_name[ $row->room ] ) ) {
-			$rooms_by_name[ $row->room ] = array(
-				'room'        => $row->room,
-				'entry_count' => 0,
-				'user_ids'    => array(),
-			);
-		}
-
-		$user_id = (int) $row->user_id;
-
-		++$rooms_by_name[ $row->room ]['entry_count'];
-		$rooms_by_name[ $row->room ]['user_ids'][ $user_id ] = true;
-
-		if ( $hydrate_users ) {
-			$all_user_ids[ $user_id ] = true;
-		}
-	}
-
-	if ( $hydrate_users ) {
-		// Prime the user object cache in a single query.
-		cache_users( array_keys( $all_user_ids ) );
-	}
-
-	uasort(
-		$rooms_by_name,
-		function ( $room_a, $room_b ) {
-
-			if ( $room_a['entry_count'] === $room_b['entry_count'] ) {
-				return strcmp( $room_a['room'], $room_b['room'] );
+	// Sort by user count descending, then room name.
+	usort(
+		$room_stats,
+		function ( $a, $b ) {
+			if ( $a->user_count === $b->user_count ) {
+				return strcmp( $a->room, $b->room );
 			}
-
-			return $room_b['entry_count'] <=> $room_a['entry_count'];
+			return $b->user_count <=> $a->user_count;
 		}
 	);
+
 	$rooms = array();
 
-	foreach ( $rooms_by_name as $room ) {
+	foreach ( $room_stats as $stat ) {
 		$room_data = array(
-			'room'       => $room['room'],
-			'user_count' => count( $room['user_ids'] ),
+			'room'       => $stat->room,
+			'user_count' => (int) $stat->user_count,
 		);
 
 		if ( $hydrate_users ) {
-			$user_ids = array_keys( $room['user_ids'] );
-			$users    = array();
+			// Query user IDs only for this room.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$user_ids = $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT DISTINCT user_id
+					FROM {$wpdb->presence}
+					WHERE room = %s AND date_gmt > %s",
+					$stat->room,
+					$cutoff
+				)
+			);
+
+			$users = array();
 			foreach ( $user_ids as $uid ) {
-				$user = get_userdata( $uid );
+				$user = get_userdata( (int) $uid );
 
 				if ( ! $user ) {
 					continue;
 				}
 
 				$users[] = array(
-					'user_id'      => $uid,
+					'user_id'      => (int) $uid,
 					'display_name' => $user->display_name,
 					'avatar_url'   => get_avatar_url( $uid, array( 'size' => 32 ) ),
 				);
 			}
 
-			$room_data['users'] = $users;
-			// Recount after filtering out invalid users.
+			$room_data['users']      = $users;
 			$room_data['user_count'] = count( $users );
-		} else {
-			// Keep user_ids for later hydration.
-			$room_data['user_ids'] = $room['user_ids'];
 		}
 
 		$rooms[] = $room_data;
@@ -776,35 +758,54 @@ function wp_get_active_rooms( $timeout = WP_PRESENCE_DEFAULT_TTL, $hydrate_users
  *
  * @access private
  *
- * @param array $rooms Array of room data from wp_get_active_rooms().
+ * @param array $rooms   Array of room data (each with a 'room' key).
+ * @param int   $timeout Optional. Timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL.
  * @return array Rooms with hydrated user arrays.
  */
-function wp_presence_hydrate_room_users( $rooms ) {
+function wp_presence_hydrate_room_users( $rooms, $timeout = WP_PRESENCE_DEFAULT_TTL ) {
+	global $wpdb;
+
 	if ( empty( $rooms ) ) {
 		return $rooms;
 	}
 
-	// Collect all user IDs across all rooms.
-	$all_user_ids = array();
-	foreach ( $rooms as $room ) {
-		if ( isset( $room['user_ids'] ) ) {
-			$all_user_ids = array_merge( $all_user_ids, array_keys( $room['user_ids'] ) );
-		}
-	}
+	$timeout = wp_presence_get_timeout( $timeout );
+	$cutoff  = gmdate( 'Y-m-d H:i:s', time() - $timeout );
 
-	if ( empty( $all_user_ids ) ) {
-		return $rooms;
+	// Get user IDs for all rooms in one query.
+	$room_names   = wp_list_pluck( $rooms, 'room' );
+	$placeholders = implode( ', ', array_fill( 0, count( $room_names ), '%s' ) );
+
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+	$rows = $wpdb->get_results(
+		$wpdb->prepare(
+			"SELECT room, user_id
+			FROM {$wpdb->presence}
+			WHERE room IN ($placeholders) AND date_gmt > %s",
+			array_merge( $room_names, array( $cutoff ) )
+		)
+	);
+
+	// Group user IDs by room.
+	$room_user_ids = array();
+	$all_user_ids  = array();
+	foreach ( $rows as $row ) {
+		$uid                              = (int) $row->user_id;
+		$room_user_ids[ $row->room ][]    = $uid;
+		$all_user_ids[ $uid ]             = true;
 	}
 
 	// Prime user cache.
-	cache_users( array_unique( $all_user_ids ) );
+	if ( ! empty( $all_user_ids ) ) {
+		cache_users( array_keys( $all_user_ids ) );
+	}
 
-	// Hydrate users for each room.
+	// Hydrate each room.
 	foreach ( $rooms as &$room ) {
 		$users = array();
 
-		if ( isset( $room['user_ids'] ) ) {
-			foreach ( array_keys( $room['user_ids'] ) as $uid ) {
+		if ( isset( $room_user_ids[ $room['room'] ] ) ) {
+			foreach ( array_unique( $room_user_ids[ $room['room'] ] ) as $uid ) {
 				$user = get_userdata( $uid );
 
 				if ( ! $user ) {
@@ -821,9 +822,6 @@ function wp_presence_hydrate_room_users( $rooms ) {
 
 		$room['users']      = $users;
 		$room['user_count'] = count( $users );
-
-		// Clean up the internal user_ids array.
-		unset( $room['user_ids'] );
 	}
 
 	return $rooms;
