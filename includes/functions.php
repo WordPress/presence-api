@@ -776,7 +776,7 @@ function wp_presence_hydrate_room_users( $rooms, $timeout = WP_PRESENCE_DEFAULT_
 	$room_names   = wp_list_pluck( $rooms, 'room' );
 	$placeholders = implode( ', ', array_fill( 0, count( $room_names ), '%s' ) );
 
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 	$rows = $wpdb->get_results(
 		$wpdb->prepare(
 			"SELECT room, user_id
@@ -790,9 +790,9 @@ function wp_presence_hydrate_room_users( $rooms, $timeout = WP_PRESENCE_DEFAULT_
 	$room_user_ids = array();
 	$all_user_ids  = array();
 	foreach ( $rows as $row ) {
-		$uid                              = (int) $row->user_id;
-		$room_user_ids[ $row->room ][]    = $uid;
-		$all_user_ids[ $uid ]             = true;
+		$uid                           = (int) $row->user_id;
+		$room_user_ids[ $row->room ][] = $uid;
+		$all_user_ids[ $uid ]          = true;
 	}
 
 	// Prime user cache.
