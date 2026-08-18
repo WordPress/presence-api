@@ -1,14 +1,14 @@
 /**
  * WordPress dependencies
  */
-import { useState, useEffect, useRef } from '@wordpress/element';
+import { useState, useEffect } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
-import apiFetch from '@wordpress/api-fetch';
 
 /**
  * Internal dependencies
  */
-import { onHeartbeatTick, isHeartbeatAvailable } from '../utils/heartbeat-events';
+import { isHeartbeatAvailable } from '../utils/heartbeat-events';
+import { subscribeToPresencePolling } from '../utils/presence-poll-coordinator';
 
 /**
  * Subscribes to WordPress Heartbeat to poll for presence room occupants.
@@ -40,8 +40,6 @@ export default function usePresenceUsers( room, options = {} ) {
 	const [ users, setUsers ] = useState( [] );
 	const [ isLoading, setIsLoading ] = useState( true );
 	const [ error, setError ] = useState( null );
-	const abortControllerRef = useRef();
-	const fetchInProgressRef = useRef( false );
 
 	const currentUserId = useSelect(
 		( select ) => select( 'core' ).getCurrentUser()?.id,
@@ -63,32 +61,17 @@ export default function usePresenceUsers( room, options = {} ) {
 
 		let isInitialFetch = true;
 
-		const fetchPresence = async () => {
-			if ( fetchInProgressRef.current ) {
-				return;
-			}
-
-			fetchInProgressRef.current = true;
-
-			if ( abortControllerRef.current ) {
-				abortControllerRef.current.abort();
-			}
-
-			abortControllerRef.current = new AbortController();
-			const { signal } = abortControllerRef.current;
-
-			try {
-				const params = new URLSearchParams( {
-					room,
-					_fields: fields,
-				} );
-
-				const entries = await apiFetch( {
-					path: `/wp-presence/v1/presence?${ params }`,
-					signal,
-				} );
-
-				if ( signal.aborted ) {
+		const unsubscribe = subscribeToPresencePolling(
+			room,
+			fields,
+			( { entries, error: fetchError } ) => {
+				if ( fetchError ) {
+					setUsers( [] );
+					setError( fetchError );
+					if ( isInitialFetch ) {
+						setIsLoading( false );
+						isInitialFetch = false;
+					}
 					return;
 				}
 
@@ -130,34 +113,10 @@ export default function usePresenceUsers( room, options = {} ) {
 					setIsLoading( false );
 					isInitialFetch = false;
 				}
-			} catch ( err ) {
-				if ( signal.aborted || err.name === 'AbortError' ) {
-					return;
-				}
-
-				setUsers( [] );
-				setError( err );
-				if ( isInitialFetch ) {
-					setIsLoading( false );
-					isInitialFetch = false;
-				}
-			} finally {
-				fetchInProgressRef.current = false;
 			}
-		};
+		);
 
-		fetchPresence();
-
-		const cleanup = onHeartbeatTick( () => {
-			fetchPresence();
-		} );
-
-		return () => {
-			cleanup();
-			if ( abortControllerRef.current ) {
-				abortControllerRef.current.abort();
-			}
-		};
+		return unsubscribe;
 	}, [ room, currentUserId, includeSelf, fields ] );
 
 	return {
