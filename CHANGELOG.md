@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.23](https://github.com/WordPress/presence-api/compare/v0.1.22...v0.1.23) (2026-08-17)
+
+
+### Bug Fixes
+
+* demo helper now saves post to bump revision ([b397845](https://github.com/WordPress/presence-api/commit/b397845145e71fcdbeac79e4e1b092f6adcdbd31)), closes [#287](https://github.com/WordPress/presence-api/issues/287)
+
+
+### Performance Improvements
+
+* cap heartbeat payload to visible rows only ([e7739ac](https://github.com/WordPress/presence-api/commit/e7739aced270df1ca462a491af56286a4b255f47)), closes [#291](https://github.com/WordPress/presence-api/issues/291)
+* paginate rooms before user hydration ([6929add](https://github.com/WordPress/presence-api/commit/6929addba615aa57c9e69ba09ef6611fd75028bb)), closes [#285](https://github.com/WordPress/presence-api/issues/285)
+
 ## [0.1.22](https://github.com/WordPress/presence-api/compare/v0.1.21...v0.1.22) (2026-08-16)
 
 

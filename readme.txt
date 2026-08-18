@@ -3,7 +3,7 @@ Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas,
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.0
-Stable tag: 0.1.22
+Stable tag: 0.1.23
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -48,6 +48,11 @@ Or install manually:
 Or [try it in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json) without installing anything.
 
 == Changelog ==
+
+= 0.1.23 =
+* Demo helper now saves post to bump revision.
+* Cap heartbeat payload to visible rows only.
+* Paginate rooms before user hydration.
 
 = 0.1.22 =
 * Add usePresenceUsers React hook.
