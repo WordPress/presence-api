@@ -1,5 +1,68 @@
 # Changelog
 
+## [0.1.23](https://github.com/WordPress/presence-api/compare/v0.1.22...v0.1.23) (2026-08-17)
+
+
+### Bug Fixes
+
+* demo helper now saves post to bump revision ([b397845](https://github.com/WordPress/presence-api/commit/b397845145e71fcdbeac79e4e1b092f6adcdbd31)), closes [#287](https://github.com/WordPress/presence-api/issues/287)
+
+
+### Performance Improvements
+
+* cap heartbeat payload to visible rows only ([e7739ac](https://github.com/WordPress/presence-api/commit/e7739aced270df1ca462a491af56286a4b255f47)), closes [#291](https://github.com/WordPress/presence-api/issues/291)
+* paginate rooms before user hydration ([6929add](https://github.com/WordPress/presence-api/commit/6929addba615aa57c9e69ba09ef6611fd75028bb)), closes [#285](https://github.com/WordPress/presence-api/issues/285)
+
+## [0.1.22](https://github.com/WordPress/presence-api/compare/v0.1.21...v0.1.22) (2026-08-16)
+
+
+### Features
+
+* add usePresenceUsers React hook ([6e3b2b3](https://github.com/WordPress/presence-api/commit/6e3b2b3e94be34f1a4b416d1567057d5c05377eb))
+
+
+### Bug Fixes
+
+* prevent unnecessary heartbeat re-subscription on param changes ([0bd12bd](https://github.com/WordPress/presence-api/commit/0bd12bd6b0f161d8f240efedfa3edbd0d2a963cf))
+* resolve ref-in-render and stale closure issues ([4e684f7](https://github.com/WordPress/presence-api/commit/4e684f7786210f0e8f888c36fd26be7fd766112c))
+
+## [0.1.21](https://github.com/WordPress/presence-api/compare/v0.1.20...v0.1.21) (2026-08-16)
+
+
+### Features
+
+* add RTC collaboration hooks and server authority ([97ff370](https://github.com/WordPress/presence-api/commit/97ff370e7064d8f8ce77504a080f83ebcb07878e))
+
+
+### Bug Fixes
+
+* eliminate race condition in timestamp test ([9bcf82c](https://github.com/WordPress/presence-api/commit/9bcf82caece5fdabc3326ce2843fa5c81465dd50))
+* restore admin bar contrast in Light scheme ([c81da59](https://github.com/WordPress/presence-api/commit/c81da59ed75f2e27152d99731091a51ee51219b7))
+* set page parameter in REST controller tests ([cb6d44c](https://github.com/WordPress/presence-api/commit/cb6d44c9603cb11a000ae40710ab112a8db3c103))
+* set per_page parameter in REST controller tests ([8c3e141](https://github.com/WordPress/presence-api/commit/8c3e14155f57705e405485005f5f9b1f566b6959))
+
+
+### Performance Improvements
+
+* skip Who's Online payload when room state is unchanged ([555a383](https://github.com/WordPress/presence-api/commit/555a38364ae8da58f8d950b17e214fcd16af869d))
+
+## [0.1.20](https://github.com/WordPress/presence-api/compare/v0.1.19...v0.1.20) (2026-08-14)
+
+
+### Bug Fixes
+
+* correct query cost and timezone bug in post revision lookup ([b78b8a9](https://github.com/WordPress/presence-api/commit/b78b8a9775612ce7611f0c62467a889256f73542))
+* count people rather than rows in the Active Posts widget ([da77dfb](https://github.com/WordPress/presence-api/commit/da77dfb262e1b74d23defea4cb07905387abb5cf)), closes [#134](https://github.com/WordPress/presence-api/issues/134)
+* guard the presence table upgrade with a provisioning lock ([41fb068](https://github.com/WordPress/presence-api/commit/41fb068e741324500de959b0fd2b73fd2742c26f))
+* merge the post lock entry into the editor's presence entry ([b0d1a83](https://github.com/WordPress/presence-api/commit/b0d1a83165f64efdcf8b396f99ad0bb0cfb60420)), closes [#134](https://github.com/WordPress/presence-api/issues/134)
+* reindent get_metadata() case with tabs ([bc70eaa](https://github.com/WordPress/presence-api/commit/bc70eaa3528f66c53afa35092ca6dc1a5562a9f7))
+* stop funneling screen-revision bumps through one shared option ([2380263](https://github.com/WordPress/presence-api/commit/23802633d0c4593d8aa17201bc8351c66551d899))
+
+
+### Performance Improvements
+
+* aggregate wp_get_presence_summary() in SQL ([a0570e5](https://github.com/WordPress/presence-api/commit/a0570e537069eebf4d60be9138822594d4c01141))
+
 ## [0.1.19](https://github.com/WordPress/presence-api/compare/v0.1.18...v0.1.19) (2026-08-14)
 
 

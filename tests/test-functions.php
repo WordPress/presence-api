@@ -524,6 +524,46 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * @covers ::wp_presence_hydrate_room_users
+	 */
+	public function test_hydrate_room_users() {
+		$user_1 = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$user_2 = self::factory()->user->create( array( 'role' => 'editor' ) );
+
+		wp_set_presence( 'admin/online', 'client-1', array(), $user_1 );
+		wp_set_presence( 'postType/post:1', 'client-2', array(), $user_2 );
+
+		// Get rooms without hydration.
+		$rooms = wp_get_active_rooms( WP_PRESENCE_DEFAULT_TTL, false );
+
+		$this->assertCount( 2, $rooms );
+		$this->assertArrayNotHasKey( 'users', $rooms[0] );
+
+		// Hydrate just the first room.
+		$hydrated = wp_presence_hydrate_room_users( array( $rooms[0] ) );
+
+		$this->assertCount( 1, $hydrated );
+		$this->assertArrayHasKey( 'users', $hydrated[0] );
+		$this->assertCount( 1, $hydrated[0]['users'] );
+		$this->assertSame( $user_1, $hydrated[0]['users'][0]['user_id'] );
+	}
+
+	/**
+	 * @covers ::wp_get_active_rooms
+	 */
+	public function test_get_active_rooms_without_hydration() {
+		wp_set_presence( 'admin/online', 'client-1', array(), self::$editor_id );
+
+		$rooms = wp_get_active_rooms( WP_PRESENCE_DEFAULT_TTL, false );
+
+		$this->assertCount( 1, $rooms );
+		$this->assertArrayHasKey( 'room', $rooms[0] );
+		$this->assertArrayHasKey( 'user_count', $rooms[0] );
+		$this->assertArrayNotHasKey( 'users', $rooms[0] );
+		$this->assertSame( 1, $rooms[0]['user_count'] );
+	}
+
+	/**
 	 * @covers ::wp_presence_get_timeout
 	 */
 	public function test_ttl_filter() {

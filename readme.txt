@@ -1,9 +1,9 @@
 === Presence API ===
-Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas, aldorza
+Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas, aldorza, bejignesh
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.0
-Stable tag: 0.1.19
+Stable tag: 0.1.23
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -17,6 +17,8 @@ Presence API gives WordPress a system-wide awareness layer. It tracks which user
 
 Data flows through the Heartbeat API and is stored in a dedicated `wp_presence` table with a 60-second TTL. No writes to `wp_postmeta` means no post-cache invalidation on every heartbeat.
 
+[Test in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json) without installing anything.
+
 = Features =
 
 * Who's Online dashboard widget with idle detection
@@ -24,12 +26,6 @@ Data flows through the Heartbeat API and is stored in a dedicated `wp_presence` 
 * Admin bar indicator showing other users on the same page
 * Editors column in the post list
 * Online filter in the Users list
-
-= Try it =
-
-[Test in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json) without installing anything.
-
-[Watch the demo on YouTube](https://youtu.be/Xa5WkZdjBD4)
 
 = For Developers =
 
@@ -52,6 +48,33 @@ Or install manually:
 Or [try it in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json) without installing anything.
 
 == Changelog ==
+
+= 0.1.23 =
+* Demo helper now saves post to bump revision.
+* Cap heartbeat payload to visible rows only.
+* Paginate rooms before user hydration.
+
+= 0.1.22 =
+* Add usePresenceUsers React hook.
+* Prevent unnecessary heartbeat re-subscription on param changes.
+* Resolve ref-in-render and stale closure issues.
+
+= 0.1.21 =
+* Add RTC collaboration hooks and server authority.
+* Eliminate race condition in timestamp test.
+* Restore admin bar contrast in Light scheme.
+* Set page parameter in REST controller tests.
+* Set per_page parameter in REST controller tests.
+* Skip Who's Online payload when room state is unchanged.
+
+= 0.1.20 =
+* Correct query cost and timezone bug in post revision lookup.
+* Count people rather than rows in the Active Posts widget ([da77dfb](https://github.com/WordPress/presence-api/commit/da77dfb262e1b74d23defea4cb07905387abb5cf)), closes [#134](https://github.com/WordPress/presence-api/issues/134).
+* Guard the presence table upgrade with a provisioning lock.
+* Merge the post lock entry into the editor's presence entry ([b0d1a83](https://github.com/WordPress/presence-api/commit/b0d1a83165f64efdcf8b396f99ad0bb0cfb60420)), closes [#134](https://github.com/WordPress/presence-api/issues/134).
+* Reindent get_metadata() case with tabs.
+* Stop funneling screen-revision bumps through one shared option.
+* Aggregate wp_get_presence_summary() in SQL.
 
 = 0.1.19 =
 * Keyboard users can't reach non-link items in the admin bar presence flyout.
