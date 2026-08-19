@@ -139,9 +139,17 @@ function wp_presence_enqueue_heartbeat_ping() {
 	);
 
 	wp_enqueue_script(
+		'wp-presence-tab-coordinator',
+		WP_PRESENCE_PLUGIN_URL . 'assets/js/tab-coordinator.js',
+		array( 'jquery' ),
+		WP_PRESENCE_VERSION,
+		true
+	);
+
+	wp_enqueue_script(
 		'wp-presence-ping',
 		WP_PRESENCE_PLUGIN_URL . 'assets/js/presence-ping.js',
-		array( 'jquery', 'heartbeat' ),
+		array( 'jquery', 'heartbeat', 'wp-presence-tab-coordinator' ),
 		WP_PRESENCE_VERSION,
 		true
 	);

@@ -58,9 +58,17 @@ class WP_Presence_Widget_Active_Posts {
 		wp_enqueue_script( 'heartbeat' );
 
 		wp_enqueue_script(
+			'wp-presence-tab-coordinator',
+			WP_PRESENCE_PLUGIN_URL . 'assets/js/tab-coordinator.js',
+			array( 'jquery' ),
+			WP_PRESENCE_VERSION,
+			true
+		);
+
+		wp_enqueue_script(
 			'wp-presence-active-posts',
 			WP_PRESENCE_PLUGIN_URL . 'assets/js/active-posts.js',
-			array( 'jquery', 'heartbeat' ),
+			array( 'jquery', 'heartbeat', 'wp-presence-tab-coordinator' ),
 			WP_PRESENCE_VERSION,
 			true
 		);

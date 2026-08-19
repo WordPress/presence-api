@@ -22,17 +22,6 @@
 		frontPostId: (frontContext && frontContext.post_id) || 0,
 	});
 
-	const hasLocks = typeof navigator !== 'undefined' &&
-		navigator.locks &&
-		typeof navigator.locks.request === 'function';
-
-	// No Locks API: ping independently, same as before.
-	let isPingLeader = !hasLocks;
-
-	const pingChannel = typeof BroadcastChannel === 'function'
-		? new BroadcastChannel(pingContextKey)
-		: null;
-
 	// Response keys other presence-api features read off heartbeat-tick.
 	// Followers relay these from the leader instead of going stale.
 	const RELAYED_TICK_KEYS = [
@@ -47,22 +36,7 @@
 		'presence-heartbeat-room-list',
 	];
 
-	if (pingChannel) {
-		pingChannel.addEventListener('message', function (event) {
-			$(document).trigger('heartbeat-tick', [event.data]);
-		});
-	}
-
-	if (hasLocks) {
-		// All tabs queue on this lock; whichever gets it becomes leader.
-		// Closing or crashing the leader's tab releases it automatically.
-		navigator.locks
-			.request(pingContextKey, function () {
-				isPingLeader = true;
-				return new Promise(function () {});
-			})
-			.catch(function () {});
-	}
+	const tabCoordinator = window.wpPresenceCreateTabCoordinator(pingContextKey, RELAYED_TICK_KEYS);
 
 	// Defer registration to document ready to ensure it runs after WP Core's post.js handler.
 	$(function () {
@@ -79,7 +53,7 @@
 
 			hasLeft = false;
 
-			if (!isPingLeader) {
+			if (!tabCoordinator.isLeader()) {
 				return;
 			}
 
@@ -98,28 +72,6 @@
 				data['presence-editor-ping'] = { post_id: editorPostId };
 			}
 		});
-
-		if (pingChannel) {
-			$(document).on('heartbeat-tick', function (event, data) {
-				if (!isPingLeader || !data) {
-					return;
-				}
-
-				const relayed = {};
-				let hasRelayedData = false;
-
-				RELAYED_TICK_KEYS.forEach(function (key) {
-					if (Object.prototype.hasOwnProperty.call(data, key)) {
-						relayed[key] = data[key];
-						hasRelayedData = true;
-					}
-				});
-
-				if (hasRelayedData) {
-					pingChannel.postMessage(relayed);
-				}
-			});
-		}
 	});
 
 	function leave() {

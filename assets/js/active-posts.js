@@ -16,32 +16,7 @@
 	// Sitewide data, no per-tab context — the dedupe key is fixed.
 	var pingContextKey = 'wp-presence-active-posts-ping';
 
-	var hasLocks = typeof navigator !== 'undefined' &&
-		navigator.locks &&
-		typeof navigator.locks.request === 'function';
-
-	// No Locks API: ping independently, same as before.
-	var isPingLeader = ! hasLocks;
-
-	var pingChannel = typeof BroadcastChannel === 'function'
-		? new BroadcastChannel( pingContextKey )
-		: null;
-
-	if ( pingChannel ) {
-		pingChannel.addEventListener( 'message', function ( event ) {
-			$( document ).trigger( 'heartbeat-tick', [ event.data ] );
-		} );
-	}
-
-	if ( hasLocks ) {
-		// All tabs queue on this lock; the winner leads until its tab closes.
-		navigator.locks
-			.request( pingContextKey, function () {
-				isPingLeader = true;
-				return new Promise( function () {} );
-			} )
-			.catch( function () {} );
-	}
+	var tabCoordinator = window.wpPresenceCreateTabCoordinator( pingContextKey, [ 'presence-active-posts' ] );
 
 	function esc(str) {
 		var el = document.createElement('span');
@@ -50,20 +25,11 @@
 	}
 
 	$(document).on('heartbeat-send', function(event, data) {
-		if ( ! isPingLeader ) {
+		if ( ! tabCoordinator.isLeader() ) {
 			return;
 		}
 		data['presence-active-posts-ping'] = true;
 	});
-
-	if ( pingChannel ) {
-		$( document ).on( 'heartbeat-tick', function ( event, data ) {
-			if ( ! isPingLeader || ! data || ! data[ 'presence-active-posts' ] ) {
-				return;
-			}
-			pingChannel.postMessage( { 'presence-active-posts': data[ 'presence-active-posts' ] } );
-		} );
-	}
 
 	var lastSignature = '';
 
