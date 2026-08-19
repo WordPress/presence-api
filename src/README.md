@@ -117,4 +117,5 @@ Example live region pattern:
 - Requires `wp.heartbeat` to be available in the global scope.
 - Deduplicates users by ID.
 - Prevents race conditions: if a heartbeat tick fires while a fetch is in progress, the second request is skipped.
+- Coalesces polling across tabs and instances sharing a room and `fields`: one tab polls (via Web Locks, where available) and shares results with the rest over `BroadcastChannel`.
 - In development mode, logs warnings and errors to the console for debugging.

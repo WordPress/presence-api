@@ -13,6 +13,31 @@
 	// Guards against duplicate leave() invocations.
 	let hasLeft = false;
 
+	// Tabs on the same screen and post send an identical ping. Key by both
+	// so a different post or screen never gets coalesced with this one.
+	const pingContextKey = 'wp-presence-ping:' + JSON.stringify({
+		screen: window.pagenow || 'front',
+		editorPostId: editorPostId,
+		frontTitle: (frontContext && frontContext.title) || '',
+		frontPostId: (frontContext && frontContext.post_id) || 0,
+	});
+
+	// Response keys other presence-api features read off heartbeat-tick.
+	// Followers relay these from the leader instead of going stale.
+	const RELAYED_TICK_KEYS = [
+		'presence-online',
+		'presence-online-total',
+		'presence-online-hash',
+		'presence-online-unchanged',
+		'presence-heartbeat-users',
+		'presence-heartbeat-entries',
+		'presence-heartbeat-query-ms',
+		'presence-heartbeat-ttl',
+		'presence-heartbeat-room-list',
+	];
+
+	const tabCoordinator = window.wpPresenceCreateTabCoordinator(pingContextKey, RELAYED_TICK_KEYS);
+
 	// Defer registration to document ready to ensure it runs after WP Core's post.js handler.
 	$(function () {
 		$(document).on('heartbeat-send', function (event, data) {
@@ -23,6 +48,12 @@
 			// both.
 			if (document.visibilityState === 'hidden') {
 				delete data['wp-refresh-post-lock'];
+				return;
+			}
+
+			hasLeft = false;
+
+			if (!tabCoordinator.isLeader()) {
 				return;
 			}
 
@@ -40,8 +71,6 @@
 			if (editorPostId) {
 				data['presence-editor-ping'] = { post_id: editorPostId };
 			}
-
-			hasLeft = false;
 		});
 	});
 
