@@ -9,9 +9,41 @@
 	const editorPostId = parseInt(config.editorPostId, 10) || 0;
 	const restUrl = config.restUrl || '';
 	const nonce = config.nonce || '';
+	const idleTicks = parseInt(config.idleTicks, 10) || 0;
+	const idleInterval = parseInt(config.idleInterval, 10) || 0;
+	const ttl = parseInt(config.ttl, 10) || 60;
+	const backoffEnabled = idleTicks > 0 && idleInterval > 0;
 
 	// Guards against duplicate leave() invocations.
 	let hasLeft = false;
+
+	let unchangedTicks = 0;
+	let lastOnlineHash = '';
+	let normalInterval = null;
+
+	// Reads the interval lazily (not at page load) so it reflects whatever
+	// another script, e.g. post.js's lock-refresh interval, already set.
+	function widenInterval() {
+		if (normalInterval !== null) {
+			return;
+		}
+		const current = wp.heartbeat.interval();
+		// Clamp under the TTL, or an idle-but-open tab would drop out of its own room between ticks.
+		const target = Math.min(idleInterval, ttl - 15);
+		if (target <= current) {
+			return;
+		}
+		normalInterval = current;
+		wp.heartbeat.interval(target);
+	}
+
+	function resetBackoff() {
+		unchangedTicks = 0;
+		if (normalInterval !== null) {
+			wp.heartbeat.interval(normalInterval);
+			normalInterval = null;
+		}
+	}
 
 	// Defer registration to document ready to ensure it runs after WP Core's post.js handler.
 	$(function () {
@@ -43,6 +75,34 @@
 
 			hasLeft = false;
 		});
+
+		if (backoffEnabled) {
+			// Reuses the Who's Online widget's hash exchange on every screen,
+			// not just the Dashboard, to learn whether the room changed.
+			$(document).on('heartbeat-send', function (event, data) {
+				if (lastOnlineHash) {
+					data['presence-online-hash'] = lastOnlineHash;
+				}
+			});
+
+			$(document).on('heartbeat-tick', function (event, data) {
+				if (data['presence-online-unchanged']) {
+					unchangedTicks++;
+					if (unchangedTicks >= idleTicks) {
+						widenInterval();
+					}
+					return;
+				}
+				if (data['presence-online-hash']) {
+					lastOnlineHash = data['presence-online-hash'];
+				}
+				if (data['presence-online']) {
+					resetBackoff();
+				}
+			});
+
+			document.addEventListener('keydown', resetBackoff);
+		}
 	});
 
 	function leave() {
@@ -95,6 +155,7 @@
 	// does not sit out the next heartbeat interval.
 	document.addEventListener('visibilitychange', function () {
 		if (document.visibilityState === 'visible') {
+			resetBackoff();
 			tickNow();
 		}
 	});
