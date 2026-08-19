@@ -315,4 +315,50 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 
 		$this->assertStringStartsWith( '[', $encoded );
 	}
+
+	/**
+	 * @covers WP_Presence_Widget_Active_Posts::enqueue_scripts
+	 * @covers WP_Presence_Widget_Active_Posts::get_i18n_strings
+	 */
+	public function test_enqueue_scripts_registers_script_with_i18n_config() {
+		wp_deregister_script( 'wp-presence-active-posts' );
+
+		$wp_scripts        = wp_scripts();
+		$wp_scripts->queue = array();
+		$wp_scripts->done  = array();
+
+		WP_Presence_Widget_Active_Posts::enqueue_scripts( 'index.php' );
+
+		$this->assertTrue( wp_script_is( 'wp-presence-active-posts', 'enqueued' ) );
+
+		$wp_scripts = wp_scripts();
+		$this->assertArrayHasKey( 'wp-presence-active-posts', $wp_scripts->registered );
+		$extra = $wp_scripts->registered['wp-presence-active-posts']->extra;
+		$this->assertArrayHasKey( 'before', $extra );
+
+		$found_config = false;
+		foreach ( $extra['before'] as $script ) {
+			if ( $script && strpos( $script, 'window.wpPresenceActivePosts =' ) !== false ) {
+				$found_config = true;
+				$this->assertStringContainsString( 'Posts currently being edited', $script );
+				break;
+			}
+		}
+		$this->assertTrue( $found_config );
+	}
+
+	/**
+	 * @covers WP_Presence_Widget_Active_Posts::enqueue_scripts
+	 */
+	public function test_enqueue_scripts_skips_other_admin_pages() {
+		wp_deregister_script( 'wp-presence-active-posts' );
+
+		$wp_scripts        = wp_scripts();
+		$wp_scripts->queue = array();
+		$wp_scripts->done  = array();
+
+		WP_Presence_Widget_Active_Posts::enqueue_scripts( 'edit.php' );
+
+		$this->assertFalse( wp_script_is( 'wp-presence-active-posts', 'enqueued' ) );
+	}
 }
