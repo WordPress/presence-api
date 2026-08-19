@@ -27,6 +27,36 @@
 		return;
 	}
 
+	// Tabs on the same screen send an identical ping — key by screenKey.
+	const pingContextKey = 'wp-presence-screen-ping:' + screenKey;
+
+	const hasLocks = typeof navigator !== 'undefined' &&
+		navigator.locks &&
+		typeof navigator.locks.request === 'function';
+
+	// No Locks API: ping independently, same as before.
+	let isPingLeader = ! hasLocks;
+
+	const pingChannel = typeof BroadcastChannel === 'function'
+		? new BroadcastChannel( pingContextKey )
+		: null;
+
+	if ( pingChannel ) {
+		pingChannel.addEventListener( 'message', function ( event ) {
+			$( document ).trigger( 'heartbeat-tick', [ event.data ] );
+		} );
+	}
+
+	if ( hasLocks ) {
+		// All tabs queue on this lock; the winner leads until its tab closes.
+		navigator.locks
+			.request( pingContextKey, function () {
+				isPingLeader = true;
+				return new Promise( function () {} );
+			} )
+			.catch( function () {} );
+	}
+
 	window.wp = window.wp || {};
 	window.wp.presence = window.wp.presence || {};
 
@@ -60,8 +90,20 @@
 		if ( document.visibilityState === 'hidden' ) {
 			return;
 		}
+		if ( ! isPingLeader ) {
+			return;
+		}
 		data[ 'presence-screen-ping' ] = { key: screenKey };
 	} );
+
+	if ( pingChannel ) {
+		$( document ).on( 'heartbeat-tick', function ( event, data ) {
+			if ( ! isPingLeader || ! data || ! data[ 'presence-screen-rev' ] ) {
+				return;
+			}
+			pingChannel.postMessage( { 'presence-screen-rev': data[ 'presence-screen-rev' ] } );
+		} );
+	}
 
 	$( document ).on( 'heartbeat-tick', function ( event, data ) {
 		const info = data && data[ 'presence-screen-rev' ];
