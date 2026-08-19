@@ -31,6 +31,8 @@ function wp_presence_editor_state( $screen_id, $locked ) {
 /**
  * Returns how many consecutive unchanged ticks trigger the idle Heartbeat backoff.
  *
+ * @access private
+ *
  * @since 0.1.24
  *
  * @return int Tick count. Default 5. 0 disables the backoff.
@@ -52,6 +54,8 @@ function wp_presence_get_heartbeat_idle_ticks() {
  * The client clamps this below the presence TTL, so it backs off by less
  * than this (or not at all) on a screen whose normal interval is already
  * near that ceiling.
+ *
+ * @access private
  *
  * @since 0.1.24
  *

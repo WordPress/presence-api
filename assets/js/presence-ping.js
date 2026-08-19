@@ -13,6 +13,7 @@
 	const idleInterval = parseInt(config.idleInterval, 10) || 0;
 	const ttl = parseInt(config.ttl, 10) || 60;
 	const backoffEnabled = idleTicks > 0 && idleInterval > 0;
+	const TTL_SAFETY_MARGIN = 15;
 
 	// Guards against duplicate leave() invocations.
 	let hasLeft = false;
@@ -28,8 +29,8 @@
 			return;
 		}
 		const current = wp.heartbeat.interval();
-		// Clamp under the TTL, or an idle-but-open tab would drop out of its own room between ticks.
-		const target = Math.min(idleInterval, ttl - 15);
+		// Stay under the TTL, or an idle-but-open tab would drop out of its own room between ticks.
+		const target = Math.min(idleInterval, ttl - TTL_SAFETY_MARGIN);
 		if (target <= current) {
 			return;
 		}
