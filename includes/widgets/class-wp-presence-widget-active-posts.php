@@ -57,9 +57,18 @@ class WP_Presence_Widget_Active_Posts {
 
 		wp_enqueue_script( 'heartbeat' );
 
+		wp_enqueue_script(
+			'wp-presence-active-posts',
+			WP_PRESENCE_PLUGIN_URL . 'assets/js/active-posts.js',
+			array( 'jquery', 'heartbeat' ),
+			WP_PRESENCE_VERSION,
+			true
+		);
+
 		wp_add_inline_script(
-			'heartbeat',
-			self::get_inline_script()
+			'wp-presence-active-posts',
+			sprintf( 'window.wpPresenceActivePosts = %s;', wp_json_encode( self::get_i18n_strings() ) ),
+			'before'
 		);
 
 		wp_register_style( 'presence-active-posts-widget', false, array(), WP_PRESENCE_VERSION );
@@ -88,130 +97,18 @@ class WP_Presence_Widget_Active_Posts {
 	}
 
 	/**
-	 * Returns the inline JavaScript for Heartbeat integration.
+	 * Returns the translated strings active-posts.js reads off window.wpPresenceActivePosts.
 	 *
-	 * @return string JavaScript code.
+	 * @return array Translated strings.
 	 */
-	private static function get_inline_script() {
-		$i18n_json = wp_json_encode(
-			array(
-				'noPostsEdited'    => __( 'All quiet.', 'presence-api' ),
-				'postsBeingEdited' => __( 'Posts currently being edited', 'presence-api' ),
-				'statusEditing'    => __( 'Editing', 'presence-api' ),
-				'statusIdle'       => __( 'Idle', 'presence-api' ),
-				/* translators: %d: Number of editors. */
-				'editorCount'      => __( '%d editors', 'presence-api' ),
-			)
-		);
-
-		return sprintf(
-			<<<'JS'
-(function($) {
-	if (typeof wp === 'undefined' || typeof wp.heartbeat === 'undefined') {
-		return;
-	}
-
-	var i18n = %s;
-
-	function esc(str) {
-		var el = document.createElement('span');
-		el.textContent = str;
-		return el.innerHTML;
-	}
-
-	$(document).on('heartbeat-send', function(event, data) {
-		data['presence-active-posts-ping'] = true;
-	});
-
-	var lastSignature = '';
-
-	function captureFocus(container) {
-		var active = document.activeElement;
-		if (!active || !$.contains(container[0], active)) {
-			return null;
-		}
-		var item = $(active).closest('[data-post-id]');
-		return { postId: item.length ? item.data('post-id') : null };
-	}
-
-	function restoreFocus(container, info) {
-		if (!info) {
-			return;
-		}
-		var target = null;
-		if (info.postId !== null && info.postId !== undefined) {
-			target = container.find('[data-post-id="' + info.postId + '"] a').first();
-		}
-		if (target && target.length) {
-			target.trigger('focus');
-		} else {
-			container.trigger('focus');
-		}
-	}
-
-	function buildFullPostsHtml(posts) {
-		var html = '<ul class="presence-active-posts-list" aria-label="' + esc(i18n.postsBeingEdited) + '">';
-		posts.forEach(function(post) {
-			var anyActive = post.editors.some(function(e) { return e.status === 'active'; });
-			var statusLabel = anyActive ? '' : i18n.statusIdle;
-			html += '<li class="presence-active-post-item" data-post-id="' + post.post_id + '">';
-			html += '<span class="presence-editor-stack">';
-			var stackMax = Math.min(post.editors.length, 4);
-			post.editors.slice(0, stackMax).forEach(function(editor, idx) {
-				if (editor.avatar_url) {
-					html += '<img src="' + esc(editor.avatar_url) + '" width="24" height="24" style="z-index:' + (stackMax - idx) + '" alt="' + esc(editor.display_name) + '" />';
-				}
-			});
-			html += '</span>';
-			html += '<div class="presence-active-post-info">';
-			if (post.editors.length === 1) {
-				html += '<div><span class="presence-editor-count">' + esc(post.editors[0].display_name) + '</span></div>';
-			} else {
-				html += '<div><span class="presence-editor-count">' + esc(i18n.editorCount.replace('%%d', post.editors.length)) + '</span></div>';
-			}
-			html += '<div><span class="presence-post-title"><a href="' + esc(post.edit_url) + '">' + esc(post.post_title) + '</a></span></div>';
-			html += '</div>';
-			html += '<span class="presence-status-text">' + esc(statusLabel) + '</span>';
-			html += '</li>';
-		});
-		html += '</ul>';
-		return html;
-	}
-
-	$(document).on('heartbeat-tick', function(event, data) {
-		if (!data['presence-active-posts']) {
-			return;
-		}
-
-		var container = $('#presence-active-posts-list');
-		if (!container.length) {
-			return;
-		}
-
-		var posts = data['presence-active-posts'];
-		if (!posts.length) {
-			if (lastSignature !== '') {
-				var clearFocus = captureFocus(container);
-				container.html('<p>' + esc(i18n.noPostsEdited) + '</p>');
-				restoreFocus(container, clearFocus);
-				lastSignature = '';
-			}
-			return;
-		}
-
-		var sig = posts.map(function(p) {
-			return p.post_id + ':' + p.editors.map(function(e) { return e.user_id + '/' + e.status; }).join('+');
-		}).join(',');
-		if (sig !== lastSignature) {
-			var focusInfo = captureFocus(container);
-			container.html(buildFullPostsHtml(posts));
-			restoreFocus(container, focusInfo);
-			lastSignature = sig;
-		}
-	});
-})(jQuery);
-JS,
-			$i18n_json
+	private static function get_i18n_strings() {
+		return array(
+			'noPostsEdited'    => __( 'All quiet.', 'presence-api' ),
+			'postsBeingEdited' => __( 'Posts currently being edited', 'presence-api' ),
+			'statusEditing'    => __( 'Editing', 'presence-api' ),
+			'statusIdle'       => __( 'Idle', 'presence-api' ),
+			/* translators: %d: Number of editors. */
+			'editorCount'      => __( '%d editors', 'presence-api' ),
 		);
 	}
 
