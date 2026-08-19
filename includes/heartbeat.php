@@ -29,6 +29,46 @@ function wp_presence_editor_state( $screen_id, $locked ) {
 }
 
 /**
+ * Returns how many consecutive unchanged ticks trigger the idle Heartbeat backoff.
+ *
+ * @since 0.1.24
+ *
+ * @return int Tick count. Default 5. 0 disables the backoff.
+ */
+function wp_presence_get_heartbeat_idle_ticks() {
+	/**
+	 * Filters the tick count.
+	 *
+	 * @since 0.1.24
+	 *
+	 * @param int $ticks Tick count. Default 5.
+	 */
+	return (int) apply_filters( 'wp_presence_heartbeat_idle_ticks', 5 );
+}
+
+/**
+ * Returns the desired widened Heartbeat interval, in seconds, for idle rooms.
+ *
+ * The client clamps this below the presence TTL, so it backs off by less
+ * than this (or not at all) on a screen whose normal interval is already
+ * near that ceiling.
+ *
+ * @since 0.1.24
+ *
+ * @return int Interval in seconds. Default 45.
+ */
+function wp_presence_get_heartbeat_idle_interval() {
+	/**
+	 * Filters the interval.
+	 *
+	 * @since 0.1.24
+	 *
+	 * @param int $interval Interval in seconds. Default 45.
+	 */
+	return (int) apply_filters( 'wp_presence_heartbeat_idle_interval', 45 );
+}
+
+/**
  * Enqueues heartbeat and the presence ping script on all admin pages.
  */
 function wp_presence_enqueue_heartbeat_ping() {
@@ -136,6 +176,9 @@ function wp_presence_enqueue_heartbeat_ping() {
 		'editorPostId' => $editor_post_id,
 		'restUrl'      => esc_url_raw( rest_url( 'wp-presence/v1/presence' ) ),
 		'nonce'        => wp_create_nonce( 'wp_rest' ),
+		'idleTicks'    => wp_presence_get_heartbeat_idle_ticks(),
+		'idleInterval' => wp_presence_get_heartbeat_idle_interval(),
+		'ttl'          => wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL ),
 	);
 
 	wp_enqueue_script(
