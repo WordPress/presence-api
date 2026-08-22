@@ -39,6 +39,8 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 	}
 
 	public function set_up() {
+		global $wpdb;
+
 		parent::set_up();
 
 		if ( ! is_multisite() ) {
@@ -61,6 +63,12 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 		update_site_option( 'active_sitewide_plugins', array( 'presence-api/presence-api.php' => time() ) );
 
 		wp_maybe_create_presence_network_summary_table();
+
+		// Every admin-room write anywhere in the suite now pushes, and this
+		// table is real rather than temporary, so rows can outlive the test that
+		// wrote them. Start from empty rather than trusting the last tear_down.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->query( "DELETE FROM {$wpdb->presence_network_summary}" );
 
 		wp_set_current_user( 0 );
 	}
@@ -104,12 +112,12 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * Writes a presence entry on a given site and pushes it into the network
-	 * summary table, without leaving the site switched-to.
+	 * Writes a presence entry on a given site, without leaving the site
+	 * switched-to.
 	 *
-	 * Real presence writes always push (see wp_presence_admin_heartbeat_received()),
-	 * so this helper does both together rather than making every test call
-	 * wp_presence_push_network_summary() separately.
+	 * No explicit push: wp_set_presence() fires wp_presence_admin_room_changed,
+	 * which is what the push hangs off, so calling one by hand here would test
+	 * a path production doesn't take.
 	 *
 	 * @param int $blog_id The site to write on.
 	 * @param int $user_id The user the entry belongs to.
@@ -117,7 +125,19 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 	private function set_presence_on_site( $blog_id, $user_id ) {
 		switch_to_blog( $blog_id );
 		wp_set_presence( 'admin/online', 'user-' . $user_id, array( 'screen' => 'dashboard' ), $user_id );
-		wp_presence_push_network_summary();
+		restore_current_blog();
+	}
+
+	/**
+	 * Removes a user's presence entry on a given site, without leaving the site
+	 * switched-to.
+	 *
+	 * @param int $blog_id The site to remove on.
+	 * @param int $user_id The user whose entry to remove.
+	 */
+	private function remove_presence_on_site( $blog_id, $user_id ) {
+		switch_to_blog( $blog_id );
+		wp_remove_presence( 'admin/online', 'user-' . $user_id );
 		restore_current_blog();
 	}
 
@@ -127,19 +147,33 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 	 * than going through a real presence write.
 	 *
 	 * @param int    $blog_id     The site whose row to overwrite.
-	 * @param array  $entries     Raw {user_id, date_gmt} pairs for the data column.
+	 * @param int[]  $user_ids    User IDs for the data column.
 	 * @param string $updated_gmt Optional. Value for the updated_gmt column. Default now.
 	 */
-	private function set_network_summary_row( $blog_id, array $entries, $updated_gmt = null ) {
+	private function set_network_summary_row( $blog_id, array $user_ids, $updated_gmt = null ) {
 		global $wpdb;
 
 		$wpdb->replace(
 			$wpdb->presence_network_summary,
 			array(
 				'blog_id'     => $blog_id,
-				'data'        => wp_json_encode( $entries ),
+				'data'        => wp_presence_encode_network_summary_row( $blog_id, $user_ids ),
 				'updated_gmt' => $updated_gmt ?? gmdate( 'Y-m-d H:i:s' ),
 			)
+		);
+	}
+
+	/**
+	 * Returns a site's raw summary row.
+	 *
+	 * @param int $blog_id The site whose row to read.
+	 * @return object|null Row with data and updated_gmt, null if the site never pushed.
+	 */
+	private function get_network_summary_row( $blog_id ) {
+		global $wpdb;
+
+		return $wpdb->get_row(
+			$wpdb->prepare( "SELECT data, updated_gmt FROM {$wpdb->presence_network_summary} WHERE blog_id = %d", $blog_id )
 		);
 	}
 
@@ -243,55 +277,172 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * A site going from one online user to zero has to push that immediately;
-	 * otherwise it would keep showing its last non-empty snapshot until
-	 * updated_gmt aged past the read-time cutoff on its own.
+	 * The defect this push model had at first: only the heartbeat handler
+	 * pushed, so the pagehide delete and logout left the summary showing people
+	 * who were gone until their entry aged out. Removal has to clear the site
+	 * with no heartbeat tick anywhere in the picture.
 	 *
 	 * @covers ::wp_presence_push_network_summary
 	 */
-	public function test_push_clears_a_site_with_nobody_left_online() {
+	public function test_removing_the_last_user_clears_the_site_without_a_tick() {
+		$blog_id = $this->create_blog();
+		$this->set_presence_on_site( $blog_id, self::$editor_id );
+
+		$this->remove_presence_on_site( $blog_id, self::$editor_id );
+
+		$summary = wp_presence_get_network_summary();
+
+		$this->assertSame( array(), $summary['sites'] );
+	}
+
+	/**
+	 * wp_remove_user_presence() deletes across every room at once, which is the
+	 * logout path.
+	 *
+	 * @covers ::wp_presence_push_network_summary
+	 */
+	public function test_removing_all_of_a_users_presence_clears_the_site() {
 		$blog_id = $this->create_blog();
 		$this->set_presence_on_site( $blog_id, self::$editor_id );
 
 		switch_to_blog( $blog_id );
-		wp_remove_presence( 'admin/online', 'user-' . self::$editor_id );
-		wp_presence_push_network_summary();
+		wp_remove_user_presence( self::$editor_id );
 		restore_current_blog();
 
-		$summary = wp_presence_get_network_summary();
-
-		$this->assertSame( array(), $summary['sites'] );
+		$this->assertSame( array(), wp_presence_get_network_summary()['sites'] );
 	}
 
 	/**
-	 * A user whose pushed date_gmt is past the live timeout must not show as
-	 * online, even though the row that holds it is otherwise fresh.
+	 * A tick that finds the same people online as the last one must not rewrite
+	 * the row. Presence writes happen on every tick from every open tab, so a
+	 * push that always wrote would put one row update per tab per tick on a
+	 * single network-wide table.
 	 *
-	 * @covers ::wp_presence_get_network_summary
-	 * @covers ::wp_presence_filter_network_summary
+	 * @covers ::wp_presence_push_network_summary
 	 */
-	public function test_summary_excludes_a_user_past_the_live_timeout() {
+	public function test_push_does_not_rewrite_the_row_when_nobody_changed() {
 		$blog_id = $this->create_blog();
+		$this->set_presence_on_site( $blog_id, self::$editor_id );
 
-		$this->set_network_summary_row(
-			$blog_id,
-			array(
-				array(
-					'user_id'  => self::$editor_id,
-					'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - WP_PRESENCE_DEFAULT_TTL - 1 ),
-				),
-			)
+		// Age the row enough to tell a rewrite apart from the original write,
+		// but not past the refresh interval, which would license a rewrite.
+		$stamp = gmdate( 'Y-m-d H:i:s', time() - 1 );
+		$this->set_network_summary_row( $blog_id, array( self::$editor_id ), $stamp );
+
+		$this->set_presence_on_site( $blog_id, self::$editor_id );
+
+		$this->assertSame( $stamp, $this->get_network_summary_row( $blog_id )->updated_gmt );
+	}
+
+	/**
+	 * The flip side: a row older than the refresh interval has to be rewritten
+	 * even though nobody changed, or it ages past the read cutoff and the site
+	 * drops out of the network view while people are still on it.
+	 *
+	 * @covers ::wp_presence_push_network_summary
+	 * @covers ::wp_presence_network_summary_refresh_interval
+	 */
+	public function test_push_refreshes_a_stale_row_when_nobody_changed() {
+		$blog_id = $this->create_blog();
+		$this->set_presence_on_site( $blog_id, self::$editor_id );
+
+		$stamp = gmdate( 'Y-m-d H:i:s', time() - wp_presence_network_summary_refresh_interval() - 1 );
+		$this->set_network_summary_row( $blog_id, array( self::$editor_id ), $stamp );
+
+		$this->set_presence_on_site( $blog_id, self::$editor_id );
+
+		$this->assertGreaterThan( $stamp, $this->get_network_summary_row( $blog_id )->updated_gmt );
+	}
+
+	/**
+	 * A membership change is not subject to the refresh interval; it writes
+	 * straight away.
+	 *
+	 * @covers ::wp_presence_push_network_summary
+	 */
+	public function test_push_rewrites_the_row_as_soon_as_the_user_set_changes() {
+		$blog_id  = $this->create_blog();
+		$second   = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$expected = array( self::$editor_id, $second );
+		sort( $expected );
+
+		$this->set_presence_on_site( $blog_id, self::$editor_id );
+
+		$stamp = gmdate( 'Y-m-d H:i:s', time() - 1 );
+		$this->set_network_summary_row( $blog_id, array( self::$editor_id ), $stamp );
+
+		$this->set_presence_on_site( $blog_id, $second );
+
+		$row = $this->get_network_summary_row( $blog_id );
+
+		$this->assertGreaterThan( $stamp, $row->updated_gmt );
+		$this->assertSame( $expected, wp_presence_decode_network_summary_row( $row->data ) );
+	}
+
+	/**
+	 * The refresh interval has to stay under the read cutoff by at least the
+	 * longest gap between two pushes, or a site with only idle tabs flickers
+	 * out of the network view between refreshes.
+	 *
+	 * @covers ::wp_presence_network_summary_refresh_interval
+	 */
+	public function test_refresh_interval_leaves_room_for_the_slowest_heartbeat() {
+		$slack = wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL ) - wp_presence_get_heartbeat_idle_interval();
+
+		$this->assertLessThanOrEqual( $slack, wp_presence_network_summary_refresh_interval() );
+
+		add_filter( 'wp_presence_network_summary_refresh_interval', '__return_zero' );
+		$this->assertSame( 1, wp_presence_network_summary_refresh_interval(), 'Must not fall to zero.' );
+		remove_filter( 'wp_presence_network_summary_refresh_interval', '__return_zero' );
+
+		add_filter( 'wp_presence_network_summary_refresh_interval', fn() => YEAR_IN_SECONDS );
+		$this->assertSame( $slack, wp_presence_network_summary_refresh_interval(), 'A filter must not widen it.' );
+	}
+
+	/**
+	 * The data column is read by people with a database client open, so it
+	 * names what it holds rather than storing a bare list of numbers.
+	 *
+	 * @covers ::wp_presence_encode_network_summary_row
+	 * @covers ::wp_presence_decode_network_summary_row
+	 */
+	public function test_row_data_is_readable_on_its_own() {
+		$blog_id = $this->create_blog();
+		$this->set_presence_on_site( $blog_id, self::$editor_id );
+
+		$data    = $this->get_network_summary_row( $blog_id )->data;
+		$decoded = json_decode( $data, true );
+		$site    = get_site( $blog_id );
+
+		$this->assertSame( $site->domain . $site->path, $decoded['site'] );
+		$this->assertSame( array( self::$editor_id ), $decoded['online_user_ids'] );
+		$this->assertStringContainsString( "\n", $data, 'Stored pretty-printed to stay readable.' );
+	}
+
+	/**
+	 * A row whose data column will not decode must drop out rather than fatal
+	 * the whole aggregation.
+	 *
+	 * @covers ::wp_presence_decode_network_summary_row
+	 */
+	public function test_summary_tolerates_a_malformed_row() {
+		global $wpdb;
+
+		$blog_id = $this->create_blog();
+		$this->set_presence_on_site( $blog_id, self::$editor_id );
+
+		$wpdb->update(
+			$wpdb->presence_network_summary,
+			array( 'data' => 'not json' ),
+			array( 'blog_id' => $blog_id )
 		);
 
-		$summary = wp_presence_get_network_summary();
-
-		$this->assertSame( array(), $summary['sites'] );
+		$this->assertSame( array(), wp_presence_get_network_summary()['sites'] );
 	}
 
 	/**
-	 * A row not pushed to within the live timeout is excluded at the SQL
-	 * level in wp_presence_compute_network_summary(), before the per-user
-	 * filter in wp_presence_filter_network_summary() ever runs.
+	 * A row not pushed to within the live timeout is excluded at the SQL level,
+	 * which is the only freshness cutoff the read path applies.
 	 *
 	 * @covers ::wp_presence_compute_network_summary
 	 */
@@ -300,7 +451,7 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 
 		$this->set_network_summary_row(
 			$blog_id,
-			array( array( 'user_id' => self::$editor_id, 'date_gmt' => gmdate( 'Y-m-d H:i:s' ) ) ),
+			array( self::$editor_id ),
 			gmdate( 'Y-m-d H:i:s', time() - WP_PRESENCE_DEFAULT_TTL - 1 )
 		);
 

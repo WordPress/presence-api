@@ -19,6 +19,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Checks whether the network-wide presence summary table exists.
  *
+ * Hits the database, so this is for provisioning only, where the point is to
+ * catch a table dropped out from under the option. Read and write paths use
+ * wp_presence_has_network_summary_table().
+ *
  * @access private
  * @return bool
  */
@@ -29,6 +33,19 @@ function wp_presence_network_summary_table_exists() {
 	$found = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $wpdb->presence_network_summary ) ) );
 
 	return $found === $wpdb->presence_network_summary;
+}
+
+/**
+ * Whether the network has a summary table to read from or push into.
+ *
+ * The network counterpart of wp_presence_has_table(): an option read rather
+ * than a SHOW TABLES, since this runs on every push.
+ *
+ * @access private
+ * @return bool
+ */
+function wp_presence_has_network_summary_table() {
+	return (int) get_site_option( 'wp_presence_network_summary_db_version' ) === WP_PRESENCE_NETWORK_SUMMARY_DB_VERSION;
 }
 
 /**
@@ -90,52 +107,122 @@ function wp_maybe_create_presence_network_summary_table() {
 }
 
 /**
+ * Returns how stale a site's summary row may get before a push rewrites it.
+ *
+ * Bounded by the read cutoff minus the idle heartbeat interval, the longest
+ * gap between two pushes, so the next push always lands before the row
+ * expires. Filterable downward; clamped so a filter can't widen it past that.
+ *
+ * @access private
+ * @return int Seconds.
+ */
+function wp_presence_network_summary_refresh_interval() {
+	$timeout = wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL );
+	$maximum = max( 1, $timeout - wp_presence_get_heartbeat_idle_interval() );
+
+	/**
+	 * Filters how stale a site's network summary row may get before a push rewrites it.
+	 *
+	 * Clamped to the read cutoff minus the idle heartbeat interval.
+	 *
+	 * @since 0.1.25
+	 *
+	 * @param int $interval Seconds. Default is the clamp maximum.
+	 */
+	$interval = (int) apply_filters( 'wp_presence_network_summary_refresh_interval', $maximum );
+
+	return max( 1, min( $interval, $maximum ) );
+}
+
+/**
  * Pushes the current site's online-user snapshot into the network-wide
  * summary table.
  *
- * Called after a presence write on the current site (see
- * wp_presence_admin_heartbeat_received()) rather than on a schedule: presence
- * writes already happen on every heartbeat tick from every open admin tab, so
- * this rides along with work that's already happening instead of adding a
- * separate write path. wp_get_presence() is a query against this one site's
- * own table, already TTL-filtered and already indexed by room -- the same
- * query the single-site Who's Online widget already runs on every tick.
+ * Runs on wp_presence_admin_room_changed, so every admin-room write pushes,
+ * not just the heartbeat tick: logout and the pagehide delete clear the site
+ * immediately instead of waiting for its entry to age out.
  *
- * A site with nobody left online still pushes an empty snapshot rather than
- * leaving the last non-empty one in place; the alternative is waiting for
- * updated_gmt to age out of the read-time cutoff, which would show a site as
- * having online users for up to WP_PRESENCE_DEFAULT_TTL after the last of
- * them left.
+ * A tick usually finds the same people as the tick before it, so the upsert
+ * rewrites the row only when the user set changes or the row is older than
+ * wp_presence_network_summary_refresh_interval(). Both tests run in SQL, so an
+ * unchanged push resolves to zero changed rows.
+ *
+ * The row records no per-user timestamp for that reason; its updated_gmt
+ * carries freshness for every ID in it, which wp_get_presence() already
+ * TTL-filtered on this site.
  *
  * @access private
  */
 function wp_presence_push_network_summary() {
-	if ( ! is_multisite() || ! wp_presence_network_summary_table_exists() ) {
+	if ( ! is_multisite() || ! wp_presence_has_network_summary_table() ) {
 		return;
 	}
 
 	global $wpdb;
 
-	$entries = wp_get_presence( wp_presence_admin_room() );
-
-	$data = array();
-	foreach ( $entries as $entry ) {
-		$data[] = array(
-			'user_id'  => (int) $entry->user_id,
-			'date_gmt' => $entry->date_gmt,
-		);
+	$user_ids = array();
+	foreach ( wp_get_presence( wp_presence_admin_room() ) as $entry ) {
+		$user_ids[ (int) $entry->user_id ] = true;
 	}
 
+	$user_ids = array_keys( $user_ids );
+
+	// Sorted so an unchanged room always encodes to a byte-identical string;
+	// wp_get_presence() orders by date_gmt, which reshuffles as people tick.
+	sort( $user_ids );
+
+	$blog_id = get_current_blog_id();
+	$now     = gmdate( 'Y-m-d H:i:s' );
+	$refresh = gmdate( 'Y-m-d H:i:s', time() - wp_presence_network_summary_refresh_interval() );
+
+	// updated_gmt is assigned before data because MySQL applies the assignments
+	// in order, so reading `data` after `data = VALUES(data)` would compare the
+	// new value against itself and never detect a change.
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	$wpdb->query(
 		$wpdb->prepare(
 			"INSERT INTO {$wpdb->presence_network_summary} (blog_id, data, updated_gmt)
 			VALUES (%d, %s, %s)
-			ON DUPLICATE KEY UPDATE data = VALUES(data), updated_gmt = VALUES(updated_gmt)",
-			get_current_blog_id(),
-			wp_json_encode( $data ),
-			gmdate( 'Y-m-d H:i:s' )
+			ON DUPLICATE KEY UPDATE
+				updated_gmt = IF( data <> VALUES(data) OR updated_gmt < %s, VALUES(updated_gmt), updated_gmt ),
+				data = VALUES(data)",
+			$blog_id,
+			wp_presence_encode_network_summary_row( $blog_id, $user_ids ),
+			$now,
+			$refresh
 		)
+	);
+}
+
+/**
+ * Encodes a site's online user IDs for the summary row's data column.
+ *
+ * Shaped to be read in a database client, the only place this column is looked
+ * at directly:
+ *
+ *     {
+ *         "site": "example.com/shop/",
+ *         "online_user_ids": [ 3, 7 ]
+ *     }
+ *
+ * The site label is for that reader; the read path resolves the site from
+ * blog_id and ignores it. Logins are left out because resolving them would
+ * cost a user query per heartbeat tick.
+ *
+ * @access private
+ * @param int   $blog_id  The site the row belongs to.
+ * @param int[] $user_ids Online user IDs, pre-sorted.
+ * @return string JSON for the data column.
+ */
+function wp_presence_encode_network_summary_row( $blog_id, array $user_ids ) {
+	$site = get_site( $blog_id );
+
+	return (string) wp_json_encode(
+		array(
+			'site'            => $site ? $site->domain . $site->path : '',
+			'online_user_ids' => $user_ids,
+		),
+		JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
 	);
 }
 
@@ -190,54 +277,126 @@ function wp_presence_get_network_online_user_ids() {
  * @return array {
  *     @type array $sites               One entry per site with a live user:
  *                                       blog_id, domain, path, url, users
- *                                       (user_id, display_name, avatar_url,
- *                                       date_gmt), user_count.
+ *                                       (user_id, display_name, avatar_url),
+ *                                       user_count. Ordered by user_count
+ *                                       descending, then by domain and path.
  *     @type int   $total_sites_online
  *     @type int   $total_users_online
  * }
  */
 function wp_presence_get_network_summary( array $args = array() ) {
 	$timeout = wp_presence_get_timeout( $args['timeout'] ?? WP_PRESENCE_DEFAULT_TTL );
-	$raw     = wp_presence_compute_network_summary( $timeout );
 
-	return wp_presence_filter_network_summary( $raw, $timeout );
+	return wp_presence_compute_network_summary( $timeout );
 }
 
 /**
- * Narrows a raw network summary down to entries still fresh within $timeout.
+ * Reads every site's pushed snapshot from the network summary table.
  *
- * A site's row can only get more stale between pushes, never fresher, so
- * this only ever needs to remove entries -- it can't miss one that's about
- * to become fresh.
+ * A single query against one small, indexed table, not one query per site.
+ * $timeout applies once, against each row's updated_gmt; there is no second
+ * per-user cutoff to disagree with it, since a row's IDs are what that site's
+ * TTL-filtered read returned when it pushed, and a membership change pushes
+ * again immediately.
  *
  * @access private
- * @param array $raw     Unfiltered summary from wp_presence_compute_network_summary().
- * @param int   $timeout TTL in seconds; entries older than this are dropped.
+ * @param int $timeout TTL in seconds; rows untouched longer than this are skipped.
  * @return array See wp_presence_get_network_summary().
  */
-function wp_presence_filter_network_summary( array $raw, $timeout ) {
-	$cutoff      = gmdate( 'Y-m-d H:i:s', time() - $timeout );
-	$sites       = array();
-	$total_users = 0;
+function wp_presence_compute_network_summary( $timeout ) {
+	global $wpdb;
 
-	foreach ( $raw['sites'] as $site ) {
-		$fresh = array_values(
-			array_filter(
-				$site['users'],
-				static function ( $user ) use ( $cutoff ) {
-					return $user['date_gmt'] > $cutoff;
-				}
-			)
-		);
+	if ( ! wp_presence_has_network_summary_table() ) {
+		return wp_presence_empty_network_summary();
+	}
 
-		if ( ! $fresh ) {
+	$cutoff = gmdate( 'Y-m-d H:i:s', time() - $timeout );
+
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+	$rows = $wpdb->get_results(
+		$wpdb->prepare(
+			"SELECT blog_id, data FROM {$wpdb->presence_network_summary} WHERE updated_gmt > %s",
+			$cutoff
+		)
+	);
+
+	if ( ! $rows ) {
+		return wp_presence_empty_network_summary();
+	}
+
+	$all_user_ids = array();
+	$by_site      = array();
+
+	foreach ( $rows as $row ) {
+		$entries = wp_presence_decode_network_summary_row( $row->data );
+
+		if ( ! $entries ) {
 			continue;
 		}
 
-		$site['users']      = $fresh;
-		$site['user_count'] = count( $fresh );
-		$sites[]            = $site;
-		$total_users       += count( $fresh );
+		$by_site[ (int) $row->blog_id ] = $entries;
+
+		foreach ( $entries as $user_id ) {
+			$all_user_ids[ $user_id ] = true;
+		}
+	}
+
+	if ( ! $by_site ) {
+		return wp_presence_empty_network_summary();
+	}
+
+	cache_users( array_keys( $all_user_ids ) );
+
+	$sites       = array();
+	$total_users = 0;
+
+	foreach ( $by_site as $blog_id => $entries ) {
+		$site = get_site( $blog_id );
+
+		if ( ! $site ) {
+			continue;
+		}
+
+		$hydrated = array();
+
+		foreach ( $entries as $user_id ) {
+			$user = get_userdata( $user_id );
+
+			if ( ! $user ) {
+				continue;
+			}
+
+			$hydrated[] = array(
+				'user_id'      => $user_id,
+				'display_name' => $user->display_name,
+				'avatar_url'   => get_avatar_url( $user->ID, array( 'size' => 32 ) ),
+			);
+		}
+
+		if ( ! $hydrated ) {
+			continue;
+		}
+
+		// No per-user timestamp to order by, so order by name.
+		usort(
+			$hydrated,
+			static function ( $a, $b ) {
+				return strcmp( $a['display_name'], $b['display_name'] );
+			}
+		);
+
+		$total_users += count( $hydrated );
+
+		$sites[] = array(
+			'blog_id'    => $blog_id,
+			'domain'     => $site->domain,
+			'path'       => $site->path,
+			// get_site_url()/get_blog_option() switch blogs on every call; the raw
+			// WP_Site fields don't, at the cost of not reflecting a mapped domain.
+			'url'        => ( is_ssl() ? 'https://' : 'http://' ) . $site->domain . $site->path,
+			'users'      => $hydrated,
+			'user_count' => count( $hydrated ),
+		);
 	}
 
 	usort(
@@ -258,115 +417,32 @@ function wp_presence_filter_network_summary( array $raw, $timeout ) {
 }
 
 /**
- * Reads every site's pushed snapshot from the network summary table.
- *
- * A single query against one small, indexed table, not one query per site.
- * $timeout bounds it at the SQL level too: a row's updated_gmt is always at
- * least as recent as any user_id inside it (it's the moment that snapshot was
- * taken), so a row untouched for longer than $timeout can only contain users
- * who'd fail wp_presence_filter_network_summary()'s per-user check anyway --
- * excluding it here is a query-size optimization, not a separate cutoff that
- * could disagree with the per-user filter.
+ * Decodes a summary row's data column into a list of user IDs.
  *
  * @access private
- * @param int $timeout TTL in seconds; rows untouched longer than this are skipped.
- * @return array Unfiltered summary; pass to wp_presence_filter_network_summary() before use.
+ * @param string $data The row's JSON-encoded data column.
+ * @return int[] User IDs, empty if the column is empty or malformed.
  */
-function wp_presence_compute_network_summary( $timeout ) {
-	global $wpdb;
+function wp_presence_decode_network_summary_row( $data ) {
+	$decoded = json_decode( $data, true );
 
-	if ( ! wp_presence_network_summary_table_exists() ) {
-		return array( 'sites' => array() );
+	if ( ! isset( $decoded['online_user_ids'] ) || ! is_array( $decoded['online_user_ids'] ) ) {
+		return array();
 	}
 
-	$cutoff = gmdate( 'Y-m-d H:i:s', time() - $timeout );
+	return array_map( 'intval', array_filter( $decoded['online_user_ids'], 'is_numeric' ) );
+}
 
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-	$rows = $wpdb->get_results(
-		$wpdb->prepare(
-			"SELECT blog_id, data FROM {$wpdb->presence_network_summary} WHERE updated_gmt > %s",
-			$cutoff
-		)
+/**
+ * Returns the shape wp_presence_get_network_summary() returns when nobody is online.
+ *
+ * @access private
+ * @return array See wp_presence_get_network_summary().
+ */
+function wp_presence_empty_network_summary() {
+	return array(
+		'sites'              => array(),
+		'total_sites_online' => 0,
+		'total_users_online' => 0,
 	);
-
-	if ( ! $rows ) {
-		return array( 'sites' => array() );
-	}
-
-	$all_user_ids = array();
-	$by_site      = array();
-
-	foreach ( $rows as $row ) {
-		$entries = json_decode( $row->data, true );
-
-		if ( ! is_array( $entries ) || ! $entries ) {
-			continue;
-		}
-
-		$by_site[ (int) $row->blog_id ] = $entries;
-
-		foreach ( $entries as $entry ) {
-			$all_user_ids[ (int) $entry['user_id'] ] = true;
-		}
-	}
-
-	if ( ! $by_site ) {
-		return array( 'sites' => array() );
-	}
-
-	cache_users( array_keys( $all_user_ids ) );
-
-	$sites = array();
-
-	foreach ( $by_site as $blog_id => $entries ) {
-		$site = get_site( $blog_id );
-
-		if ( ! $site ) {
-			continue;
-		}
-
-		$hydrated = array();
-
-		foreach ( $entries as $entry ) {
-			$user = get_userdata( (int) $entry['user_id'] );
-
-			if ( ! $user ) {
-				continue;
-			}
-
-			$hydrated[] = array(
-				'user_id'      => (int) $entry['user_id'],
-				'display_name' => $user->display_name,
-				'avatar_url'   => get_avatar_url( $user->ID, array( 'size' => 32 ) ),
-				'date_gmt'     => $entry['date_gmt'],
-			);
-		}
-
-		if ( ! $hydrated ) {
-			continue;
-		}
-
-		usort(
-			$hydrated,
-			static function ( $a, $b ) {
-				return strcmp( $b['date_gmt'], $a['date_gmt'] );
-			}
-		);
-
-		// user_count and site order are meaningless until
-		// wp_presence_filter_network_summary() narrows $hydrated down to
-		// what's actually still fresh; left out here rather than computed
-		// twice.
-		$sites[] = array(
-			'blog_id' => $blog_id,
-			'domain'  => $site->domain,
-			'path'    => $site->path,
-			// get_site_url()/get_blog_option() switch blogs on every call; the raw
-			// WP_Site fields don't, at the cost of not reflecting a mapped domain.
-			'url'     => ( is_ssl() ? 'https://' : 'http://' ) . $site->domain . $site->path,
-			'users'   => $hydrated,
-		);
-	}
-
-	return array( 'sites' => $sites );
 }
