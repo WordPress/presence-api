@@ -9,21 +9,21 @@
 
   <g clip-path="url(#avatar-3)">
     <circle cx="89" cy="64" r="18" fill="#C3C4C7"/>
-    <circle cx="89" cy="58.75" r="4.5" fill="#FFFFFF"/>
-    <circle cx="89" cy="74.5" r="10.5" fill="#FFFFFF"/>
+    <circle cx="89" cy="64.1" r="7.9" fill="#FFFFFF"/>
+    <circle cx="89" cy="85.3" r="13.6" fill="#FFFFFF"/>
   </g>
 
   <circle cx="64" cy="64" r="20.5" fill="#1D2327"/>
   <g clip-path="url(#avatar-2)">
     <circle cx="64" cy="64" r="18" fill="#C3C4C7"/>
-    <circle cx="64" cy="58.75" r="4.5" fill="#FFFFFF"/>
-    <circle cx="64" cy="74.5" r="10.5" fill="#FFFFFF"/>
+    <circle cx="64" cy="64.1" r="7.9" fill="#FFFFFF"/>
+    <circle cx="64" cy="85.3" r="13.6" fill="#FFFFFF"/>
   </g>
 
   <circle cx="39" cy="64" r="20.5" fill="#1D2327"/>
   <g clip-path="url(#avatar-1)">
     <circle cx="39" cy="64" r="18" fill="#C3C4C7"/>
-    <circle cx="39" cy="58.75" r="4.5" fill="#FFFFFF"/>
-    <circle cx="39" cy="74.5" r="10.5" fill="#FFFFFF"/>
+    <circle cx="39" cy="64.1" r="7.9" fill="#FFFFFF"/>
+    <circle cx="39" cy="85.3" r="13.6" fill="#FFFFFF"/>
   </g>
 </svg>
