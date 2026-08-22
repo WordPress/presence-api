@@ -290,6 +290,7 @@ add_action( 'cli_init', 'wp_maybe_create_presence_table' );
 if ( is_multisite() ) {
 	add_action( 'admin_init', 'wp_maybe_create_presence_network_summary_table' );
 	add_action( 'cli_init', 'wp_maybe_create_presence_network_summary_table' );
+	add_action( 'wp_presence_admin_room_changed', 'wp_presence_push_network_summary' );
 }
 // Priority 99 to run after core's wp_initialize_site() at 10.
 add_action( 'wp_initialize_site', 'wp_presence_on_initialize_site', 99 );

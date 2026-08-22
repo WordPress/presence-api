@@ -274,10 +274,6 @@ function wp_presence_admin_heartbeat_received( $response, $data, $screen_id ) { 
 
 	wp_set_presence( wp_presence_admin_room(), 'user-' . $user_id, $state, $user_id );
 
-	if ( is_multisite() ) {
-		wp_presence_push_network_summary();
-	}
-
 	return $response;
 }
 
