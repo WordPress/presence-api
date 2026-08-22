@@ -361,4 +361,101 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 
 		$this->assertFalse( wp_script_is( 'wp-presence-active-posts', 'enqueued' ) );
 	}
+
+	/**
+	 * @covers WP_Presence_Widget_Active_Posts::register
+	 */
+	public function test_register_adds_the_widget_for_a_user_who_can_edit_posts() {
+		global $wp_meta_boxes;
+
+		require_once ABSPATH . 'wp-admin/includes/dashboard.php';
+
+		wp_set_current_user( self::$editor_id );
+		set_current_screen( 'dashboard' );
+
+		WP_Presence_Widget_Active_Posts::register();
+
+		$this->assertArrayHasKey( 'presence_active_posts', $wp_meta_boxes['dashboard']['normal']['default'] );
+	}
+
+	/**
+	 * @covers WP_Presence_Widget_Active_Posts::register
+	 */
+	public function test_register_skips_a_user_who_cannot_edit_posts() {
+		global $wp_meta_boxes;
+
+		require_once ABSPATH . 'wp-admin/includes/dashboard.php';
+
+		$wp_meta_boxes = array();
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		set_current_screen( 'dashboard' );
+
+		WP_Presence_Widget_Active_Posts::register();
+
+		$this->assertArrayNotHasKey( 'presence_active_posts', $wp_meta_boxes['dashboard']['normal']['default'] ?? array() );
+	}
+
+	/**
+	 * @covers WP_Presence_Widget_Active_Posts::render
+	 */
+	public function test_render_says_all_quiet_when_nothing_is_being_edited() {
+		wp_set_current_user( self::$editor_id );
+
+		ob_start();
+		WP_Presence_Widget_Active_Posts::render();
+		$html = ob_get_clean();
+
+		$this->assertStringContainsString( 'All quiet.', $html );
+		$this->assertStringNotContainsString( '<ul', $html );
+	}
+
+	/**
+	 * @covers WP_Presence_Widget_Active_Posts::render
+	 */
+	public function test_render_names_a_lone_editor_and_links_the_post() {
+		wp_set_current_user( self::$editor_id );
+
+		$room = wp_presence_post_room( self::$post_id );
+		wp_set_presence( $room, 'lock-' . self::$editor_id, array(), self::$editor_id );
+
+		ob_start();
+		WP_Presence_Widget_Active_Posts::render();
+		$html = ob_get_clean();
+
+		$user = get_userdata( self::$editor_id );
+		$this->assertStringContainsString( esc_html( $user->display_name ), $html );
+		$this->assertStringContainsString( 'Test Post', $html );
+		$this->assertStringContainsString( 'post=' . self::$post_id, $html );
+		// An active editor is the default state, so no status text is rendered.
+		$this->assertStringContainsString( '<span class="presence-status-text"></span>', $html );
+	}
+
+	/**
+	 * @covers WP_Presence_Widget_Active_Posts::render
+	 */
+	public function test_render_counts_a_crowd_and_labels_it_idle_once_everyone_goes_quiet() {
+		global $wpdb;
+
+		wp_set_current_user( self::$editor_id );
+
+		$room = wp_presence_post_room( self::$post_id );
+		wp_set_presence( $room, 'lock-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( $room, 'lock-' . self::$editor2_id, array(), self::$editor2_id );
+
+		$wpdb->update(
+			$wpdb->presence,
+			array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - 45 ) ),
+			array( 'room' => $room ),
+			array( '%s' ),
+			array( '%s' )
+		);
+
+		ob_start();
+		WP_Presence_Widget_Active_Posts::render();
+		$html = ob_get_clean();
+
+		$this->assertStringContainsString( '2 editors', $html );
+		$this->assertStringContainsString( '<span class="presence-status-text">Idle</span>', $html );
+	}
 }
