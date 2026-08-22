@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.1.24](https://github.com/WordPress/presence-api/compare/v0.1.23...v0.1.24) (2026-08-22)
+
+
+### Features
+
+* add idle backoff config for heartbeat presence ping ([e978dbe](https://github.com/WordPress/presence-api/commit/e978dbe9d22ff7cbb579383a282d5beda149663e))
+* back off heartbeat polling interval for idle rooms ([592dfdf](https://github.com/WordPress/presence-api/commit/592dfdf8a677a8ad28d3ef919ae72caf7b703af2))
+
+
+### Performance Improvements
+
+* back off heartbeat polling interval for idle rooms ([c5d7ea9](https://github.com/WordPress/presence-api/commit/c5d7ea94b1b4531c5e7a3c0e632a678ed6e4067d))
+* coalesce presence polling across tabs of the same user ([8697918](https://github.com/WordPress/presence-api/commit/869791893a18b1259f50f0a313de8e6436652129))
+
+
+### Dependencies
+
+* **deps-dev:** bump @testing-library/react from 14.3.1 to 16.3.2 ([2aa1a29](https://github.com/WordPress/presence-api/commit/2aa1a29a26c05c12112e44e36572e1145dc6090f))
+* **deps-dev:** bump @testing-library/react from 14.3.1 to 16.3.2 ([635be47](https://github.com/WordPress/presence-api/commit/635be479f3d4dcb2eff83b165c163a23edfc2c0a))
+* **deps-dev:** bump @wordpress/env from 11.12.0 to 11.13.0 ([8361cd3](https://github.com/WordPress/presence-api/commit/8361cd3e1411c93e93c5c54c53161545f11d4e05))
+* **deps-dev:** bump @wordpress/env from 11.12.0 to 11.13.0 ([f425093](https://github.com/WordPress/presence-api/commit/f425093b40ad61e7bc73a782f8bdcc3b3efce477))
+* **deps-dev:** bump @wordpress/scripts from 31.8.0 to 34.1.0 ([1c5b38f](https://github.com/WordPress/presence-api/commit/1c5b38f8d5536b79d322d5a8cf9f60e6f696ee4f))
+* **deps-dev:** bump @wordpress/scripts from 31.8.0 to 34.1.0 ([9abef88](https://github.com/WordPress/presence-api/commit/9abef88834a718ed05e53bb809aac9721612c5d7))
+* **deps:** bump astral-sh/setup-uv from 9.0.0 to 10.0.0 ([478e25a](https://github.com/WordPress/presence-api/commit/478e25a6369c335d5217d7114f685251bdc2c132))
+* **deps:** bump astral-sh/setup-uv from 9.0.0 to 10.0.0 ([681b06c](https://github.com/WordPress/presence-api/commit/681b06c235b0bf90b919815e1a571426248a94f8))
+
 ## [0.1.23](https://github.com/WordPress/presence-api/compare/v0.1.22...v0.1.23) (2026-08-17)
 
 
