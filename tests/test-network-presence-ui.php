@@ -1,7 +1,9 @@
 <?php
 /**
- * Tests for the network-wide presence UI: the Sites list column, the Users
- * list view/filter/column, and the network dashboard widget.
+ * Tests for the network-wide presence UI: the Sites list column and the
+ * Users list view, filter, and column.
+ *
+ * The network dashboard widget has its own file alongside the other widgets.
  *
  * @package Presence_API
  *
@@ -310,107 +312,5 @@ class WP_Test_Network_Presence_UI extends WP_Presence_UnitTestCase {
 		$columns = wp_presence_register_network_users_column( array( 'username' => 'Username' ) );
 
 		$this->assertArrayHasKey( 'presence_online', $columns );
-	}
-
-	// -----------------------------------------------------------------
-	// Network dashboard widget
-	// -----------------------------------------------------------------
-
-	/**
-	 * @covers WP_Presence_Network_Widget_Whos_Online::heartbeat_received
-	 */
-	public function test_widget_heartbeat_ignores_without_ping() {
-		$response = WP_Presence_Network_Widget_Whos_Online::heartbeat_received( array( 'existing' => true ), array(), 'dashboard-network' );
-
-		$this->assertSame( array( 'existing' => true ), $response, 'A tick with no ping key should be left untouched.' );
-	}
-
-	/**
-	 * @covers WP_Presence_Network_Widget_Whos_Online::heartbeat_received
-	 */
-	public function test_widget_heartbeat_requires_capability() {
-		wp_set_current_user( self::$editor_id );
-
-		$response = WP_Presence_Network_Widget_Whos_Online::heartbeat_received(
-			array(),
-			array( 'presence-network-widget-ping' => true ),
-			'dashboard-network'
-		);
-
-		$this->assertArrayNotHasKey( 'presence-network-widget', $response );
-	}
-
-	/**
-	 * @covers WP_Presence_Network_Widget_Whos_Online::heartbeat_received
-	 */
-	public function test_widget_heartbeat_returns_a_hash_on_first_ping() {
-		$this->become_network_admin();
-
-		$blog_id = $this->create_blog();
-		$this->set_presence_on_site( $blog_id, self::$editor_id );
-
-		$response = WP_Presence_Network_Widget_Whos_Online::heartbeat_received(
-			array(),
-			array( 'presence-network-widget-ping' => true ),
-			'dashboard-network'
-		);
-
-		$this->assertArrayHasKey( 'presence-network-widget', $response );
-		$this->assertArrayHasKey( 'presence-network-widget-hash', $response );
-		$this->assertSame( 32, strlen( $response['presence-network-widget-hash'] ) );
-	}
-
-	/**
-	 * @covers WP_Presence_Network_Widget_Whos_Online::heartbeat_received
-	 */
-	public function test_widget_heartbeat_reports_unchanged_when_hash_matches() {
-		$this->become_network_admin();
-
-		$blog_id = $this->create_blog();
-		$this->set_presence_on_site( $blog_id, self::$editor_id );
-
-		$first = WP_Presence_Network_Widget_Whos_Online::heartbeat_received(
-			array(),
-			array( 'presence-network-widget-ping' => true ),
-			'dashboard-network'
-		);
-
-		$second = WP_Presence_Network_Widget_Whos_Online::heartbeat_received(
-			array(),
-			array(
-				'presence-network-widget-ping' => true,
-				'presence-network-widget-hash' => $first['presence-network-widget-hash'],
-			),
-			'dashboard-network'
-		);
-
-		$this->assertArrayNotHasKey( 'presence-network-widget', $second );
-		$this->assertTrue( $second['presence-network-widget-unchanged'] );
-	}
-
-	/**
-	 * @covers WP_Presence_Network_Widget_Whos_Online::render
-	 */
-	public function test_widget_render_lists_sites_with_online_users() {
-		$blog_id = $this->create_blog();
-		$this->set_presence_on_site( $blog_id, self::$editor_id );
-
-		ob_start();
-		WP_Presence_Network_Widget_Whos_Online::render();
-		$output = ob_get_clean();
-
-		$this->assertStringContainsString( 'presence-avatar-stack', $output );
-		$this->assertStringContainsString( 'localhost', $output );
-	}
-
-	/**
-	 * @covers WP_Presence_Network_Widget_Whos_Online::render
-	 */
-	public function test_widget_render_reports_nobody_online() {
-		ob_start();
-		WP_Presence_Network_Widget_Whos_Online::render();
-		$output = ob_get_clean();
-
-		$this->assertStringContainsString( 'No users are currently online', $output );
 	}
 }
