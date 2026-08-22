@@ -180,6 +180,7 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 	/**
 	 * @covers ::wp_presence_get_network_summary
 	 * @covers ::wp_presence_compute_network_summary
+	 * @covers ::wp_presence_decode_network_summary_row
 	 */
 	public function test_summary_aggregates_across_sites() {
 		$blog_ids = array(
@@ -445,6 +446,7 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 	 * which is the only freshness cutoff the read path applies.
 	 *
 	 * @covers ::wp_presence_compute_network_summary
+	 * @covers ::wp_presence_empty_network_summary
 	 */
 	public function test_summary_excludes_a_row_not_pushed_within_the_timeout() {
 		$blog_id = $this->create_blog();
