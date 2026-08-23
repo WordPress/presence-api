@@ -18,6 +18,8 @@
  * @covers ::wp_presence_is_admin_screen_save
  * @covers ::wp_presence_current_user_can_access_screen
  * @covers ::wp_presence_enqueue_stale_screen_banner
+ * @covers ::wp_presence_bump_screen_revision
+ * @covers ::wp_presence_current_screen_key
  */
 class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 
@@ -44,6 +46,9 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 			delete_user_meta( $user_id, '_wp_presence_screen_rev' );
 		}
 		unset( $_POST['option_page'] );
+		unset( $_GET['user_id'], $_GET['taxonomy'], $_GET['tag_ID'], $_GET['c'] );
+		// is_admin() reads $current_screen, which outlives the test that set it.
+		set_current_screen( 'dashboard' );
 		parent::tear_down();
 	}
 
@@ -481,5 +486,388 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 		$this->assertSame( 'custom-screen', wp_presence_current_screen_key() );
 
 		remove_filter( 'wp_presence_current_screen_key', $callback );
+	}
+
+	/**
+	 * The post editor keys off the post being edited, not the request.
+	 *
+	 * @covers ::wp_presence_current_screen_key
+	 */
+	public function test_current_screen_key_reads_the_post_being_edited() {
+		wp_set_current_user( self::$admin_id );
+		set_current_screen( 'post' );
+
+		$post_id                = self::factory()->post->create();
+		$GLOBALS['post']        = get_post( $post_id );
+
+		$this->assertSame( 'post/' . $post_id, wp_presence_current_screen_key() );
+
+		unset( $GLOBALS['post'] );
+	}
+
+	/**
+	 * @covers ::wp_presence_current_screen_key
+	 */
+	public function test_current_screen_key_reads_the_user_being_edited() {
+		wp_set_current_user( self::$admin_id );
+		set_current_screen( 'user-edit' );
+
+		$_GET['user_id'] = self::$editor_id;
+
+		$this->assertSame( 'user-edit/' . self::$editor_id, wp_presence_current_screen_key() );
+	}
+
+	/**
+	 * Your own profile is the same screen as another user's edit screen, so it
+	 * keys the same way and a change made elsewhere still marks it stale.
+	 *
+	 * @covers ::wp_presence_current_screen_key
+	 */
+	public function test_your_own_profile_keys_to_your_user_edit_screen() {
+		wp_set_current_user( self::$admin_id );
+		set_current_screen( 'profile' );
+
+		$this->assertSame( 'user-edit/' . self::$admin_id, wp_presence_current_screen_key() );
+	}
+
+	/**
+	 * @covers ::wp_presence_current_screen_key
+	 */
+	public function test_current_screen_key_reads_the_term_being_edited() {
+		wp_set_current_user( self::$admin_id );
+		set_current_screen( 'edit-tags' );
+
+		$term_id            = self::factory()->term->create( array( 'taxonomy' => 'category' ) );
+		$_GET['taxonomy']   = 'category';
+		$_GET['tag_ID']     = $term_id;
+
+		$this->assertSame( 'term/category/' . $term_id, wp_presence_current_screen_key() );
+	}
+
+	/**
+	 * @covers ::wp_presence_current_screen_key
+	 */
+	public function test_current_screen_key_reads_the_comment_being_edited() {
+		wp_set_current_user( self::$admin_id );
+		set_current_screen( 'comment' );
+
+		$comment_id = self::factory()->comment->create();
+		$_GET['c']  = $comment_id;
+
+		$this->assertSame( 'comment/' . $comment_id, wp_presence_current_screen_key() );
+	}
+
+	/**
+	 * A covered screen base with nothing to key off produces no key rather than
+	 * a partial one like `post/`.
+	 *
+	 * @covers ::wp_presence_current_screen_key
+	 */
+	public function test_a_covered_screen_with_no_object_produces_no_key() {
+		wp_set_current_user( self::$admin_id );
+		set_current_screen( 'user-edit' );
+
+		$this->assertSame( '', wp_presence_current_screen_key() );
+	}
+
+	/**
+	 * @covers ::wp_presence_current_screen_key
+	 */
+	public function test_there_is_no_screen_key_outside_the_admin() {
+		wp_set_current_user( self::$admin_id );
+		set_current_screen( 'front' );
+
+		$this->assertSame( '', wp_presence_current_screen_key() );
+	}
+
+	/**
+	 * Enqueues the banner against empty registries.
+	 *
+	 * wp_scripts() and wp_styles() are process globals, so without this a
+	 * later test reads what an earlier one enqueued.
+	 */
+	private function enqueue_banner() {
+		wp_deregister_script( 'wp-presence-stale-screen' );
+		wp_deregister_script( 'wp-presence-tab-coordinator' );
+		wp_deregister_style( 'wp-presence-stale-screen' );
+
+		$scripts        = wp_scripts();
+		$scripts->queue = array();
+		$scripts->done  = array();
+
+		$styles        = wp_styles();
+		$styles->queue = array();
+		$styles->done  = array();
+
+		wp_presence_enqueue_stale_screen_banner();
+	}
+
+	/**
+	 * Reads back the config object the banner script is handed.
+	 *
+	 * @return array|null Decoded config, or null when nothing was printed.
+	 */
+	private function banner_config() {
+		$inline = wp_scripts()->get_data( 'wp-presence-stale-screen', 'before' );
+
+		foreach ( (array) $inline as $script ) {
+			if ( is_string( $script ) && preg_match( '/window\.wpPresenceStaleScreen = (.*);$/', $script, $m ) ) {
+				return json_decode( $m[1], true );
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * @covers ::wp_presence_enqueue_stale_screen_banner
+	 */
+	public function test_the_banner_carries_the_screen_key_and_the_revision_it_starts_from() {
+		wp_set_current_user( self::$admin_id );
+		set_current_screen( 'options-general' );
+
+		$rev = wp_presence_bump_screen_revision( 'options/general', self::$admin2_id );
+
+		$this->enqueue_banner();
+
+		$this->assertTrue( wp_style_is( 'wp-presence-stale-screen', 'enqueued' ) );
+		$this->assertTrue( wp_script_is( 'wp-presence-stale-screen', 'enqueued' ) );
+		$this->assertTrue( wp_script_is( 'wp-presence-tab-coordinator', 'enqueued' ) );
+
+		$config = $this->banner_config();
+		$this->assertSame( 'options/general', $config['screenKey'] );
+		$this->assertSame( $rev, $config['baselineRev'] );
+		$this->assertArrayHasKey( 'reload', $config['strings'] );
+	}
+
+	/**
+	 * An unvisited screen starts from zero, so the first bump is a change.
+	 *
+	 * @covers ::wp_presence_enqueue_stale_screen_banner
+	 */
+	public function test_a_screen_with_no_revision_yet_starts_the_baseline_at_zero() {
+		wp_set_current_user( self::$admin_id );
+		set_current_screen( 'options-writing' );
+
+		$this->enqueue_banner();
+
+		$this->assertSame( 0, $this->banner_config()['baselineRev'] );
+	}
+
+	/**
+	 * @covers ::wp_presence_enqueue_stale_screen_banner
+	 */
+	public function test_the_banner_stays_off_screens_with_no_stale_detection() {
+		wp_set_current_user( self::$admin_id );
+		set_current_screen( 'dashboard' );
+
+		$this->enqueue_banner();
+
+		$this->assertFalse( wp_script_is( 'wp-presence-stale-screen', 'enqueued' ) );
+	}
+
+	/**
+	 * @covers ::wp_presence_enqueue_stale_screen_banner
+	 */
+	public function test_the_banner_stays_off_the_front_end() {
+		wp_set_current_user( self::$admin_id );
+		set_current_screen( 'front' );
+
+		$this->enqueue_banner();
+
+		$this->assertFalse( wp_script_is( 'wp-presence-stale-screen', 'enqueued' ) );
+	}
+
+	/**
+	 * @covers ::wp_presence_enqueue_stale_screen_banner
+	 */
+	public function test_a_user_without_edit_posts_gets_no_banner() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		set_current_screen( 'options-general' );
+
+		$this->enqueue_banner();
+
+		$this->assertFalse( wp_script_is( 'wp-presence-stale-screen', 'enqueued' ) );
+	}
+
+	/**
+	 * The revision of a screen is only disclosed to someone who can already
+	 * reach the object behind it.
+	 *
+	 * @dataProvider data_screens_out_of_reach
+	 *
+	 * @covers ::wp_presence_current_user_can_access_screen
+	 *
+	 * @param string $key_template Screen key with %d standing in for the object ID.
+	 */
+	public function test_a_screen_the_user_cannot_reach_is_not_disclosed( $key_template ) {
+		$subscriber = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		wp_set_current_user( $subscriber );
+
+		$ids = array(
+			'user-edit/%d' => self::$admin_id,
+			'term/category/%d' => self::factory()->term->create( array( 'taxonomy' => 'category' ) ),
+			'comment/%d'   => self::factory()->comment->create(),
+			'anything/%d'  => 1,
+		);
+
+		$this->assertFalse( wp_presence_current_user_can_access_screen( sprintf( $key_template, $ids[ $key_template ] ) ) );
+	}
+
+	public function data_screens_out_of_reach() {
+		return array(
+			'another user'  => array( 'user-edit/%d' ),
+			'a term'        => array( 'term/category/%d' ),
+			'a comment'     => array( 'comment/%d' ),
+			'an unknown key' => array( 'anything/%d' ),
+		);
+	}
+
+	/**
+	 * Cron runs as no one on a schedule, so a revision bumped there would name
+	 * a bystander as the actor.
+	 *
+	 * @covers ::wp_presence_is_admin_screen_save
+	 * @covers ::wp_presence_on_profile_update
+	 * @covers ::wp_presence_on_edited_term
+	 * @covers ::wp_presence_on_edit_comment
+	 * @covers ::wp_presence_on_post_updated
+	 * @covers ::wp_presence_on_updated_option
+	 */
+	public function test_a_save_during_cron_bumps_nothing() {
+		wp_set_current_user( self::$admin_id );
+		set_current_screen( 'user-edit' );
+
+		add_filter( 'wp_doing_cron', '__return_true' );
+
+		wp_presence_on_profile_update( self::$editor_id );
+		wp_presence_on_edited_term( 1, 1, 'category' );
+		wp_presence_on_edit_comment( 1 );
+		wp_presence_on_post_updated( 1, get_post( self::factory()->post->create() ), null );
+		$_POST['option_page'] = 'media';
+		wp_presence_on_updated_option( 'blogname' );
+
+		remove_filter( 'wp_doing_cron', '__return_true' );
+
+		$this->assertNull( wp_presence_get_screen_revision( 'user-edit/' . self::$editor_id ) );
+		$this->assertNull( wp_presence_get_screen_revision( 'options/media' ) );
+		$this->assertSame( array(), wp_presence_get_screen_revisions() );
+	}
+
+	/**
+	 * Saving a Settings page fires updated_option once per changed option, and
+	 * each would otherwise bump the same screen again.
+	 *
+	 * @covers ::wp_presence_on_updated_option
+	 */
+	public function test_one_settings_save_bumps_the_screen_once() {
+		wp_set_current_user( self::$admin_id );
+		set_current_screen( 'options-reading' );
+
+		$_POST['option_page'] = 'reading';
+
+		wp_presence_on_updated_option( 'blogname' );
+		$first = wp_presence_get_screen_revision( 'options/reading' );
+
+		wp_presence_on_updated_option( 'blogdescription' );
+		$second = wp_presence_get_screen_revision( 'options/reading' );
+
+		$this->assertSame( $first, $second );
+	}
+
+	/**
+	 * A revision is a change to the post everyone is looking at, and a stored
+	 * revision is a separate row that nobody has open.
+	 *
+	 * @covers ::wp_presence_on_post_updated
+	 */
+	public function test_a_stored_revision_is_not_a_change_to_its_parent() {
+		wp_set_current_user( self::$admin_id );
+		set_current_screen( 'post' );
+
+		$post_id     = self::factory()->post->create( array( 'post_status' => 'publish' ) );
+		$revision_id = wp_save_post_revision( $post_id );
+
+		wp_presence_on_post_updated( $revision_id, get_post( $revision_id ), null );
+
+		$this->assertSame( array(), wp_presence_get_screen_revisions() );
+	}
+
+	/**
+	 * @covers ::wp_presence_on_post_updated
+	 */
+	public function test_an_auto_draft_is_not_a_change_anyone_needs_to_see() {
+		wp_set_current_user( self::$admin_id );
+		set_current_screen( 'post' );
+
+		$post_id = self::factory()->post->create( array( 'post_status' => 'auto-draft' ) );
+
+		wp_presence_on_post_updated( $post_id, get_post( $post_id ), null );
+
+		$this->assertSame( array(), wp_presence_get_screen_revisions() );
+	}
+
+	/**
+	 * @covers ::wp_presence_get_screen_revision
+	 */
+	public function test_an_empty_screen_key_has_no_revision() {
+		$this->assertNull( wp_presence_get_screen_revision( '' ) );
+	}
+
+	/**
+	 * @covers ::wp_presence_get_screen_revision
+	 */
+	public function test_a_deleted_post_has_no_revision() {
+		$post_id = self::factory()->post->create();
+		wp_delete_post( $post_id, true );
+
+		$this->assertNull( wp_presence_get_screen_revision( 'post/' . $post_id ) );
+	}
+
+	/**
+	 * @covers ::wp_presence_screen_heartbeat_received
+	 */
+	public function test_heartbeat_says_nothing_about_a_screen_nobody_has_saved() {
+		wp_set_current_user( self::$admin_id );
+
+		$response = wp_presence_screen_heartbeat_received(
+			array(),
+			array( 'presence-screen-ping' => array( 'key' => 'options/discussion' ) ),
+			'dashboard'
+		);
+
+		$this->assertArrayNotHasKey( 'presence-screen-rev', $response );
+	}
+
+	/**
+	 * A revision with no actor still reports the change, just without a name or
+	 * a relative time to attribute it to.
+	 *
+	 * @covers ::wp_presence_screen_heartbeat_received
+	 */
+	public function test_heartbeat_reports_an_unattributed_change() {
+		wp_set_current_user( self::$admin_id );
+
+		update_option(
+			'wp_presence_screen_rev_options_media',
+			array(
+				'rev'      => 7,
+				'actor_id' => 0,
+				'time'     => 0,
+			),
+			false
+		);
+
+		$response = wp_presence_screen_heartbeat_received(
+			array(),
+			array( 'presence-screen-ping' => array( 'key' => 'options/media' ) ),
+			'dashboard'
+		);
+
+		$rev = $response['presence-screen-rev'];
+		$this->assertSame( 7, $rev['rev'] );
+		$this->assertSame( '', $rev['actor_name'] );
+		$this->assertSame( '', $rev['time_ago'] );
+		$this->assertFalse( $rev['actor_is_me'] );
 	}
 }
