@@ -429,7 +429,6 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_remove_presence
 	 * @covers ::wp_remove_user_presence
 	 * @covers ::wp_get_presence
-	 * @covers ::wp_get_user_presence
 	 * @covers ::wp_get_presence_by_room_prefix
 	 * @covers ::wp_get_active_rooms
 	 * @covers ::wp_get_presence_summary
@@ -447,7 +446,6 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 		$this->assertFalse( wp_remove_presence( 'admin/online', 'user-1' ) );
 		$this->assertFalse( wp_remove_user_presence( self::$editor_id ) );
 		$this->assertSame( array(), wp_get_presence( 'admin/online' ) );
-		$this->assertSame( array(), wp_get_user_presence( self::$editor_id ) );
 		$this->assertSame( array(), wp_get_presence_by_room_prefix( 'postType/' ) );
 		$this->assertSame( array(), wp_get_active_rooms() );
 		$this->assertSame( 0, wp_get_presence_summary()['total_entries'] );
@@ -473,7 +471,7 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 		wp_presence_on_login( $user->user_login, $user );
 
 		$this->assertSame( '', $wpdb->last_error, 'Logging in should not query a missing table.' );
-		$this->assertSame( array(), wp_get_user_presence( self::$editor_id ) );
+		$this->assertSame( array(), wp_get_presence( 'admin/online' ) );
 	}
 
 	/**

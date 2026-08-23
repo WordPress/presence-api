@@ -23,7 +23,7 @@ class WP_Test_Presence_Lifecycle extends WP_Presence_UnitTestCase {
 		$user = get_userdata( self::$editor_id );
 		wp_presence_on_login( $user->user_login, $user );
 
-		$entries = wp_get_user_presence( self::$editor_id );
+		$entries = $this->presence_for_user( self::$editor_id );
 		$this->assertCount( 1, $entries );
 		$this->assertSame( 'admin/online', $entries[0]->room );
 		$this->assertSame( 'login', $entries[0]->data['screen'] );
@@ -36,7 +36,7 @@ class WP_Test_Presence_Lifecycle extends WP_Presence_UnitTestCase {
 		$user = get_userdata( self::$subscriber_id );
 		wp_presence_on_login( $user->user_login, $user );
 
-		$entries = wp_get_user_presence( self::$subscriber_id );
+		$entries = $this->presence_for_user( self::$subscriber_id );
 		$this->assertCount( 0, $entries );
 	}
 
@@ -50,8 +50,8 @@ class WP_Test_Presence_Lifecycle extends WP_Presence_UnitTestCase {
 
 		wp_presence_on_logout( self::$editor_id );
 
-		$this->assertCount( 0, wp_get_user_presence( self::$editor_id ) );
-		$this->assertCount( 1, wp_get_user_presence( self::$subscriber_id ), 'Logging one user out should not clear anybody else.' );
+		$this->assertCount( 0, $this->presence_for_user( self::$editor_id ) );
+		$this->assertCount( 1, $this->presence_for_user( self::$subscriber_id ), 'Logging one user out should not clear anybody else.' );
 	}
 
 	/**
@@ -64,7 +64,7 @@ class WP_Test_Presence_Lifecycle extends WP_Presence_UnitTestCase {
 		wp_presence_on_logout( self::$subscriber_id );
 
 		// Entry should remain because logout skips users without edit_posts.
-		$entries = wp_get_user_presence( self::$subscriber_id );
+		$entries = $this->presence_for_user( self::$subscriber_id );
 		$this->assertCount( 1, $entries );
 	}
 
@@ -82,7 +82,7 @@ class WP_Test_Presence_Lifecycle extends WP_Presence_UnitTestCase {
 
 		wp_presence_on_logout( self::$editor_id );
 
-		$this->assertCount( 0, wp_get_user_presence( self::$editor_id ) );
-		$this->assertCount( 1, wp_get_user_presence( self::$subscriber_id ), 'Logging one user out should not clear anybody else.' );
+		$this->assertCount( 0, $this->presence_for_user( self::$editor_id ) );
+		$this->assertCount( 1, $this->presence_for_user( self::$subscriber_id ), 'Logging one user out should not clear anybody else.' );
 	}
 }

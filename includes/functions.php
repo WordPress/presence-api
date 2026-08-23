@@ -269,45 +269,6 @@ function wp_presence_get_timeout( $timeout ) {
 }
 
 /**
- * Gets all presence entries for a given user across all rooms.
- *
- * @access private
- * @param int $user_id The user ID.
- * @param int $timeout Optional. Timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL.
- * @return array Array of presence entry objects.
- */
-function wp_get_user_presence( $user_id, $timeout = WP_PRESENCE_DEFAULT_TTL ) {
-	global $wpdb;
-
-	if ( ! wp_presence_has_table() ) {
-		return array();
-	}
-
-	$timeout = wp_presence_get_timeout( $timeout );
-	$cutoff  = gmdate( 'Y-m-d H:i:s', time() - $timeout );
-
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-	$results = $wpdb->get_results(
-		$wpdb->prepare(
-			"SELECT room, client_id, user_id, data, date_gmt FROM {$wpdb->presence} WHERE user_id = %d AND date_gmt > %s ORDER BY date_gmt DESC",
-			$user_id,
-			$cutoff
-		)
-	);
-
-	if ( ! $results ) {
-		return array();
-	}
-
-	foreach ( $results as $row ) {
-		$decoded   = json_decode( $row->data, true );
-		$row->data = is_array( $decoded ) ? $decoded : array();
-	}
-
-	return $results;
-}
-
-/**
  * Gets all presence entries for rooms matching a prefix.
  *
  * @access private

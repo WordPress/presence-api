@@ -127,31 +127,11 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 		wp_remove_user_presence( self::$editor_id );
 
-		$this->assertCount( 0, wp_get_user_presence( self::$editor_id ) );
-		$this->assertCount( 1, wp_get_user_presence( self::$subscriber_id ), 'Another user\'s entries should be left alone.' );
+		$this->assertCount( 0, $this->presence_for_user( self::$editor_id ) );
+		$this->assertCount( 1, $this->presence_for_user( self::$subscriber_id ), 'Another user\'s entries should be left alone.' );
 	}
 
-	/**
-	 * @covers ::wp_get_user_presence
-	 */
-	public function test_get_user_presence_across_rooms() {
-		wp_set_presence( 'room/a', 'user-' . self::$editor_id, array(), self::$editor_id );
-		wp_set_presence( 'room/b', 'lock-' . self::$editor_id, array(), self::$editor_id );
 
-		$entries = wp_get_user_presence( self::$editor_id );
-
-		$this->assertCount( 2, $entries );
-	}
-
-	/**
-	 * @covers ::wp_get_user_presence
-	 */
-	public function test_get_user_presence_returns_empty_array_when_none_present() {
-		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
-
-		$this->assertCount( 1, wp_get_user_presence( self::$editor_id ) );
-		$this->assertSame( array(), wp_get_user_presence( self::$subscriber_id ) );
-	}
 
 	/**
 	 * @covers ::wp_can_access_presence_room
