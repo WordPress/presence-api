@@ -560,6 +560,42 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 		$this->assertSame( 3, $summary['total_users_online'] );
 	}
 
+	/**
+	 * The Sites and Users list columns call this once per row, and a build
+	 * resolves a display name and an avatar URL for every user on every site,
+	 * so a second read in the same request must not repeat it.
+	 *
+	 * @covers ::wp_presence_get_network_summary
+	 * @covers ::wp_presence_network_summary_cache
+	 * @covers ::wp_presence_flush_network_summary_cache
+	 */
+	public function test_the_summary_is_built_once_per_request_and_dropped_by_a_push() {
+		global $wpdb;
+
+		$blog_id = $this->create_blog();
+		$this->set_network_summary_row( $blog_id, array( self::$editor_id ) );
+
+		$first = wp_presence_get_network_summary();
+
+		$queries = $wpdb->num_queries;
+		$second  = wp_presence_get_network_summary();
+
+		$this->assertSame( $queries, $wpdb->num_queries, 'A second read in the same request rebuilt the summary.' );
+		$this->assertSame( $first, $second );
+
+		// A real write on this site pushes a fresh row, which the held build
+		// would otherwise hide for the rest of the request.
+		$arriving_id = self::factory()->user->create();
+		$this->set_presence_on_site( $blog_id, $arriving_id );
+
+		$after = wp_presence_get_network_summary();
+
+		$this->assertSame(
+			array( $arriving_id ),
+			wp_list_pluck( $after['sites'][0]['users'], 'user_id' ),
+			'A read after a push returned the build from before it.'
+		);
+	}
 
 	/**
 	 * Network presence data spans every site on the install, so the bar to see

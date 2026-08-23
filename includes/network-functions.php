@@ -249,6 +249,11 @@ function wp_presence_network_capability() {
  * every site's own presence table, so this is a single query regardless of
  * how many sites are on the network.
  *
+ * Held for the rest of the request. List table columns call this once per row
+ * and the build is not free: it decodes every site's row, then resolves a
+ * display name and an avatar URL for every user on every site. The push
+ * invalidates it, so a read after a write on this site still sees the write.
+ *
  * @access private
  * @param array $args {
  *     Optional.
@@ -267,8 +272,49 @@ function wp_presence_network_capability() {
  */
 function wp_presence_get_network_summary( array $args = array() ) {
 	$timeout = wp_presence_get_timeout( $args['timeout'] ?? WP_PRESENCE_DEFAULT_TTL );
+	$cached  = wp_presence_network_summary_cache();
 
-	return wp_presence_compute_network_summary( $timeout );
+	if ( isset( $cached[ $timeout ] ) ) {
+		return $cached[ $timeout ];
+	}
+
+	$summary = wp_presence_compute_network_summary( $timeout );
+
+	$cached[ $timeout ] = $summary;
+	wp_presence_network_summary_cache( $cached );
+
+	return $summary;
+}
+
+/**
+ * Reads, and optionally replaces, the request's built network summaries.
+ *
+ * Keyed by timeout, since a caller may ask for a window other than the default.
+ *
+ * @access private
+ * @param array|null $replace Optional. Summaries to store, keyed by timeout.
+ * @return array Summaries keyed by timeout.
+ */
+function wp_presence_network_summary_cache( array $replace = null ) {
+	static $cache = array();
+
+	if ( null !== $replace ) {
+		$cache = $replace;
+	}
+
+	return $cache;
+}
+
+/**
+ * Drops the request's built network summaries.
+ *
+ * Runs on wp_presence_admin_room_changed, alongside the push that gave this
+ * site a new row.
+ *
+ * @access private
+ */
+function wp_presence_flush_network_summary_cache() {
+	wp_presence_network_summary_cache( array() );
 }
 
 /**
@@ -328,11 +374,24 @@ function wp_presence_compute_network_summary( $timeout ) {
 
 	cache_users( array_keys( $all_user_ids ) );
 
+	// One site query for the whole set. get_site() per row is one query each
+	// on a cold cache, which is the shape this table exists to avoid.
+	$found_sites = array();
+	$found       = get_sites(
+		array(
+			'site__in' => array_keys( $by_site ),
+			'number'   => 0,
+		)
+	);
+	foreach ( $found as $found_site ) {
+		$found_sites[ (int) $found_site->blog_id ] = $found_site;
+	}
+
 	$sites       = array();
 	$total_users = 0;
 
 	foreach ( $by_site as $blog_id => $entries ) {
-		$site = get_site( $blog_id );
+		$site = $found_sites[ $blog_id ] ?? null;
 
 		if ( ! $site ) {
 			continue;
