@@ -675,4 +675,110 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		$this->assertCount( 1, $entries );
 		$this->assertSame( $data, $entries[0]->data );
 	}
+
+	/**
+	 * Everything that mirrors who's online hangs off this action, so an admin
+	 * room write has to announce itself. Presence writes land on every tick from
+	 * every open tab and most are for other rooms, so the announcement is
+	 * confined to the one room that matters.
+	 *
+	 * @covers ::wp_set_presence
+	 * @covers ::wp_presence_admin_room_changed
+	 */
+	public function test_only_an_admin_room_write_announces_a_change() {
+		$fired = 0;
+		add_action(
+			'wp_presence_admin_room_changed',
+			function () use ( &$fired ) {
+				++$fired;
+			}
+		);
+
+		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
+		$this->assertSame( 0, $fired, 'A write to another room must stay quiet.' );
+
+		wp_set_presence( wp_presence_admin_room(), 'client-1', array(), self::$editor_id );
+		$this->assertSame( 1, $fired );
+	}
+
+	/**
+	 * The pagehide delete removes a single client from the admin room, and it
+	 * has to announce the change too, or a user who closed their tab stays on
+	 * screen elsewhere until their entry ages out.
+	 *
+	 * @covers ::wp_remove_presence
+	 * @covers ::wp_presence_admin_room_changed
+	 */
+	public function test_only_an_admin_room_removal_announces_a_change() {
+		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
+		wp_set_presence( wp_presence_admin_room(), 'client-1', array(), self::$editor_id );
+
+		$fired = 0;
+		add_action(
+			'wp_presence_admin_room_changed',
+			function () use ( &$fired ) {
+				++$fired;
+			}
+		);
+
+		wp_remove_presence( 'test/room', 'client-1' );
+		$this->assertSame( 0, $fired, 'A removal from another room must stay quiet.' );
+
+		wp_remove_presence( wp_presence_admin_room(), 'client-1' );
+		$this->assertSame( 1, $fired );
+	}
+
+	/**
+	 * The avatars overlap, so the first user has to paint on top of the ones
+	 * after them rather than under.
+	 *
+	 * @covers ::wp_presence_render_avatar_stack
+	 */
+	public function test_avatar_stack_paints_the_first_user_on_top() {
+		$html = wp_presence_render_avatar_stack(
+			array(
+				array(
+					'avatar_url'   => 'https://example.com/ana.png',
+					'display_name' => 'Ana & Co',
+				),
+				array(
+					'avatar_url'   => 'https://example.com/bo.png',
+					'display_name' => 'Bo',
+				),
+			)
+		);
+
+		$this->assertSame( 2, substr_count( $html, '<img ' ) );
+		$this->assertLessThan(
+			strpos( $html, 'z-index:1' ),
+			strpos( $html, 'z-index:2' ),
+			'The first avatar in the list needs the highest z-index.'
+		);
+		$this->assertStringContainsString( 'alt="Ana &amp; Co"', $html );
+		$this->assertStringContainsString( 'width="20" height="20"', $html );
+	}
+
+	/**
+	 * The stack stands in for a crowd rather than showing all of it, so a busy
+	 * room renders the same handful of avatars as a quiet one.
+	 *
+	 * @covers ::wp_presence_render_avatar_stack
+	 */
+	public function test_avatar_stack_stops_at_the_maximum() {
+		$users = array_fill(
+			0,
+			10,
+			array(
+				'avatar_url'   => 'https://example.com/ana.png',
+				'display_name' => 'Ana',
+			)
+		);
+
+		$this->assertSame( 4, substr_count( wp_presence_render_avatar_stack( $users ), '<img ' ) );
+
+		$sized = wp_presence_render_avatar_stack( $users, 2, 24 );
+
+		$this->assertSame( 2, substr_count( $sized, '<img ' ) );
+		$this->assertStringContainsString( 'width="24" height="24"', $sized );
+	}
 }
