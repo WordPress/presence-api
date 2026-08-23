@@ -685,4 +685,27 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 
 		$this->assertSame( 'manage_sites', wp_presence_network_capability() );
 	}
+	/**
+	 * One person signed in on two sites is one person online, which is the
+	 * distinction the network user list filters on.
+	 *
+	 * @covers ::wp_presence_get_network_online_user_ids
+	 */
+	public function test_online_user_ids_are_deduplicated_across_sites() {
+		$first  = $this->create_blog();
+		$second = $this->create_blog();
+		$other  = self::factory()->user->create();
+
+		$this->set_network_summary_row( $first, array( self::$editor_id ) );
+		$this->set_network_summary_row( $second, array( self::$editor_id, $other ) );
+
+		$ids = wp_presence_get_network_online_user_ids();
+		sort( $ids );
+
+		$expected = array( self::$editor_id, $other );
+		sort( $expected );
+
+		$this->assertSame( $expected, $ids );
+	}
+
 }

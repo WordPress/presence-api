@@ -304,6 +304,25 @@ function wp_presence_network_capability() {
 }
 
 /**
+ * Returns the distinct user IDs online anywhere on the network.
+ *
+ * @access private
+ * @return int[] User IDs.
+ */
+function wp_presence_get_network_online_user_ids() {
+	$summary  = wp_presence_get_network_summary();
+	$user_ids = array();
+
+	foreach ( $summary['sites'] as $site ) {
+		foreach ( $site['users'] as $user ) {
+			$user_ids[ $user['user_id'] ] = true;
+		}
+	}
+
+	return array_keys( $user_ids );
+}
+
+/**
  * Returns the network-wide presence summary.
  *
  * Reads the shared wp_presence_network_summary table -- one row per site,
