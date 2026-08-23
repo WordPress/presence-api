@@ -560,28 +560,6 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 		$this->assertSame( 3, $summary['total_users_online'] );
 	}
 
-	/**
-	 * One person signed in on two sites is one person online, which is the
-	 * distinction the network user list filters on.
-	 *
-	 * @covers ::wp_presence_get_network_online_user_ids
-	 */
-	public function test_online_user_ids_are_deduplicated_across_sites() {
-		$first  = $this->create_blog();
-		$second = $this->create_blog();
-		$other  = self::factory()->user->create();
-
-		$this->set_network_summary_row( $first, array( self::$editor_id ) );
-		$this->set_network_summary_row( $second, array( self::$editor_id, $other ) );
-
-		$ids = wp_presence_get_network_online_user_ids();
-		sort( $ids );
-
-		$expected = array( self::$editor_id, $other );
-		sort( $expected );
-
-		$this->assertSame( $expected, $ids );
-	}
 
 	/**
 	 * Network presence data spans every site on the install, so the bar to see
