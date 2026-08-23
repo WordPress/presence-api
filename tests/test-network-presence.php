@@ -425,6 +425,8 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 	 * the whole aggregation.
 	 *
 	 * @covers ::wp_presence_decode_network_summary_row
+	 * @covers ::wp_presence_compute_network_summary
+	 * @covers ::wp_presence_empty_network_summary
 	 */
 	public function test_summary_tolerates_a_malformed_row() {
 		global $wpdb;
@@ -460,5 +462,139 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 		$summary = wp_presence_get_network_summary();
 
 		$this->assertSame( array(), $summary['sites'] );
+	}
+
+	/**
+	 * The read path is reached on a network whose table has not been provisioned
+	 * yet -- the plugin is network activated one request before the first push --
+	 * so it answers from the empty shape rather than querying a missing table.
+	 *
+	 * @covers ::wp_presence_compute_network_summary
+	 * @covers ::wp_presence_empty_network_summary
+	 */
+	public function test_summary_is_empty_before_the_table_is_provisioned() {
+		$blog_id = $this->create_blog();
+		$this->set_network_summary_row( $blog_id, array( self::$editor_id ) );
+
+		$version = get_site_option( 'wp_presence_network_summary_db_version' );
+		delete_site_option( 'wp_presence_network_summary_db_version' );
+
+		$summary = wp_presence_get_network_summary();
+
+		update_site_option( 'wp_presence_network_summary_db_version', $version );
+
+		$this->assertSame( wp_presence_empty_network_summary(), $summary );
+	}
+
+	/**
+	 * Deleting a site leaves its row behind until it ages out, so the row can
+	 * outlive the site it names.
+	 *
+	 * @covers ::wp_presence_compute_network_summary
+	 */
+	public function test_summary_skips_a_row_for_a_site_that_no_longer_exists() {
+		$this->set_network_summary_row( 999901, array( self::$editor_id ) );
+
+		$this->assertSame( array(), wp_presence_get_network_summary()['sites'] );
+	}
+
+	/**
+	 * A row names user IDs and nothing else, so it outlives the accounts it
+	 * points at. A deleted account has to drop out of its site rather than out
+	 * of the whole aggregation, and a site left with nobody real drops out
+	 * entirely rather than showing as online with an empty list.
+	 *
+	 * @covers ::wp_presence_compute_network_summary
+	 */
+	public function test_summary_skips_users_who_no_longer_exist() {
+		$kept    = $this->create_blog();
+		$emptied = $this->create_blog();
+
+		$this->set_network_summary_row( $kept, array( 999902, self::$editor_id ) );
+		$this->set_network_summary_row( $emptied, array( 999903 ) );
+
+		$summary = wp_presence_get_network_summary();
+
+		$this->assertSame( array( $kept ), wp_list_pluck( $summary['sites'], 'blog_id' ) );
+		$this->assertSame( array( self::$editor_id ), wp_list_pluck( $summary['sites'][0]['users'], 'user_id' ) );
+		$this->assertSame( 1, $summary['total_users_online'] );
+	}
+
+	/**
+	 * A row carries no per-user timestamp to order by, so the people on a site
+	 * are ordered by name to keep the list from reshuffling between reads.
+	 *
+	 * @covers ::wp_presence_compute_network_summary
+	 */
+	public function test_summary_lists_the_users_on_a_site_by_name() {
+		$blog_id = $this->create_blog();
+		$zoe     = self::factory()->user->create( array( 'display_name' => 'Zoe' ) );
+		$ana     = self::factory()->user->create( array( 'display_name' => 'Ana' ) );
+
+		$this->set_network_summary_row( $blog_id, array( $zoe, $ana ) );
+
+		$summary = wp_presence_get_network_summary();
+
+		$this->assertSame( array( 'Ana', 'Zoe' ), wp_list_pluck( $summary['sites'][0]['users'], 'display_name' ) );
+	}
+
+	/**
+	 * The network view is a list of where the activity is, so the busiest site
+	 * leads it. Sites tied on headcount fall back to domain and path, which is
+	 * what keeps the order stable.
+	 *
+	 * @covers ::wp_presence_compute_network_summary
+	 */
+	public function test_summary_lists_the_busiest_site_first() {
+		$quiet  = $this->create_blog();
+		$busy   = $this->create_blog();
+		$second = self::factory()->user->create();
+
+		$this->set_network_summary_row( $quiet, array( self::$editor_id ) );
+		$this->set_network_summary_row( $busy, array( self::$editor_id, $second ) );
+
+		$summary = wp_presence_get_network_summary();
+
+		$this->assertSame( array( $busy, $quiet ), wp_list_pluck( $summary['sites'], 'blog_id' ) );
+		$this->assertSame( 2, $summary['total_sites_online'] );
+		$this->assertSame( 3, $summary['total_users_online'] );
+	}
+
+	/**
+	 * One person signed in on two sites is one person online, which is the
+	 * distinction the network user list filters on.
+	 *
+	 * @covers ::wp_presence_get_network_online_user_ids
+	 */
+	public function test_online_user_ids_are_deduplicated_across_sites() {
+		$first  = $this->create_blog();
+		$second = $this->create_blog();
+		$other  = self::factory()->user->create();
+
+		$this->set_network_summary_row( $first, array( self::$editor_id ) );
+		$this->set_network_summary_row( $second, array( self::$editor_id, $other ) );
+
+		$ids = wp_presence_get_network_online_user_ids();
+		sort( $ids );
+
+		$expected = array( self::$editor_id, $other );
+		sort( $expected );
+
+		$this->assertSame( $expected, $ids );
+	}
+
+	/**
+	 * Network presence data spans every site on the install, so the bar to see
+	 * it is a network capability, and a network that delegates differently can
+	 * move it.
+	 *
+	 * @covers ::wp_presence_network_capability
+	 */
+	public function test_the_network_capability_is_filterable() {
+		$this->assertSame( 'manage_network', wp_presence_network_capability() );
+
+		add_filter( 'wp_presence_network_capability', fn() => 'manage_sites' );
+
+		$this->assertSame( 'manage_sites', wp_presence_network_capability() );
 	}
 }
