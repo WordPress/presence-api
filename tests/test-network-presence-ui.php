@@ -272,6 +272,44 @@ class WP_Test_Network_Presence_UI extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * The single-site filter runs on this screen too, since is_admin() is true
+	 * in Network Admin, and the list table's own WP_User_Query fires
+	 * pre_get_users after users_list_table_query_args has already set the
+	 * network-wide IDs. Asserted through a real query rather than the filter's
+	 * return value, because the collision only shows up downstream of it.
+	 *
+	 * @covers ::wp_presence_filter_network_online_users
+	 * @covers ::wp_presence_filter_online_users
+	 */
+	public function test_the_network_online_view_is_not_narrowed_to_the_current_site() {
+		$this->become_network_admin();
+		set_current_screen( 'users-network' );
+
+		// Online on another site, and deliberately not on the one this request
+		// resolved to.
+		$blog_id = $this->create_blog();
+		$this->set_presence_on_site( $blog_id, self::$editor_id );
+
+		$_GET['presence_status'] = 'online';
+		$_GET['_wpnonce']        = wp_create_nonce( 'presence_online_filter' );
+
+		$args = wp_presence_filter_network_online_users(
+			array(
+				'number' => 10,
+				'fields' => 'ID',
+			)
+		);
+
+		$query = new WP_User_Query( $args );
+
+		$this->assertSame(
+			array( self::$editor_id ),
+			array_map( 'intval', $query->get_results() ),
+			'pre_get_users narrowed the network view to the current site.'
+		);
+	}
+
+	/**
 	 * @covers ::wp_presence_render_network_users_column
 	 */
 	public function test_users_column_lists_the_sites_a_user_is_online_on() {

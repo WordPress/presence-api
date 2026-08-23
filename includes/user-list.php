@@ -56,10 +56,15 @@ function wp_presence_users_views( $views ) {
 /**
  * Filters the users query to only include online users when presence_status=online.
  *
+ * Stands down in Network Admin. is_admin() is true there too, and the Network
+ * Users list runs its own WP_User_Query, so without this the network "Online"
+ * view would have its network-wide set of IDs replaced with the ones online on
+ * whichever site the request resolved to.
+ *
  * @param WP_User_Query $query The user query.
  */
 function wp_presence_filter_online_users( $query ) {
-	if ( ! is_admin() || ! current_user_can( 'edit_posts' ) ) {
+	if ( ! is_admin() || is_network_admin() || ! current_user_can( 'edit_posts' ) ) {
 		return;
 	}
 

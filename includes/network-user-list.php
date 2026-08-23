@@ -95,9 +95,9 @@ function wp_presence_register_network_users_column( $columns ) {
 /**
  * Renders the "Online" column for a single row of the Network Users list table.
  *
- * Called once per row, but wp_presence_get_network_summary() is one query
- * against the shared network summary table, not one query per site, so this
- * costs one query per page load rather than one per row.
+ * Called once per row, but wp_presence_get_network_summary() holds its build
+ * for the request, so the summary is read and hydrated once per page load
+ * rather than once per row.
  *
  * @param string $output      Existing column output.
  * @param string $column_name Column being rendered.

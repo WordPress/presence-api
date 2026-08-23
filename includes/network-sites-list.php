@@ -32,9 +32,8 @@ function wp_presence_register_network_sites_column( $columns ) {
  * (e.g. "Last Updated"), rather than kept live via Heartbeat: the table isn't
  * ours to own the markup or lifecycle of, and a snapshot as of page load
  * matches how the rest of the table already behaves. Called once per row, but
- * wp_presence_get_network_summary() is one query against the shared network
- * summary table, not one query per site, so this costs one query per page
- * load rather than one per row.
+ * wp_presence_get_network_summary() holds its build for the request, so the
+ * summary is read and hydrated once per page load rather than once per row.
  *
  * @param string $column_name Column being rendered.
  * @param int    $blog_id     The site ID for the current row.
