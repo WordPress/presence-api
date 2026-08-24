@@ -536,4 +536,31 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 		$this->assertTrue( $controller->delete_item_permissions_check( $request ) );
 		$this->assertSame( '', $wpdb->last_error, 'The ownership lookup should not have run.' );
 	}
+	/**
+	 * The function runs twice on a request, at require time and again on init,
+	 * so an unguarded append leaves core holding the same table name twice.
+	 * wpdb::tables() rekeys by name and hides that, but callers reading
+	 * $wpdb->tables directly, or passing $prefix false, see both.
+	 *
+	 * @covers ::wp_presence_register_table
+	 */
+	public function test_registering_the_presence_table_is_idempotent() {
+		global $wpdb;
+
+		$tables = $wpdb->tables;
+
+		// Start from an array that has never seen the entry, since the real
+		// double registration at load time has already added it.
+		$wpdb->tables = array_values( array_diff( $wpdb->tables, array( 'presence' ) ) );
+
+		wp_presence_register_table();
+		wp_presence_register_table();
+
+		$count = count( array_keys( $wpdb->tables, 'presence', true ) );
+
+		// $wpdb outlives the test.
+		$wpdb->tables = $tables;
+
+		$this->assertSame( 1, $count, 'Registering twice should leave one entry in $wpdb->tables.' );
+	}
 }
