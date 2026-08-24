@@ -116,6 +116,10 @@ function wp_set_presence( $room, $client_id, $state, $user_id = 0 ) {
 		)
 	);
 
+	if ( false !== $result && wp_presence_admin_room() === $room ) {
+		wp_presence_admin_room_changed();
+	}
+
 	return false !== $result;
 }
 
@@ -143,6 +147,10 @@ function wp_remove_presence( $room, $client_id ) {
 		array( '%s', '%s' )
 	);
 
+	if ( false !== $result && wp_presence_admin_room() === $room ) {
+		wp_presence_admin_room_changed();
+	}
+
 	return false !== $result;
 }
 
@@ -166,7 +174,33 @@ function wp_remove_user_presence( $user_id ) {
 		array( '%d' )
 	);
 
+	// Deletes across every room, so the admin room is always among them.
+	if ( false !== $result ) {
+		wp_presence_admin_room_changed();
+	}
+
 	return false !== $result;
+}
+
+/**
+ * Signals that a write may have changed who's online on this site.
+ *
+ * Called from every path that writes the admin room: the heartbeat tick, the
+ * server-side write on page render, login, logout, and the REST set/delete
+ * behind the pagehide handler.
+ *
+ * @access private
+ */
+function wp_presence_admin_room_changed() {
+	/**
+	 * Fires after a write that may have changed who's online on this site.
+	 *
+	 * Fires on every admin-room write, including a tick that refreshes the same
+	 * people; listeners that only want real changes compare state themselves.
+	 *
+	 * @since 0.1.25
+	 */
+	do_action( 'wp_presence_admin_room_changed' );
 }
 
 /**

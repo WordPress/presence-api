@@ -655,4 +655,56 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		$this->assertCount( 1, $entries );
 		$this->assertSame( $data, $entries[0]->data );
 	}
+
+	/**
+	 * Everything that mirrors who's online hangs off this action, so an admin
+	 * room write has to announce itself. Presence writes land on every tick from
+	 * every open tab and most are for other rooms, so the announcement is
+	 * confined to the one room that matters.
+	 *
+	 * @covers ::wp_set_presence
+	 * @covers ::wp_presence_admin_room_changed
+	 */
+	public function test_only_an_admin_room_write_announces_a_change() {
+		$fired = 0;
+		add_action(
+			'wp_presence_admin_room_changed',
+			function () use ( &$fired ) {
+				++$fired;
+			}
+		);
+
+		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
+		$this->assertSame( 0, $fired, 'A write to another room must stay quiet.' );
+
+		wp_set_presence( wp_presence_admin_room(), 'client-1', array(), self::$editor_id );
+		$this->assertSame( 1, $fired );
+	}
+
+	/**
+	 * The pagehide delete removes a single client from the admin room, and it
+	 * has to announce the change too, or a user who closed their tab stays on
+	 * screen elsewhere until their entry ages out.
+	 *
+	 * @covers ::wp_remove_presence
+	 * @covers ::wp_presence_admin_room_changed
+	 */
+	public function test_only_an_admin_room_removal_announces_a_change() {
+		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
+		wp_set_presence( wp_presence_admin_room(), 'client-1', array(), self::$editor_id );
+
+		$fired = 0;
+		add_action(
+			'wp_presence_admin_room_changed',
+			function () use ( &$fired ) {
+				++$fired;
+			}
+		);
+
+		wp_remove_presence( 'test/room', 'client-1' );
+		$this->assertSame( 0, $fired, 'A removal from another room must stay quiet.' );
+
+		wp_remove_presence( wp_presence_admin_room(), 'client-1' );
+		$this->assertSame( 1, $fired );
+	}
 }
