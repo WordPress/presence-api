@@ -292,9 +292,22 @@ add_action( 'init', 'wp_presence_register_post_type_support' );
 add_action( 'admin_init', 'wp_maybe_create_presence_table' );
 add_action( 'cli_init', 'wp_maybe_create_presence_table' );
 if ( is_multisite() ) {
+	// Global so the keys are not prefixed with a blog ID. The push runs inside
+	// switch_to_blog(), and a per-site group would file the invalidation under
+	// the switched-to site while the reader looks under the current one.
+	wp_cache_add_global_groups( wp_presence_network_cache_group() );
+
+	// Non-persistent on purpose. Every site's push invalidates the group, so on
+	// a network of any size last_changed moves faster than a shared cache could
+	// be read, and a persistent store would take the writes and the evicted
+	// keys for a hit rate near zero. Deduplicating within the request is the
+	// part worth having.
+	wp_cache_add_non_persistent_groups( wp_presence_network_cache_group() );
+
 	add_action( 'admin_init', 'wp_maybe_create_presence_network_summary_table' );
 	add_action( 'cli_init', 'wp_maybe_create_presence_network_summary_table' );
 	add_action( 'wp_presence_admin_room_changed', 'wp_presence_push_network_summary' );
+	add_action( 'wp_presence_admin_room_changed', 'wp_presence_flush_network_summary_cache' );
 	add_action( 'wp_delete_site', 'wp_presence_on_delete_site' );
 }
 // Priority 99 to run after core's wp_initialize_site() at 10.
