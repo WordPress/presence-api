@@ -32,8 +32,9 @@ tests_add_filter( 'muplugins_loaded', '_manually_load_plugin' );
 // Start up the WP testing environment.
 require "{$_tests_dir}/includes/bootstrap.php";
 
-// Shared base test case, extended by the plugin's test classes.
+// Shared base test cases, extended by the plugin's test classes.
 require __DIR__ . '/class-wp-presence-unittestcase.php';
+require __DIR__ . '/class-wp-presence-network-unittestcase.php';
 
 // The suite reinstalls WordPress on every run, which empties the options table
 // but leaves the plugin's own table in place. Provision the site the way

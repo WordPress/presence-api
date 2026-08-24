@@ -15,6 +15,7 @@
 			<exclude>tests/stubs</exclude>
 			<exclude>tests/bootstrap.php</exclude>
 			<exclude>tests/class-wp-presence-unittestcase.php</exclude>
+			<exclude>tests/class-wp-presence-network-unittestcase.php</exclude>
 		</testsuite>
 	</testsuites>
 	<coverage>
