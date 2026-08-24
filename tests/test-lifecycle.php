@@ -85,4 +85,39 @@ class WP_Test_Presence_Lifecycle extends WP_Presence_UnitTestCase {
 		$this->assertCount( 0, $this->presence_for_user( self::$editor_id ) );
 		$this->assertCount( 1, $this->presence_for_user( self::$subscriber_id ), 'Logging one user out should not clear anybody else.' );
 	}
+
+	/**
+	 * @covers ::wp_presence_on_user_removed
+	 */
+	public function test_deleted_user_clears_presence() {
+		$temp_user_id = self::factory()->user->create( array( 'role' => 'editor' ) );
+
+		wp_set_presence( 'admin/online', 'user-' . $temp_user_id, array(), $temp_user_id );
+		wp_set_presence( 'postType/post:1', 'lock-' . $temp_user_id, array(), $temp_user_id );
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), self::$editor_id );
+
+		wp_delete_user( $temp_user_id );
+
+		$this->assertCount( 0, $this->presence_for_user( $temp_user_id ), 'Deleting a user should clear their presence rows.' );
+		$this->assertCount( 1, $this->presence_for_user( self::$editor_id ), 'Deleting one user should not clear anybody else.' );
+	}
+
+	/**
+	 * Isolates remove_user_from_blog() from deleted_user.
+	 *
+	 * @covers ::wp_presence_on_user_removed
+	 */
+	public function test_remove_user_from_blog_clears_presence_on_that_site_only() {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		$temp_user_id = self::factory()->user->create( array( 'role' => 'editor' ) );
+
+		wp_set_presence( 'admin/online', 'user-' . $temp_user_id, array(), $temp_user_id );
+
+		remove_user_from_blog( $temp_user_id, get_current_blog_id() );
+
+		$this->assertCount( 0, $this->presence_for_user( $temp_user_id ), 'Removing a user from a site should clear their presence there.' );
+	}
 }

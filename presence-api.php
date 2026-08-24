@@ -332,6 +332,8 @@ add_action( 'edit_comment', 'wp_presence_on_edit_comment' );
 
 add_action( 'wp_login', 'wp_presence_on_login', 10, 2 );
 add_action( 'wp_logout', 'wp_presence_on_logout', 10, 1 );
+add_action( 'deleted_user', 'wp_presence_on_user_removed', 10, 1 );
+add_action( 'remove_user_from_blog', 'wp_presence_on_user_removed', 10, 1 );
 
 add_action( 'admin_bar_menu', 'wp_presence_admin_bar_node', 80 );
 add_action( 'admin_enqueue_scripts', 'wp_presence_admin_bar_assets' );

@@ -124,6 +124,9 @@ class WP_Test_Presence_Post_List extends WP_Presence_UnitTestCase {
 			wp_delete_user( $deleted_id );
 		}
 
+		// Deletion now clears this row; re-write it to test the fallback rendering.
+		wp_set_presence( wp_presence_post_room( $post_deleted ), 'lock-3', array(), $deleted_id );
+
 		$this->assertSame( '', $this->render_column( $post_none ) );
 
 		$one_output = $this->render_column( $post_one );
