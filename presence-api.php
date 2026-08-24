@@ -108,6 +108,7 @@ if ( is_multisite() ) {
 	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/network-functions.php';
 	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/network-sites-list.php';
 	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/network-user-list.php';
+	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/widgets/class-wp-presence-network-widget-whos-online.php';
 }
 
 if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
@@ -364,6 +365,9 @@ if ( is_multisite() ) {
 	add_filter( 'users_list_table_query_args', 'wp_presence_filter_network_online_users' );
 	add_filter( 'wpmu_users_columns', 'wp_presence_register_network_users_column' );
 	add_filter( 'manage_users-network_custom_column', 'wp_presence_render_network_users_column', 10, 3 );
+
+	add_action( 'wp_network_dashboard_setup', array( 'WP_Presence_Network_Widget_Whos_Online', 'register' ) );
+	add_filter( 'heartbeat_received', array( 'WP_Presence_Network_Widget_Whos_Online', 'heartbeat_received' ), 10, 3 );
 }
 
 if ( ( defined( 'WP_DEBUG' ) && WP_DEBUG )
