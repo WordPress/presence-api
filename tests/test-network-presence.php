@@ -231,7 +231,7 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers ::wp_presence_get_network_summary
-	 * @covers ::wp_presence_compute_network_summary
+	 * @covers ::wp_presence_compute_network_snapshot
 	 * @covers ::wp_presence_decode_network_summary_row
 	 */
 	public function test_summary_aggregates_across_sites() {
@@ -264,7 +264,7 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 	 * aggregation.
 	 *
 	 * @covers ::wp_presence_get_network_summary
-	 * @covers ::wp_presence_compute_network_summary
+	 * @covers ::wp_presence_compute_network_snapshot
 	 */
 	public function test_summary_tolerates_a_site_with_no_pushed_row() {
 		$blog_ids = array(
@@ -499,7 +499,7 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 	 * the whole aggregation.
 	 *
 	 * @covers ::wp_presence_decode_network_summary_row
-	 * @covers ::wp_presence_compute_network_summary
+	 * @covers ::wp_presence_compute_network_snapshot
 	 * @covers ::wp_presence_empty_network_summary
 	 */
 	public function test_summary_tolerates_a_malformed_row() {
@@ -521,7 +521,7 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 	 * A row not pushed to within the live timeout is excluded at the SQL level,
 	 * which is the only freshness cutoff the read path applies.
 	 *
-	 * @covers ::wp_presence_compute_network_summary
+	 * @covers ::wp_presence_compute_network_snapshot
 	 * @covers ::wp_presence_empty_network_summary
 	 */
 	public function test_summary_excludes_a_row_not_pushed_within_the_timeout() {
@@ -543,7 +543,7 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 	 * yet -- the plugin is network activated one request before the first push --
 	 * so it answers from the empty shape rather than querying a missing table.
 	 *
-	 * @covers ::wp_presence_compute_network_summary
+	 * @covers ::wp_presence_compute_network_snapshot
 	 * @covers ::wp_presence_empty_network_summary
 	 */
 	public function test_summary_is_empty_before_the_table_is_provisioned() {
@@ -564,7 +564,7 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 	 * Deleting a site leaves its row behind until it ages out, so the row can
 	 * outlive the site it names.
 	 *
-	 * @covers ::wp_presence_compute_network_summary
+	 * @covers ::wp_presence_compute_network_snapshot
 	 */
 	public function test_summary_skips_a_row_for_a_site_that_no_longer_exists() {
 		$this->set_network_summary_row( 999901, array( self::$editor_id ) );
@@ -578,7 +578,7 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 	 * of the whole aggregation, and a site left with nobody real drops out
 	 * entirely rather than showing as online with an empty list.
 	 *
-	 * @covers ::wp_presence_compute_network_summary
+	 * @covers ::wp_presence_compute_network_snapshot
 	 */
 	public function test_summary_skips_users_who_no_longer_exist() {
 		$kept    = $this->create_blog();
@@ -598,7 +598,7 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 	 * A row carries no per-user timestamp to order by, so the people on a site
 	 * are ordered by name to keep the list from reshuffling between reads.
 	 *
-	 * @covers ::wp_presence_compute_network_summary
+	 * @covers ::wp_presence_compute_network_snapshot
 	 */
 	public function test_summary_lists_the_users_on_a_site_by_name() {
 		$blog_id = $this->create_blog();
@@ -614,10 +614,11 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 
 	/**
 	 * The network view is a list of where the activity is, so the busiest site
-	 * leads it. Sites tied on headcount fall back to domain and path, which is
-	 * what keeps the order stable.
+	 * leads it, and a capped read keeps the sites worth showing. Sites tied on
+	 * headcount fall back to blog ID, which is what keeps the order stable
+	 * without resolving every site to order them.
 	 *
-	 * @covers ::wp_presence_compute_network_summary
+	 * @covers ::wp_presence_compute_network_snapshot
 	 */
 	public function test_summary_lists_the_busiest_site_first() {
 		$quiet  = $this->create_blog();
@@ -640,7 +641,7 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 	 * so a second read in the same request must not repeat it.
 	 *
 	 * @covers ::wp_presence_get_network_summary
-	 * @covers ::wp_presence_network_summary_cache
+	 * @covers ::wp_presence_network_cached
 	 * @covers ::wp_presence_flush_network_summary_cache
 	 */
 	public function test_the_summary_is_built_once_per_request_and_dropped_by_a_push() {
@@ -669,6 +670,76 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 			wp_list_pluck( $after['sites'][0]['users'], 'user_id' ),
 			'A read after a push returned the build from before it.'
 		);
+	}
+
+	/**
+	 * Every caller renders a slice: the widget shows five sites with a few
+	 * avatars each. Resolving a display name and an avatar URL for every user
+	 * on every site to render twenty of them is what made the read scale with
+	 * the network rather than with the view, so the caps apply before anything
+	 * is loaded. The counts stay network-wide, since they are what tells a
+	 * network admin the slice is a slice.
+	 *
+	 * @covers ::wp_presence_get_network_summary
+	 * @covers ::wp_presence_hydrate_network_snapshot
+	 */
+	public function test_summary_caps_what_it_resolves_without_capping_what_it_reports() {
+		$busy  = $this->create_blog();
+		$quiet = $this->create_blog();
+
+		$this->set_network_summary_row( $busy, self::factory()->user->create_many( 3 ) );
+		$this->set_network_summary_row( $quiet, array( self::$editor_id ) );
+
+		$summary = wp_presence_get_network_summary(
+			array(
+				'sites'          => 1,
+				'users_per_site' => 2,
+			)
+		);
+
+		$this->assertSame( array( $busy ), wp_list_pluck( $summary['sites'], 'blog_id' ) );
+		$this->assertCount( 2, $summary['sites'][0]['users'] );
+		$this->assertSame( 3, $summary['sites'][0]['user_count'], 'A capped list reported its own length as the headcount.' );
+		$this->assertSame( 2, $summary['total_sites_online'] );
+		$this->assertSame( 4, $summary['total_users_online'] );
+	}
+
+	/**
+	 * The Sites list column renders one row at a time, so it asks for one site
+	 * rather than filtering the whole network down in PHP on every row.
+	 *
+	 * @covers ::wp_presence_get_network_summary
+	 * @covers ::wp_presence_hydrate_network_snapshot
+	 */
+	public function test_summary_can_be_narrowed_to_one_site() {
+		$wanted = $this->create_blog();
+		$other  = $this->create_blog();
+
+		$this->set_network_summary_row( $wanted, array( self::$editor_id ) );
+		$this->set_network_summary_row( $other, array( self::$editor_id ) );
+
+		$summary = wp_presence_get_network_summary( array( 'blog_id' => $wanted ) );
+
+		$this->assertSame( array( $wanted ), wp_list_pluck( $summary['sites'], 'blog_id' ) );
+		$this->assertSame( 2, $summary['total_sites_online'] );
+	}
+
+	/**
+	 * The summary table is network-global, so a deleted site's row is not
+	 * dropped with that site's own tables and would sit there until it ages
+	 * out, pushing a real site off the end of every capped read.
+	 *
+	 * @covers ::wp_presence_on_delete_site
+	 */
+	public function test_deleting_a_site_drops_its_summary_row() {
+		$blog_id = $this->create_blog();
+		$this->set_network_summary_row( $blog_id, array( self::$editor_id ) );
+
+		$this->assertNotNull( $this->get_network_summary_row( $blog_id ) );
+
+		wp_delete_site( get_site( $blog_id ) );
+
+		$this->assertNull( $this->get_network_summary_row( $blog_id ) );
 	}
 
 	/**
