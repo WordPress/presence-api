@@ -308,7 +308,7 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 	public function test_cleanup_reports_zero_without_a_table() {
 		add_filter( 'option_wp_presence_db_version', '__return_zero' );
 
-		$this->command->cleanup( array(), array( 'yes' => true ) );
+		$this->command->cleanup( array(), array() );
 
 		$this->assertSame( array( '0 entries deleted.' ), WP_CLI::messages( 'success' ) );
 		$this->assertSame( array(), WP_CLI::messages( 'confirm' ) );
