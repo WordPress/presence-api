@@ -630,9 +630,17 @@ function wp_presence_enqueue_stale_screen_banner() {
 	);
 
 	wp_enqueue_script(
+		'wp-presence-tab-coordinator',
+		WP_PRESENCE_PLUGIN_URL . 'assets/js/tab-coordinator.js',
+		array( 'jquery' ),
+		WP_PRESENCE_VERSION,
+		true
+	);
+
+	wp_enqueue_script(
 		'wp-presence-stale-screen',
 		WP_PRESENCE_PLUGIN_URL . 'assets/js/stale-screen.js',
-		array( 'jquery', 'heartbeat' ),
+		array( 'jquery', 'heartbeat', 'wp-presence-tab-coordinator' ),
 		WP_PRESENCE_VERSION,
 		true
 	);

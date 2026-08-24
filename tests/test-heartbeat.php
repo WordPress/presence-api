@@ -170,6 +170,56 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * @covers ::wp_presence_enqueue_heartbeat_ping
+	 * @covers ::wp_presence_get_heartbeat_idle_ticks
+	 * @covers ::wp_presence_get_heartbeat_idle_interval
+	 */
+	public function test_ping_config_carries_idle_backoff_settings() {
+		wp_set_current_user( self::$editor_id );
+
+		$wp_scripts        = wp_scripts();
+		$wp_scripts->queue = array();
+		$wp_scripts->done  = array();
+		wp_deregister_script( 'wp-presence-ping' );
+
+		wp_presence_enqueue_heartbeat_ping();
+
+		$config = $this->get_ping_config();
+
+		$this->assertSame( 5, $config['idleTicks'] );
+		$this->assertSame( 45, $config['idleInterval'] );
+		$this->assertSame( WP_PRESENCE_DEFAULT_TTL, $config['ttl'] );
+	}
+
+	/**
+	 * @covers ::wp_presence_get_heartbeat_idle_ticks
+	 */
+	public function test_idle_ticks_filter_overrides_default() {
+		add_filter(
+			'wp_presence_heartbeat_idle_ticks',
+			function () {
+				return 3;
+			}
+		);
+
+		$this->assertSame( 3, wp_presence_get_heartbeat_idle_ticks() );
+	}
+
+	/**
+	 * @covers ::wp_presence_get_heartbeat_idle_interval
+	 */
+	public function test_idle_interval_filter_overrides_default() {
+		add_filter(
+			'wp_presence_heartbeat_idle_interval',
+			function () {
+				return 90;
+			}
+		);
+
+		$this->assertSame( 90, wp_presence_get_heartbeat_idle_interval() );
+	}
+
+	/**
 	 * @covers ::wp_presence_editor_heartbeat_received
 	 */
 	public function test_editor_heartbeat_writes_presence() {

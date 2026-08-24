@@ -3,7 +3,7 @@ Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas,
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.0
-Stable tag: 0.1.23
+Stable tag: 0.1.24
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -49,10 +49,15 @@ Or [try it in WordPress Playground](https://playground.wordpress.net/?blueprint-
 
 == Changelog ==
 
+= 0.1.24 =
+* Add idle backoff config for heartbeat presence ping.
+* Back off heartbeat polling interval for idle rooms.
+* Coalesce presence polling across tabs of the same user.
+
 = 0.1.23 =
-* Demo helper now saves post to bump revision.
-* Cap heartbeat payload to visible rows only.
-* Paginate rooms before user hydration.
+* Demo helper now saves post to bump revision ([b397845](https://github.com/WordPress/presence-api/commit/b397845145e71fcdbeac79e4e1b092f6adcdbd31)), closes [#287](https://github.com/WordPress/presence-api/issues/287).
+* Cap heartbeat payload to visible rows only ([e7739ac](https://github.com/WordPress/presence-api/commit/e7739aced270df1ca462a491af56286a4b255f47)), closes [#291](https://github.com/WordPress/presence-api/issues/291).
+* Paginate rooms before user hydration ([6929add](https://github.com/WordPress/presence-api/commit/6929addba615aa57c9e69ba09ef6611fd75028bb)), closes [#285](https://github.com/WordPress/presence-api/issues/285).
 
 = 0.1.22 =
 * Add usePresenceUsers React hook.

@@ -27,6 +27,11 @@
 		return;
 	}
 
+	// Tabs on the same screen send an identical ping — key by screenKey.
+	const pingContextKey = 'wp-presence-screen-ping:' + screenKey;
+
+	const tabCoordinator = window.wpPresenceCreateTabCoordinator( pingContextKey, [ 'presence-screen-rev' ] );
+
 	window.wp = window.wp || {};
 	window.wp.presence = window.wp.presence || {};
 
@@ -58,6 +63,9 @@
 
 	$( document ).on( 'heartbeat-send', function ( event, data ) {
 		if ( document.visibilityState === 'hidden' ) {
+			return;
+		}
+		if ( ! tabCoordinator.isLeader() ) {
 			return;
 		}
 		data[ 'presence-screen-ping' ] = { key: screenKey };

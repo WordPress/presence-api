@@ -290,4 +290,197 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 		$this->assertStringContainsString( 'class="presence-user-item"', $output );
 		$this->assertMatchesRegularExpression( '/alt=["\']John Doe["\']/', $output );
 	}
+
+	/**
+	 * Renders the widget with the current user excluded, as the widget does.
+	 *
+	 * @return string The rendered markup.
+	 */
+	private function render() {
+		wp_set_current_user( self::$editor_id );
+
+		ob_start();
+		WP_Presence_Widget_Whos_Online::render();
+
+		return ob_get_clean();
+	}
+
+	/**
+	 * @covers WP_Presence_Widget_Whos_Online::register
+	 */
+	public function test_register_adds_the_widget_for_a_user_who_can_edit_posts() {
+		global $wp_meta_boxes;
+
+		require_once ABSPATH . 'wp-admin/includes/dashboard.php';
+
+		wp_set_current_user( self::$editor_id );
+		set_current_screen( 'dashboard' );
+
+		WP_Presence_Widget_Whos_Online::register();
+
+		$this->assertArrayHasKey( 'presence_whos_online', $wp_meta_boxes['dashboard']['normal']['default'] );
+	}
+
+	/**
+	 * @covers WP_Presence_Widget_Whos_Online::register
+	 */
+	public function test_register_skips_a_user_who_cannot_edit_posts() {
+		global $wp_meta_boxes;
+
+		require_once ABSPATH . 'wp-admin/includes/dashboard.php';
+
+		$wp_meta_boxes = array();
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		set_current_screen( 'dashboard' );
+
+		WP_Presence_Widget_Whos_Online::register();
+
+		$this->assertArrayNotHasKey( 'presence_whos_online', $wp_meta_boxes['dashboard']['normal']['default'] ?? array() );
+	}
+
+	/**
+	 * @covers WP_Presence_Widget_Whos_Online::enqueue_scripts
+	 */
+	public function test_the_dashboard_gets_the_widget_style_and_heartbeat_script() {
+		WP_Presence_Widget_Whos_Online::enqueue_scripts( 'index.php' );
+
+		$this->assertTrue( wp_style_is( 'presence-dashboard-widget', 'enqueued' ) );
+
+		$css = wp_styles()->get_data( 'presence-dashboard-widget', 'after' );
+		$this->assertStringContainsString( '#presence-whos-online-list', implode( '', (array) $css ) );
+
+		$script = implode( '', (array) wp_scripts()->get_data( 'heartbeat', 'after' ) );
+		$this->assertStringContainsString( 'presence-whos-online-list', $script );
+	}
+
+	/**
+	 * @covers WP_Presence_Widget_Whos_Online::enqueue_scripts
+	 */
+	public function test_other_admin_pages_do_not_load_the_widget_style() {
+		$wp_styles        = wp_styles();
+		$wp_styles->queue = array();
+		$wp_styles->done  = array();
+
+		WP_Presence_Widget_Whos_Online::enqueue_scripts( 'edit.php' );
+
+		$this->assertFalse( wp_style_is( 'presence-dashboard-widget', 'enqueued' ) );
+	}
+
+	/**
+	 * @covers WP_Presence_Widget_Whos_Online::render
+	 */
+	public function test_render_reports_when_nobody_else_is_online() {
+		$html = $this->render();
+
+		$this->assertStringContainsString( 'No other users are online.', $html );
+		$this->assertStringNotContainsString( '<ul', $html );
+	}
+
+	/**
+	 * @covers WP_Presence_Widget_Whos_Online::render_user_row
+	 * @covers WP_Presence_Widget_Whos_Online::get_screen_url
+	 */
+	public function test_render_links_a_users_screen_to_the_matching_admin_page() {
+		$this->add_user_to_room( 'post-new', 0 );
+
+		$html = $this->render();
+
+		$this->assertStringContainsString( esc_url( admin_url( 'post-new.php' ) ), $html );
+		// The verb leading a multi-word label is italicised.
+		$this->assertStringContainsString( '<em>Writing</em> post', $html );
+	}
+
+	/**
+	 * A screen with no admin page still names what the user is doing, just
+	 * without a link to follow.
+	 *
+	 * @covers WP_Presence_Widget_Whos_Online::render_user_row
+	 * @covers WP_Presence_Widget_Whos_Online::get_screen_url
+	 */
+	public function test_render_names_an_unmapped_screen_without_linking_it() {
+		$this->add_user_to_room( 'site-health', 0 );
+
+		$html = $this->render();
+
+		$this->assertStringContainsString( '<span class="presence-screen">', $html );
+		$this->assertStringNotContainsString( '<span class="presence-screen"><a', $html );
+	}
+
+	/**
+	 * @covers WP_Presence_Widget_Whos_Online::render_user_row
+	 */
+	public function test_render_marks_a_stale_entry_idle_with_a_relative_timestamp() {
+		// Past IDLE_THRESHOLD but inside the TTL, so the entry is still listed.
+		$this->add_user_to_room( 'dashboard', 45 );
+
+		$html = $this->render();
+
+		$this->assertStringContainsString( 'presence-online-dot is-idle', $html );
+		$this->assertStringContainsString( 'seconds ago', $html );
+	}
+
+	/**
+	 * Up to the overflow threshold the extra users stay on the page behind a
+	 * toggle, so the markup carries the full list rather than a link away.
+	 *
+	 * @covers WP_Presence_Widget_Whos_Online::render
+	 */
+	public function test_render_hides_a_short_overflow_behind_an_expand_toggle() {
+		for ( $i = 0; $i < WP_Presence_Widget_Whos_Online::VISIBLE_ROWS + 2; $i++ ) {
+			$this->add_user_to_room( 'dashboard', 0 );
+		}
+
+		$html = $this->render();
+
+		$this->assertStringContainsString( 'data-action="expand"', $html );
+		$this->assertStringContainsString( 'id="presence-overflow-list"', $html );
+		$this->assertStringContainsString( '+2 more', $html );
+		$this->assertStringContainsString( 'Show less', $html );
+	}
+
+	/**
+	 * Past the threshold the list would be longer than the widget, so it
+	 * collapses to a count that links to the filtered Users screen.
+	 *
+	 * @covers WP_Presence_Widget_Whos_Online::render
+	 */
+	public function test_render_collapses_a_long_overflow_into_a_link_to_all_users() {
+		$overflow = WP_Presence_Widget_Whos_Online::get_overflow_threshold() + 1;
+
+		for ( $i = 0; $i < WP_Presence_Widget_Whos_Online::VISIBLE_ROWS + $overflow; $i++ ) {
+			$this->add_user_to_room( 'dashboard', 0 );
+		}
+
+		$html = $this->render();
+
+		$this->assertStringContainsString( esc_url( admin_url( 'users.php?presence_status=online' ) ), $html );
+		$this->assertStringContainsString( sprintf( '+%d more', $overflow ), $html );
+		$this->assertStringNotContainsString( 'data-action="expand"', $html );
+	}
+
+	/**
+	 * @dataProvider data_rich_screen_labels
+	 *
+	 * @covers WP_Presence_Widget_Whos_Online::get_rich_screen_label
+	 *
+	 * @param string $screen      The pagenow slug.
+	 * @param string $post_status The post status recorded alongside it.
+	 * @param string $expected    The label the pair should produce.
+	 */
+	public function test_a_post_status_sharpens_the_screen_label( $screen, $post_status, $expected ) {
+		$this->assertSame( $expected, WP_Presence_Widget_Whos_Online::get_rich_screen_label( $screen, $post_status ) );
+	}
+
+	public function data_rich_screen_labels() {
+		return array(
+			'draft post'      => array( 'post', 'draft', 'Drafting post' ),
+			'auto-draft page' => array( 'page', 'auto-draft', 'Drafting page' ),
+			'pending post'    => array( 'edit-post', 'pending', 'Pending post' ),
+			'private page'    => array( 'page', 'private', 'Editing private page' ),
+			'scheduled post'  => array( 'post', 'future', 'Editing scheduled post' ),
+			'published page'  => array( 'page', 'publish', 'Editing page' ),
+			'unrelated screen' => array( 'upload', 'draft', 'Media' ),
+		);
+	}
 }
