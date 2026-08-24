@@ -47,6 +47,7 @@ if ( isset( $wpdb->presence ) ) {
 
 define( 'WP_PRESENCE_VERSION', '0.1.24' );
 define( 'WP_PRESENCE_DB_VERSION', 2 );
+define( 'WP_PRESENCE_NETWORK_SUMMARY_DB_VERSION', 1 );
 define( 'WP_PRESENCE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WP_PRESENCE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -69,6 +70,23 @@ function wp_presence_register_table() {
 }
 wp_presence_register_table();
 
+/**
+ * Registers the network-wide presence summary table name on $wpdb.
+ *
+ * One table for the whole network rather than one per site: registered as an
+ * ms_global_tables entry, using base_prefix, the same way core registers
+ * blogs/site/sitemeta.
+ */
+function wp_presence_register_network_summary_table() {
+	if ( ! is_multisite() ) {
+		return;
+	}
+	global $wpdb;
+	$wpdb->presence_network_summary = $wpdb->base_prefix . 'presence_network_summary';
+	$wpdb->ms_global_tables[]       = 'presence_network_summary';
+}
+wp_presence_register_network_summary_table();
+
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/functions.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/class-wp-rest-presence-controller.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/heartbeat.php';
@@ -81,6 +99,10 @@ require_once WP_PRESENCE_PLUGIN_DIR . 'includes/user-list.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/post-list.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/widgets/class-wp-presence-widget-whos-online.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/widgets/class-wp-presence-widget-active-posts.php';
+
+if ( is_multisite() ) {
+	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/network-functions.php';
+}
 
 if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 	// Developer tooling is excluded from the distributed build (see .distignore),
@@ -142,14 +164,18 @@ function wp_presence_provision_site() {
  * @param bool $network_wide Whether the plugin is being activated for the network.
  */
 function wp_presence_activate( $network_wide = false ) {
-	if ( $network_wide && is_multisite() && ! wp_is_large_network() ) {
-		foreach ( wp_presence_get_network_site_ids() as $site_id ) {
-			switch_to_blog( $site_id );
-			wp_presence_provision_site();
-			restore_current_blog();
-		}
+	if ( $network_wide && is_multisite() ) {
+		wp_maybe_create_presence_network_summary_table();
 
-		return;
+		if ( ! wp_is_large_network() ) {
+			foreach ( wp_presence_get_network_site_ids() as $site_id ) {
+				switch_to_blog( $site_id );
+				wp_presence_provision_site();
+				restore_current_blog();
+			}
+
+			return;
+		}
 	}
 
 	wp_presence_provision_site();
@@ -253,6 +279,7 @@ function wp_presence_plugin_action_links( $links ) {
 }
 
 add_action( 'init', 'wp_presence_register_table', 0 );
+add_action( 'init', 'wp_presence_register_network_summary_table', 0 );
 add_action( 'init', 'wp_presence_register_post_type_support' );
 
 // Schema work stays in the admin and CLI, the way core keeps its own upgrade
@@ -260,6 +287,11 @@ add_action( 'init', 'wp_presence_register_post_type_support' );
 // creation instead; this is the fallback for a site that missed both.
 add_action( 'admin_init', 'wp_maybe_create_presence_table' );
 add_action( 'cli_init', 'wp_maybe_create_presence_table' );
+if ( is_multisite() ) {
+	add_action( 'admin_init', 'wp_maybe_create_presence_network_summary_table' );
+	add_action( 'cli_init', 'wp_maybe_create_presence_network_summary_table' );
+	add_action( 'wp_delete_site', 'wp_presence_on_delete_site' );
+}
 // Priority 99 to run after core's wp_initialize_site() at 10.
 add_action( 'wp_initialize_site', 'wp_presence_on_initialize_site', 99 );
 add_action( 'rest_api_init', 'wp_presence_register_rest_routes' );
