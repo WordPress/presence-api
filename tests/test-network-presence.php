@@ -153,14 +153,66 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 	private function set_network_summary_row( $blog_id, array $user_ids, $updated_gmt = null ) {
 		global $wpdb;
 
+		$updated_gmt = $updated_gmt ?? gmdate( 'Y-m-d H:i:s' );
+
 		$wpdb->replace(
 			$wpdb->presence_network_summary,
 			array(
 				'blog_id'     => $blog_id,
 				'data'        => wp_presence_encode_network_summary_row( $blog_id, $user_ids ),
-				'updated_gmt' => $updated_gmt ?? gmdate( 'Y-m-d H:i:s' ),
+				'updated_gmt' => $updated_gmt,
 			)
 		);
+
+		// A real push also leaves a record of itself on the site that pushed,
+		// which is what wp_presence_network_summary_needs_push() reads. Writing
+		// only the row would leave the two disagreeing about when this site last
+		// pushed, a state no push produces. Skipped for a blog_id with no site
+		// behind it, which is a row left over from a deleted site and has no
+		// options table to record anything in.
+		if ( ! get_site( $blog_id ) ) {
+			return;
+		}
+
+		sort( $user_ids );
+
+		switch_to_blog( $blog_id );
+		update_option(
+			'wp_presence_network_pushed',
+			array(
+				'users' => implode( ',', $user_ids ),
+				'time'  => strtotime( $updated_gmt . ' UTC' ),
+			),
+			true
+		);
+		restore_current_blog();
+	}
+
+	/**
+	 * Counts the statements naming the summary table that a callback produces.
+	 *
+	 * @param callable $during Code to run while counting.
+	 * @return int Statement count.
+	 */
+	private function count_summary_table_statements( callable $during ) {
+		global $wpdb;
+
+		$count = 0;
+		$table = $wpdb->presence_network_summary;
+
+		$counter = static function ( $query ) use ( &$count, $table ) {
+			if ( false !== strpos( $query, $table ) ) {
+				++$count;
+			}
+
+			return $query;
+		};
+
+		add_filter( 'query', $counter );
+		$during();
+		remove_filter( 'query', $counter );
+
+		return $count;
 	}
 
 	/**
@@ -333,6 +385,28 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 		$this->set_presence_on_site( $blog_id, self::$editor_id );
 
 		$this->assertSame( $stamp, $this->get_network_summary_row( $blog_id )->updated_gmt );
+	}
+
+	/**
+	 * Same case, one level down. An unchanged row proves the upsert resolved to
+	 * no change, not that it was skipped, and the statement itself is the cost
+	 * on a sharded network: the summary table is pinned to the global cluster,
+	 * and every admin pageview writes the admin room. See #310.
+	 *
+	 * @covers ::wp_presence_push_network_summary
+	 * @covers ::wp_presence_network_summary_needs_push
+	 */
+	public function test_an_unchanged_tick_sends_no_statement_to_the_summary_table() {
+		$blog_id = $this->create_blog();
+		$this->set_presence_on_site( $blog_id, self::$editor_id );
+
+		$statements = $this->count_summary_table_statements(
+			function () use ( $blog_id ) {
+				$this->set_presence_on_site( $blog_id, self::$editor_id );
+			}
+		);
+
+		$this->assertSame( 0, $statements );
 	}
 
 	/**
