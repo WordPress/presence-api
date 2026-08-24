@@ -536,6 +536,7 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 		$this->assertTrue( $controller->delete_item_permissions_check( $request ) );
 		$this->assertSame( '', $wpdb->last_error, 'The ownership lookup should not have run.' );
 	}
+
 	/**
 	 * The function runs twice on a request, at require time and again on init,
 	 * so an unguarded append leaves core holding the same table name twice.
@@ -562,5 +563,37 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 		$wpdb->tables = $tables;
 
 		$this->assertSame( 1, $count, 'Registering twice should leave one entry in $wpdb->tables.' );
+	}
+
+	/**
+	 * The summary is one table for the whole network, so it hangs off
+	 * base_prefix and joins ms_global_tables the way core registers blogs and
+	 * sitemeta. A single site has no network to summarise, and registering the
+	 * name there would point every caller at a table nothing ever creates.
+	 *
+	 * @covers ::wp_presence_register_network_summary_table
+	 */
+	public function test_network_summary_table_is_registered_only_on_a_network() {
+		global $wpdb;
+
+		$global_tables = $wpdb->ms_global_tables;
+		unset( $wpdb->presence_network_summary );
+
+		wp_presence_register_network_summary_table();
+
+		$registered = $wpdb->presence_network_summary ?? null;
+		$is_global  = in_array( 'presence_network_summary', $wpdb->ms_global_tables, true );
+
+		// $wpdb outlives the test, and re-registering appended a second
+		// ms_global_tables entry, so put both back before asserting.
+		$wpdb->ms_global_tables = $global_tables;
+
+		if ( ! is_multisite() ) {
+			$this->assertNull( $registered, 'A single site has no network summary table to name.' );
+			return;
+		}
+
+		$this->assertSame( $wpdb->base_prefix . 'presence_network_summary', $registered );
+		$this->assertTrue( $is_global, 'Core only treats a table as network-wide if it is an ms_global_table.' );
 	}
 }

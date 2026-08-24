@@ -28,6 +28,7 @@ function wp_presence_uninstall_site() {
 
 	delete_option( 'wp_presence_db_version' );
 	delete_option( 'wp_presence_screen_revisions' );
+	delete_option( 'wp_presence_network_pushed' );
 
 	// Matches wp_presence_known_options_pages() in includes/screen-revisions.php.
 	// Not required here, since this file runs standalone without the rest of
@@ -39,6 +40,8 @@ function wp_presence_uninstall_site() {
 	delete_metadata( 'term', 0, '_wp_presence_screen_rev', '', true );
 	delete_metadata( 'comment', 0, '_wp_presence_screen_rev', '', true );
 }
+
+global $wpdb;
 
 if ( is_multisite() ) {
 	$sites = get_sites(
@@ -53,6 +56,17 @@ if ( is_multisite() ) {
 		wp_presence_uninstall_site();
 		restore_current_blog();
 	}
+
+	// The network summary is one table for the whole network, on base_prefix
+	// rather than a site's own prefix, so it is dropped once out here rather
+	// than once per site above.
+	$summary_table = $wpdb->base_prefix . 'presence_network_summary';
+
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is a controlled value from $wpdb->base_prefix.
+	$wpdb->query( "DROP TABLE IF EXISTS {$summary_table}" );
+
+	delete_site_option( 'wp_presence_network_summary_db_version' );
+	delete_site_option( 'wp_presence_network_summary_table.lock' );
 } else {
 	wp_presence_uninstall_site();
 }

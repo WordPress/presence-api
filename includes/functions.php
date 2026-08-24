@@ -116,6 +116,10 @@ function wp_set_presence( $room, $client_id, $state, $user_id = 0 ) {
 		)
 	);
 
+	if ( false !== $result && wp_presence_admin_room() === $room ) {
+		wp_presence_admin_room_changed();
+	}
+
 	return false !== $result;
 }
 
@@ -143,6 +147,10 @@ function wp_remove_presence( $room, $client_id ) {
 		array( '%s', '%s' )
 	);
 
+	if ( false !== $result && wp_presence_admin_room() === $room ) {
+		wp_presence_admin_room_changed();
+	}
+
 	return false !== $result;
 }
 
@@ -166,7 +174,33 @@ function wp_remove_user_presence( $user_id ) {
 		array( '%d' )
 	);
 
+	// Deletes across every room, so the admin room is always among them.
+	if ( false !== $result ) {
+		wp_presence_admin_room_changed();
+	}
+
 	return false !== $result;
+}
+
+/**
+ * Signals that a write may have changed who's online on this site.
+ *
+ * Called from every path that writes the admin room: the heartbeat tick, the
+ * server-side write on page render, login, logout, and the REST set/delete
+ * behind the pagehide handler.
+ *
+ * @access private
+ */
+function wp_presence_admin_room_changed() {
+	/**
+	 * Fires after a write that may have changed who's online on this site.
+	 *
+	 * Fires on every admin-room write, including a tick that refreshes the same
+	 * people; listeners that only want real changes compare state themselves.
+	 *
+	 * @since 0.1.25
+	 */
+	do_action( 'wp_presence_admin_room_changed' );
 }
 
 /**
@@ -787,4 +821,31 @@ function wp_presence_hydrate_room_users( $rooms, $timeout = WP_PRESENCE_DEFAULT_
 	}
 
 	return $rooms;
+}
+
+/**
+ * Renders a small avatar stack for a list of users.
+ *
+ * Shared across every surface that shows an overlapping avatar stack (the
+ * dashboard widget's overflow indicator, the network Sites list column, the
+ * network dashboard widget) so they all render the stack identically.
+ *
+ * @access private
+ * @param array $users Users, each with 'avatar_url' and 'display_name'.
+ * @param int   $max   Optional. Maximum avatars to show. Default 4.
+ * @param int   $size  Optional. Avatar width and height in pixels. Default 20.
+ * @return string HTML markup.
+ */
+function wp_presence_render_avatar_stack( $users, $max = 4, $size = 20 ) {
+	$stack_max = min( count( $users ), $max );
+	$html      = '<span class="presence-avatar-stack">';
+
+	foreach ( array_slice( $users, 0, $stack_max ) as $index => $user ) {
+		$z     = $stack_max - $index;
+		$html .= '<img src="' . esc_url( $user['avatar_url'] ) . '" width="' . (int) $size . '" height="' . (int) $size . '" style="z-index:' . (int) $z . '" alt="' . esc_attr( $user['display_name'] ) . '" />';
+	}
+
+	$html .= '</span>';
+
+	return $html;
 }
