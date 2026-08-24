@@ -305,6 +305,18 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 	/**
 	 * @covers WP_Presence_CLI_Command::cleanup
 	 */
+	public function test_cleanup_reports_zero_without_a_table() {
+		add_filter( 'option_wp_presence_db_version', '__return_zero' );
+
+		$this->command->cleanup( array(), array() );
+
+		$this->assertSame( array( '0 entries deleted.' ), WP_CLI::messages( 'success' ) );
+		$this->assertSame( array(), WP_CLI::messages( 'confirm' ) );
+	}
+
+	/**
+	 * @covers WP_Presence_CLI_Command::cleanup
+	 */
 	public function test_cleanup_skips_the_prompt_with_the_yes_flag() {
 		$this->command->cleanup( array(), array( 'yes' => true ) );
 
