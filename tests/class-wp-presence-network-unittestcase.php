@@ -136,6 +136,20 @@ abstract class WP_Presence_Network_UnitTestCase extends WP_Presence_UnitTestCase
 	}
 
 	/**
+	 * Grants the current test a network-capable user, so capability-gated
+	 * hooks (column registration, views, the query filter) actually run.
+	 *
+	 * @return int The admin's user ID.
+	 */
+	protected function become_network_admin() {
+		$admin_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		grant_super_admin( $admin_id );
+		wp_set_current_user( $admin_id );
+
+		return $admin_id;
+	}
+
+	/**
 	 * Overwrites a site's pushed row in the network summary table directly,
 	 * for tests that need to control its content or age precisely rather
 	 * than going through a real presence write.

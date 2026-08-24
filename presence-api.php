@@ -106,6 +106,7 @@ require_once WP_PRESENCE_PLUGIN_DIR . 'includes/widgets/class-wp-presence-widget
 
 if ( is_multisite() ) {
 	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/network-functions.php';
+	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/network-sites-list.php';
 }
 
 if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
@@ -353,6 +354,11 @@ add_action( 'wp_dashboard_setup', array( 'WP_Presence_Widget_Whos_Online', 'regi
 add_filter( 'heartbeat_received', array( 'WP_Presence_Widget_Whos_Online', 'heartbeat_received' ), 10, 3 );
 add_action( 'wp_dashboard_setup', array( 'WP_Presence_Widget_Active_Posts', 'register' ) );
 add_filter( 'heartbeat_received', array( 'WP_Presence_Widget_Active_Posts', 'heartbeat_received' ), 10, 3 );
+
+if ( is_multisite() ) {
+	add_filter( 'wpmu_blogs_columns', 'wp_presence_register_network_sites_column' );
+	add_action( 'manage_sites_custom_column', 'wp_presence_render_network_sites_column', 10, 2 );
+}
 
 if ( ( defined( 'WP_DEBUG' ) && WP_DEBUG )
 	&& function_exists( 'wp_presence_heartbeat_widget_register' )
