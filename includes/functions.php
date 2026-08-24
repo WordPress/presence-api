@@ -822,3 +822,30 @@ function wp_presence_hydrate_room_users( $rooms, $timeout = WP_PRESENCE_DEFAULT_
 
 	return $rooms;
 }
+
+/**
+ * Renders a small avatar stack for a list of users.
+ *
+ * Shared across every surface that shows an overlapping avatar stack (the
+ * dashboard widget's overflow indicator, the network Sites list column, the
+ * network dashboard widget) so they all render the stack identically.
+ *
+ * @access private
+ * @param array $users Users, each with 'avatar_url' and 'display_name'.
+ * @param int   $max   Optional. Maximum avatars to show. Default 4.
+ * @param int   $size  Optional. Avatar width and height in pixels. Default 20.
+ * @return string HTML markup.
+ */
+function wp_presence_render_avatar_stack( $users, $max = 4, $size = 20 ) {
+	$stack_max = min( count( $users ), $max );
+	$html      = '<span class="presence-avatar-stack">';
+
+	foreach ( array_slice( $users, 0, $stack_max ) as $index => $user ) {
+		$z     = $stack_max - $index;
+		$html .= '<img src="' . esc_url( $user['avatar_url'] ) . '" width="' . (int) $size . '" height="' . (int) $size . '" style="z-index:' . (int) $z . '" alt="' . esc_attr( $user['display_name'] ) . '" />';
+	}
+
+	$html .= '</span>';
+
+	return $html;
+}

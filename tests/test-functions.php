@@ -707,4 +707,58 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		wp_remove_presence( wp_presence_admin_room(), 'client-1' );
 		$this->assertSame( 1, $fired );
 	}
+
+	/**
+	 * The avatars overlap, so the first user has to paint on top of the ones
+	 * after them rather than under.
+	 *
+	 * @covers ::wp_presence_render_avatar_stack
+	 */
+	public function test_avatar_stack_paints_the_first_user_on_top() {
+		$html = wp_presence_render_avatar_stack(
+			array(
+				array(
+					'avatar_url'   => 'https://example.com/ana.png',
+					'display_name' => 'Ana & Co',
+				),
+				array(
+					'avatar_url'   => 'https://example.com/bo.png',
+					'display_name' => 'Bo',
+				),
+			)
+		);
+
+		$this->assertSame( 2, substr_count( $html, '<img ' ) );
+		$this->assertLessThan(
+			strpos( $html, 'z-index:1' ),
+			strpos( $html, 'z-index:2' ),
+			'The first avatar in the list needs the highest z-index.'
+		);
+		$this->assertStringContainsString( 'alt="Ana &amp; Co"', $html );
+		$this->assertStringContainsString( 'width="20" height="20"', $html );
+	}
+
+	/**
+	 * The stack stands in for a crowd rather than showing all of it, so a busy
+	 * room renders the same handful of avatars as a quiet one.
+	 *
+	 * @covers ::wp_presence_render_avatar_stack
+	 */
+	public function test_avatar_stack_stops_at_the_maximum() {
+		$users = array_fill(
+			0,
+			10,
+			array(
+				'avatar_url'   => 'https://example.com/ana.png',
+				'display_name' => 'Ana',
+			)
+		);
+
+		$this->assertSame( 4, substr_count( wp_presence_render_avatar_stack( $users ), '<img ' ) );
+
+		$sized = wp_presence_render_avatar_stack( $users, 2, 24 );
+
+		$this->assertSame( 2, substr_count( $sized, '<img ' ) );
+		$this->assertStringContainsString( 'width="24" height="24"', $sized );
+	}
 }

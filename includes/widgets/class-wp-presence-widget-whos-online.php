@@ -660,45 +660,35 @@ JS,
 			echo '</ul>';
 
 			if ( ! empty( $overflow ) ) {
-				$stack_max = min( count( $overflow ), 4 );
+				$stack_max   = min( count( $overflow ), 4 );
+				$stack_users = array();
+
+				foreach ( array_slice( $overflow, 0, $stack_max ) as $oentry ) {
+					$ouser = get_userdata( $oentry->user_id );
+
+					if ( ! $ouser ) {
+						continue;
+					}
+
+					$stack_users[] = array(
+						'display_name' => $ouser->display_name,
+						'avatar_url'   => get_avatar_url( $ouser->ID, array( 'size' => 24 ) ),
+					);
+				}
 
 				if ( count( $overflow ) > self::get_overflow_threshold() ) {
 					// Summary mode: avatar stack + count linking to Users page.
 					echo '<a href="' . esc_url( admin_url( 'users.php?presence_status=online' ) ) . '" class="presence-overflow-toggle">';
-					echo '<span class="presence-avatar-stack">';
-
-					foreach ( array_slice( $overflow, 0, $stack_max ) as $index => $oentry ) {
-						$ouser = get_userdata( $oentry->user_id );
-
-						if ( ! $ouser ) {
-							continue;
-						}
-
-						$z = $stack_max - $index;
-						echo '<img src="' . esc_url( get_avatar_url( $ouser->ID, array( 'size' => 24 ) ) ) . '" width="24" height="24" style="z-index:' . (int) $z . '" alt="' . esc_attr( $ouser->display_name ) . '" />';
-					}
-
-					echo '</span><span class="presence-overflow-text">';
+					echo wp_kses_post( wp_presence_render_avatar_stack( $stack_users, 4, 24 ) );
+					echo '<span class="presence-overflow-text">';
 					/* translators: %d: Number of additional online users. */
 					echo esc_html( sprintf( __( '+%d more — view all users', 'presence-api' ), count( $overflow ) ) );
 					echo '</span></a>';
 				} else {
 					// Expandable list mode.
 					echo '<button type="button" class="presence-overflow-toggle" data-action="expand" aria-expanded="false" aria-controls="presence-overflow-list">';
-					echo '<span class="presence-avatar-stack">';
-
-					foreach ( array_slice( $overflow, 0, $stack_max ) as $index => $oentry ) {
-						$ouser = get_userdata( $oentry->user_id );
-
-						if ( ! $ouser ) {
-							continue;
-						}
-
-						$z = $stack_max - $index;
-						echo '<img src="' . esc_url( get_avatar_url( $ouser->ID, array( 'size' => 24 ) ) ) . '" width="24" height="24" style="z-index:' . (int) $z . '" alt="' . esc_attr( $ouser->display_name ) . '" />';
-					}
-
-					echo '</span><span class="presence-overflow-text">';
+					echo wp_kses_post( wp_presence_render_avatar_stack( $stack_users, 4, 24 ) );
+					echo '<span class="presence-overflow-text">';
 					/* translators: %d: Number of additional online users. */
 					echo esc_html( sprintf( __( '+%d more', 'presence-api' ), count( $overflow ) ) );
 					echo '</span></button>';
