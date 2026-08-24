@@ -367,6 +367,74 @@ function wp_presence_network_capability() {
 }
 
 /**
+ * Returns the distinct user IDs online anywhere on the network.
+ *
+ * Reads the snapshot rather than the summary: the Users list column asks only
+ * whether a given row's user is in this set, so resolving a display name and
+ * an avatar URL for everyone online to answer that would be the whole cost of
+ * the read for none of its output.
+ *
+ * @access private
+ * @return int[] User IDs.
+ */
+function wp_presence_get_network_online_user_ids() {
+	$user_ids = array();
+
+	foreach ( wp_presence_get_network_snapshot()['sites'] as $site_user_ids ) {
+		foreach ( $site_user_ids as $user_id ) {
+			$user_ids[ $user_id ] = true;
+		}
+	}
+
+	return array_keys( $user_ids );
+}
+
+/**
+ * Returns the sites a given user is currently online on.
+ *
+ * The summary is keyed by site, and the Network Users list needs it keyed by
+ * user, so the inversion is built once for the request and shared by every row
+ * rather than rescanning the network per row.
+ *
+ * @access private
+ * @param int $user_id The user to look up.
+ * @return WP_Site[] Sites the user is online on, busiest site first.
+ */
+function wp_presence_get_network_sites_for_user( $user_id ) {
+	$by_user = wp_presence_network_cached(
+		'sites-by-user',
+		static function () {
+			$by_user = array();
+
+			foreach ( wp_presence_get_network_snapshot()['sites'] as $blog_id => $site_user_ids ) {
+				foreach ( $site_user_ids as $site_user_id ) {
+					$by_user[ $site_user_id ][] = $blog_id;
+				}
+			}
+
+			return $by_user;
+		}
+	);
+
+	$blog_ids = $by_user[ (int) $user_id ] ?? array();
+
+	if ( ! $blog_ids ) {
+		return array();
+	}
+
+	// Resolved here rather than in the index above, so a network where nobody
+	// is looked up pays for no sites at all. get_sites() primes the site cache,
+	// so rows sharing a site resolve it once.
+	return get_sites(
+		array(
+			'site__in' => $blog_ids,
+			'number'   => 0,
+			'orderby'  => 'site__in',
+		)
+	);
+}
+
+/**
  * Returns every site's online user IDs, without resolving any of them.
  *
  * One query against the shared wp_presence_network_summary table -- one row
