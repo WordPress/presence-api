@@ -1,6 +1,6 @@
 <?php
 /**
- * Lifecycle hooks: sets/removes presence on login and logout.
+ * Lifecycle hooks: sets/removes presence on login, logout, and user removal.
  *
  * @package Presence_API
  */
@@ -39,4 +39,18 @@ function wp_presence_on_logout( $user_id ) {
 	if ( $user_id && user_can( $user_id, 'edit_posts' ) ) {
 		wp_remove_user_presence( $user_id );
 	}
+}
+
+/**
+ * Removes a user's presence when their account is deleted or they are
+ * removed from a site.
+ *
+ * Hooked to 'deleted_user' and 'remove_user_from_blog', both of which fire
+ * with the site already switched to the one the user is leaving. No
+ * capability gate, unlike login/logout: their role may already be gone.
+ *
+ * @param int $user_id The ID of the user being deleted or removed.
+ */
+function wp_presence_on_user_removed( $user_id ) {
+	wp_remove_user_presence( $user_id );
 }
