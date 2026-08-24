@@ -65,7 +65,11 @@ if ( ! defined( 'WP_PRESENCE_DEFAULT_TTL' ) ) {
 function wp_presence_register_table() {
 	global $wpdb;
 	$wpdb->presence = $wpdb->prefix . 'presence';
-	$wpdb->tables[] = 'presence';
+
+	// Runs at require time and again on init, so the append has to be idempotent.
+	if ( ! in_array( 'presence', $wpdb->tables, true ) ) {
+		$wpdb->tables[] = 'presence';
+	}
 }
 wp_presence_register_table();
 
