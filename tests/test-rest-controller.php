@@ -499,6 +499,9 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 			wp_delete_user( $temp_user_id );
 		}
 
+		// Deletion now clears this row; re-write it to test the fallback fields.
+		wp_set_presence( 'admin/online', 'client-temp', array(), $temp_user_id );
+
 		$request = new WP_REST_Request( 'GET', '/wp-presence/v1/presence' );
 		$request->set_param( 'room', 'admin/online' );
 
