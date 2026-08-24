@@ -249,6 +249,62 @@ class WP_Test_Presence_Network_Widget_Whos_Online extends WP_Presence_UnitTestCa
 		$this->assertStringContainsString( 'localhost', $output );
 	}
 
+	/**
+	 * The widget draws five sites and links out for the rest, so it asks the
+	 * read path for five rather than pulling the whole network across and
+	 * throwing most of it away. What is left over is then a count off the
+	 * network total, not the length of a list that was already cut.
+	 */
+	public function test_the_widget_sends_only_the_sites_it_draws_and_counts_the_rest() {
+		$this->become_network_admin();
+
+		$visible = WP_Presence_Network_Widget_Whos_Online::VISIBLE_SITES;
+
+		for ( $i = 0; $i <= $visible; $i++ ) {
+			$this->set_presence_on_site( $this->create_blog(), self::$editor_id );
+		}
+
+		$response = $this->tick();
+
+		$this->assertCount( $visible, $response['presence-network-widget'] );
+		$this->assertSame( 1, $response['presence-network-widget-overflow'] );
+
+		ob_start();
+		WP_Presence_Network_Widget_Whos_Online::render();
+		$output = ob_get_clean();
+
+		$this->assertSame( $visible, substr_count( $output, 'presence-site-item' ) );
+		$this->assertStringContainsString( '+1 more site', $output );
+	}
+
+	/**
+	 * The payload carries display names and avatar URLs, not just IDs, so a
+	 * hash over the room's membership alone left a rename on the dashboard for
+	 * as long as the same people stayed online.
+	 */
+	public function test_the_widget_repaints_when_an_online_user_is_renamed() {
+		$this->become_network_admin();
+		$this->set_presence_on_site( $this->create_blog(), self::$editor_id );
+
+		$first = $this->tick();
+
+		wp_update_user(
+			array(
+				'ID'           => self::$editor_id,
+				'display_name' => 'Renamed Editor',
+			)
+		);
+
+		// Two ticks are two requests, and the summary is only held for the
+		// length of one. Nothing here changed the room, so nothing dropped it.
+		wp_presence_flush_network_summary_cache();
+
+		$second = $this->tick( array( 'presence-network-widget-hash' => $first['presence-network-widget-hash'] ) );
+
+		$this->assertArrayHasKey( 'presence-network-widget', $second, 'A rename left the old name on the dashboard.' );
+		$this->assertSame( 'Renamed Editor', $second['presence-network-widget'][0]['users'][0]['display_name'] );
+	}
+
 	public function test_render_reports_nobody_online() {
 		ob_start();
 		WP_Presence_Network_Widget_Whos_Online::render();

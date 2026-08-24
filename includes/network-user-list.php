@@ -95,9 +95,10 @@ function wp_presence_register_network_users_column( $columns ) {
 /**
  * Renders the "Online" column for a single row of the Network Users list table.
  *
- * Called once per row, but wp_presence_get_network_summary() holds its build
- * for the request, so the summary is read and hydrated once per page load
- * rather than once per row.
+ * Called once per row. The column names sites, not people, so it reads the
+ * user-to-site index rather than the summary: resolving a display name and an
+ * avatar URL for everyone online would be the whole cost of the read for
+ * output this column never uses.
  *
  * @param string $output      Existing column output.
  * @param string $column_name Column being rendered.
@@ -109,20 +110,17 @@ function wp_presence_render_network_users_column( $output, $column_name, $user_i
 		return $output;
 	}
 
-	$summary = wp_presence_get_network_summary();
-	$sites   = array();
-
-	foreach ( $summary['sites'] as $site ) {
-		foreach ( $site['users'] as $user ) {
-			if ( (int) $user['user_id'] === (int) $user_id ) {
-				$sites[] = $site['domain'] . $site['path'];
-			}
-		}
-	}
+	$sites = wp_presence_get_network_sites_for_user( $user_id );
 
 	if ( ! $sites ) {
 		return '&#8212;';
 	}
 
-	return esc_html( implode( ', ', $sites ) );
+	$names = array();
+
+	foreach ( $sites as $site ) {
+		$names[] = $site->domain . $site->path;
+	}
+
+	return esc_html( implode( ', ', $names ) );
 }

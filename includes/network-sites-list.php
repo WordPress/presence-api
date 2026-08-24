@@ -31,9 +31,11 @@ function wp_presence_register_network_sites_column( $columns ) {
  * Rendered once per page load, the same as every other column on this table
  * (e.g. "Last Updated"), rather than kept live via Heartbeat: the table isn't
  * ours to own the markup or lifecycle of, and a snapshot as of page load
- * matches how the rest of the table already behaves. Called once per row, but
- * wp_presence_get_network_summary() holds its build for the request, so the
- * summary is read and hydrated once per page load rather than once per row.
+ * matches how the rest of the table already behaves.
+ *
+ * Called once per row, and asks for that row's site only. The underlying
+ * snapshot is read once for the request; what each row adds is resolving the
+ * handful of people whose avatars it is about to draw.
  *
  * @param string $column_name Column being rendered.
  * @param int    $blog_id     The site ID for the current row.
@@ -43,15 +45,20 @@ function wp_presence_render_network_sites_column( $column_name, $blog_id ) {
 		return;
 	}
 
-	$summary = wp_presence_get_network_summary();
+	$summary = wp_presence_get_network_summary(
+		array(
+			'blog_id'        => (int) $blog_id,
+			'users_per_site' => WP_PRESENCE_NETWORK_AVATARS,
+		)
+	);
 
-	foreach ( $summary['sites'] as $site ) {
-		if ( (int) $site['blog_id'] === (int) $blog_id ) {
-			echo wp_kses_post( wp_presence_render_avatar_stack( $site['users'] ) );
-			echo ' ' . (int) $site['user_count'];
-			return;
-		}
+	if ( ! $summary['sites'] ) {
+		echo '&#8212;';
+		return;
 	}
 
-	echo '&#8212;';
+	$site = $summary['sites'][0];
+
+	echo wp_kses_post( wp_presence_render_avatar_stack( $site['users'], WP_PRESENCE_NETWORK_AVATARS ) );
+	echo ' ' . (int) $site['user_count'];
 }

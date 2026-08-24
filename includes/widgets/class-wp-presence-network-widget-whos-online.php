@@ -85,14 +85,42 @@ class WP_Presence_Network_Widget_Whos_Online {
 	 */
 	public static function render() {
 		echo '<div id="presence-network-widget-list" aria-live="polite" tabindex="-1">';
-		self::render_summary( wp_presence_get_network_summary() );
+		self::render_summary( self::get_summary() );
 		echo '</div>';
+	}
+
+	/**
+	 * Reads the slice of the network this widget draws.
+	 *
+	 * Five sites with four avatars each, asked for as five sites with four
+	 * avatars each. The widget is on the network dashboard, so on a large
+	 * network this read is the one that has to stay cheap.
+	 *
+	 * @return array See wp_presence_get_network_summary().
+	 */
+	private static function get_summary() {
+		return wp_presence_get_network_summary(
+			array(
+				'sites'          => self::VISIBLE_SITES,
+				'users_per_site' => WP_PRESENCE_NETWORK_AVATARS,
+			)
+		);
+	}
+
+	/**
+	 * Returns how many sites are online beyond the ones being shown.
+	 *
+	 * @param array $summary Return value of self::get_summary().
+	 * @return int Site count, zero if the whole network fits.
+	 */
+	private static function overflow_count( $summary ) {
+		return max( 0, (int) $summary['total_sites_online'] - count( $summary['sites'] ) );
 	}
 
 	/**
 	 * Renders the compact site list for a network summary.
 	 *
-	 * @param array $summary Return value of wp_presence_get_network_summary().
+	 * @param array $summary Return value of self::get_summary().
 	 */
 	private static function render_summary( $summary ) {
 		if ( empty( $summary['sites'] ) ) {
@@ -100,14 +128,11 @@ class WP_Presence_Network_Widget_Whos_Online {
 			return;
 		}
 
-		$visible  = array_slice( $summary['sites'], 0, self::VISIBLE_SITES );
-		$overflow = array_slice( $summary['sites'], self::VISIBLE_SITES );
-
 		echo '<ul class="presence-user-list" aria-label="' . esc_attr__( 'Sites with online users', 'presence-api' ) . '">';
 
-		foreach ( $visible as $site ) {
+		foreach ( $summary['sites'] as $site ) {
 			echo '<li class="presence-site-item">';
-			echo wp_kses_post( wp_presence_render_avatar_stack( $site['users'] ) );
+			echo wp_kses_post( wp_presence_render_avatar_stack( $site['users'], WP_PRESENCE_NETWORK_AVATARS ) );
 			echo '<span class="presence-site-info"><a href="' . esc_url( $site['url'] ) . '">' . esc_html( $site['domain'] . $site['path'] ) . '</a></span>';
 			echo '<span class="presence-site-count">' . (int) $site['user_count'] . '</span>';
 			echo '</li>';
@@ -115,15 +140,17 @@ class WP_Presence_Network_Widget_Whos_Online {
 
 		echo '</ul>';
 
-		if ( ! empty( $overflow ) ) {
+		$overflow = self::overflow_count( $summary );
+
+		if ( $overflow ) {
 			printf(
 				'<a href="%1$s" class="presence-more-link">%2$s</a>',
 				esc_url( network_admin_url( 'sites.php' ) ),
 				esc_html(
 					sprintf(
 						/* translators: %d: Number of additional sites with online users. */
-						_n( '+%d more site — view all', '+%d more sites — view all', count( $overflow ), 'presence-api' ),
-						count( $overflow )
+						_n( '+%d more site — view all', '+%d more sites — view all', $overflow, 'presence-api' ),
+						$overflow
 					)
 				)
 			);
@@ -153,8 +180,9 @@ class WP_Presence_Network_Widget_Whos_Online {
 			return $response;
 		}
 
-		$summary     = wp_presence_get_network_summary();
-		$hash        = self::hash_summary( $summary );
+		$summary     = self::get_summary();
+		$overflow    = self::overflow_count( $summary );
+		$hash        = self::hash_summary( $summary, $overflow );
 		$client_hash = isset( $data['presence-network-widget-hash'] ) ? sanitize_text_field( $data['presence-network-widget-hash'] ) : '';
 
 		if ( $client_hash && $client_hash === $hash ) {
@@ -163,30 +191,31 @@ class WP_Presence_Network_Widget_Whos_Online {
 			return $response;
 		}
 
-		$response['presence-network-widget']      = $summary['sites'];
-		$response['presence-network-widget-hash'] = $hash;
+		$response['presence-network-widget']          = $summary['sites'];
+		$response['presence-network-widget-overflow'] = $overflow;
+		$response['presence-network-widget-hash']     = $hash;
 
 		return $response;
 	}
 
 	/**
-	 * Hashes the meaningful state of a network summary.
+	 * Hashes the state this widget draws.
 	 *
-	 * @param array $summary Return value of wp_presence_get_network_summary().
+	 * The payload itself, rather than a picked-out subset of it. A hash over
+	 * blog IDs and user IDs alone held a stale rename or a changed avatar on
+	 * screen for as long as the same people stayed online, and a hash over the
+	 * whole network never matched twice on a network large enough for the sixth
+	 * site to keep changing out of sight.
+	 *
+	 * The read path already returns sites busiest-first and users by name, so
+	 * there is nothing left to normalize here.
+	 *
+	 * @param array $summary  Return value of self::get_summary().
+	 * @param int   $overflow Sites online beyond the ones being sent.
 	 * @return string The state hash.
 	 */
-	private static function hash_summary( $summary ) {
-		$state = array();
-
-		foreach ( $summary['sites'] as $site ) {
-			$user_ids = wp_list_pluck( $site['users'], 'user_id' );
-			sort( $user_ids );
-			$state[] = array( $site['blog_id'], $user_ids );
-		}
-
-		sort( $state );
-
-		return md5( (string) wp_json_encode( $state ) );
+	private static function hash_summary( $summary, $overflow ) {
+		return md5( (string) wp_json_encode( array( $summary['sites'], $overflow ) ) );
 	}
 
 	/**
@@ -211,7 +240,7 @@ class WP_Presence_Network_Widget_Whos_Online {
 
 	var i18n = %s;
 	var viewAllUrl = %s;
-	var visibleMax = %d;
+	var avatarMax = %d;
 	var lastHash = '';
 	var lastSignature = '';
 
@@ -222,7 +251,7 @@ class WP_Presence_Network_Widget_Whos_Online {
 	}
 
 	function buildAvatarStack(users) {
-		var stackMax = Math.min(users.length, 4);
+		var stackMax = Math.min(users.length, avatarMax);
 		var html = '<span class="presence-avatar-stack">';
 		users.slice(0, stackMax).forEach(function(user, idx) {
 			if (user.avatar_url) {
@@ -233,24 +262,23 @@ class WP_Presence_Network_Widget_Whos_Online {
 		return html;
 	}
 
-	function buildListHtml(sites) {
+	// Already cut to the sites and avatars this widget shows, so nothing is
+	// sliced here; overflow is a count the server sends, not what is left over.
+	function buildListHtml(sites, overflow) {
 		if (!sites.length) {
 			return '<p>' + esc(i18n.noUsersOnline) + '</p>';
 		}
 
-		var visible = sites.slice(0, visibleMax);
-		var overflow = sites.slice(visibleMax);
-
 		var html = '<ul class="presence-user-list">';
-		visible.forEach(function(site) {
+		sites.forEach(function(site) {
 			html += '<li class="presence-site-item">' + buildAvatarStack(site.users);
 			html += '<span class="presence-site-info"><a href="' + esc(site.url) + '">' + esc(site.domain + site.path) + '</a></span>';
 			html += '<span class="presence-site-count">' + site.user_count + '</span></li>';
 		});
 		html += '</ul>';
 
-		if (overflow.length) {
-			html += '<a href="' + esc(viewAllUrl) + '" class="presence-more-link">+' + overflow.length + ' — ' + esc(i18n.viewAll) + '</a>';
+		if (overflow > 0) {
+			html += '<a href="' + esc(viewAllUrl) + '" class="presence-more-link">+' + overflow + ' — ' + esc(i18n.viewAll) + '</a>';
 		}
 
 		return html;
@@ -279,12 +307,16 @@ class WP_Presence_Network_Widget_Whos_Online {
 			return;
 		}
 
-		var sig = data['presence-network-widget'].map(function(s) {
-			return s.blog_id + ':' + s.users.map(function(u) { return u.user_id; }).sort().join(',');
-		}).sort().join('|');
+		var sites = data['presence-network-widget'];
+		var overflow = data['presence-network-widget-overflow'] || 0;
+
+		// Signature over what gets drawn, matching the server-side hash: a
+		// rename or a new avatar has to repaint, and the order is already the
+		// order it renders in.
+		var sig = JSON.stringify([sites, overflow]);
 
 		if (sig !== lastSignature) {
-			container.html(buildListHtml(data['presence-network-widget']));
+			container.html(buildListHtml(sites, overflow));
 			lastSignature = sig;
 		}
 	});
@@ -292,7 +324,7 @@ class WP_Presence_Network_Widget_Whos_Online {
 JS,
 			$i18n_json,
 			wp_json_encode( esc_url_raw( network_admin_url( 'sites.php' ) ) ),
-			self::VISIBLE_SITES
+			WP_PRESENCE_NETWORK_AVATARS
 		);
 	}
 }
