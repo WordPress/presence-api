@@ -138,18 +138,17 @@ function wp_presence_network_summary_refresh_interval() {
  * Pushes the current site's online-user snapshot into the network-wide
  * summary table.
  *
- * Runs on wp_presence_admin_room_changed, so every admin-room write pushes,
- * not just the heartbeat tick: logout and the pagehide delete clear the site
- * immediately instead of waiting for its entry to age out.
+ * Runs on wp_presence_admin_room_changed, so an arrival or a departure reaches
+ * the network within the request that caused it: logout and the pagehide delete
+ * clear the site immediately instead of waiting for its entry to age out.
  *
- * A tick usually finds the same people as the tick before it, so the upsert
- * rewrites the row only when the user set changes or the row is older than
- * wp_presence_network_summary_refresh_interval(). Both tests run in SQL, so an
- * unchanged push resolves to zero changed rows.
+ * A tick usually finds the same people as the tick before it, and that case
+ * returns before touching the summary table. See
+ * wp_presence_network_summary_needs_push() for why the test is worth making
+ * here rather than in the upsert.
  *
- * The row records no per-user timestamp for that reason; its updated_gmt
- * carries freshness for every ID in it, which wp_get_presence() already
- * TTL-filtered on this site.
+ * The row records no per-user timestamp; its updated_gmt carries freshness for
+ * every ID in it, which wp_get_presence() already TTL-filtered on this site.
  *
  * @access private
  */
@@ -171,15 +170,21 @@ function wp_presence_push_network_summary() {
 	// wp_get_presence() orders by date_gmt, which reshuffles as people tick.
 	sort( $user_ids );
 
+	if ( ! wp_presence_network_summary_needs_push( $user_ids ) ) {
+		return;
+	}
+
 	$blog_id = get_current_blog_id();
 	$now     = gmdate( 'Y-m-d H:i:s' );
 	$refresh = gmdate( 'Y-m-d H:i:s', time() - wp_presence_network_summary_refresh_interval() );
 
 	// updated_gmt is assigned before data because MySQL applies the assignments
 	// in order, so reading `data` after `data = VALUES(data)` would compare the
-	// new value against itself and never detect a change.
+	// new value against itself and never detect a change. The gate above already
+	// rules out most unchanged writes; this keeps updated_gmt honest for the
+	// refresh push, which rewrites the same data on purpose.
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-	$wpdb->query(
+	$result = $wpdb->query(
 		$wpdb->prepare(
 			"INSERT INTO {$wpdb->presence_network_summary} (blog_id, data, updated_gmt)
 			VALUES (%d, %s, %s)
@@ -191,6 +196,63 @@ function wp_presence_push_network_summary() {
 			$now,
 			$refresh
 		)
+	);
+
+	if ( false !== $result ) {
+		wp_presence_record_network_summary_push( $user_ids );
+	}
+}
+
+/**
+ * Decides whether this site has anything to write into the summary table.
+ *
+ * True when the online set differs from the one this site last pushed, or when
+ * that push is old enough that the row is approaching the read cutoff in
+ * wp_presence_compute_network_summary().
+ *
+ * The summary table is registered into $wpdb->ms_global_tables, which pins it
+ * to the global cluster on a sharded network, so it is the one table here that
+ * cannot be split. Every admin pageview writes the admin room, not just the
+ * heartbeat tick, so testing for a change inside the upsert still sends a
+ * statement to that cluster per pageview per site. This record lives in an
+ * autoloaded option on the site's own options table instead: free to read out
+ * of alloptions, and on the site's own shard when it is written.
+ *
+ * @access private
+ * @param int[] $user_ids Online user IDs, pre-sorted.
+ * @return bool Whether to push.
+ */
+function wp_presence_network_summary_needs_push( array $user_ids ) {
+	$last = get_option( 'wp_presence_network_pushed' );
+
+	if ( ! is_array( $last ) || ! isset( $last['users'], $last['time'] ) ) {
+		return true;
+	}
+
+	if ( implode( ',', $user_ids ) !== $last['users'] ) {
+		return true;
+	}
+
+	return (int) $last['time'] <= time() - wp_presence_network_summary_refresh_interval();
+}
+
+/**
+ * Records what this site just pushed, for the next call to compare against.
+ *
+ * Autoloaded: it is read on every admin-room write and written only by a push,
+ * which the gate it feeds is there to make rare.
+ *
+ * @access private
+ * @param int[] $user_ids Online user IDs, pre-sorted.
+ */
+function wp_presence_record_network_summary_push( array $user_ids ) {
+	update_option(
+		'wp_presence_network_pushed',
+		array(
+			'users' => implode( ',', $user_ids ),
+			'time'  => time(),
+		),
+		true
 	);
 }
 
