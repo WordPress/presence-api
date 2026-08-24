@@ -231,7 +231,9 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers ::wp_presence_get_network_summary
+	 * @covers ::wp_presence_get_network_snapshot
 	 * @covers ::wp_presence_compute_network_snapshot
+	 * @covers ::wp_presence_filter_network_snapshot_users
 	 * @covers ::wp_presence_decode_network_summary_row
 	 */
 	public function test_summary_aggregates_across_sites() {
@@ -395,6 +397,7 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 	 *
 	 * @covers ::wp_presence_push_network_summary
 	 * @covers ::wp_presence_network_summary_needs_push
+	 * @covers ::wp_presence_record_network_summary_push
 	 */
 	public function test_an_unchanged_tick_sends_no_statement_to_the_summary_table() {
 		$blog_id = $this->create_blog();
@@ -434,6 +437,7 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 	 * straight away.
 	 *
 	 * @covers ::wp_presence_push_network_summary
+	 * @covers ::wp_presence_network_summary_needs_push
 	 */
 	public function test_push_rewrites_the_row_as_soon_as_the_user_set_changes() {
 		$blog_id  = $this->create_blog();
@@ -579,6 +583,7 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 	 * entirely rather than showing as online with an empty list.
 	 *
 	 * @covers ::wp_presence_compute_network_snapshot
+	 * @covers ::wp_presence_filter_network_snapshot_users
 	 */
 	public function test_summary_skips_users_who_no_longer_exist() {
 		$kept    = $this->create_blog();
@@ -642,6 +647,7 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 	 *
 	 * @covers ::wp_presence_get_network_summary
 	 * @covers ::wp_presence_network_cached
+	 * @covers ::wp_presence_network_cache_group
 	 * @covers ::wp_presence_flush_network_summary_cache
 	 */
 	public function test_the_summary_is_built_once_per_request_and_dropped_by_a_push() {
@@ -722,6 +728,13 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 
 		$this->assertSame( array( $wanted ), wp_list_pluck( $summary['sites'], 'blog_id' ) );
 		$this->assertSame( 2, $summary['total_sites_online'] );
+
+		// Most rows on a Sites list are quiet ones, and that narrowing still has
+		// a network behind it to report totals for.
+		$quiet = wp_presence_get_network_summary( array( 'blog_id' => $this->create_blog() ) );
+
+		$this->assertSame( array(), $quiet['sites'] );
+		$this->assertSame( 2, $quiet['total_sites_online'] );
 	}
 
 	/**
