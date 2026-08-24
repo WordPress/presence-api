@@ -204,6 +204,32 @@ function wp_presence_push_network_summary() {
 }
 
 /**
+ * Drops a deleted site's row from the network summary table.
+ *
+ * Runs on wp_delete_site. Without it a row outlives its site indefinitely, in
+ * the one table on the network that a shard router cannot split.
+ *
+ * @access private
+ * @param WP_Site $old_site The site that was deleted.
+ */
+function wp_presence_on_delete_site( $old_site ) {
+	global $wpdb;
+
+	if ( ! wp_presence_has_network_summary_table() ) {
+		return;
+	}
+
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+	$wpdb->delete(
+		$wpdb->presence_network_summary,
+		array( 'blog_id' => (int) $old_site->blog_id ),
+		array( '%d' )
+	);
+
+	wp_presence_flush_network_summary_cache();
+}
+
+/**
  * Decides whether this site has anything to write into the summary table.
  *
  * True when the online set differs from the one this site last pushed, or when
@@ -323,17 +349,21 @@ function wp_presence_get_network_online_user_ids() {
 }
 
 /**
- * Returns the network-wide presence summary.
+ * Returns every site's online user IDs, without resolving any of them.
  *
- * Reads the shared wp_presence_network_summary table -- one row per site,
- * kept current by wp_presence_push_network_summary() -- rather than querying
- * every site's own presence table, so this is a single query regardless of
- * how many sites are on the network.
+ * One query against the shared wp_presence_network_summary table -- one row
+ * per site, kept current by wp_presence_push_network_summary() -- rather than
+ * querying every site's own presence table.
  *
- * Held for the rest of the request. List table columns call this once per row
- * and the build is not free: it decodes every site's row, then resolves a
- * display name and an avatar URL for every user on every site. The push
- * invalidates it, so a read after a write on this site still sees the write.
+ * This is the cheap half of the read path and the one most callers want.
+ * Resolving a display name and an avatar URL for every user on every site is
+ * what costs, and no surface renders all of them: the list table columns show
+ * an avatar stack of four, and the dashboard widget shows five sites. Callers
+ * that need names and avatars ask wp_presence_get_network_summary() for the
+ * slice they are about to render.
+ *
+ * Held for the rest of the request. The push invalidates it, so a read after a
+ * write on this site still sees the write.
  *
  * @access private
  * @param array $args {
@@ -342,64 +372,208 @@ function wp_presence_get_network_online_user_ids() {
  *     @type int $timeout TTL in seconds. Default WP_PRESENCE_DEFAULT_TTL.
  * }
  * @return array {
- *     @type array $sites               One entry per site with a live user:
- *                                       blog_id, domain, path, url, users
+ *     @type array $sites               User IDs keyed by blog_id, busiest site
+ *                                       first, then by blog_id. Each list is in
+ *                                       the order the site pushed it, which is
+ *                                       ascending user ID.
+ *     @type int   $total_sites_online
+ *     @type int   $total_users_online  Summed per site, so a user online on two
+ *                                       sites counts twice.
+ * }
+ */
+function wp_presence_get_network_snapshot( array $args = array() ) {
+	$timeout = wp_presence_get_timeout( $args['timeout'] ?? WP_PRESENCE_DEFAULT_TTL );
+
+	return wp_presence_network_cached(
+		'snapshot:' . $timeout,
+		static function () use ( $timeout ) {
+			return wp_presence_compute_network_snapshot( $timeout );
+		}
+	);
+}
+
+/**
+ * Returns the network-wide presence summary, with names and avatars resolved.
+ *
+ * Bounded on purpose. Hydration is linear in the number of users asked for, so
+ * a caller passes the slice it is about to render rather than taking the whole
+ * network and slicing afterwards.
+ *
+ * @access private
+ * @param array $args {
+ *     Optional.
+ *
+ *     @type int $timeout        TTL in seconds. Default WP_PRESENCE_DEFAULT_TTL.
+ *     @type int $sites          Maximum sites to resolve, busiest first. Default 0, every site.
+ *     @type int $users_per_site Maximum users to resolve per site. Default 0, every user.
+ *     @type int $blog_id        Resolve this site only. Default 0, no restriction.
+ * }
+ * @return array {
+ *     @type array $sites               blog_id, domain, path, url, users
  *                                       (user_id, display_name, avatar_url),
  *                                       user_count. Ordered by user_count
- *                                       descending, then by domain and path.
- *     @type int   $total_sites_online
- *     @type int   $total_users_online
+ *                                       descending, then by blog_id.
+ *                                       user_count is the site's real total,
+ *                                       which users is capped below.
+ *     @type int   $total_sites_online  Network-wide, not the resolved count.
+ *     @type int   $total_users_online  Network-wide, not the resolved count.
  * }
  */
 function wp_presence_get_network_summary( array $args = array() ) {
-	$timeout = wp_presence_get_timeout( $args['timeout'] ?? WP_PRESENCE_DEFAULT_TTL );
-	$cached  = wp_presence_network_summary_cache();
+	$args = wp_parse_args(
+		$args,
+		array(
+			'timeout'        => WP_PRESENCE_DEFAULT_TTL,
+			'sites'          => 0,
+			'users_per_site' => 0,
+			'blog_id'        => 0,
+		)
+	);
 
-	if ( isset( $cached[ $timeout ] ) ) {
-		return $cached[ $timeout ];
-	}
+	$timeout = wp_presence_get_timeout( $args['timeout'] );
+	$key     = sprintf(
+		'summary:%d:%d:%d:%d',
+		$timeout,
+		(int) $args['sites'],
+		(int) $args['users_per_site'],
+		(int) $args['blog_id']
+	);
 
-	$summary = wp_presence_compute_network_summary( $timeout );
-
-	$cached[ $timeout ] = $summary;
-	wp_presence_network_summary_cache( $cached );
-
-	return $summary;
+	return wp_presence_network_cached(
+		$key,
+		static function () use ( $args, $timeout ) {
+			return wp_presence_hydrate_network_snapshot(
+				wp_presence_get_network_snapshot( array( 'timeout' => $timeout ) ),
+				(int) $args['sites'],
+				(int) $args['users_per_site'],
+				(int) $args['blog_id']
+			);
+		}
+	);
 }
 
 /**
- * Reads, and optionally replaces, the request's built network summaries.
+ * Returns a built network read, building it on first ask.
  *
- * Keyed by timeout, since a caller may ask for a window other than the default.
+ * Keyed by what was asked for, since a caller may want a different window or a
+ * different slice than the one already built.
+ *
+ * The group is registered non-persistent in presence-api.php, so this holds for
+ * the request and no longer: a summary is derived from rows every site on the
+ * network writes, and there is no invalidation event a single site could see.
  *
  * @access private
- * @param array|null $replace Optional. Summaries to store, keyed by timeout.
- * @return array Summaries keyed by timeout.
+ * @param string   $key   What is being asked for.
+ * @param callable $build Builds the value when it is not already held.
+ * @return mixed The held value.
  */
-function wp_presence_network_summary_cache( array $replace = null ) {
-	static $cache = array();
+function wp_presence_network_cached( $key, callable $build ) {
+	$group = wp_presence_network_cache_group();
+	$key   = $key . ':' . wp_cache_get_last_changed( $group );
+	$found = false;
+	$value = wp_cache_get( $key, $group, false, $found );
 
-	if ( null !== $replace ) {
-		$cache = $replace;
+	if ( $found ) {
+		return $value;
 	}
 
-	return $cache;
+	$value = $build();
+
+	wp_cache_set( $key, $value, $group );
+
+	return $value;
 }
 
 /**
- * Drops the request's built network summaries.
+ * Returns the object cache group the built network reads live in.
+ *
+ * @access private
+ * @return string Cache group.
+ */
+function wp_presence_network_cache_group() {
+	return 'presence_network';
+}
+
+/**
+ * Drops the request's built network reads.
  *
  * Runs on wp_presence_admin_room_changed, alongside the push that gave this
- * site a new row.
+ * site a new row. Bumps last_changed rather than deleting keys, the same way
+ * core invalidates its own derived query caches, so every slice and window
+ * built from the old rows is left behind at once.
  *
  * @access private
  */
 function wp_presence_flush_network_summary_cache() {
-	wp_presence_network_summary_cache( array() );
+	wp_cache_set_last_changed( wp_presence_network_cache_group() );
 }
 
 /**
- * Reads every site's pushed snapshot from the network summary table.
+ * Drops user IDs that no longer name an account from a snapshot.
+ *
+ * A summary row stores user IDs and nothing else, and no hook clears a
+ * deleted user's presence from the other sites they were online on, so a row
+ * outlives the account until that site's next push. Counting one would
+ * overstate the network and rendering one would give an empty avatar.
+ *
+ * IDs only, in one query for the whole snapshot. Loading the accounts is the
+ * expensive half and is left to wp_presence_hydrate_network_snapshot(), which
+ * runs against a handful of users rather than every user online.
+ *
+ * @since 0.1.25
+ *
+ * @param array $by_site Blog ID to array of user IDs.
+ * @return array The same map with unknown users, and any site left empty by
+ *               their removal, dropped.
+ */
+function wp_presence_filter_network_snapshot_users( array $by_site ) {
+	$all_ids = array();
+
+	foreach ( $by_site as $user_ids ) {
+		foreach ( $user_ids as $user_id ) {
+			$all_ids[ $user_id ] = true;
+		}
+	}
+
+	$existing = array_flip(
+		array_map(
+			'intval',
+			get_users(
+				array(
+					'include' => array_keys( $all_ids ),
+					'fields'  => 'ID',
+					'blog_id' => 0,
+				)
+			)
+		)
+	);
+
+	if ( count( $existing ) === count( $all_ids ) ) {
+		return $by_site;
+	}
+
+	$filtered = array();
+
+	foreach ( $by_site as $blog_id => $user_ids ) {
+		$kept = array_values(
+			array_filter(
+				$user_ids,
+				static function ( $user_id ) use ( $existing ) {
+					return isset( $existing[ $user_id ] );
+				}
+			)
+		);
+
+		if ( $kept ) {
+			$filtered[ $blog_id ] = $kept;
+		}
+	}
+
+	return $filtered;
+}
+
+/**
+ * Reads every site's pushed row from the network summary table.
  *
  * A single query against one small, indexed table, not one query per site.
  * $timeout applies once, against each row's updated_gmt; there is no second
@@ -407,11 +581,14 @@ function wp_presence_flush_network_summary_cache() {
  * TTL-filtered read returned when it pushed, and a membership change pushes
  * again immediately.
  *
+ * Sites and users are checked against the network here, while the result is
+ * still a list of IDs, so a stale row is dropped before anything gets loaded.
+ *
  * @access private
  * @param int $timeout TTL in seconds; rows untouched longer than this are skipped.
- * @return array See wp_presence_get_network_summary().
+ * @return array See wp_presence_get_network_snapshot().
  */
-function wp_presence_compute_network_summary( $timeout ) {
+function wp_presence_compute_network_snapshot( $timeout ) {
 	global $wpdb;
 
 	if ( ! wp_presence_has_network_summary_table() ) {
@@ -432,20 +609,13 @@ function wp_presence_compute_network_summary( $timeout ) {
 		return wp_presence_empty_network_summary();
 	}
 
-	$all_user_ids = array();
-	$by_site      = array();
+	$by_site = array();
 
 	foreach ( $rows as $row ) {
 		$entries = wp_presence_decode_network_summary_row( $row->data );
 
-		if ( ! $entries ) {
-			continue;
-		}
-
-		$by_site[ (int) $row->blog_id ] = $entries;
-
-		foreach ( $entries as $user_id ) {
-			$all_user_ids[ $user_id ] = true;
+		if ( $entries ) {
+			$by_site[ (int) $row->blog_id ] = $entries;
 		}
 	}
 
@@ -453,26 +623,118 @@ function wp_presence_compute_network_summary( $timeout ) {
 		return wp_presence_empty_network_summary();
 	}
 
-	cache_users( array_keys( $all_user_ids ) );
+	// IDs only. A row outlives the site it belongs to until cleanup runs, and
+	// counting one would overstate the network. Resolving the domain and path
+	// is left to whichever sites a caller goes on to render.
+	$live = get_sites(
+		array(
+			'site__in' => array_keys( $by_site ),
+			'fields'   => 'ids',
+			'number'   => 0,
+		)
+	);
 
-	// One site query for the whole set. get_site() per row is one query each
-	// on a cold cache, which is the shape this table exists to avoid.
+	$by_site = array_intersect_key( $by_site, array_flip( array_map( 'intval', $live ) ) );
+
+	if ( ! $by_site ) {
+		return wp_presence_empty_network_summary();
+	}
+
+	$by_site = wp_presence_filter_network_snapshot_users( $by_site );
+
+	if ( ! $by_site ) {
+		return wp_presence_empty_network_summary();
+	}
+
+	// Busiest first, which is the order every caller renders in, then by
+	// blog_id so a tie holds still from one tick to the next. Ordering on
+	// domain would mean resolving every site to place five of them.
+	uksort(
+		$by_site,
+		static function ( $a, $b ) use ( $by_site ) {
+			$by_count = count( $by_site[ $b ] ) <=> count( $by_site[ $a ] );
+
+			return 0 !== $by_count ? $by_count : $a <=> $b;
+		}
+	);
+
+	$total_users = 0;
+
+	foreach ( $by_site as $entries ) {
+		$total_users += count( $entries );
+	}
+
+	return array(
+		'sites'              => $by_site,
+		'total_sites_online' => count( $by_site ),
+		'total_users_online' => $total_users,
+	);
+}
+
+/**
+ * Resolves names, avatars, and site details for a slice of a snapshot.
+ *
+ * @access private
+ * @param array $snapshot       Return value of wp_presence_get_network_snapshot().
+ * @param int   $max_sites      Maximum sites to resolve. 0 for every site.
+ * @param int   $users_per_site Maximum users to resolve per site. 0 for every user.
+ * @param int   $blog_id        Resolve this site only. 0 for no restriction.
+ * @return array See wp_presence_get_network_summary().
+ */
+function wp_presence_hydrate_network_snapshot( array $snapshot, $max_sites, $users_per_site, $blog_id ) {
+	$by_site = $snapshot['sites'];
+
+	if ( $blog_id ) {
+		$by_site = isset( $by_site[ $blog_id ] ) ? array( $blog_id => $by_site[ $blog_id ] ) : array();
+	}
+
+	if ( $max_sites > 0 ) {
+		$by_site = array_slice( $by_site, 0, $max_sites, true );
+	}
+
+	if ( ! $by_site ) {
+		return array(
+			'sites'              => array(),
+			'total_sites_online' => $snapshot['total_sites_online'],
+			'total_users_online' => $snapshot['total_users_online'],
+		);
+	}
+
+	// Capped before resolving, not after. The cap is what makes this bounded,
+	// and the users it keeps are the lowest IDs on the site, which is stable
+	// across ticks in a way an alphabetical cut would not be.
+	$shown  = array();
+	$needed = array();
+
+	foreach ( $by_site as $site_id => $entries ) {
+		$shown[ $site_id ] = $users_per_site > 0 ? array_slice( $entries, 0, $users_per_site ) : $entries;
+
+		foreach ( $shown[ $site_id ] as $user_id ) {
+			$needed[ $user_id ] = true;
+		}
+	}
+
+	cache_users( array_keys( $needed ) );
+
+	// One site query for the slice. get_site() per row is one query each on a
+	// cold cache, which is the shape this table exists to avoid.
 	$found_sites = array();
-	$found       = get_sites(
+
+	$found = get_sites(
 		array(
 			'site__in' => array_keys( $by_site ),
 			'number'   => 0,
 		)
 	);
+
 	foreach ( $found as $found_site ) {
 		$found_sites[ (int) $found_site->blog_id ] = $found_site;
 	}
 
-	$sites       = array();
-	$total_users = 0;
+	$sites = array();
 
-	foreach ( $by_site as $blog_id => $entries ) {
-		$site = $found_sites[ $blog_id ] ?? null;
+	foreach ( $shown as $site_id => $entries ) {
+		$site = $found_sites[ $site_id ] ?? null;
 
 		if ( ! $site ) {
 			continue;
@@ -506,34 +768,23 @@ function wp_presence_compute_network_summary( $timeout ) {
 			}
 		);
 
-		$total_users += count( $hydrated );
-
 		$sites[] = array(
-			'blog_id'    => $blog_id,
+			'blog_id'    => $site_id,
 			'domain'     => $site->domain,
 			'path'       => $site->path,
 			// get_site_url()/get_blog_option() switch blogs on every call; the raw
 			// WP_Site fields don't, at the cost of not reflecting a mapped domain.
 			'url'        => ( is_ssl() ? 'https://' : 'http://' ) . $site->domain . $site->path,
 			'users'      => $hydrated,
-			'user_count' => count( $hydrated ),
+			// The site's real total, which users is capped below.
+			'user_count' => count( $by_site[ $site_id ] ),
 		);
 	}
 
-	usort(
-		$sites,
-		static function ( $a, $b ) {
-			if ( $a['user_count'] === $b['user_count'] ) {
-				return strcmp( $a['domain'] . $a['path'], $b['domain'] . $b['path'] );
-			}
-			return $b['user_count'] <=> $a['user_count'];
-		}
-	);
-
 	return array(
 		'sites'              => $sites,
-		'total_sites_online' => count( $sites ),
-		'total_users_online' => $total_users,
+		'total_sites_online' => $snapshot['total_sites_online'],
+		'total_users_online' => $snapshot['total_users_online'],
 	);
 }
 
