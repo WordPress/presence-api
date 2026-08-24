@@ -3,8 +3,10 @@ name: CI
 on:
   push:
     branches: [ main ]
+  # Unfiltered on purpose. A pull request in a stack is based on its parent
+  # branch rather than main, and `branches: [ main ]` skips it entirely, so
+  # every pull request below the top of a stack would merge unverified.
   pull_request:
-    branches: [ main ]
 
 permissions:
   contents: read
