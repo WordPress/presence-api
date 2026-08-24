@@ -368,6 +368,45 @@ class WP_Test_Network_Presence extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * A network-wide deletion should clear -- and re-push -- presence on
+	 * every site the user was online on.
+	 *
+	 * @covers ::wp_presence_on_user_removed
+	 * @covers ::wp_presence_push_network_summary
+	 */
+	public function test_deleting_a_user_clears_their_presence_on_every_site() {
+		require_once ABSPATH . 'wp-admin/includes/ms.php';
+
+		$user_id  = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$blog_ids = array( $this->create_blog(), $this->create_blog() );
+
+		foreach ( $blog_ids as $blog_id ) {
+			add_user_to_blog( $blog_id, $user_id, 'editor' );
+			$this->set_presence_on_site( $blog_id, $user_id );
+		}
+		$this->set_presence_on_site( $blog_ids[0], self::$editor_id );
+
+		wpmu_delete_user( $user_id );
+
+		foreach ( $blog_ids as $blog_id ) {
+			switch_to_blog( $blog_id );
+			$this->assertCount( 0, $this->presence_for_user( $user_id ), "Presence should be cleared on blog {$blog_id}." );
+			restore_current_blog();
+
+			$row = $this->get_network_summary_row( $blog_id );
+			$this->assertNotContains(
+				$user_id,
+				json_decode( $row->data, true )['online_user_ids'],
+				"The network summary row for blog {$blog_id} should no longer list the deleted user."
+			);
+		}
+
+		switch_to_blog( $blog_ids[0] );
+		$this->assertCount( 1, $this->presence_for_user( self::$editor_id ), 'Deleting one user should not clear anybody else.' );
+		restore_current_blog();
+	}
+
+	/**
 	 * A tick that finds the same people online as the last one must not rewrite
 	 * the row. Presence writes happen on every tick from every open tab, so a
 	 * push that always wrote would put one row update per tab per tick on a
