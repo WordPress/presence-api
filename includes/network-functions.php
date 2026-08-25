@@ -317,12 +317,17 @@ function wp_presence_record_network_summary_push( array $user_ids ) {
  *
  *     {
  *         "site": "example.com/shop/",
+ *         "scheme": "https",
  *         "online_user_ids": [ 3, 7 ]
  *     }
  *
  * The site label is for that reader; the read path resolves the site from
  * blog_id and ignores it. Logins are left out because resolving them would
  * cost a user query per heartbeat tick.
+ *
+ * The scheme is recorded here because is_ssl() only describes this site's own
+ * request right now; a later read runs in a different request, on whichever
+ * scheme that one happens to be on.
  *
  * @access private
  * @param int   $blog_id  The site the row belongs to.
@@ -335,6 +340,7 @@ function wp_presence_encode_network_summary_row( $blog_id, array $user_ids ) {
 	return (string) wp_json_encode(
 		array(
 			'site'            => $site ? $site->domain . $site->path : '',
+			'scheme'          => is_ssl() ? 'https' : 'http',
 			'online_user_ids' => $user_ids,
 		),
 		JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
@@ -356,6 +362,23 @@ function wp_presence_decode_network_summary_row( $data ) {
 	}
 
 	return array_map( 'intval', array_filter( $decoded['online_user_ids'], 'is_numeric' ) );
+}
+
+/**
+ * Decodes a summary row's data column into the scheme it was pushed under.
+ *
+ * See wp_presence_encode_network_summary_row() for why this is captured at
+ * push time rather than read live off the viewing request.
+ *
+ * @access private
+ * @param string $data The row's JSON-encoded data column.
+ * @return string 'http' or 'https'. Defaults to 'https' for a row pushed
+ *                before this field existed, or one that does not decode.
+ */
+function wp_presence_decode_network_summary_scheme( $data ) {
+	$decoded = json_decode( $data, true );
+
+	return isset( $decoded['scheme'] ) && 'http' === $decoded['scheme'] ? 'http' : 'https';
 }
 
 /**
@@ -494,6 +517,10 @@ function wp_presence_get_network_sites_for_user( $user_id ) {
  *                                       first, then by blog_id. Each list is in
  *                                       the order the site pushed it, which is
  *                                       ascending user ID.
+ *     @type array $schemes             'http' or 'https' keyed by blog_id, as
+ *                                       pushed from that site's own request.
+ *                                       Absent when the summary is empty. Read
+ *                                       only by wp_presence_hydrate_network_snapshot().
  *     @type int   $total_sites_online
  *     @type int   $total_users_online  Summed per site, so a user online on two
  *                                       sites counts twice.
@@ -731,12 +758,15 @@ function wp_presence_compute_network_snapshot( $timeout ) {
 	}
 
 	$by_site = array();
+	$schemes = array();
 
 	foreach ( $rows as $row ) {
 		$entries = wp_presence_decode_network_summary_row( $row->data );
 
 		if ( $entries ) {
-			$by_site[ (int) $row->blog_id ] = $entries;
+			$blog_id             = (int) $row->blog_id;
+			$by_site[ $blog_id ] = $entries;
+			$schemes[ $blog_id ] = wp_presence_decode_network_summary_scheme( $row->data );
 		}
 	}
 
@@ -787,6 +817,7 @@ function wp_presence_compute_network_snapshot( $timeout ) {
 
 	return array(
 		'sites'              => $by_site,
+		'schemes'            => array_intersect_key( $schemes, $by_site ),
 		'total_sites_online' => count( $by_site ),
 		'total_users_online' => $total_users,
 	);
@@ -804,6 +835,8 @@ function wp_presence_compute_network_snapshot( $timeout ) {
  */
 function wp_presence_hydrate_network_snapshot( array $snapshot, $max_sites, $users_per_site, $blog_id ) {
 	$by_site = $snapshot['sites'];
+	// Absent from the empty shape wp_presence_empty_network_summary() returns.
+	$schemes = $snapshot['schemes'] ?? array();
 
 	if ( $blog_id ) {
 		$by_site = isset( $by_site[ $blog_id ] ) ? array( $blog_id => $by_site[ $blog_id ] ) : array();
@@ -895,7 +928,8 @@ function wp_presence_hydrate_network_snapshot( array $snapshot, $max_sites, $use
 			'path'       => $site->path,
 			// get_site_url()/get_blog_option() switch blogs on every call; the raw
 			// WP_Site fields don't, at the cost of not reflecting a mapped domain.
-			'url'        => ( is_ssl() ? 'https://' : 'http://' ) . $site->domain . $site->path,
+			// Scheme comes from $schemes, not is_ssl(), for the same reason.
+			'url'        => ( ( $schemes[ $site_id ] ?? 'https' ) === 'http' ? 'http://' : 'https://' ) . $site->domain . $site->path,
 			'users'      => $hydrated,
 			// The site's real total, which users is capped below.
 			'user_count' => count( $by_site[ $site_id ] ),
