@@ -3,9 +3,12 @@
 		"php": "8.3",
 		"wp": "latest"
 	},
-	"landingPage": "/wp-admin/",
+	"landingPage": "/wp-admin/network/",
 	"login": true,
 	"steps": [
+		{
+			"step": "enableMultisite"
+		},
 		{
 			"step": "installPlugin",
 			"pluginData": {
@@ -31,7 +34,7 @@
 		},
 		{
 			"step": "runPHP",
-			"code": "<?php require '/wordpress/wp-load.php'; require '/wordpress/wp-content/plugins/presence-api/demo-seeder.php'; wp_presence_demo_seed( 40 ); update_user_meta( 1, 'show_welcome_panel', 0 ); update_user_meta( 1, 'meta-box-order_dashboard', array( 'normal' => 'presence_whos_online,presence_active_posts,dashboard_right_now,dashboard_activity', 'side' => 'dashboard_quick_press,dashboard_primary' ) ); ?>"
+			"code": "<?php require '/wordpress/wp-load.php'; require_once ABSPATH . 'wp-admin/includes/plugin.php'; activate_plugin( 'presence-api/presence-api.php', '', true ); $domain = parse_url( get_option( 'siteurl' ), PHP_URL_HOST ); wpmu_create_blog( $domain, '/engineering/', 'Engineering', 1 ); wpmu_create_blog( $domain, '/marketing/', 'Marketing', 1 ); wpmu_create_blog( $domain, '/design/', 'Design', 1 ); require '/wordpress/wp-content/plugins/presence-api/demo-seeder.php'; foreach ( get_sites( array( 'number' => 100 ) ) as $site ) { switch_to_blog( $site->blog_id ); wp_presence_demo_seed( 5 ); restore_current_blog(); } update_user_meta( 1, 'show_welcome_panel', 0 ); ?>"
 		}
 	]
 }
