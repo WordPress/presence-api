@@ -53,6 +53,38 @@ class WP_Test_Network_Presence extends WP_Presence_Network_UnitTestCase {
 	}
 
 	/**
+	 * A site's link must carry the scheme it was pushed under, not whichever
+	 * scheme the viewing request happens to be on.
+	 *
+	 * @covers ::wp_presence_get_network_summary
+	 * @covers ::wp_presence_encode_network_summary_row
+	 * @covers ::wp_presence_decode_network_summary_scheme
+	 * @covers ::wp_presence_hydrate_network_snapshot
+	 */
+	public function test_site_url_uses_the_scheme_the_site_pushed_under() {
+		$https_blog_id = $this->create_blog();
+		$http_blog_id  = $this->create_blog();
+
+		$_SERVER['HTTPS'] = 'on';
+		$this->set_presence_on_site( $https_blog_id, self::$editor_id );
+
+		unset( $_SERVER['HTTPS'] );
+		$this->set_presence_on_site( $http_blog_id, self::$editor_id );
+
+		// Viewer is on http, same as $http_blog_id's own push -- only
+		// $https_blog_id's link can tell the fix apart from the bug.
+		$summary = wp_presence_get_network_summary();
+
+		$urls = array();
+		foreach ( $summary['sites'] as $site ) {
+			$urls[ $site['blog_id'] ] = $site['url'];
+		}
+
+		$this->assertStringStartsWith( 'https://', $urls[ $https_blog_id ] );
+		$this->assertStringStartsWith( 'http://', $urls[ $http_blog_id ] );
+	}
+
+	/**
 	 * A site that hasn't pushed a row (never had any admin activity yet) has
 	 * to be silently absent from the result rather than fatal the whole
 	 * aggregation.

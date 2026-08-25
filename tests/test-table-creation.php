@@ -584,8 +584,7 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 		$registered = $wpdb->presence_network_summary ?? null;
 		$is_global  = in_array( 'presence_network_summary', $wpdb->ms_global_tables, true );
 
-		// $wpdb outlives the test, and re-registering appended a second
-		// ms_global_tables entry, so put both back before asserting.
+		// $wpdb outlives the test, so put the array back before asserting.
 		$wpdb->ms_global_tables = $global_tables;
 
 		if ( ! is_multisite() ) {
@@ -595,5 +594,31 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 
 		$this->assertSame( $wpdb->base_prefix . 'presence_network_summary', $registered );
 		$this->assertTrue( $is_global, 'Core only treats a table as network-wide if it is an ms_global_table.' );
+	}
+	/**
+	 * @covers ::wp_presence_register_network_summary_table
+	 */
+	public function test_registering_the_network_summary_table_is_idempotent() {
+		global $wpdb;
+
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		$global_tables = $wpdb->ms_global_tables;
+
+		// Start from an array that has never seen the entry, since the real
+		// double registration at load time has already added it.
+		$wpdb->ms_global_tables = array_values( array_diff( $wpdb->ms_global_tables, array( 'presence_network_summary' ) ) );
+
+		wp_presence_register_network_summary_table();
+		wp_presence_register_network_summary_table();
+
+		$count = count( array_keys( $wpdb->ms_global_tables, 'presence_network_summary', true ) );
+
+		// $wpdb outlives the test.
+		$wpdb->ms_global_tables = $global_tables;
+
+		$this->assertSame( 1, $count, 'Registering twice should leave one entry in $wpdb->ms_global_tables.' );
 	}
 }
