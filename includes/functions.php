@@ -116,7 +116,7 @@ function wp_set_presence( $room, $client_id, $state, $user_id = 0 ) {
 		)
 	);
 
-	if ( false !== $result && wp_presence_admin_room() === $room ) {
+	if ( $result > 0 && wp_presence_admin_room() === $room ) {
 		wp_presence_admin_room_changed();
 	}
 
@@ -147,7 +147,7 @@ function wp_remove_presence( $room, $client_id ) {
 		array( '%s', '%s' )
 	);
 
-	if ( false !== $result && wp_presence_admin_room() === $room ) {
+	if ( $result > 0 && wp_presence_admin_room() === $room ) {
 		wp_presence_admin_room_changed();
 	}
 
@@ -175,7 +175,7 @@ function wp_remove_user_presence( $user_id ) {
 	);
 
 	// Deletes across every room, so the admin room is always among them.
-	if ( false !== $result ) {
+	if ( $result > 0 ) {
 		wp_presence_admin_room_changed();
 	}
 
