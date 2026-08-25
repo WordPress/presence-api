@@ -191,6 +191,70 @@ class WP_Test_Network_Summary_Push extends WP_Presence_Network_UnitTestCase {
 	}
 
 	/**
+	 * The coalescing above bounds how often one site rewrites its row, not how
+	 * many sites write into the one table a shard router cannot split.
+	 *
+	 * Asserted as a statement count rather than an absent row: declining after a
+	 * SELECT against the global cluster still costs what the gate exists to avoid.
+	 *
+	 * @covers ::wp_presence_push_network_summary
+	 * @covers ::wp_presence_network_aggregation_enabled
+	 */
+	public function test_push_sends_no_statement_on_a_large_network() {
+		add_filter( 'wp_is_large_network', '__return_true' );
+
+		$blog_id = $this->create_blog();
+
+		$statements = $this->count_summary_table_statements(
+			function () use ( $blog_id ) {
+				$this->set_presence_on_site( $blog_id, self::$editor_id );
+			}
+		);
+
+		$this->assertSame( 0, $statements, 'A large network should not touch the summary table at all.' );
+		$this->assertNull( $this->get_network_summary_row( $blog_id ) );
+	}
+
+	/**
+	 * The gate is a default, not a verdict: a large network sized to carry the
+	 * writes has to be able to say so, which the clamped
+	 * wp_presence_network_summary_refresh_interval() cannot express.
+	 *
+	 * @covers ::wp_presence_push_network_summary
+	 * @covers ::wp_presence_network_aggregation_enabled
+	 */
+	public function test_filter_can_aggregate_on_a_large_network() {
+		add_filter( 'wp_is_large_network', '__return_true' );
+		add_filter( 'wp_presence_network_aggregation_enabled', '__return_true' );
+
+		$blog_id = $this->create_blog();
+		$this->set_presence_on_site( $blog_id, self::$editor_id );
+
+		$row = $this->get_network_summary_row( $blog_id );
+
+		$this->assertNotNull( $row );
+		$this->assertSame( array( self::$editor_id ), wp_presence_decode_network_summary_row( $row->data ) );
+	}
+
+	/**
+	 * And the other way, for a network under the threshold that still does not
+	 * want the writes.
+	 *
+	 * @covers ::wp_presence_push_network_summary
+	 * @covers ::wp_presence_network_aggregation_enabled
+	 */
+	public function test_filter_can_stop_aggregating_below_the_threshold() {
+		$this->assertTrue( wp_presence_network_aggregation_enabled(), 'The test network is not large.' );
+
+		add_filter( 'wp_presence_network_aggregation_enabled', '__return_false' );
+
+		$blog_id = $this->create_blog();
+		$this->set_presence_on_site( $blog_id, self::$editor_id );
+
+		$this->assertNull( $this->get_network_summary_row( $blog_id ) );
+	}
+
+	/**
 	 * The data column is read by people with a database client open, so it
 	 * names what it holds rather than storing a bare list of numbers.
 	 *
