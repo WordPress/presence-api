@@ -195,8 +195,7 @@ function wp_presence_admin_room_changed() {
 	/**
 	 * Fires after a write that may have changed who's online on this site.
 	 *
-	 * Fires on every admin-room write, including a tick that refreshes the same
-	 * people; listeners that only want real changes compare state themselves.
+	 * Fires when an admin-room write changes at least one row.
 	 *
 	 * @since 0.1.25
 	 */
