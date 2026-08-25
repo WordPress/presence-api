@@ -702,6 +702,9 @@ function wp_presence_filter_network_snapshot_users( array $by_site ) {
  * Sites and users are checked against the network here, while the result is
  * still a list of IDs, so a stale row is dropped before anything gets loaded.
  *
+ * A network that does not aggregate reads as empty rather than as whatever its
+ * rows last said, since nothing is keeping them current.
+ *
  * @access private
  * @param int $timeout TTL in seconds; rows untouched longer than this are skipped.
  * @return array See wp_presence_get_network_snapshot().
@@ -709,7 +712,7 @@ function wp_presence_filter_network_snapshot_users( array $by_site ) {
 function wp_presence_compute_network_snapshot( $timeout ) {
 	global $wpdb;
 
-	if ( ! wp_presence_has_network_summary_table() ) {
+	if ( ! wp_presence_network_aggregation_enabled() || ! wp_presence_has_network_summary_table() ) {
 		return wp_presence_empty_network_summary();
 	}
 
