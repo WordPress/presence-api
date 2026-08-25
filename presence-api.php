@@ -106,6 +106,7 @@ require_once WP_PRESENCE_PLUGIN_DIR . 'includes/widgets/class-wp-presence-widget
 
 if ( is_multisite() ) {
 	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/network-functions.php';
+	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/class-wp-rest-presence-network-controller.php';
 	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/network-sites-list.php';
 	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/network-user-list.php';
 	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/widgets/class-wp-presence-network-widget-whos-online.php';
@@ -145,6 +146,11 @@ function wp_presence_register_post_type_support() {
 function wp_presence_register_rest_routes() {
 	$controller = new WP_REST_Presence_Controller();
 	$controller->register_routes();
+
+	if ( is_multisite() ) {
+		$network_controller = new WP_REST_Presence_Network_Controller();
+		$network_controller->register_routes();
+	}
 }
 
 /**
