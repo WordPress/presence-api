@@ -492,6 +492,7 @@ function wp_presence_get_network_snapshot( array $args = array() ) {
  *     @type int $sites          Maximum sites to resolve, busiest first. Default 0, every site.
  *     @type int $users_per_site Maximum users to resolve per site. Default 0, every user.
  *     @type int $blog_id        Resolve this site only. Default 0, no restriction.
+ *     @type int $offset         Sites to skip before resolving. Default 0.
  * }
  * @return array {
  *     @type array $sites               blog_id, domain, path, url, users
@@ -512,16 +513,18 @@ function wp_presence_get_network_summary( array $args = array() ) {
 			'sites'          => 0,
 			'users_per_site' => 0,
 			'blog_id'        => 0,
+			'offset'         => 0,
 		)
 	);
 
 	$timeout = wp_presence_get_timeout( $args['timeout'] );
 	$key     = sprintf(
-		'summary:%d:%d:%d:%d',
+		'summary:%d:%d:%d:%d:%d',
 		$timeout,
 		(int) $args['sites'],
 		(int) $args['users_per_site'],
-		(int) $args['blog_id']
+		(int) $args['blog_id'],
+		(int) $args['offset']
 	);
 
 	return wp_presence_network_cached(
@@ -531,7 +534,8 @@ function wp_presence_get_network_summary( array $args = array() ) {
 				wp_presence_get_network_snapshot( array( 'timeout' => $timeout ) ),
 				(int) $args['sites'],
 				(int) $args['users_per_site'],
-				(int) $args['blog_id']
+				(int) $args['blog_id'],
+				(int) $args['offset']
 			);
 		}
 	);
@@ -764,17 +768,18 @@ function wp_presence_compute_network_snapshot( $timeout ) {
  * @param int   $max_sites      Maximum sites to resolve. 0 for every site.
  * @param int   $users_per_site Maximum users to resolve per site. 0 for every user.
  * @param int   $blog_id        Resolve this site only. 0 for no restriction.
+ * @param int   $offset         Sites to skip before resolving. Default 0.
  * @return array See wp_presence_get_network_summary().
  */
-function wp_presence_hydrate_network_snapshot( array $snapshot, $max_sites, $users_per_site, $blog_id ) {
+function wp_presence_hydrate_network_snapshot( array $snapshot, $max_sites, $users_per_site, $blog_id, $offset = 0 ) {
 	$by_site = $snapshot['sites'];
 
 	if ( $blog_id ) {
 		$by_site = isset( $by_site[ $blog_id ] ) ? array( $blog_id => $by_site[ $blog_id ] ) : array();
 	}
 
-	if ( $max_sites > 0 ) {
-		$by_site = array_slice( $by_site, 0, $max_sites, true );
+	if ( $offset > 0 || $max_sites > 0 ) {
+		$by_site = array_slice( $by_site, $offset, $max_sites > 0 ? $max_sites : null, true );
 	}
 
 	if ( ! $by_site ) {
