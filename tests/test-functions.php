@@ -118,6 +118,25 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * @covers ::wp_remove_presence
+	 * @covers ::wp_presence_admin_room_changed
+	 */
+	public function test_remove_nonexistent_admin_presence_does_not_announce_a_change() {
+		$fired = 0;
+		add_action(
+			'wp_presence_admin_room_changed',
+			function () use ( &$fired ) {
+				++$fired;
+			}
+		);
+
+		$result = wp_remove_presence( wp_presence_admin_room(), 'nonexistent' );
+
+		$this->assertTrue( $result, 'A no-op removal should still report success.' );
+		$this->assertSame( 0, $fired, 'A no-op removal must not announce a change.' );
+	}
+
+	/**
 	 * @covers ::wp_remove_user_presence
 	 */
 	public function test_remove_user_presence_clears_all_rooms() {
@@ -129,6 +148,25 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 		$this->assertCount( 0, $this->presence_for_user( self::$editor_id ) );
 		$this->assertCount( 1, $this->presence_for_user( self::$subscriber_id ), 'Another user\'s entries should be left alone.' );
+	}
+
+	/**
+	 * @covers ::wp_remove_user_presence
+	 * @covers ::wp_presence_admin_room_changed
+	 */
+	public function test_remove_user_presence_without_rows_does_not_announce_a_change() {
+		$fired = 0;
+		add_action(
+			'wp_presence_admin_room_changed',
+			function () use ( &$fired ) {
+				++$fired;
+			}
+		);
+
+		$result = wp_remove_user_presence( self::$editor_id );
+
+		$this->assertTrue( $result, 'A no-op removal should still report success.' );
+		$this->assertSame( 0, $fired, 'A no-op removal must not announce a change.' );
 	}
 
 

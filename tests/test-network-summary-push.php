@@ -132,8 +132,23 @@ class WP_Test_Network_Summary_Push extends WP_Presence_Network_UnitTestCase {
 	 * @covers ::wp_presence_network_summary_refresh_interval
 	 */
 	public function test_push_refreshes_a_stale_row_when_nobody_changed() {
+		global $wpdb;
+
 		$blog_id = $this->create_blog();
 		$this->set_presence_on_site( $blog_id, self::$editor_id );
+
+		// Age the presence row so the second write produces an updated date_gmt
+		// and $result > 0. Real heartbeat ticks are always seconds apart.
+		switch_to_blog( $blog_id );
+		$wpdb->query(
+			$wpdb->prepare(
+				"UPDATE {$wpdb->presence} SET date_gmt = %s WHERE room = %s AND client_id = %s",
+				gmdate( 'Y-m-d H:i:s', time() - 2 ),
+				wp_presence_admin_room(),
+				'user-' . self::$editor_id
+			)
+		);
+		restore_current_blog();
 
 		$stamp = gmdate( 'Y-m-d H:i:s', time() - wp_presence_network_summary_refresh_interval() - 1 );
 		$this->set_network_summary_row( $blog_id, array( self::$editor_id ), $stamp );
