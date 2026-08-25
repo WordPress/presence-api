@@ -87,7 +87,10 @@ function wp_presence_register_network_summary_table() {
 	}
 	global $wpdb;
 	$wpdb->presence_network_summary = $wpdb->base_prefix . 'presence_network_summary';
-	$wpdb->ms_global_tables[]       = 'presence_network_summary';
+
+	if ( ! in_array( 'presence_network_summary', $wpdb->ms_global_tables, true ) ) {
+		$wpdb->ms_global_tables[] = 'presence_network_summary';
+	}
 }
 wp_presence_register_network_summary_table();
 
