@@ -1,0 +1,72 @@
+name: Public Surface
+
+on:
+  # Labelling needs a write token, which `pull_request` does not get from a
+  # fork, and most contributions here are forks. The head is only ever read as
+  # text through `git show`: never checked out, never installed, never run.
+  pull_request_target: # zizmor: ignore[dangerous-triggers]
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+permissions:
+  contents: read
+
+jobs:
+  detect:
+    name: Detect new public surfaces
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      PR: ${{ github.event.pull_request.number }}
+      LABEL: Public API
+    steps:
+      - name: Checkout base branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # Against the merge base, so a surface someone else merged while this
+      # branch was open is not attributed to it.
+      - name: Compare surfaces
+        id: surfaces
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch --no-tags --quiet origin "+refs/pull/${PR}/head:refs/pr/head"
+          node .github/scripts/detect-public-surface.js \
+            "$(git merge-base "$BASE_SHA" refs/pr/head)" refs/pr/head
+
+      # One comment, edited in place on every push, so a branch that adds a hook
+      # and then documents it ends up with an accurate comment.
+      - name: Label and comment
+        env:
+          COUNT: ${{ steps.surfaces.outputs.count }}
+        run: |
+          # MARKER in detect-public-surface.js.
+          ID=$( gh api "repos/$GH_REPO/issues/$PR/comments" --paginate \
+            --jq 'map(select(.body | startswith("<!-- presence-api:public-surface -->"))) | first | .id // empty' )
+
+          if [ "$COUNT" -eq 0 ]; then
+            # Removing an absent label is a no-op.
+            gh issue edit "$PR" --remove-label "$LABEL"
+            if [ -n "$ID" ]; then
+              gh api --method DELETE "repos/$GH_REPO/issues/comments/$ID" --silent
+            fi
+            exit 0
+          fi
+
+          gh issue edit "$PR" --add-label "$LABEL"
+
+          if [ -n "$ID" ]; then
+            gh api --method PATCH "repos/$GH_REPO/issues/comments/$ID" -F body=@comment.md --silent
+          else
+            gh pr comment "$PR" --body-file comment.md
+          fi
