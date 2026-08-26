@@ -204,6 +204,50 @@ class WP_Test_Network_Presence extends WP_Presence_Network_UnitTestCase {
 	}
 
 	/**
+	 * Rows outlive the push that wrote them, so a network that stopped
+	 * aggregating would keep serving a snapshot frozen at whatever the last push
+	 * left, with nothing on the screen to say the feed behind it had stopped.
+	 * Reading empty is the only honest answer once nothing is keeping it current.
+	 *
+	 * @covers ::wp_presence_compute_network_snapshot
+	 * @covers ::wp_presence_network_aggregation_enabled
+	 */
+	public function test_summary_is_empty_on_a_large_network() {
+		$blog_id = $this->create_blog();
+		$this->set_network_summary_row( $blog_id, array( self::$editor_id ) );
+
+		add_filter( 'wp_is_large_network', '__return_true' );
+		wp_presence_flush_network_summary_cache();
+
+		$this->assertSame( wp_presence_empty_network_summary(), wp_presence_get_network_summary() );
+		$this->assertSame( array(), wp_presence_get_network_online_user_ids() );
+		$this->assertSame( array(), wp_presence_get_network_sites_for_user( self::$editor_id ) );
+	}
+
+	/**
+	 * Every read funnels through one snapshot, so the gate has to be answerable
+	 * without a query even when rows are sitting there to be read.
+	 *
+	 * @covers ::wp_presence_compute_network_snapshot
+	 * @covers ::wp_presence_network_aggregation_enabled
+	 */
+	public function test_a_gated_read_sends_no_statement() {
+		$blog_id = $this->create_blog();
+		$this->set_network_summary_row( $blog_id, array( self::$editor_id ) );
+
+		add_filter( 'wp_presence_network_aggregation_enabled', '__return_false' );
+		wp_presence_flush_network_summary_cache();
+
+		$statements = $this->count_summary_table_statements(
+			static function () {
+				wp_presence_get_network_summary();
+			}
+		);
+
+		$this->assertSame( 0, $statements );
+	}
+
+	/**
 	 * Deleting a site leaves its row behind until it ages out, so the row can
 	 * outlive the site it names.
 	 *

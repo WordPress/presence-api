@@ -70,6 +70,39 @@ function wp_presence_has_network_summary_table() {
 }
 
 /**
+ * Whether this network aggregates presence into the summary table.
+ *
+ * An ms_global_tables entry pins the summary table to the global cluster on a
+ * sharded network, so write concentration grows with the site count however
+ * rarely any single site pushes. Defaults off above wp_is_large_network()
+ * rather than having a network inherit that cost from installing the plugin.
+ *
+ * The read path checks this too, or a network that stopped aggregating would go
+ * on drawing the rows it already had with nothing to say the feed had stopped.
+ *
+ * @access private
+ * @return bool
+ */
+function wp_presence_network_aggregation_enabled() {
+	// Load-bearing rather than redundant: wp_is_large_network() is undefined
+	// outside multisite, and callers here do not check first.
+	if ( ! is_multisite() ) {
+		return false;
+	}
+
+	/**
+	 * Filters whether network-wide presence aggregation runs.
+	 *
+	 * Gates the push and the reads behind the Network Admin screens.
+	 *
+	 * @since 0.2.0
+	 *
+	 * @param bool $enabled Default false above wp_is_large_network().
+	 */
+	return (bool) apply_filters( 'wp_presence_network_aggregation_enabled', ! wp_is_large_network() );
+}
+
+/**
  * Creates or updates the network-wide presence summary table if needed.
  *
  * One table for the whole network rather than one per site, since it exists
@@ -174,7 +207,7 @@ function wp_presence_network_summary_refresh_interval() {
  * @access private
  */
 function wp_presence_push_network_summary() {
-	if ( ! is_multisite() || ! wp_presence_has_network_summary_table() ) {
+	if ( ! wp_presence_network_aggregation_enabled() || ! wp_presence_has_network_summary_table() ) {
 		return;
 	}
 
@@ -696,6 +729,9 @@ function wp_presence_filter_network_snapshot_users( array $by_site ) {
  * Sites and users are checked against the network here, while the result is
  * still a list of IDs, so a stale row is dropped before anything gets loaded.
  *
+ * A network that does not aggregate reads as empty rather than as whatever its
+ * rows last said, since nothing is keeping them current.
+ *
  * @access private
  * @param int $timeout TTL in seconds; rows untouched longer than this are skipped.
  * @return array See wp_presence_get_network_snapshot().
@@ -703,7 +739,7 @@ function wp_presence_filter_network_snapshot_users( array $by_site ) {
 function wp_presence_compute_network_snapshot( $timeout ) {
 	global $wpdb;
 
-	if ( ! wp_presence_has_network_summary_table() ) {
+	if ( ! wp_presence_network_aggregation_enabled() || ! wp_presence_has_network_summary_table() ) {
 		return wp_presence_empty_network_summary();
 	}
 
