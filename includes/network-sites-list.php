@@ -26,6 +26,25 @@ function wp_presence_register_network_sites_column( $columns ) {
 }
 
 /**
+ * Enqueues the avatar-stack stylesheet on the Sites list.
+ *
+ * No other presence asset loads on this screen, so nothing else pulls it in.
+ *
+ * @param string $hook_suffix The current admin page.
+ */
+function wp_presence_enqueue_network_sites_assets( $hook_suffix ) {
+	if ( 'sites.php' !== $hook_suffix ) {
+		return;
+	}
+
+	if ( ! current_user_can( wp_presence_network_capability() ) ) {
+		return;
+	}
+
+	wp_presence_enqueue_avatar_stack_style();
+}
+
+/**
  * Renders the "Online" column for a single row of the Sites list table.
  *
  * Rendered once per page load, the same as every other column on this table
