@@ -362,4 +362,23 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 
 		$this->assertSame( array( '0 entries deleted.' ), WP_CLI::messages( 'success' ) );
 	}
+
+	/**
+	 * The summary table behind it only exists on a network, and the functions it
+	 * reads are not loaded here at all.
+	 *
+	 * @covers WP_Presence_CLI_Command::network
+	 */
+	public function test_network_refuses_to_run_on_a_single_site() {
+		if ( is_multisite() ) {
+			$this->markTestSkipped( 'Requires single site.' );
+		}
+
+		$this->assert_halts_with(
+			function () {
+				$this->command->network( array(), array() );
+			},
+			'This is not a multisite installation.'
+		);
+	}
 }
