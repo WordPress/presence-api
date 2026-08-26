@@ -40,6 +40,13 @@ class WP_Presence_Widget_Whos_Online {
 	const IDLE_THRESHOLD = 30;
 
 	/**
+	 * Maximum avatars in the overflow stack.
+	 *
+	 * @var int
+	 */
+	const AVATAR_STACK_MAX = 4;
+
+	/**
 	 * Returns the overflow threshold, filtered for customization.
 	 *
 	 * When the number of overflow users exceeds this value, the widget
@@ -123,10 +130,12 @@ class WP_Presence_Widget_Whos_Online {
 			return;
 		}
 
-		wp_add_inline_script(
-			'heartbeat',
-			self::get_inline_script()
-		);
+		wp_presence_enqueue_avatar_stack_script();
+
+		// A handle of its own so the inline script can declare what it needs.
+		wp_register_script( 'presence-dashboard-widget', false, array( 'jquery', 'heartbeat', 'wp-presence-avatar-stack' ), WP_PRESENCE_VERSION, true );
+		wp_enqueue_script( 'presence-dashboard-widget' );
+		wp_add_inline_script( 'presence-dashboard-widget', self::get_inline_script() );
 
 		wp_presence_enqueue_avatar_stack_style();
 
@@ -302,6 +311,7 @@ class WP_Presence_Widget_Whos_Online {
 	var idleThreshold = %d;
 	var overflowThreshold = %d;
 	var usersUrl = %s;
+	var avatarMax = %d;
 
 	function esc(str) {
 		var el = document.createElement('span');
@@ -397,18 +407,6 @@ class WP_Presence_Widget_Whos_Online {
 		return html;
 	}
 
-	function buildAvatarStack(overflow) {
-		var stackMax = Math.min(overflow.length, 4);
-		var html = '<span class="presence-avatar-stack">';
-		overflow.slice(0, stackMax).forEach(function(entry, idx) {
-			if (entry.avatar_url) {
-				html += '<img src="' + esc(entry.avatar_url) + '" width="24" height="24" style="z-index:' + (stackMax - idx) + '" alt="' + esc(entry.display_name) + '" />';
-			}
-		});
-		html += '</span>';
-		return html;
-	}
-
 	function buildFullHtml(visible, overflow) {
 		var html = '<ul class="presence-user-list" aria-label="' + esc(i18n.usersOnline) + '">';
 		visible.forEach(function(entry) {
@@ -419,14 +417,14 @@ class WP_Presence_Widget_Whos_Online {
 			if (overflow.length > overflowThreshold) {
 				// Summary mode: avatar stack + count linking to Users page.
 				html += '<a href="' + esc(usersUrl) + '" class="presence-overflow-toggle">';
-				html += buildAvatarStack(overflow);
+				html += window.wpPresenceBuildAvatarStack(overflow, avatarMax);
 				html += '<span class="presence-overflow-text">' + esc(i18n.moreCountLink.replace('%%d', overflow.length)) + '</span></a>';
 			} else {
 				// Expandable list mode.
 				html += '<button type="button" class="presence-overflow-toggle" data-action="expand" aria-expanded="' + (isExpanded ? 'true' : 'false') + '" aria-controls="presence-overflow-list"';
 				if (isExpanded) html += ' style="display:none"';
 				html += '>';
-				html += buildAvatarStack(overflow);
+				html += window.wpPresenceBuildAvatarStack(overflow, avatarMax);
 				html += '<span class="presence-overflow-text">' + esc(i18n.moreCount.replace('%%d', overflow.length)) + '</span></button>';
 				html += '<ul id="presence-overflow-list" class="presence-overflow-expanded" aria-label="' + esc(i18n.additionalUsers) + '"';
 				if (!isExpanded) html += ' style="display:none"';
@@ -559,6 +557,7 @@ JS,
 			self::IDLE_THRESHOLD,
 			self::get_overflow_threshold(),
 			wp_json_encode( admin_url( 'users.php?presence_status=online' ) ),
+			self::AVATAR_STACK_MAX,
 			self::VISIBLE_ROWS
 		);
 	}
@@ -659,7 +658,7 @@ JS,
 			echo '</ul>';
 
 			if ( ! empty( $overflow ) ) {
-				$stack_max   = min( count( $overflow ), 4 );
+				$stack_max   = min( count( $overflow ), self::AVATAR_STACK_MAX );
 				$stack_users = array();
 
 				foreach ( array_slice( $overflow, 0, $stack_max ) as $oentry ) {
@@ -678,7 +677,7 @@ JS,
 				if ( count( $overflow ) > self::get_overflow_threshold() ) {
 					// Summary mode: avatar stack + count linking to Users page.
 					echo '<a href="' . esc_url( admin_url( 'users.php?presence_status=online' ) ) . '" class="presence-overflow-toggle">';
-					echo wp_kses_post( wp_presence_render_avatar_stack( $stack_users, 4 ) );
+					echo wp_kses_post( wp_presence_render_avatar_stack( $stack_users, self::AVATAR_STACK_MAX ) );
 					echo '<span class="presence-overflow-text">';
 					/* translators: %d: Number of additional online users. */
 					echo esc_html( sprintf( __( '+%d more — view all users', 'presence-api' ), count( $overflow ) ) );
@@ -686,7 +685,7 @@ JS,
 				} else {
 					// Expandable list mode.
 					echo '<button type="button" class="presence-overflow-toggle" data-action="expand" aria-expanded="false" aria-controls="presence-overflow-list">';
-					echo wp_kses_post( wp_presence_render_avatar_stack( $stack_users, 4 ) );
+					echo wp_kses_post( wp_presence_render_avatar_stack( $stack_users, self::AVATAR_STACK_MAX ) );
 					echo '<span class="presence-overflow-text">';
 					/* translators: %d: Number of additional online users. */
 					echo esc_html( sprintf( __( '+%d more', 'presence-api' ), count( $overflow ) ) );

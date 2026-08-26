@@ -54,7 +54,12 @@ class WP_Presence_Network_Widget_Whos_Online {
 		}
 
 		wp_enqueue_script( 'heartbeat' );
-		wp_add_inline_script( 'heartbeat', self::get_inline_script() );
+		wp_presence_enqueue_avatar_stack_script();
+
+		// A handle of its own so the inline script can declare what it needs.
+		wp_register_script( 'presence-network-widget', false, array( 'jquery', 'heartbeat', 'wp-presence-avatar-stack' ), WP_PRESENCE_VERSION, true );
+		wp_enqueue_script( 'presence-network-widget' );
+		wp_add_inline_script( 'presence-network-widget', self::get_inline_script() );
 
 		wp_presence_enqueue_avatar_stack_style();
 
@@ -249,18 +254,6 @@ class WP_Presence_Network_Widget_Whos_Online {
 		return el.innerHTML;
 	}
 
-	function buildAvatarStack(users) {
-		var stackMax = Math.min(users.length, avatarMax);
-		var html = '<span class="presence-avatar-stack">';
-		users.slice(0, stackMax).forEach(function(user, idx) {
-			if (user.avatar_url) {
-				html += '<img src="' + esc(user.avatar_url) + '" width="20" height="20" style="z-index:' + (stackMax - idx) + '" alt="' + esc(user.display_name) + '" />';
-			}
-		});
-		html += '</span>';
-		return html;
-	}
-
 	// Already cut to the sites and avatars this widget shows, so nothing is
 	// sliced here; overflow is a count the server sends, not what is left over.
 	function buildListHtml(sites, overflow) {
@@ -270,7 +263,7 @@ class WP_Presence_Network_Widget_Whos_Online {
 
 		var html = '<ul class="presence-user-list">';
 		sites.forEach(function(site) {
-			html += '<li class="presence-site-item">' + buildAvatarStack(site.users);
+			html += '<li class="presence-site-item">' + window.wpPresenceBuildAvatarStack(site.users, avatarMax);
 			html += '<span class="presence-site-info"><a href="' + esc(site.url) + '">' + esc(site.domain + site.path) + '</a></span>';
 			html += '<span class="presence-site-count">' + site.user_count + '</span></li>';
 		});
