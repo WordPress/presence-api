@@ -12,10 +12,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Core class used to read network-wide presence via the REST API.
  *
- * A site is the item here, not a presence entry: the summary table this reads
- * holds one row per site, and resolving names and avatars is what costs, so
- * the collection paginates over sites and each item carries only the users it
- * was asked to resolve.
+ * A site is the item here, not a presence entry: the summary table holds one
+ * row per site, and resolving names and avatars is what costs.
  *
  * @see WP_REST_Controller
  */
@@ -159,9 +157,8 @@ class WP_REST_Presence_Network_Controller extends WP_REST_Controller {
 
 		$response = rest_ensure_response( $data );
 
-		// Sites, since a site is what is being paginated. The user total has no
-		// standard header to go in, and a caller after the headcount alone would
-		// otherwise have to walk every page for it.
+		// The user total has no standard header, and a caller after the headcount
+		// alone would otherwise have to walk every page for it.
 		$response->header( 'X-WP-Total', $summary['total_sites_online'] );
 		$response->header( 'X-WP-TotalPages', (int) ceil( $summary['total_sites_online'] / $per_page ) );
 		$response->header( 'X-WP-Presence-Users-Online', $summary['total_users_online'] );
@@ -173,8 +170,8 @@ class WP_REST_Presence_Network_Controller extends WP_REST_Controller {
 	/**
 	 * Retrieves one site's presence.
 	 *
-	 * A site nobody is on answers with an empty user list; a 404 means no such
-	 * site, so a poll on one site reads the same shape either way.
+	 * A site nobody is on answers with an empty user list, so only an unknown
+	 * site is a 404 and a poll reads the same shape either way.
 	 *
 	 * @param WP_REST_Request $request Full details about the request.
 	 * @return WP_REST_Response|WP_Error Response object on success, WP_Error otherwise.
@@ -210,10 +207,8 @@ class WP_REST_Presence_Network_Controller extends WP_REST_Controller {
 	/**
 	 * Builds the item for a site nobody is online on.
 	 *
-	 * A site with users online has its URL derived from the summary row it
-	 * pushed. There is no row here, so this reads the site's own siteurl, which
-	 * costs a switch_to_blog() -- affordable for the one site this route serves,
-	 * and unlike the derived form it reflects a mapped domain.
+	 * With no summary row to derive the URL from, this reads the site's own
+	 * siteurl: one switch_to_blog(), and it reflects a mapped domain.
 	 *
 	 * @param WP_Site $site The site.
 	 * @return array Item in the shape wp_presence_get_network_summary() returns.
