@@ -67,6 +67,12 @@ jobs:
             }
 
       - name: Unpack and validate artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          # The build runs untrusted PR code; the run's head SHA is the only
+          # trusted value.
+          TRUSTED_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
           mkdir -p artifacts/release-assets artifacts/pr-meta
@@ -78,15 +84,29 @@ jobs:
           test -f artifacts/pr-meta/pr-meta.json
 
           # Parse with jq and validate types. Never `source` the artifact.
-          PR_NUMBER=$(jq -r '.pr_number' artifacts/pr-meta/pr-meta.json)
-          HEAD_SHA=$(jq -r '.head_sha' artifacts/pr-meta/pr-meta.json)
+          META_HEAD_SHA=$(jq -r '.head_sha' artifacts/pr-meta/pr-meta.json)
+          [[ "$META_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] \
+            || { echo "Invalid SHA in pr-meta: $META_HEAD_SHA"; exit 1; }
+
+          # Require pr-meta's SHA to match the triggering run.
+          if [[ "$META_HEAD_SHA" != "$TRUSTED_HEAD_SHA" ]]; then
+            echo "Refusing to publish: pr-meta head SHA ($META_HEAD_SHA) does not match the triggering run ($TRUSTED_HEAD_SHA)."
+            exit 1
+          fi
+
+          # Resolve the PR number from the trusted head SHA rather than the
+          # artifact-supplied value.
+          readarray -t _prs < <(
+            gh api "repos/${GH_REPO}/pulls?state=open&per_page=100" --paginate \
+              --jq '.[] | select(.head.sha == env.TRUSTED_HEAD_SHA) | .number'
+          )
+          PR_NUMBER="${_prs[0]:-}"
           [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]] \
-            || { echo "Invalid PR number in pr-meta: $PR_NUMBER"; exit 1; }
-          [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] \
-            || { echo "Invalid SHA in pr-meta: $HEAD_SHA"; exit 1; }
+            || { echo "Could not resolve an open PR for head SHA $TRUSTED_HEAD_SHA"; exit 1; }
+
           {
             echo "PR_NUMBER=$PR_NUMBER"
-            echo "HEAD_SHA=$HEAD_SHA"
+            echo "HEAD_SHA=$TRUSTED_HEAD_SHA"
           } >> "$GITHUB_ENV"
 
       - name: Publish prerelease (replaces any prior preview for this PR)
