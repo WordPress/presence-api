@@ -129,6 +129,17 @@ All endpoints require `edit_posts`. Responses include `Cache-Control: no-store`.
 | `DELETE` | `/wp-presence/v1/presence` | Remove a presence entry |
 | `GET` | `/wp-presence/v1/presence/rooms` | List active rooms |
 
+### Network
+
+Multisite only, and gated on `manage_network` rather than `edit_posts`.
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/wp-presence/v1/presence/network` | List sites with users online, busiest first |
+| `GET` | `/wp-presence/v1/presence/network/<blog_id>` | One site's users online |
+
+The collection accepts `page` and `per_page` (default 50, max 100), counting sites in `X-WP-Total` and `X-WP-TotalPages` and the network headcount in `X-WP-Presence-Users-Online`. Both routes accept `users_per_site` to cap the users named per site (default 0, every user); each site's `user_count` stays its real total. A site nobody is on answers with an empty user list, so only an unknown `blog_id` is a 404.
+
 ## WP-CLI
 
 ```
@@ -136,6 +147,7 @@ wp presence list      # List all active presence entries
 wp presence summary   # Summary grouped by room
 wp presence set       # Manually upsert an entry
 wp presence cleanup   # Delete expired entries immediately
+wp presence network   # Network-wide summary (multisite only)
 ```
 
 ## Post-lock bridge
