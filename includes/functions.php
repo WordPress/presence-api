@@ -823,25 +823,41 @@ function wp_presence_hydrate_room_users( $rooms, $timeout = WP_PRESENCE_DEFAULT_
 }
 
 /**
+ * Enqueues the shared avatar-stack stylesheet.
+ *
+ * @access private
+ */
+function wp_presence_enqueue_avatar_stack_style() {
+	wp_enqueue_style(
+		'wp-presence-avatar-stack',
+		WP_PRESENCE_PLUGIN_URL . 'assets/css/avatar-stack.css',
+		array(),
+		WP_PRESENCE_VERSION
+	);
+}
+
+/**
  * Renders a small avatar stack for a list of users.
  *
  * Shared across every surface that shows an overlapping avatar stack (the
  * dashboard widget's overflow indicator, the network Sites list column, the
  * network dashboard widget) so they all render the stack identically.
  *
+ * assets/css/avatar-stack.css sizes the avatars; the attributes below only
+ * reserve the space until it loads.
+ *
  * @access private
  * @param array $users Users, each with 'avatar_url' and 'display_name'.
  * @param int   $max   Optional. Maximum avatars to show. Default 4.
- * @param int   $size  Optional. Avatar width and height in pixels. Default 20.
  * @return string HTML markup.
  */
-function wp_presence_render_avatar_stack( $users, $max = 4, $size = 20 ) {
+function wp_presence_render_avatar_stack( $users, $max = 4 ) {
 	$stack_max = min( count( $users ), $max );
 	$html      = '<span class="presence-avatar-stack">';
 
 	foreach ( array_slice( $users, 0, $stack_max ) as $index => $user ) {
 		$z     = $stack_max - $index;
-		$html .= '<img src="' . esc_url( $user['avatar_url'] ) . '" width="' . (int) $size . '" height="' . (int) $size . '" style="z-index:' . (int) $z . '" alt="' . esc_attr( $user['display_name'] ) . '" />';
+		$html .= '<img src="' . esc_url( $user['avatar_url'] ) . '" width="20" height="20" style="z-index:' . (int) $z . '" alt="' . esc_attr( $user['display_name'] ) . '" />';
 	}
 
 	$html .= '</span>';

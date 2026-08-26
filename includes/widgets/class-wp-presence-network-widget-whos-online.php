@@ -56,6 +56,8 @@ class WP_Presence_Network_Widget_Whos_Online {
 		wp_enqueue_script( 'heartbeat' );
 		wp_add_inline_script( 'heartbeat', self::get_inline_script() );
 
+		wp_presence_enqueue_avatar_stack_style();
+
 		wp_register_style( 'presence-network-widget', false, array(), WP_PRESENCE_VERSION );
 		wp_enqueue_style( 'presence-network-widget' );
 		wp_add_inline_style( 'presence-network-widget', self::get_inline_css() );
@@ -74,10 +76,7 @@ class WP_Presence_Network_Widget_Whos_Online {
 			#presence-network-widget-list .presence-site-info { flex: 1; min-width: 0; }
 			#presence-network-widget-list .presence-site-count { color: #646970; font-size: 12px; }
 			#presence-network-widget-list .presence-more-link { display: block; padding: 6px 12px; color: var(--wp-admin-theme-color, #2271b1); font-size: 13px; text-decoration: none; }
-			#presence-network-widget-list .presence-more-link:hover { text-decoration: underline; }
-			#presence-network-widget-list .presence-avatar-stack { display: inline-flex; align-items: center; }
-			#presence-network-widget-list .presence-avatar-stack img { border-radius: 50%; width: 20px; height: 20px; margin-inline-start: -6px; box-shadow: 0 0 0 2px #fff; position: relative; }
-			#presence-network-widget-list .presence-avatar-stack img:first-child { margin-inline-start: 0; }';
+			#presence-network-widget-list .presence-more-link:hover { text-decoration: underline; }';
 	}
 
 	/**

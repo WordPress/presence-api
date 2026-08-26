@@ -128,6 +128,8 @@ class WP_Presence_Widget_Whos_Online {
 			self::get_inline_script()
 		);
 
+		wp_presence_enqueue_avatar_stack_style();
+
 		wp_register_style( 'presence-dashboard-widget', false, array(), WP_PRESENCE_VERSION );
 		wp_enqueue_style( 'presence-dashboard-widget' );
 		wp_add_inline_style( 'presence-dashboard-widget', self::get_inline_css() );
@@ -154,9 +156,6 @@ class WP_Presence_Widget_Whos_Online {
 			#presence-whos-online-list .presence-overflow-toggle { background: none; border: none; padding: 6px 12px; color: var(--wp-admin-theme-color, #2271b1); font-size: 13px; cursor: pointer; width: 100%; text-align: left; display: flex; align-items: center; gap: 4px; }
 			#presence-whos-online-list .presence-overflow-toggle:hover .presence-overflow-text { text-decoration: underline; }
 			#presence-whos-online-list .presence-overflow-toggle:focus { outline: 2px solid var(--wp-admin-theme-color, #2271b1); outline-offset: -2px; }
-			#presence-whos-online-list .presence-avatar-stack { display: flex; align-items: center; }
-			#presence-whos-online-list .presence-avatar-stack img { border-radius: 50%; width: 20px; height: 20px; margin-inline-start: -6px; box-shadow: 0 0 0 2px #fff; position: relative; }
-			#presence-whos-online-list .presence-avatar-stack img:first-child { margin-inline-start: 0; }
 			#presence-whos-online-list .presence-overflow-expanded { margin: 0; }
 			#presence-whos-online-list .presence-overflow-expanded .presence-user-item:first-child { border-top: 1px solid #f0f0f1; }
 			#presence-whos-online-list .screen-reader-text { border: 0; clip: rect(1px, 1px, 1px, 1px); clip-path: inset(50%); height: 1px; margin: -1px; overflow: hidden; padding: 0; position: absolute; width: 1px; word-wrap: normal !important; }';
@@ -679,7 +678,7 @@ JS,
 				if ( count( $overflow ) > self::get_overflow_threshold() ) {
 					// Summary mode: avatar stack + count linking to Users page.
 					echo '<a href="' . esc_url( admin_url( 'users.php?presence_status=online' ) ) . '" class="presence-overflow-toggle">';
-					echo wp_kses_post( wp_presence_render_avatar_stack( $stack_users, 4, 24 ) );
+					echo wp_kses_post( wp_presence_render_avatar_stack( $stack_users, 4 ) );
 					echo '<span class="presence-overflow-text">';
 					/* translators: %d: Number of additional online users. */
 					echo esc_html( sprintf( __( '+%d more — view all users', 'presence-api' ), count( $overflow ) ) );
@@ -687,7 +686,7 @@ JS,
 				} else {
 					// Expandable list mode.
 					echo '<button type="button" class="presence-overflow-toggle" data-action="expand" aria-expanded="false" aria-controls="presence-overflow-list">';
-					echo wp_kses_post( wp_presence_render_avatar_stack( $stack_users, 4, 24 ) );
+					echo wp_kses_post( wp_presence_render_avatar_stack( $stack_users, 4 ) );
 					echo '<span class="presence-overflow-text">';
 					/* translators: %d: Number of additional online users. */
 					echo esc_html( sprintf( __( '+%d more', 'presence-api' ), count( $overflow ) ) );

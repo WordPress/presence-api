@@ -793,10 +793,6 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		);
 
 		$this->assertSame( 4, substr_count( wp_presence_render_avatar_stack( $users ), '<img ' ) );
-
-		$sized = wp_presence_render_avatar_stack( $users, 2, 24 );
-
-		$this->assertSame( 2, substr_count( $sized, '<img ' ) );
-		$this->assertStringContainsString( 'width="24" height="24"', $sized );
+		$this->assertSame( 2, substr_count( wp_presence_render_avatar_stack( $users, 2 ), '<img ' ) );
 	}
 }
