@@ -4,10 +4,12 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 
 const findSurfaces = require('./detect-public-surface.js');
-const { newSurfaces, auditSurfaces, formatAudit, formatComment, isScanned, MARKER } = findSurfaces;
+const { newSurfaces, formatAudit, formatComment, isScanned, MARKER } = findSurfaces;
 
-const php = (source) => findSurfaces(source, 'includes/functions.php');
-const js = (source) => findSurfaces(source, 'assets/js/presence-ping.js');
+const ids = (surfaces) => surfaces.map((s) => s.id);
+const php = (source) => ids(findSurfaces(source, 'includes/functions.php'));
+const js = (source) => ids(findSurfaces(source, 'assets/js/presence-ping.js'));
+const surface = (id, documented = false) => ({ id, documented });
 
 // ---------------------------------------------------------------------------
 // PHP hooks
@@ -101,6 +103,75 @@ test('php rules do not run against a js file, or the reverse', () => {
 });
 
 // ---------------------------------------------------------------------------
+// @private
+// ---------------------------------------------------------------------------
+
+test('a @private docblock keeps an internal seam out', () => {
+  const source = `/**
+ * Builds an avatar stack.
+ *
+ * @private
+ */
+window.wpPresenceBuildAvatarStack = function ( users, max ) {};`;
+  assert.deepEqual(js(source), []);
+  assert.deepEqual(js(source.replace(' * @private\n', '')), [
+    'js-global:window.wpPresenceBuildAvatarStack',
+  ]);
+});
+
+test('@private applies to the statement it documents, not the next one', () => {
+  const source = `/**
+ * @private
+ */
+window.wpPresenceInternal = function () {};
+window.wpPresencePublic = function () {};`;
+  assert.deepEqual(js(source), ['js-global:window.wpPresencePublic']);
+});
+
+test('@private reads the same above a php hook', () => {
+  const source = `/**
+ * Fires internally.
+ *
+ * @private
+ */
+do_action( 'wp_presence_internal' );`;
+  assert.deepEqual(php(source), []);
+});
+
+// ---------------------------------------------------------------------------
+// The documented bar
+// ---------------------------------------------------------------------------
+
+test('a docblock saying what the hook is for documents it, through the assignment', () => {
+  const [long] = findSurfaces(
+    `/**
+ * Filters the default TTL.
+ *
+ * @since 0.1.0
+ * @param int $ttl Seconds.
+ */
+$ttl = apply_filters( 'wp_presence_default_ttl', 30 );`,
+    'includes/functions.php'
+  );
+  const [short] = findSurfaces(
+    "/** Filters the TTL. */\napply_filters( 'a', 1 );",
+    'includes/functions.php'
+  );
+  assert.equal(long.documented, true);
+  assert.equal(short.documented, true);
+});
+
+test('tags with no sentence are a signature, not a write-up', () => {
+  const [tagged] = findSurfaces(
+    "/**\n * @since 0.1.0\n */\napply_filters( 'a', 1 );",
+    'includes/functions.php'
+  );
+  const [bare] = findSurfaces("apply_filters( 'a', 1 );", 'includes/functions.php');
+  assert.equal(tagged.documented, false);
+  assert.equal(bare.documented, false);
+});
+
+// ---------------------------------------------------------------------------
 // newSurfaces
 // ---------------------------------------------------------------------------
 
@@ -112,10 +183,16 @@ test('a hook moved to another file is not new', () => {
 });
 
 test('reports additions, ignores removals, and sorts', () => {
-  assert.deepEqual(newSurfaces(['filter:a', 'action:gone'], ['filter:a', 'filter:c', 'action:b']), [
-    'action:b',
-    'filter:c',
-  ]);
+  const fresh = newSurfaces(
+    [surface('filter:a'), surface('action:gone')],
+    [surface('filter:a'), surface('filter:c'), surface('action:b')]
+  );
+  assert.deepEqual(ids(fresh), ['action:b', 'filter:c']);
+});
+
+test('one write-up covers a hook fired from two places', () => {
+  const [only] = newSurfaces([], [surface('filter:a'), surface('filter:a', true)]);
+  assert.equal(only.documented, true);
 });
 
 // ---------------------------------------------------------------------------
@@ -139,50 +216,16 @@ test('scans shipped code only', () => {
 });
 
 // ---------------------------------------------------------------------------
-// auditSurfaces
-// ---------------------------------------------------------------------------
-
-test('sends each kind to the section that documents it', () => {
-  const audit = auditSurfaces(['filter:a', 'action:b', 'rest:/c', 'cli:d'], '');
-  assert.deepEqual(
-    audit.map((s) => s.section),
-    ['### Filters', '### Actions', '## REST API', '## WP-CLI']
-  );
-});
-
-test('a name already in the README counts as documented', () => {
-  const doc = '### Filters\n#### `wp_presence_default_ttl`\nFilters the TTL.';
-  const [documented, missing] = auditSurfaces(
-    ['filter:wp_presence_default_ttl', 'filter:wp_presence_new_hook'],
-    doc
-  );
-  assert.equal(documented.documented, true);
-  assert.equal(missing.documented, false);
-});
-
-test('a global is matched on its last segment, since prose drops the window prefix', () => {
-  const [surface] = auditSurfaces(
-    ['js-global:wp.presence.markScreenStale'],
-    'Bump the revision from JS via `wp.presence.markScreenStale()`.'
-  );
-  assert.equal(surface.documented, true);
-});
-
-test('splits on the first colon so a namespaced hook name survives', () => {
-  const [surface] = auditSurfaces(['js-filter:presence.entry'], '');
-  assert.equal(surface.name, 'presence.entry');
-});
-
-// ---------------------------------------------------------------------------
 // formatAudit
 // ---------------------------------------------------------------------------
 
-test('names the file and section for anything undocumented', () => {
-  const report = formatAudit(auditSurfaces(['filter:wp_presence_new_hook'], ''));
-  assert.equal(
-    report,
-    '- filter `wp_presence_new_hook`: **missing from `README.md`**, add it under `### Filters`'
-  );
+test('marks what is undocumented and leaves the rest bare', () => {
+  const report = formatAudit([surface('filter:wp_presence_new_hook'), surface('action:b', true)]);
+  assert.equal(report, '- `wp_presence_new_hook` (filter): undocumented\n- `b` (action)');
+});
+
+test('splits on the first colon so a namespaced hook name survives', () => {
+  assert.match(formatAudit([surface('js-filter:presence.entry', true)]), /`presence\.entry` \(js-filter\)/);
 });
 
 // ---------------------------------------------------------------------------
@@ -190,17 +233,19 @@ test('names the file and section for anything undocumented', () => {
 // ---------------------------------------------------------------------------
 
 test('leads with the marker so the workflow can find its own comment', () => {
-  assert.ok(formatComment(auditSurfaces(['filter:a'], '')).startsWith(MARKER));
+  assert.ok(formatComment([surface('filter:a')]).startsWith(MARKER));
 });
 
-test('asks for a README update only while something is missing', () => {
-  const missing = formatComment(auditSurfaces(['filter:a'], ''));
-  const covered = formatComment(auditSurfaces(['filter:a'], 'a'));
-  assert.match(missing, /adds 1 extension point that sites can depend on\. Update `README\.md`/);
-  assert.match(covered, /adds 1 extension point that sites can depend on\. It is already in/);
+test('asks for a docblock only while something is undocumented', () => {
+  const missing = formatComment([surface('filter:a')]);
+  const covered = formatComment([surface('filter:a', true)]);
+  assert.match(missing, /adds 1 extension point that sites can depend on\. Add a docblock/);
+  assert.match(covered, /adds 1 extension point that sites can depend on\. It is already documented\./);
+  // A heading would rule off the thread; the title carries inline instead.
+  assert.doesNotMatch(missing, /^#/m);
 });
 
 test('agrees in number', () => {
-  const two = formatComment(auditSurfaces(['filter:a', 'action:b'], 'a b'));
-  assert.match(two, /adds 2 extension points that sites can depend on\. They are already in/);
+  const two = formatComment([surface('filter:a', true), surface('action:b', true)]);
+  assert.match(two, /adds 2 extension points that sites can depend on\. They are already documented\./);
 });
