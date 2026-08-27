@@ -11,7 +11,7 @@
 	const nonce = config.nonce || '';
 	const idleTicks = parseInt(config.idleTicks, 10) || 0;
 	const idleInterval = parseInt(config.idleInterval, 10) || 0;
-	const ttl = parseInt(config.ttl, 10) || 60;
+	const ttl = parseInt(config.ttl, 10) || 150;
 	const backoffEnabled = idleTicks > 0 && idleInterval > 0;
 	const TTL_SAFETY_MARGIN = 15;
 
