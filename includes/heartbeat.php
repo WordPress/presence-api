@@ -346,9 +346,8 @@ function wp_presence_editor_heartbeat_received( $response, $data, $screen_id ) {
  * @return string The transient key.
  */
 function wp_presence_collaboration_state_key( $room ) {
-	// Rooms are `postType/post:123` and similar, so they carry characters an
-	// option name may not, and they are longer than the 172 a transient key
-	// can hold once the `_transient_timeout_` prefix is added.
+	// A room runs to `WP_PRESENCE_MAX_KEY_LENGTH`, past the 172 a transient key
+	// holds once `_transient_timeout_` is prefixed.
 	return 'wp_presence_collab_' . md5( $room );
 }
 
@@ -403,9 +402,12 @@ function wp_presence_check_collaboration_threshold( $room ) {
 		do_action( 'wp_presence_collaboration_ended', $room, $entries );
 	}
 
-	// Rewritten on every tick rather than only when the count moves, because
-	// the expiry has to be pushed forward too: a steady pair of editors that
-	// let this lapse would read back as a fresh start and announce itself
-	// again. One row per active room, expiring alongside the presence entries.
-	set_transient( $key, $editor_count, wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL ) );
+	// Rewritten every tick, not only when the count moves: a steady pair that
+	// let this lapse would read back as a fresh start and re-announce itself.
+	// Below two there is nothing to hold, since absent already reads as 1.
+	if ( $editor_count >= 2 ) {
+		set_transient( $key, $editor_count, wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL ) );
+	} elseif ( false !== $stored ) {
+		delete_transient( $key );
+	}
 }

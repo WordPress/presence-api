@@ -685,6 +685,58 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	/**
 	 * @covers ::wp_presence_check_collaboration_threshold
 	 */
+	public function test_collaboration_ended_does_not_refire_on_the_next_tick() {
+		$post_id = self::factory()->post->create();
+		$room    = wp_presence_post_room( $post_id );
+
+		// Two editors already recorded, one of whom has since gone.
+		set_transient( wp_presence_collaboration_state_key( $room ), 2, HOUR_IN_SECONDS );
+
+		$times_fired = 0;
+		add_action(
+			'wp_presence_collaboration_ended',
+			function () use ( &$times_fired ) {
+				++$times_fired;
+			}
+		);
+
+		wp_set_current_user( self::$editor_id );
+		for ( $tick = 0; $tick < 2; $tick++ ) {
+			wp_presence_editor_heartbeat_received(
+				array(),
+				array( 'presence-editor-ping' => array( 'post_id' => $post_id ) ),
+				'post'
+			);
+		}
+
+		$this->assertSame( 1, $times_fired, 'The 2 has to be cleared, or every later tick reads as another ending' );
+	}
+
+	/**
+	 * @covers ::wp_presence_check_collaboration_threshold
+	 */
+	public function test_a_lone_editor_stores_no_collaboration_state() {
+		$post_id = self::factory()->post->create();
+		$room    = wp_presence_post_room( $post_id );
+
+		wp_set_current_user( self::$editor_id );
+		wp_presence_editor_heartbeat_received(
+			array(),
+			array( 'presence-editor-ping' => array( 'post_id' => $post_id ) ),
+			'post'
+		);
+
+		// Absent already reads back as 1, so storing it is two option rows a tick
+		// that change no later decision.
+		$this->assertFalse(
+			get_transient( wp_presence_collaboration_state_key( $room ) ),
+			'A solo editing session should leave nothing behind'
+		);
+	}
+
+	/**
+	 * @covers ::wp_presence_check_collaboration_threshold
+	 */
 	public function test_collaboration_state_survives_the_request_that_wrote_it() {
 		$post_id  = self::factory()->post->create();
 		$editor_2 = self::factory()->user->create( array( 'role' => 'editor' ) );
