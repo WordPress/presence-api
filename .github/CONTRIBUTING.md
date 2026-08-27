@@ -52,7 +52,19 @@ A hook, REST route, WP-CLI command, guarded constant, or browser global that a s
 
 Written about means a docblock directly above it with a sentence saying what it is for. That is where WordPress core's code reference reads from, and it keeps the write-up next to the code instead of in a hand-kept list that drifts the first time someone forgets it. `README.md` narrates the surfaces worth a worked example; it is not the inventory.
 
-Some names are reachable without being a promise, like a global that only exists so two enqueued scripts can share a renderer. Mark those `@private` in that same docblock, the marker core uses to keep a symbol out of the code reference, and the check leaves them alone:
+Some names are reachable without being a promise, like a global that only exists so two enqueued scripts can share a renderer. Mark those private in that same docblock and the check leaves them alone. In PHP use `@access private`, the marker [core's documentation standards](https://developer.wordpress.org/coding-standards/inline-documentation-standards/php/) name, directly below `@since`:
+
+```php
+/**
+ * Returns the transient key a room's collaboration state is stored under.
+ *
+ * @since 0.1.0
+ * @access private
+ */
+function wp_presence_collaboration_state_key( $room ) {}
+```
+
+JavaScript has no `@since` line to sit under, so `@private` on its own is enough there:
 
 ```js
 /**

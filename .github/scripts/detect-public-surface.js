@@ -36,6 +36,9 @@ const JS_RULES = [
   ],
 ];
 
+// `@access private` in PHP per core's standards, `@private` in JS.
+const PRIVATE = /@(?:private\b|access\s+private\b)/;
+
 // The workflow greps for this literal to edit its own comment in place.
 const MARKER = '<!-- presence-api:public-surface -->';
 
@@ -82,14 +85,14 @@ function describes(block) {
 
 // Identifiers are `kind:name` and carry no path, so the same hook found at a new
 // location is the same surface. Each one also reports whether the docblock above
-// it describes it; `@private` in that docblock withdraws the surface entirely.
+// it describes it; a private marker in that docblock withdraws it entirely.
 function findSurfaces(source, path) {
   const rules = path.endsWith('.php') ? PHP_RULES : path.endsWith('.js') ? JS_RULES : [];
 
   return rules.flatMap(([regex, build]) =>
     [...source.matchAll(regex)]
       .map((m) => ({ id: build(m), block: docblockAbove(source, m.index) }))
-      .filter(({ id, block }) => !id.endsWith(':') && !block.includes('@private'))
+      .filter(({ id, block }) => !id.endsWith(':') && !PRIVATE.test(block))
       .map(({ id, block }) => ({ id, documented: describes(block) }))
   );
 }
