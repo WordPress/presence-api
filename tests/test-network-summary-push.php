@@ -247,4 +247,28 @@ class WP_Test_Network_Summary_Push extends WP_Presence_Network_UnitTestCase {
 		$this->assertCount( 1, $this->presence_for_user( self::$editor_id ), 'Deleting one user should not clear anybody else.' );
 		restore_current_blog();
 	}
+
+	/**
+	 * A summary row survives until cleanup runs even if the site is later
+	 * archived. An archived site with a fresh row must not appear in the
+	 * network snapshot, or it reads as live on the dashboard widget and the
+	 * Users list column.
+	 *
+	 * @covers ::wp_presence_compute_network_snapshot
+	 */
+	public function test_snapshot_excludes_archived_site_with_fresh_row() {
+		$blog_id = $this->create_blog();
+		$this->set_presence_on_site( $blog_id, self::$editor_id );
+
+		// Archive the site after the summary row has been pushed.
+		update_blog_status( $blog_id, 'archived', 1 );
+
+		// Flush the request cache so the next read recomputes from the database
+		// rather than serving the value built before the site was archived.
+		wp_presence_flush_network_summary_cache();
+
+		$snapshot = wp_presence_get_network_snapshot();
+
+		$this->assertArrayNotHasKey( $blog_id, $snapshot['sites'], 'An archived site must not appear in the network snapshot.' );
+	}
 }
