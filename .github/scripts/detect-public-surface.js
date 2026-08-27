@@ -2,7 +2,7 @@
 
 // A hook, route, guarded constant, CLI command, or browser global is a promise:
 // once a site depends on one, renaming it breaks that site. This flags the pull
-// request that adds one and names the README section still missing it.
+// request that adds one and names the ones with nothing written above them.
 //
 // It compares the full set of surfaces at each end rather than diff lines, so
 // moving, reindenting, or renaming the function around a hook reads as no change.
@@ -39,17 +39,6 @@ const JS_RULES = [
 // The workflow greps for this literal to edit its own comment in place.
 const MARKER = '<!-- presence-api:public-surface -->';
 
-// README.md is the only canonical reference for extension points. src/README.md
-// covers the `usePresenceUsers` React hook alone; readme.txt lists no hooks.
-const DOC_FILE = 'README.md';
-const DEFAULT_SECTION = '## Extension Points';
-const DOC_SECTIONS = {
-  filter: '### Filters',
-  action: '### Actions',
-  rest: '## REST API',
-  cli: '## WP-CLI',
-};
-
 function isScanned(path) {
   return !IGNORED.some((re) => re.test(path)) && SCANNED.some((re) => re.test(path));
 }
@@ -59,104 +48,98 @@ function route(raw) {
   return raw.replace(/['"]/g, '').replace(/\s*\.\s*/g, '').replace(/\s+/g, ' ').trim();
 }
 
-// Not every reachable name is a promise. A browser global can exist only so two
-// enqueued scripts can share a renderer, and writing that up as an extension
-// point would freeze markup nobody meant to publish. `@private` is what core
-// uses to keep a symbol out of the code reference, so it is the marker here too.
-//
-// The docblock has to be the one directly above: only the opening of the
-// statement may sit between them, which covers `$ttl = apply_filters( ... )` and
-// `window.x = function () {}` while stopping a `@private` note from leaking onto
-// whatever the next statement happens to be.
-function isPrivate(source, index) {
+// The docblock directly above `index`, or an empty string when the nearest one
+// belongs to something else. Only the opening of the statement may sit between
+// them, which covers `$ttl = apply_filters( ... )` and `window.x = function () {}`
+// while stopping a docblock from leaking onto whatever statement follows the one
+// it describes.
+function docblockAbove(source, index) {
   const before = source.slice(0, index);
   const close = before.lastIndexOf('*/');
 
-  if (-1 === close) {
-    return false;
-  }
-
   // A statement terminator or a brace between the two means the docblock
   // belongs to something else.
-  if (/[;{}]/.test(before.slice(close + 2))) {
-    return false;
+  if (-1 === close || /[;{}]/.test(before.slice(close + 2))) {
+    return '';
   }
 
   const open = before.lastIndexOf('/**', close);
 
-  return -1 !== open && before.slice(open, close).includes('@private');
+  return -1 === open ? '' : before.slice(open, close);
+}
+
+// A docblock of nothing but tags is a signature, not a write-up: the bar is a
+// sentence saying what the surface is for, which is what core's code reference
+// renders. Documenting the hook where it fires beats a hand-kept list, which
+// drifts the first time nobody updates it.
+function describes(block) {
+  return block
+    .replace(/^\/\*\*/, '')
+    .split('\n')
+    .map((line) => line.replace(/^\s*\*+\s*/, '').trim())
+    .some((line) => '' !== line && !line.startsWith('@'));
 }
 
 // Identifiers are `kind:name` and carry no path, so the same hook found at a new
-// location is the same surface.
+// location is the same surface. Each one also reports whether the docblock above
+// it describes it; `@private` in that docblock withdraws the surface entirely.
 function findSurfaces(source, path) {
   const rules = path.endsWith('.php') ? PHP_RULES : path.endsWith('.js') ? JS_RULES : [];
 
   return rules.flatMap(([regex, build]) =>
     [...source.matchAll(regex)]
-      .filter((m) => !isPrivate(source, m.index))
-      .map(build)
-      .filter((s) => !s.endsWith(':'))
+      .map((m) => ({ id: build(m), block: docblockAbove(source, m.index) }))
+      .filter(({ id, block }) => !id.endsWith(':') && !block.includes('@private'))
+      .map(({ id, block }) => ({ id, documented: describes(block) }))
   );
 }
 
+// Additions only. A hook fired from two places is documented once and
+// cross-referenced from the other, the way core does it, so one write-up
+// anywhere at the head covers the surface.
 function newSurfaces(base, head) {
-  const before = new Set(base);
-  return [...new Set(head)].filter((s) => !before.has(s)).sort();
+  const before = new Set(base.map((s) => s.id));
+  const fresh = new Map();
+
+  for (const { id, documented } of head) {
+    if (!before.has(id)) {
+      fresh.set(id, documented || Boolean(fresh.get(id)));
+    }
+  }
+
+  return [...fresh]
+    .map(([id, documented]) => ({ id, documented }))
+    .sort((a, b) => a.id.localeCompare(b.id));
 }
 
-// A name appearing anywhere in README.md counts, which is deliberately loose:
-// the bar is writing a hook down at all, not writing it up well.
-function auditSurfaces(surfaces, doc) {
-  return surfaces.map((surface) => {
-    const at = surface.indexOf(':');
-    const kind = surface.slice(0, at);
-    const name = surface.slice(at + 1);
+// The instruction is the same for every entry, so it is given once in the lead
+// sentence and each entry here is just the name and what kind of thing it is.
+function formatAudit(surfaces) {
+  return surfaces
+    .map(({ id, documented }) => {
+      const at = id.indexOf(':');
+      const entry = `- \`${id.slice(at + 1)}\` (${id.slice(0, at)})`;
 
-    return {
-      kind,
-      name,
-      section: DOC_SECTIONS[kind] || DEFAULT_SECTION,
-      // Globals are written `window.x` here but `x` in prose.
-      documented: doc.includes(name.split('.').pop()),
-    };
-  });
-}
-
-// The file is named once in the lead sentence, so an entry only has to say where
-// in it the surface belongs. With nothing missing there is no instruction left to
-// give and each entry is just the name.
-function formatAudit(audit) {
-  const covered = audit.every((s) => s.documented);
-
-  return audit
-    .map(({ kind, name, section, documented }) => {
-      const entry = `- \`${name}\` (${kind})`;
-
-      if (covered) {
-        return entry;
-      }
-
-      return documented ? `${entry}: documented` : `${entry}: add it under \`${section}\``;
+      return documented ? entry : `${entry}: undocumented`;
     })
     .join('\n');
 }
 
 // A heading would open with a rule across the thread for what is usually a
 // one-line note, so the title runs inline and the aside is set small.
-function formatComment(audit) {
-  const one = 1 === audit.length;
-  const headline = audit.every((s) => s.documented)
-    ? `${one ? 'It is' : 'They are'} already in \`${DOC_FILE}\`.`
-    : `Update \`${DOC_FILE}\` before this merges.`;
+function formatComment(surfaces) {
+  const one = 1 === surfaces.length;
+  const headline = surfaces.every((s) => s.documented)
+    ? `${one ? 'It is' : 'They are'} already documented.`
+    : 'Add a docblock above each one saying what it is for.';
 
   return [
     MARKER,
-    `**New public surface.** This branch adds ${audit.length} extension point${one ? '' : 's'} that sites can depend on. ${headline}`,
+    `**New public surface.** This branch adds ${surfaces.length} extension point${one ? '' : 's'} that sites can depend on. ${headline}`,
     '',
-    formatAudit(audit),
+    formatAudit(surfaces),
     '',
-    '<sub>If the change is user-facing, add it to `readme.txt` under `= For Developers =` too.</sub>',
+    '<sub>Worth a line in `README.md` too, and in `readme.txt` under `= For Developers =` if it is user-facing.</sub>',
     '',
   ].join('\n');
 }
@@ -164,11 +147,9 @@ function formatComment(audit) {
 module.exports = findSurfaces;
 module.exports.findSurfaces = findSurfaces;
 module.exports.newSurfaces = newSurfaces;
-module.exports.auditSurfaces = auditSurfaces;
 module.exports.formatAudit = formatAudit;
 module.exports.formatComment = formatComment;
 module.exports.isScanned = isScanned;
-module.exports.DOC_FILE = DOC_FILE;
 module.exports.MARKER = MARKER;
 
 // CLI: `node detect-public-surface.js <base-ref> <head-ref>`. Reads both trees
@@ -201,19 +182,17 @@ if (require.main === module) {
       .filter(isScanned)
       .flatMap((path) => findSurfaces(read(ref, path), path));
 
-  // README.md is read at the head, so a branch adding a hook and its write-up
-  // together reports the surface as already covered.
-  const audit = auditSurfaces(newSurfaces(scan(baseRef), scan(headRef)), read(headRef, DOC_FILE));
+  const surfaces = newSurfaces(scan(baseRef), scan(headRef));
 
-  if (audit.length) {
-    console.log(`Found ${audit.length} new public ${1 === audit.length ? 'surface' : 'surfaces'}:`);
-    console.log(formatAudit(audit));
-    fs.writeFileSync('comment.md', formatComment(audit));
+  if (surfaces.length) {
+    console.log(`Found ${surfaces.length} new public ${1 === surfaces.length ? 'surface' : 'surfaces'}:`);
+    console.log(formatAudit(surfaces));
+    fs.writeFileSync('comment.md', formatComment(surfaces));
   } else {
     console.log('No new public surfaces.');
   }
 
   if (process.env.GITHUB_OUTPUT) {
-    fs.appendFileSync(process.env.GITHUB_OUTPUT, `count=${audit.length}\n`);
+    fs.appendFileSync(process.env.GITHUB_OUTPUT, `count=${surfaces.length}\n`);
   }
 }

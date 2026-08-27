@@ -48,9 +48,11 @@ Assigned issues left quiet for two weeks may be unassigned. Comment to pick one 
 
 ### Public surfaces
 
-A hook, REST route, WP-CLI command, guarded constant, or browser global that a site can reach is a promise: renaming it later breaks that site. `public-surface.yml` labels any pull request that adds one and comments with what is still missing from `README.md`.
+A hook, REST route, WP-CLI command, guarded constant, or browser global that a site can reach is a promise: renaming it later breaks that site. `public-surface.yml` labels any pull request that adds one and comments with the ones nothing has been written about yet.
 
-Some names are reachable without being a promise, like a global that only exists so two enqueued scripts can share a renderer. Mark those `@private` in the docblock directly above, the same marker core uses to keep a symbol out of the code reference, and the check leaves them alone:
+Written about means a docblock directly above it with a sentence saying what it is for. That is where WordPress core's code reference reads from, and it keeps the write-up next to the code instead of in a hand-kept list that drifts the first time someone forgets it. `README.md` narrates the surfaces worth a worked example; it is not the inventory.
+
+Some names are reachable without being a promise, like a global that only exists so two enqueued scripts can share a renderer. Mark those `@private` in that same docblock, the marker core uses to keep a symbol out of the code reference, and the check leaves them alone:
 
 ```js
 /**
