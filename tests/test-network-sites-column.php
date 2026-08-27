@@ -50,6 +50,29 @@ class WP_Test_Network_Sites_Column extends WP_Presence_Network_UnitTestCase {
 	}
 
 	/**
+	 * Without this the avatars paint square, ringless and unoverlapped: no
+	 * other presence asset loads on this screen.
+	 *
+	 * The three cases share one test because an enqueue outlives the test that
+	 * made it, so the negatives have to come before the positive.
+	 *
+	 * @covers ::wp_presence_enqueue_network_sites_assets
+	 * @covers ::wp_presence_enqueue_avatar_stack_style
+	 */
+	public function test_sites_list_enqueues_the_avatar_stack_style() {
+		wp_presence_enqueue_network_sites_assets( 'sites.php' );
+		$this->assertFalse( wp_style_is( 'wp-presence-avatar-stack', 'enqueued' ), 'A visitor with no capability sees no column to style.' );
+
+		$this->become_network_admin();
+
+		wp_presence_enqueue_network_sites_assets( 'index.php' );
+		$this->assertFalse( wp_style_is( 'wp-presence-avatar-stack', 'enqueued' ), 'Only the Sites list needs it.' );
+
+		wp_presence_enqueue_network_sites_assets( 'sites.php' );
+		$this->assertTrue( wp_style_is( 'wp-presence-avatar-stack', 'enqueued' ) );
+	}
+
+	/**
 	 * @covers ::wp_presence_render_network_sites_column
 	 */
 	public function test_sites_column_shows_a_dash_for_a_site_with_nobody_online() {

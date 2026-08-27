@@ -64,6 +64,9 @@ class WP_Test_Presence_Network_Widget_Whos_Online extends WP_Presence_Network_Un
 	/**
 	 * The widget only exists on the dashboard, so every other admin screen has
 	 * to load without its script or style.
+	 *
+	 * @covers ::wp_presence_enqueue_avatar_stack_style
+	 * @covers ::wp_presence_enqueue_avatar_stack_script
 	 */
 	public function test_scripts_are_only_enqueued_on_the_dashboard() {
 		WP_Presence_Network_Widget_Whos_Online::enqueue_scripts( 'sites.php' );
@@ -74,6 +77,10 @@ class WP_Test_Presence_Network_Widget_Whos_Online extends WP_Presence_Network_Un
 
 		$this->assertTrue( wp_script_is( 'heartbeat', 'enqueued' ) );
 		$this->assertTrue( wp_style_is( 'presence-network-widget', 'enqueued' ) );
+
+		// The inline script calls into the shared file, so it has to load first.
+		$this->assertTrue( wp_script_is( 'wp-presence-avatar-stack', 'enqueued' ) );
+		$this->assertContains( 'wp-presence-avatar-stack', wp_scripts()->registered['presence-network-widget']->deps );
 	}
 
 	public function test_heartbeat_ignores_without_ping() {

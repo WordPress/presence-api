@@ -369,6 +369,7 @@ add_filter( 'heartbeat_received', array( 'WP_Presence_Widget_Active_Posts', 'hea
 if ( is_multisite() ) {
 	add_filter( 'wpmu_blogs_columns', 'wp_presence_register_network_sites_column' );
 	add_action( 'manage_sites_custom_column', 'wp_presence_render_network_sites_column', 10, 2 );
+	add_action( 'admin_enqueue_scripts', 'wp_presence_enqueue_network_sites_assets' );
 
 	add_filter( 'views_users-network', 'wp_presence_network_users_views' );
 	add_filter( 'users_list_table_query_args', 'wp_presence_filter_network_online_users' );

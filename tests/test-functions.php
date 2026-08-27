@@ -793,10 +793,36 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		);
 
 		$this->assertSame( 4, substr_count( wp_presence_render_avatar_stack( $users ), '<img ' ) );
+		$this->assertSame( 2, substr_count( wp_presence_render_avatar_stack( $users, 2 ), '<img ' ) );
+	}
 
-		$sized = wp_presence_render_avatar_stack( $users, 2, 24 );
+	/**
+	 * get_avatar_url() returns false with the Show Avatars setting off, and the
+	 * Heartbeat render skips those users. A src-less <img> here would paint a
+	 * broken avatar until the first tick swept it away.
+	 *
+	 * @covers ::wp_presence_render_avatar_stack
+	 */
+	public function test_avatar_stack_skips_a_user_with_no_avatar() {
+		$html = wp_presence_render_avatar_stack(
+			array(
+				array(
+					'avatar_url'   => '',
+					'display_name' => 'Ana',
+				),
+				array(
+					'avatar_url'   => 'https://example.com/bo.png',
+					'display_name' => 'Bo',
+				),
+				array(
+					'avatar_url'   => false,
+					'display_name' => 'Cyd',
+				),
+			)
+		);
 
-		$this->assertSame( 2, substr_count( $sized, '<img ' ) );
-		$this->assertStringContainsString( 'width="24" height="24"', $sized );
+		$this->assertSame( 1, substr_count( $html, '<img ' ) );
+		$this->assertStringNotContainsString( 'Ana', $html );
+		$this->assertStringContainsString( 'z-index:1', $html, 'The z-index counts the avatars drawn, not the users passed in.' );
 	}
 }

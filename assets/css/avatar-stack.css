@@ -1,0 +1,27 @@
+/**
+ * Overlapping avatar stack.
+ *
+ * Shared by the two "Who's Online" dashboard widgets and the "Online" column
+ * on Network Admin > Sites.
+ *
+ * @package Presence_API
+ */
+
+/* Inline so the stack sits on the baseline beside the Sites list count. */
+.presence-avatar-stack {
+	display: inline-flex;
+	align-items: center;
+}
+
+.presence-avatar-stack img {
+	position: relative;
+	width: 20px;
+	height: 20px;
+	margin-inline-start: -6px;
+	border-radius: 50%;
+	box-shadow: 0 0 0 2px #fff;
+}
+
+.presence-avatar-stack img:first-child {
+	margin-inline-start: 0;
+}
