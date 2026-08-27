@@ -3,8 +3,8 @@ name: Playground Preview
 # Builds `presence-api.zip` from the PR commit and uploads it (plus the
 # demo seeder and a small metadata file) as workflow artifacts. The
 # sibling `Playground Preview Publish` workflow picks the artifacts up
-# on `workflow_run` and hands them to GitHub Releases for hosting — we
-# don't depend on any third-party artifact proxy.
+# on `workflow_run` and hosts them, so a preview always shows the PR's
+# own build at its latest commit.
 
 on:
   pull_request:
@@ -74,10 +74,10 @@ jobs:
       - name: Schema-validate blueprints
         run: |
           set -euo pipefail
-          for f in blueprint.json blueprint-40.json; do
+          for f in blueprint.json blueprint-40.json blueprint-multisite.json; do
             jq -e '
               (.steps | length > 0)
-              and (.steps | all(.step | IN("installPlugin", "writeFile", "runPHP")))
+              and (.steps | all(.step | IN("installPlugin", "writeFile", "runPHP", "enableMultisite", "wp-cli")))
               and (.steps | map(select(.step == "installPlugin" and (.pluginData.resource // "") == "url")) | length == 1)
               and (.steps | map(select(.step == "writeFile" and (.data.resource // "") == "url")) | length == 2)
             ' "$f" > /dev/null

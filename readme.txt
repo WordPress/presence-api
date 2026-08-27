@@ -19,7 +19,6 @@ Data flows through the Heartbeat API and is stored in a dedicated `wp_presence` 
 
 On a multisite network, Network Admin gets its own view of the same data: a Who's Online dashboard widget listing the busiest sites and who is on each, an Online column in the Sites list, and an Online view, filter, and column in the Users list. These require the `manage_network` capability.
 
-[Test in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json) without installing anything.
 
 = Features =
 
@@ -46,8 +45,6 @@ Or install manually:
 
 1. Download the zip and upload the `presence-api` folder to `/wp-content/plugins/`.
 2. Activate through the **Plugins** menu.
-
-Or [try it in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json) without installing anything.
 
 == Frequently Asked Questions ==
 
