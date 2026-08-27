@@ -177,12 +177,14 @@ test('splits on the first colon so a namespaced hook name survives', () => {
 // formatAudit
 // ---------------------------------------------------------------------------
 
-test('names the file and section for anything undocumented', () => {
+test('names the section for anything undocumented', () => {
   const report = formatAudit(auditSurfaces(['filter:wp_presence_new_hook'], ''));
-  assert.equal(
-    report,
-    '- filter `wp_presence_new_hook`: **missing from `README.md`**, add it under `### Filters`'
-  );
+  assert.equal(report, '- `wp_presence_new_hook` (filter): add it under `### Filters`');
+});
+
+test('drops the per-entry status once everything is documented', () => {
+  const report = formatAudit(auditSurfaces(['filter:a', 'action:b'], 'a b'));
+  assert.equal(report, '- `a` (filter)\n- `b` (action)');
 });
 
 // ---------------------------------------------------------------------------
@@ -198,6 +200,8 @@ test('asks for a README update only while something is missing', () => {
   const covered = formatComment(auditSurfaces(['filter:a'], 'a'));
   assert.match(missing, /adds 1 extension point that sites can depend on\. Update `README\.md`/);
   assert.match(covered, /adds 1 extension point that sites can depend on\. It is already in/);
+  // A heading would rule off the thread; the title carries inline instead.
+  assert.doesNotMatch(missing, /^#/m);
 });
 
 test('agrees in number', () => {

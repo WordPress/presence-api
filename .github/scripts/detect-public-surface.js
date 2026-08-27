@@ -92,16 +92,27 @@ function auditSurfaces(surfaces, doc) {
   });
 }
 
+// The file is named once in the lead sentence, so an entry only has to say where
+// in it the surface belongs. With nothing missing there is no instruction left to
+// give and each entry is just the name.
 function formatAudit(audit) {
+  const covered = audit.every((s) => s.documented);
+
   return audit
-    .map(({ kind, name, section, documented }) =>
-      documented
-        ? `- ${kind} \`${name}\`: documented`
-        : `- ${kind} \`${name}\`: **missing from \`${DOC_FILE}\`**, add it under \`${section}\``
-    )
+    .map(({ kind, name, section, documented }) => {
+      const entry = `- \`${name}\` (${kind})`;
+
+      if (covered) {
+        return entry;
+      }
+
+      return documented ? `${entry}: documented` : `${entry}: add it under \`${section}\``;
+    })
     .join('\n');
 }
 
+// A heading would open with a rule across the thread for what is usually a
+// one-line note, so the title runs inline and the aside is set small.
 function formatComment(audit) {
   const one = 1 === audit.length;
   const headline = audit.every((s) => s.documented)
@@ -110,13 +121,11 @@ function formatComment(audit) {
 
   return [
     MARKER,
-    '## New public surface',
-    '',
-    `This branch adds ${audit.length} extension point${one ? '' : 's'} that sites can depend on. ${headline}`,
+    `**New public surface.** This branch adds ${audit.length} extension point${one ? '' : 's'} that sites can depend on. ${headline}`,
     '',
     formatAudit(audit),
     '',
-    'Also update `readme.txt` under `= For Developers =` if the change is user-facing.',
+    '<sub>If the change is user-facing, add it to `readme.txt` under `= For Developers =` too.</sub>',
     '',
   ].join('\n');
 }
