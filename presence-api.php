@@ -56,8 +56,11 @@ define( 'WP_PRESENCE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 // two distinct clients onto one UNIQUE KEY (room, client_id) row.
 define( 'WP_PRESENCE_MAX_KEY_LENGTH', 191 );
 
+// Core pins an unfocused, or five-minute-idle, tab to a 120-second Heartbeat
+// interval that no client-side call can shorten, so a shorter TTL drops a tab
+// that is still open and still pinging. Core sizes post locks at 150 the same way.
 if ( ! defined( 'WP_PRESENCE_DEFAULT_TTL' ) ) {
-	define( 'WP_PRESENCE_DEFAULT_TTL', 60 );
+	define( 'WP_PRESENCE_DEFAULT_TTL', 150 );
 }
 
 /**

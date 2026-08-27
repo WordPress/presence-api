@@ -219,10 +219,10 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		wp_set_presence( 'test/room', 'old-client', array(), self::$editor_id );
 		wp_set_presence( 'test/room', 'new-client', array(), self::$editor_id );
 
-		// Backdate one entry.
+		// Backdate one entry past the cutoff the cleanup reads.
 		$wpdb->update(
 			$wpdb->presence,
-			array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - 120 ) ),
+			array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - WP_PRESENCE_DEFAULT_TTL - MINUTE_IN_SECONDS ) ),
 			array( 'client_id' => 'old-client' ),
 			array( '%s' ),
 			array( '%s' )
@@ -252,7 +252,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		$wpdb->query(
 			$wpdb->prepare(
 				"UPDATE {$wpdb->presence} SET date_gmt = %s",
-				gmdate( 'Y-m-d H:i:s', time() - 120 )
+				gmdate( 'Y-m-d H:i:s', time() - WP_PRESENCE_DEFAULT_TTL - MINUTE_IN_SECONDS )
 			)
 		);
 
@@ -585,27 +585,25 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_get_timeout
 	 */
 	public function test_ttl_filter() {
-		add_filter( 'wp_presence_default_ttl', function () {
-			return 120;
-		} );
+		add_filter( 'wp_presence_default_ttl', fn() => WP_PRESENCE_DEFAULT_TTL * 2 );
 
 		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
 
-		// Backdate entry to 90 seconds ago — beyond default 60s but within filtered 120s.
+		// Beyond the default cutoff, within the filtered one.
 		global $wpdb;
 		$wpdb->update(
 			$wpdb->presence,
-			array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - 90 ) ),
+			array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - WP_PRESENCE_DEFAULT_TTL - 30 ) ),
 			array( 'room' => 'test/room', 'client_id' => 'client-1' )
 		);
 
 		$entries = wp_get_presence( 'test/room' );
-		$this->assertCount( 1, $entries, 'Entry should be visible with filtered 120s TTL.' );
+		$this->assertCount( 1, $entries, 'Entry should be visible with the filtered TTL.' );
 
 		remove_all_filters( 'wp_presence_default_ttl' );
 
 		$entries = wp_get_presence( 'test/room' );
-		$this->assertCount( 0, $entries, 'Entry should be expired with default 60s TTL.' );
+		$this->assertCount( 0, $entries, 'Entry should be expired with the default TTL.' );
 	}
 
 	/**

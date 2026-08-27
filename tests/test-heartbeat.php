@@ -44,6 +44,41 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Core pins an unfocused tab to a 120-second interval no client-side call can
+	 * shorten, leaving the TTL as the only thing holding it in its room.
+	 *
+	 * @covers ::wp_presence_admin_heartbeat_received
+	 */
+	public function test_presence_outlives_the_unfocused_heartbeat_interval() {
+		global $wpdb;
+
+		// scheduleNextTick() in wp-includes/js/heartbeat.js.
+		$unfocused_interval = 120;
+
+		wp_set_current_user( self::$editor_id );
+
+		wp_presence_admin_heartbeat_received(
+			array(),
+			array( 'presence-ping' => array( 'screen' => 'dashboard' ) ),
+			'dashboard'
+		);
+
+		$wpdb->update(
+			$wpdb->presence,
+			array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - $unfocused_interval ) ),
+			array( 'client_id' => 'user-' . self::$editor_id ),
+			array( '%s' ),
+			array( '%s' )
+		);
+
+		$this->assertCount(
+			1,
+			wp_get_presence( wp_presence_admin_room() ),
+			'A tab pinging at the unfocused interval must not expire between ticks.'
+		);
+	}
+
+	/**
 	 * @covers ::wp_presence_admin_heartbeat_received
 	 */
 	public function test_admin_heartbeat_ignores_without_ping() {
