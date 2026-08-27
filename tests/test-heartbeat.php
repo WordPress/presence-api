@@ -584,6 +584,126 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * A tick is its own request, so the previous editor count has to be read
+	 * back from storage rather than from anything held in memory. Seeding that
+	 * storage is what stands in for "an earlier request already ran".
+	 *
+	 * @covers ::wp_presence_check_collaboration_threshold
+	 */
+	public function test_collaboration_ended_fires_on_state_left_by_an_earlier_request() {
+		$post_id = self::factory()->post->create();
+		$room    = wp_presence_post_room( $post_id );
+
+		set_transient( wp_presence_collaboration_state_key( $room ), 2, HOUR_IN_SECONDS );
+
+		$action_ran = false;
+		add_action(
+			'wp_presence_collaboration_ended',
+			function () use ( &$action_ran ) {
+				$action_ran = true;
+			}
+		);
+
+		// One editor present, where an earlier request saw two.
+		wp_set_current_user( self::$editor_id );
+		wp_presence_editor_heartbeat_received(
+			array(),
+			array( 'presence-editor-ping' => array( 'post_id' => $post_id ) ),
+			'post'
+		);
+
+		$this->assertTrue( $action_ran, 'Going 2 to 1 across requests should fire the end action' );
+	}
+
+	/**
+	 * @covers ::wp_presence_check_collaboration_threshold
+	 */
+	public function test_collaboration_started_does_not_refire_while_two_editors_stay() {
+		$post_id  = self::factory()->post->create();
+		$editor_2 = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$room     = wp_presence_post_room( $post_id );
+
+		wp_set_presence( $room, 'editor-' . $editor_2, array( 'screen' => 'post' ), $editor_2 );
+		set_transient( wp_presence_collaboration_state_key( $room ), 2, HOUR_IN_SECONDS );
+
+		$times_fired = 0;
+		add_action(
+			'wp_presence_collaboration_started',
+			function () use ( &$times_fired ) {
+				++$times_fired;
+			}
+		);
+
+		// Three more ticks with both editors still here.
+		for ( $i = 0; $i < 3; $i++ ) {
+			wp_set_current_user( self::$editor_id );
+			wp_presence_editor_heartbeat_received(
+				array(),
+				array( 'presence-editor-ping' => array( 'post_id' => $post_id ) ),
+				'post'
+			);
+		}
+
+		$this->assertSame( 0, $times_fired, 'Collaboration already started should not re-announce' );
+	}
+
+	/**
+	 * @covers ::wp_presence_check_collaboration_threshold
+	 */
+	public function test_collaboration_state_survives_the_request_that_wrote_it() {
+		$post_id  = self::factory()->post->create();
+		$editor_2 = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$room     = wp_presence_post_room( $post_id );
+
+		wp_set_presence( $room, 'editor-' . $editor_2, array( 'screen' => 'post' ), $editor_2 );
+
+		wp_set_current_user( self::$editor_id );
+		wp_presence_editor_heartbeat_received(
+			array(),
+			array( 'presence-editor-ping' => array( 'post_id' => $post_id ) ),
+			'post'
+		);
+
+		$this->assertSame(
+			2,
+			get_transient( wp_presence_collaboration_state_key( $room ) ),
+			'The count a request observed has to outlive it'
+		);
+	}
+
+	/**
+	 * @covers ::wp_presence_check_collaboration_threshold
+	 */
+	public function test_collaboration_state_expiry_is_pushed_forward_on_every_tick() {
+		$post_id  = self::factory()->post->create();
+		$editor_2 = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$room     = wp_presence_post_room( $post_id );
+		$key      = wp_presence_collaboration_state_key( $room );
+
+		wp_set_presence( $room, 'editor-' . $editor_2, array( 'screen' => 'post' ), $editor_2 );
+
+		// Two editors already recorded, but about to lapse.
+		set_transient( $key, 2, 5 );
+
+		wp_set_current_user( self::$editor_id );
+		wp_presence_editor_heartbeat_received(
+			array(),
+			array( 'presence-editor-ping' => array( 'post_id' => $post_id ) ),
+			'post'
+		);
+
+		// Writing only when the count moves would leave the old 5s expiry in
+		// place, and the pair would re-announce itself once it ran out. Derived
+		// from the TTL rather than a literal so a change to it cannot quietly
+		// make this assertion meaningless.
+		$this->assertGreaterThan(
+			time() + (int) floor( wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL ) / 2 ),
+			(int) get_option( '_transient_timeout_' . $key ),
+			'An unchanged count still has to push the expiry forward'
+		);
+	}
+
+	/**
 	 * Decodes the wpPresenceConfig object handed to presence-ping.js.
 	 *
 	 * @return array The decoded config.
