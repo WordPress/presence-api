@@ -5,6 +5,8 @@ name: Playground Preview
 # sibling `Playground Preview Publish` workflow picks the artifacts up
 # on `workflow_run` and hosts them, so a preview always shows the PR's
 # own build at its latest commit.
+#
+# Release-please PRs included: nothing else verifies the staged version.
 
 on:
   pull_request:
@@ -31,7 +33,6 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-24.04
-    if: ${{ !startsWith(github.head_ref, 'release-please--') }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
