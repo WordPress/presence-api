@@ -3,8 +3,8 @@ name: Playground Preview
 # Builds `presence-api.zip` from the PR commit and uploads it (plus the
 # demo seeder and a small metadata file) as workflow artifacts. The
 # sibling `Playground Preview Publish` workflow picks the artifacts up
-# on `workflow_run` and hands them to GitHub Releases for hosting — we
-# don't depend on any third-party artifact proxy.
+# on `workflow_run` and hosts them, so a preview always shows the PR's
+# own build at its latest commit.
 
 on:
   pull_request:

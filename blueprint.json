@@ -10,7 +10,7 @@
 			"step": "installPlugin",
 			"pluginData": {
 				"resource": "url",
-				"url": "https://downloads.wordpress.org/plugin/presence-api.latest-stable.zip"
+				"url": "https://raw.githubusercontent.com/WordPress/presence-api/preview-main/presence-api.zip"
 			}
 		},
 		{
