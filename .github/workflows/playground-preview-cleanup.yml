@@ -18,7 +18,6 @@ permissions:
 jobs:
   cleanup:
     runs-on: ubuntu-24.04
-    if: ${{ !startsWith(github.head_ref, 'release-please--') }}
     steps:
       - name: Delete preview branch
         env:

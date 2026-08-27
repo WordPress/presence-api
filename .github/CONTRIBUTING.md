@@ -41,7 +41,7 @@ Assigned issues left quiet for two weeks may be unassigned. Comment to pick one 
 
 ## Pull requests
 
-1. Branch off `main`, or off the parent branch if this is one of a stack.
+1. Branch off `main`.
 2. Title the pull request as a [Conventional Commit](https://www.conventionalcommits.org/). Pull requests are merged with a merge commit whose subject is the pull request title, so the title is what release-please reads. `lint-pr.yml` enforces this.
 3. All CI checks must pass before merge (PHPCS, PHPStan, PHPUnit across PHP 7.4 + 8.3 plus a multisite run, Playwright).
 4. Keep commits focused, one logical change per commit.
@@ -52,7 +52,19 @@ A hook, REST route, WP-CLI command, guarded constant, or browser global that a s
 
 Written about means a docblock directly above it with a sentence saying what it is for. That is where WordPress core's code reference reads from, and it keeps the write-up next to the code instead of in a hand-kept list that drifts the first time someone forgets it. `README.md` narrates the surfaces worth a worked example; it is not the inventory.
 
-Some names are reachable without being a promise, like a global that only exists so two enqueued scripts can share a renderer. Mark those `@private` in that same docblock, the marker core uses to keep a symbol out of the code reference, and the check leaves them alone:
+Some names are reachable without being a promise, like a global that only exists so two enqueued scripts can share a renderer. Mark those private in that same docblock and the check leaves them alone. In PHP use `@access private`, the marker [core's documentation standards](https://developer.wordpress.org/coding-standards/inline-documentation-standards/php/) name, directly below `@since`:
+
+```php
+/**
+ * Returns the transient key a room's collaboration state is stored under.
+ *
+ * @since 0.1.0
+ * @access private
+ */
+function wp_presence_collaboration_state_key( $room ) {}
+```
+
+JavaScript has no `@since` line to sit under, so `@private` on its own is enough there:
 
 ```js
 /**
@@ -62,29 +74,6 @@ Some names are reachable without being a promise, like a global that only exists
  */
 window.wpPresenceBuildAvatarStack = function ( users, max ) {};
 ```
-
-### Stacks
-
-A change too large to review in one pass goes in as a stack: each pull request based on the previous one, so each diff is only what that step added. Split where the reviewer's question changes, not every N lines. Nothing beyond git and `gh` is needed.
-
-```bash
-git checkout -b feature/thing-schema main
-# commit
-git checkout -b feature/thing-write
-```
-
-Open each one against its parent, or its diff carries the parent's work too:
-
-```bash
-gh pr create --base main --head feature/thing-schema
-gh pr create --base feature/thing-schema --head feature/thing-write
-```
-
-Put the same numbered list of the whole stack at the top of every body, marking the current one, so a reviewer landing in the middle knows what it sits on.
-
-When a lower pull request changes, rebase each branch above it in order and push with `--force-with-lease`, never plain `--force`.
-
-Merge bottom-up, one at a time, each on its own green CI. GitHub retargets a child to `main` when its base is merged and deleted, so nothing needs re-pointing by hand.
 
 ## Getting credited
 
