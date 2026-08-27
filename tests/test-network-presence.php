@@ -421,6 +421,43 @@ class WP_Test_Network_Presence extends WP_Presence_Network_UnitTestCase {
 	}
 
 	/**
+	 * A paginated caller wants a page of the same busiest-first order, so the
+	 * skip happens where the cap does: before anything is resolved.
+	 *
+	 * @covers ::wp_presence_get_network_summary
+	 * @covers ::wp_presence_hydrate_network_snapshot
+	 */
+	public function test_summary_can_skip_sites_before_resolving_them() {
+		$busiest = $this->create_blog();
+		$busy    = $this->create_blog();
+		$quiet   = $this->create_blog();
+
+		$this->set_network_summary_row( $busiest, self::factory()->user->create_many( 3 ) );
+		$this->set_network_summary_row( $busy, self::factory()->user->create_many( 2 ) );
+		$this->set_network_summary_row( $quiet, array( self::$editor_id ) );
+
+		$page_two = wp_presence_get_network_summary(
+			array(
+				'sites'  => 1,
+				'offset' => 1,
+			)
+		);
+
+		$this->assertSame( array( $busy ), wp_list_pluck( $page_two['sites'], 'blog_id' ) );
+		$this->assertSame( 3, $page_two['total_sites_online'] );
+
+		// An offset with no cap behind it runs to the end of the network.
+		$rest = wp_presence_get_network_summary( array( 'offset' => 1 ) );
+
+		$this->assertSame( array( $busy, $quiet ), wp_list_pluck( $rest['sites'], 'blog_id' ) );
+
+		$past_end = wp_presence_get_network_summary( array( 'offset' => 3 ) );
+
+		$this->assertSame( array(), $past_end['sites'] );
+		$this->assertSame( 3, $past_end['total_sites_online'] );
+	}
+
+	/**
 	 * Network presence data spans every site on the install, so the bar to see
 	 * it is a network capability, and a network that delegates differently can
 	 * move it.

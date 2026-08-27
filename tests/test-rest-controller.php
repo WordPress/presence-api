@@ -739,4 +739,19 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 			$this->assertNotContains( $unused_user_id, $returned_user_ids, 'Users from rooms outside page 1 should not be queried' );
 		}
 	}
+
+	/**
+	 * The summary table behind them only exists on a network.
+	 *
+	 * @covers ::wp_presence_register_rest_routes
+	 */
+	public function test_the_network_routes_are_not_registered_on_a_single_site() {
+		if ( is_multisite() ) {
+			$this->markTestSkipped( 'Requires single site.' );
+		}
+
+		$response = rest_get_server()->dispatch( new WP_REST_Request( 'GET', '/wp-presence/v1/presence/network' ) );
+
+		$this->assertSame( 404, $response->get_status() );
+	}
 }
