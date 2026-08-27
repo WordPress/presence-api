@@ -11,8 +11,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Registers the Heartbeat dashboard widget.
+ *
+ * Hiding it by default is not a permission: Screen Options undoes that.
  */
 function wp_presence_heartbeat_widget_register() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+
 	wp_add_dashboard_widget(
 		'presence_heartbeat',
 		__( 'Presence API Debugger', 'presence-api' ),
@@ -90,13 +96,15 @@ function wp_presence_heartbeat_widget_render() {
  * Returns the site-wide presence summary so the widget can update
  * its user and room counts on each tick.
  *
+ * Checked again here because Heartbeat does not run through the registration.
+ *
  * @param array  $response  The Heartbeat response.
  * @param array  $data      The $_POST data sent.
  * @param string $screen_id The screen ID.
  * @return array The Heartbeat response.
  */
 function wp_presence_heartbeat_widget_received( $response, $data, $screen_id ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- Required by filter signature.
-	if ( empty( $data['presence-ping'] ) ) {
+	if ( empty( $data['presence-ping'] ) || ! current_user_can( 'manage_options' ) ) {
 		return $response;
 	}
 
