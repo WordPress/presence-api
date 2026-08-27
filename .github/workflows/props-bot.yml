@@ -114,31 +114,45 @@ jobs:
               });
             }
 
+            // props-bot prints display names, and the coding agent's is
+            // `Copilot`: a 404 as a login, a Bot as `Copilot[bot]`.
+            async function isPerson(handle) {
+              for (const username of [handle, `${handle}[bot]`]) {
+                try {
+                  const { data } = await github.rest.users.getByUsername({ username });
+                  return 'User' === data.type;
+                } catch (error) {
+                  // Fail open: losing real props costs more than a stray name.
+                  if (404 !== error.status) {
+                    core.warning(`Could not resolve @${handle} (${error.message}). Leaving it in place.`);
+                    return true;
+                  }
+                }
+              }
+              return false;
+            }
+
             // Filter bot accounts and raw email addresses from Unlinked Accounts;
             // drop the section if nothing real remains.
-            body = body.replace(
-              /## Unlinked Accounts\n\n([\s\S]*?)\n\nCore Committers/,
-              (_, section) => {
-                // Capture to the end of the line rather than to the first period.
-                // `[^.]+` stopped inside email domains and at usernames containing
-                // periods, which made the replace below a silent no-op.
-                const lineMatch = section.match(/accounts: (.+?)\.?\s*$/m);
-                if (!lineMatch) return _;
-                const real = lineMatch[1]
-                  .split(', ')
-                  .map(n => n.trim())
-                  .filter(n => {
-                    if (!n || n.includes('[bot]')) return false;
-                    // Entries arrive "@"-prefixed, so "@someone" is a handle.
-                    // props-bot falls back to the raw commit author email when
-                    // GitHub cannot resolve the account, which leaves a second
-                    // "@" behind. Drop those rather than echo an address.
-                    return !n.replace(/^@/, '').includes('@');
-                  });
-                if (!real.length) return 'Core Committers';
-                return '## Unlinked Accounts\n\n' + section.replace(lineMatch[1], real.join(', ')) + '\n\nCore Committers';
+            const sectionMatch = body.match(/## Unlinked Accounts\n\n([\s\S]*?)\n\nCore Committers/);
+            // To end of line, not first period: `[^.]+` stopped inside emails.
+            const lineMatch = sectionMatch && sectionMatch[1].match(/accounts: (.+?)\.?\s*$/m);
+            if (lineMatch) {
+              const real = [];
+              for (const name of lineMatch[1].split(', ').map(n => n.trim())) {
+                if (!name || name.includes('[bot]')) continue;
+                // A second "@" is props-bot's raw-email fallback, not a handle.
+                const handle = name.replace(/^@/, '');
+                if (handle.includes('@')) continue;
+                if (await isPerson(handle)) real.push(name);
               }
-            );
+              const replacement = real.length
+                ? '## Unlinked Accounts\n\n'
+                  + sectionMatch[1].replace(lineMatch[1], () => real.join(', '))
+                  + '\n\nCore Committers'
+                : 'Core Committers';
+              body = body.replace(sectionMatch[0], () => replacement);
+            }
 
             // Fail-closed backstop. Everything above depends on the exact prose
             // emitted by WordPress/props-bot-action, which is pinned to @trunk
