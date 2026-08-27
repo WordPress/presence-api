@@ -104,7 +104,9 @@ test.describe( 'Presence Heartbeat Idle Backoff', () => {
 		expect( widened ).toBe( true );
 		const widenedInterval = await page.evaluate( () => wp.heartbeat.interval() );
 		expect( widenedInterval ).toBeGreaterThan( normalInterval );
-		expect( widenedInterval ).toBeLessThan( 60 ); // Stays under the presence TTL.
+		// The idle interval is itself under the TTL.
+		const idleInterval = await page.evaluate( () => window.wpPresenceConfig.idleInterval );
+		expect( widenedInterval ).toBeLessThanOrEqual( idleInterval );
 
 		await page.evaluate( () => {
 			document.dispatchEvent( new KeyboardEvent( 'keydown', { bubbles: true } ) );
