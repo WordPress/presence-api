@@ -18,6 +18,7 @@ blueprint-40.json
 CHANGELOG.md
 README.md
 SECURITY.md
+codecov.yml
 composer.json
 package.json
 package-lock.json
@@ -27,5 +28,6 @@ phpunit.xml.dist
 release-please-config.json
 scripts/
 src/hooks/test/
+src/utils/test/
 includes/db-viewer.php
 includes/debugger-widget.php
