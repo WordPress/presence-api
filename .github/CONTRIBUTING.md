@@ -41,7 +41,7 @@ Assigned issues left quiet for two weeks may be unassigned. Comment to pick one 
 
 ## Pull requests
 
-1. Branch off `main`, or off the parent branch if this is one of a stack.
+1. Branch off `main`.
 2. Title the pull request as a [Conventional Commit](https://www.conventionalcommits.org/). Pull requests are merged with a merge commit whose subject is the pull request title, so the title is what release-please reads. `lint-pr.yml` enforces this.
 3. All CI checks must pass before merge (PHPCS, PHPStan, PHPUnit across PHP 7.4 + 8.3 plus a multisite run, Playwright).
 4. Keep commits focused, one logical change per commit.
@@ -74,29 +74,6 @@ JavaScript has no `@since` line to sit under, so `@private` on its own is enough
  */
 window.wpPresenceBuildAvatarStack = function ( users, max ) {};
 ```
-
-### Stacks
-
-A change too large to review in one pass goes in as a stack: each pull request based on the previous one, so each diff is only what that step added. Split where the reviewer's question changes, not every N lines. Nothing beyond git and `gh` is needed.
-
-```bash
-git checkout -b feature/thing-schema main
-# commit
-git checkout -b feature/thing-write
-```
-
-Open each one against its parent, or its diff carries the parent's work too:
-
-```bash
-gh pr create --base main --head feature/thing-schema
-gh pr create --base feature/thing-schema --head feature/thing-write
-```
-
-Put the same numbered list of the whole stack at the top of every body, marking the current one, so a reviewer landing in the middle knows what it sits on.
-
-When a lower pull request changes, rebase each branch above it in order and push with `--force-with-lease`, never plain `--force`.
-
-Merge bottom-up, one at a time, each on its own green CI. GitHub retargets a child to `main` when its base is merged and deleted, so nothing needs re-pointing by hand.
 
 ## Getting credited
 
