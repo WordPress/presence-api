@@ -93,10 +93,10 @@
 		if ( bannerShown ) {
 			return;
 		}
-		showBanner( info );
+		showBanner( info, rev );
 	} );
 
-	function showBanner( info ) {
+	function showBanner( info, rev ) {
 		const target = document.querySelector( '.wrap' ) || document.getElementById( 'wpbody-content' );
 		if ( ! target ) {
 			return;
@@ -152,6 +152,11 @@
 		dismiss.appendChild( sr );
 		dismiss.addEventListener( 'click', function () {
 			notice.remove();
+			bannerShown = false;
+			// Dismissal acknowledges this revision, not the screen. The tick
+			// handler only compares against baselineRev, so clearing the flag
+			// without advancing it brings the same banner back one tick later.
+			baselineRev = rev;
 		} );
 		notice.appendChild( dismiss );
 
