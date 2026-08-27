@@ -57,6 +57,7 @@ class WP_Test_Network_Sites_Column extends WP_Presence_Network_UnitTestCase {
 	 * made it, so the negatives have to come before the positive.
 	 *
 	 * @covers ::wp_presence_enqueue_network_sites_assets
+	 * @covers ::wp_presence_enqueue_avatar_stack_style
 	 */
 	public function test_sites_list_enqueues_the_avatar_stack_style() {
 		wp_presence_enqueue_network_sites_assets( 'sites.php' );

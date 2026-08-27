@@ -341,6 +341,8 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers WP_Presence_Widget_Whos_Online::enqueue_scripts
+	 * @covers ::wp_presence_enqueue_avatar_stack_style
+	 * @covers ::wp_presence_enqueue_avatar_stack_script
 	 */
 	public function test_the_dashboard_gets_the_widget_style_and_heartbeat_script() {
 		WP_Presence_Widget_Whos_Online::enqueue_scripts( 'index.php' );

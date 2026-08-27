@@ -64,6 +64,9 @@ class WP_Test_Presence_Network_Widget_Whos_Online extends WP_Presence_Network_Un
 	/**
 	 * The widget only exists on the dashboard, so every other admin screen has
 	 * to load without its script or style.
+	 *
+	 * @covers ::wp_presence_enqueue_avatar_stack_style
+	 * @covers ::wp_presence_enqueue_avatar_stack_script
 	 */
 	public function test_scripts_are_only_enqueued_on_the_dashboard() {
 		WP_Presence_Network_Widget_Whos_Online::enqueue_scripts( 'sites.php' );
