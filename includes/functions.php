@@ -296,7 +296,7 @@ function wp_presence_get_timeout( $timeout ) {
 	/**
 	 * Filters the presence TTL (time-to-live) used for queries and cleanup.
 	 *
-	 * @param int $timeout The timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL (60).
+	 * @param int $timeout The timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL (150).
 	 */
 	return (int) apply_filters( 'wp_presence_default_ttl', $timeout );
 }

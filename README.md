@@ -9,7 +9,7 @@ System-wide presence and awareness for WordPress.
 
 ## Problem
 
-WordPress has no way to know who is logged in, what screen they are on, or which posts are being edited — without writing to shared tables like `wp_postmeta` or `wp_options`. High-frequency writes to those tables invalidate caches site-wide ([#64696](https://core.trac.wordpress.org/ticket/64696)). This plugin uses a dedicated `wp_presence` table with a 60-second TTL to provide that awareness with zero cache side effects.
+WordPress has no way to know who is logged in, what screen they are on, or which posts are being edited — without writing to shared tables like `wp_postmeta` or `wp_options`. High-frequency writes to those tables invalidate caches site-wide ([#64696](https://core.trac.wordpress.org/ticket/64696)). This plugin uses a dedicated `wp_presence` table with a 150-second TTL to provide that awareness with zero cache side effects.
 
 > "This idea of presence I think is really cool and seeing where people are... you log into your WordPress, I see oh Matias is moderating some comments, Lynn is on the dashboard maybe reading some news... that idea of like you log in and you can kind of see the neighborhood of like who else is also there." — [Matt Mullenweg, WordPress 7.0 planning session](https://youtu.be/F-xMPY9WqG4?si=YK0rIUM2nuYy7x45&t=2435)
 
@@ -84,16 +84,18 @@ Without support, `wp_presence_post_room()` returns `false` for that post type an
 
 ### Filters
 #### `wp_presence_default_ttl`
-Filters the presence TTL (time-to-live) in seconds used for all queries and cleanup. Default: 60.
+Filters the presence TTL (time-to-live) in seconds used for all queries and cleanup. Default: 150.
+
+Values under 120 drop a tab that is still open and still pinging, since that is the Heartbeat interval core gives an unfocused or five-minute-idle tab.
 ```php
 add_filter( 'wp_presence_default_ttl', function( $timeout ) {
-    return 30; // Override TTL to 30 seconds.
+    return 300; // Override TTL to 5 minutes.
 } );
 ```
 
 Or define the constant before the plugin loads:
 ```php
-define( 'WP_PRESENCE_DEFAULT_TTL', 30 );
+define( 'WP_PRESENCE_DEFAULT_TTL', 300 );
 ```
 
 #### `wp_presence_current_screen_key`
