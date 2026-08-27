@@ -59,13 +59,44 @@ function route(raw) {
   return raw.replace(/['"]/g, '').replace(/\s*\.\s*/g, '').replace(/\s+/g, ' ').trim();
 }
 
+// Not every reachable name is a promise. A browser global can exist only so two
+// enqueued scripts can share a renderer, and writing that up as an extension
+// point would freeze markup nobody meant to publish. `@private` is what core
+// uses to keep a symbol out of the code reference, so it is the marker here too.
+//
+// The docblock has to be the one directly above: only the opening of the
+// statement may sit between them, which covers `$ttl = apply_filters( ... )` and
+// `window.x = function () {}` while stopping a `@private` note from leaking onto
+// whatever the next statement happens to be.
+function isPrivate(source, index) {
+  const before = source.slice(0, index);
+  const close = before.lastIndexOf('*/');
+
+  if (-1 === close) {
+    return false;
+  }
+
+  // A statement terminator or a brace between the two means the docblock
+  // belongs to something else.
+  if (/[;{}]/.test(before.slice(close + 2))) {
+    return false;
+  }
+
+  const open = before.lastIndexOf('/**', close);
+
+  return -1 !== open && before.slice(open, close).includes('@private');
+}
+
 // Identifiers are `kind:name` and carry no path, so the same hook found at a new
 // location is the same surface.
 function findSurfaces(source, path) {
   const rules = path.endsWith('.php') ? PHP_RULES : path.endsWith('.js') ? JS_RULES : [];
 
   return rules.flatMap(([regex, build]) =>
-    [...source.matchAll(regex)].map(build).filter((s) => !s.endsWith(':'))
+    [...source.matchAll(regex)]
+      .filter((m) => !isPrivate(source, m.index))
+      .map(build)
+      .filter((s) => !s.endsWith(':'))
   );
 }
 

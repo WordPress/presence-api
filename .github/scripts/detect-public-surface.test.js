@@ -95,6 +95,42 @@ test('reads wp.hooks calls', () => {
   ]);
 });
 
+// ---------------------------------------------------------------------------
+// @private
+// ---------------------------------------------------------------------------
+
+test('a @private docblock keeps an internal seam out', () => {
+  const source = `/**
+ * Builds an avatar stack.
+ *
+ * @private
+ */
+window.wpPresenceBuildAvatarStack = function ( users, max ) {};`;
+  assert.deepEqual(js(source), []);
+  assert.deepEqual(js(source.replace(' * @private\n', '')), [
+    'js-global:window.wpPresenceBuildAvatarStack',
+  ]);
+});
+
+test('@private applies to the statement it documents, not the next one', () => {
+  const source = `/**
+ * @private
+ */
+window.wpPresenceInternal = function () {};
+window.wpPresencePublic = function () {};`;
+  assert.deepEqual(js(source), ['js-global:window.wpPresencePublic']);
+});
+
+test('@private reads the same above a php hook', () => {
+  const source = `/**
+ * Fires internally.
+ *
+ * @private
+ */
+do_action( 'wp_presence_internal' );`;
+  assert.deepEqual(php(source), []);
+});
+
 test('php rules do not run against a js file, or the reverse', () => {
   assert.deepEqual(js("apply_filters( 'not_php', 1 );"), []);
   assert.deepEqual(php('window.wpPresenceThing = 1;'), []);

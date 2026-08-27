@@ -46,6 +46,21 @@ Assigned issues left quiet for two weeks may be unassigned. Comment to pick one 
 3. All CI checks must pass before merge (PHPCS, PHPStan, PHPUnit across PHP 7.4 + 8.3 plus a multisite run, Playwright).
 4. Keep commits focused, one logical change per commit.
 
+### Public surfaces
+
+A hook, REST route, WP-CLI command, guarded constant, or browser global that a site can reach is a promise: renaming it later breaks that site. `public-surface.yml` labels any pull request that adds one and comments with what is still missing from `README.md`.
+
+Some names are reachable without being a promise, like a global that only exists so two enqueued scripts can share a renderer. Mark those `@private` in the docblock directly above, the same marker core uses to keep a symbol out of the code reference, and the check leaves them alone:
+
+```js
+/**
+ * Builds an avatar stack.
+ *
+ * @private
+ */
+window.wpPresenceBuildAvatarStack = function ( users, max ) {};
+```
+
 ### Stacks
 
 A change too large to review in one pass goes in as a stack: each pull request based on the previous one, so each diff is only what that step added. Split where the reviewer's question changes, not every N lines. Nothing beyond git and `gh` is needed.
