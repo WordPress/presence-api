@@ -230,25 +230,20 @@ function wp_presence_push_network_summary() {
 
 	$blog_id = get_current_blog_id();
 	$now     = gmdate( 'Y-m-d H:i:s' );
-	$refresh = gmdate( 'Y-m-d H:i:s', time() - wp_presence_network_summary_refresh_interval() );
 
-	// updated_gmt is assigned before data because MySQL applies the assignments
-	// in order, so reading `data` after `data = VALUES(data)` would compare the
-	// new value against itself and never detect a change. The gate above already
-	// rules out most unchanged writes; this keeps updated_gmt honest for the
-	// refresh push, which rewrites the same data on purpose.
+	// Unconditional: the gate above already ruled out unchanged writes, and the
+	// IF() this replaced was silently dropped by SQLite, freezing updated_gmt.
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	$result = $wpdb->query(
 		$wpdb->prepare(
 			"INSERT INTO {$wpdb->presence_network_summary} (blog_id, data, updated_gmt)
 			VALUES (%d, %s, %s)
 			ON DUPLICATE KEY UPDATE
-				updated_gmt = IF( data <> VALUES(data) OR updated_gmt < %s, VALUES(updated_gmt), updated_gmt ),
+				updated_gmt = VALUES(updated_gmt),
 				data = VALUES(data)",
 			$blog_id,
 			wp_presence_encode_network_summary_row( $blog_id, $user_ids ),
-			$now,
-			$refresh
+			$now
 		)
 	);
 
