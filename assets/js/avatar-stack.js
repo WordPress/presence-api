@@ -19,6 +19,11 @@
 	/**
 	 * Builds an avatar stack.
 	 *
+	 * On `window` only because the two widgets' inline scripts are enqueued
+	 * separately and have no other way to share it. Nothing outside the plugin
+	 * is meant to call it.
+	 *
+	 * @private
 	 * @param {Array}  users Users, each with an avatar_url and a display_name.
 	 * @param {number} max   Maximum number of avatars to show.
 	 * @return {string} HTML markup.
