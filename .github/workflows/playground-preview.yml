@@ -77,7 +77,7 @@ jobs:
           for f in blueprint.json blueprint-40.json blueprint-multisite.json; do
             jq -e '
               (.steps | length > 0)
-              and (.steps | all(.step | IN("installPlugin", "writeFile", "runPHP", "enableMultisite")))
+              and (.steps | all(.step | IN("installPlugin", "writeFile", "runPHP", "enableMultisite", "wp-cli")))
               and (.steps | map(select(.step == "installPlugin" and (.pluginData.resource // "") == "url")) | length == 1)
               and (.steps | map(select(.step == "writeFile" and (.data.resource // "") == "url")) | length == 2)
             ' "$f" > /dev/null

@@ -13,7 +13,10 @@
 			"step": "installPlugin",
 			"pluginData": {
 				"resource": "url",
-				"url": "https://github.com/WordPress/presence-api/releases/latest/download/presence-api.zip"
+				"url": "https://downloads.wordpress.org/plugin/presence-api.latest-stable.zip"
+			},
+			"options": {
+				"activate": false
 			}
 		},
 		{
@@ -33,8 +36,24 @@
 			}
 		},
 		{
-			"step": "runPHP",
-			"code": "<?php require '/wordpress/wp-load.php'; require_once ABSPATH . 'wp-admin/includes/plugin.php'; activate_plugin( 'presence-api/presence-api.php', '', true ); $domain = parse_url( get_option( 'siteurl' ), PHP_URL_HOST ); wpmu_create_blog( $domain, '/engineering/', 'Engineering', 1 ); wpmu_create_blog( $domain, '/marketing/', 'Marketing', 1 ); wpmu_create_blog( $domain, '/design/', 'Design', 1 ); require '/wordpress/wp-content/plugins/presence-api/demo-seeder.php'; foreach ( get_sites( array( 'number' => 100 ) ) as $site ) { switch_to_blog( $site->blog_id ); wp_presence_demo_seed( 5 ); restore_current_blog(); } update_user_meta( 1, 'show_welcome_panel', 0 ); ?>"
+			"step": "wp-cli",
+			"command": "wp plugin activate presence-api --network"
+		},
+		{
+			"step": "wp-cli",
+			"command": "wp site create --slug=engineering --title=Engineering"
+		},
+		{
+			"step": "wp-cli",
+			"command": "wp site create --slug=marketing --title=Marketing"
+		},
+		{
+			"step": "wp-cli",
+			"command": "wp site create --slug=design --title=Design"
+		},
+		{
+			"step": "wp-cli",
+			"command": "wp eval 'require \"/wordpress/wp-content/plugins/presence-api/demo-seeder.php\"; foreach ( get_sites( array( \"number\" => 100 ) ) as $site ) { $blog_id = (int) $site->blog_id; switch_to_blog( $blog_id ); foreach ( wp_presence_demo_seed( 5 ) as $user_id ) { add_user_to_blog( $blog_id, $user_id, \"editor\" ); } restore_current_blog(); } update_user_meta( 1, \"show_welcome_panel\", 0 );'"
 		}
 	]
 }
