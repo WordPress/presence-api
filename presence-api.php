@@ -217,13 +217,15 @@ function wp_presence_on_initialize_site( $site ) {
  * @return int[] Site IDs.
  */
 function wp_presence_get_network_site_ids() {
-	return get_sites(
+	$sites = get_sites(
 		array(
 			'fields'                 => 'ids',
 			'number'                 => 0,
 			'update_site_meta_cache' => false,
 		)
 	);
+
+	return is_array( $sites ) ? $sites : array();
 }
 
 /**
