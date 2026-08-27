@@ -17,6 +17,9 @@ Presence API gives WordPress a system-wide awareness layer. It tracks which user
 
 Data flows through the Heartbeat API and is stored in a dedicated `wp_presence` table with a 60-second TTL. No writes to `wp_postmeta` means no post-cache invalidation on every heartbeat.
 
+On a multisite network, Network Admin gets its own view of the same data: a Who's Online dashboard widget listing the busiest sites and who is on each, an Online column in the Sites list, and an Online view, filter, and column in the Users list. These require the `manage_network` capability.
+
+
 = Features =
 
 * Who's Online dashboard widget with idle detection
@@ -42,6 +45,16 @@ Or install manually:
 
 1. Download the zip and upload the `presence-api` folder to `/wp-content/plugins/`.
 2. Activate through the **Plugins** menu.
+
+== Frequently Asked Questions ==
+
+= Does it work on multisite? =
+
+Yes. Network-activate it and Network Admin gains a Who's Online dashboard widget listing the busiest sites and who is on each, an Online column in the Sites list, and an Online view, filter, and column in the Users list. Every site keeps its own widgets and lists, counting only the people on that site.
+
+= Who can see network-wide presence? =
+
+Anyone with the `manage_network` capability, which on a default network means super admins. The `wp_presence_network_capability` filter changes what is required.
 
 == Changelog ==
 
