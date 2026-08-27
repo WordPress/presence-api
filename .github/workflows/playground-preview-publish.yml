@@ -159,12 +159,14 @@ jobs:
 
           BLUEPRINT=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" blueprint.json)
           BLUEPRINT_40=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" blueprint-40.json)
+          BLUEPRINT_MS=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" blueprint-multisite.json)
 
           encode() { printf '%s' "$1" | base64 -w0; }
 
           {
             echo "url=https://playground.wordpress.net/#$(encode "$BLUEPRINT")"
             echo "url_40=https://playground.wordpress.net/#$(encode "$BLUEPRINT_40")"
+            echo "url_multisite=https://playground.wordpress.net/#$(encode "$BLUEPRINT_MS")"
           } >> "$GITHUB_OUTPUT"
 
       - name: Post or update sticky comment
@@ -174,22 +176,26 @@ jobs:
           HEAD_SHA: ${{ env.HEAD_SHA }}
           PLAYGROUND_URL: ${{ steps.playground.outputs.url }}
           PLAYGROUND_URL_40: ${{ steps.playground.outputs.url_40 }}
+          PLAYGROUND_URL_MULTISITE: ${{ steps.playground.outputs.url_multisite }}
         with:
           script: |
             const marker = '<!-- presence-api:playground-preview -->';
             const url = process.env.PLAYGROUND_URL;
             const url40 = process.env.PLAYGROUND_URL_40;
+            const urlMultisite = process.env.PLAYGROUND_URL_MULTISITE;
             const sha = process.env.HEAD_SHA;
             const prNumber = parseInt(process.env.PR_NUMBER, 10);
-            const badge = 'https://img.shields.io/badge/Open%20in-WordPress%20Playground-3858E9?logo=wordpress&logoColor=white';
+            // Two-part shields badge: grey "Playground" label, blue variant.
+            const badge = (variant) =>
+              `https://img.shields.io/badge/Playground-${variant}-3858E9?logo=wordpress&logoColor=white`;
 
             const body = [
               marker,
               '## ▶ Preview in WordPress Playground',
               '',
-              `[![Open in WordPress Playground](${badge})](${url})`,
+              `[![Single site](${badge('Single%20site')})](${url}) [![Multisite network](${badge('Multisite%20network')})](${urlMultisite})`,
               '',
-              "Boots a fresh WordPress with this PR's presence-api build, seeds 5 demo users, and drops you on the dashboard.",
+              "Both boot a fresh WordPress with this PR's presence-api build and log you in. Single site seeds 5 demo users and lands on the dashboard. Multisite network adds three sub-sites alongside the main one, seeds 5 users on each, and lands on Network Admin.",
               '',
               `<sub>Stress-test variant: [40 demo users](${url40}) · Built from \`${sha}\`. Auto-updates when you push.</sub>`,
             ].join('\n');
