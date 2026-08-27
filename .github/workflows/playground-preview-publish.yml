@@ -2,18 +2,18 @@ name: Playground Preview Publish
 
 # Runs in the base-repo context (via `workflow_run`) so it has write
 # access even for PRs from forks. Downloads the build artifacts from
-# the triggering workflow, publishes them as a prerelease, and posts
-# (or updates) the sticky Playground comment on the PR.
+# the triggering workflow, pushes them to a per-PR `preview-pr-N`
+# branch that raw.githubusercontent.com can serve to the browser, and
+# posts (or updates) the sticky Playground comment on the PR.
 #
 # Security model: every PR-derived input is untrusted.
 #   - `pr-meta.json` is parsed with jq and regex-validated; we never
 #     `source` it as shell.
 #   - The blueprint templates we encode into Playground URLs come from
-#     the base ref (this checkout), not from the PR — only the plugin
-#     and seeder URLs are rewritten in, and both point exclusively at
-#     github.com/${{ github.repository }} under our control, so a fork
-#     PR cannot direct Playground at attacker-controlled URLs through
-#     this workflow.
+#     the base ref (this checkout), not from the PR. Only the asset URLs
+#     are rewritten in, and every one points at ${{ github.repository }},
+#     so a fork PR cannot redirect Playground.
+#   - Nothing reads `preview-pr-*`, so the branch is never executed.
 
 on:
   workflow_run: # zizmor: ignore[dangerous-triggers]
@@ -109,23 +109,30 @@ jobs:
             echo "HEAD_SHA=$TRUSTED_HEAD_SHA"
           } >> "$GITHUB_ENV"
 
-      - name: Publish prerelease (replaces any prior preview for this PR)
+      # Playground fetches these from the browser. Release assets send no
+      # `Access-Control-Allow-Origin`; raw.githubusercontent.com does.
+      - name: Publish preview assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          TAG="preview-pr-${PR_NUMBER}"
-          # Drop any prior release+tag for this PR so we always serve the
-          # latest preview from a stable URL. Tolerate first-time absence.
-          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
-          gh release create "$TAG" \
-            artifacts/release-assets/presence-api.zip \
-            artifacts/release-assets/demo-seeder.php \
-            artifacts/release-assets/screen-stale-demo-helper.php \
-            --prerelease \
-            --target "$HEAD_SHA" \
-            --title "PR #${PR_NUMBER} preview" \
-            --notes "Auto-built from \`${HEAD_SHA}\` for PR #${PR_NUMBER}. Deleted on PR close."
+          BRANCH="preview-pr-${PR_NUMBER}"
+
+          # Force-pushed from a throwaway repo, so no preview blob reaches the
+          # history everyone clones. The SHA is a path component because raw
+          # caches by path.
+          mkdir -p "preview/${HEAD_SHA}"
+          cp artifacts/release-assets/* "preview/${HEAD_SHA}/"
+
+          cd preview
+          git init -q -b "$BRANCH"
+          git add -A
+          git -c user.name='github-actions[bot]' \
+            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -qm "Playground preview for PR #${PR_NUMBER} at ${HEAD_SHA}"
+          git push -q --force \
+            "https://x-access-token:${GH_TOKEN}@github.com/${GH_REPO}.git" "$BRANCH"
 
       - name: Assemble Playground URLs from base-ref blueprints
         id: playground
@@ -133,12 +140,21 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          TAG="preview-pr-${PR_NUMBER}"
-          # Both URLs resolve to github.com/${REPO} — never to the PR's
-          # head repository — so a fork PR cannot redirect Playground.
-          PLUGIN_URL="https://github.com/${REPO}/releases/download/${TAG}/presence-api.zip"
-          SEEDER_URL="https://github.com/${REPO}/releases/download/${TAG}/demo-seeder.php"
-          HELPER_URL="https://github.com/${REPO}/releases/download/${TAG}/screen-stale-demo-helper.php"
+          # Always the base repository, never the PR's head repository.
+          RAW="https://raw.githubusercontent.com/${REPO}/preview-pr-${PR_NUMBER}/${HEAD_SHA}"
+          PLUGIN_URL="${RAW}/presence-api.zip"
+          SEEDER_URL="${RAW}/demo-seeder.php"
+          HELPER_URL="${RAW}/screen-stale-demo-helper.php"
+
+          # raw's CDN can lag the push by a few seconds.
+          for _ in $(seq 30); do
+            if curl -sf -o /dev/null "$PLUGIN_URL"; then
+              break
+            fi
+            sleep 2
+          done
+          curl -sf -o /dev/null "$PLUGIN_URL" \
+            || { echo "Preview assets never appeared at $PLUGIN_URL"; exit 1; }
 
           # writeFile steps are matched by trailing path component so the
           # seeder and helper get distinct URLs without depending on the
@@ -185,7 +201,6 @@ jobs:
             const urlMultisite = process.env.PLAYGROUND_URL_MULTISITE;
             const sha = process.env.HEAD_SHA;
             const prNumber = parseInt(process.env.PR_NUMBER, 10);
-            // Two-part shields badge: grey "Playground" label, blue variant.
             const badge = (variant) =>
               `https://img.shields.io/badge/Playground-${variant}-3858E9?logo=wordpress&logoColor=white`;
 
