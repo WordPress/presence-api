@@ -135,7 +135,7 @@ class WP_Presence_Network_Widget_Whos_Online {
 		echo '<ul class="presence-user-list" aria-label="' . esc_attr__( 'Sites with online users', 'presence-api' ) . '">';
 
 		foreach ( $summary['sites'] as $site ) {
-			echo '<li class="presence-site-item">';
+			echo '<li class="presence-site-item" data-blog-id="' . (int) $site['blog_id'] . '">';
 			echo wp_kses_post( wp_presence_render_avatar_stack( $site['users'], WP_PRESENCE_NETWORK_AVATARS ) );
 			echo '<span class="presence-site-info"><a href="' . esc_url( $site['url'] ) . '">' . esc_html( $site['domain'] . $site['path'] ) . '</a></span>';
 			echo '<span class="presence-site-count">' . (int) $site['user_count'] . '</span>';
@@ -254,6 +254,40 @@ class WP_Presence_Network_Widget_Whos_Online {
 		return el.innerHTML;
 	}
 
+	// The swap below replaces every node, so a keyboard user standing on a site
+	// link lands on the body unless the spot is recorded and handed back.
+	function captureFocus(container) {
+		var active = document.activeElement;
+		if (!active || !$.contains(container[0], active)) {
+			return null;
+		}
+		var item = $(active).closest('[data-blog-id]');
+		if (item.length) {
+			return { type: 'site', id: item.data('blog-id') };
+		}
+		if ($(active).hasClass('presence-more-link')) {
+			return { type: 'more' };
+		}
+		return { type: 'none' };
+	}
+
+	function restoreFocus(container, info) {
+		if (!info) {
+			return;
+		}
+		var target = null;
+		if (info.type === 'site') {
+			target = container.find('[data-blog-id="' + info.id + '"] a').first();
+		} else if (info.type === 'more') {
+			target = container.find('.presence-more-link');
+		}
+		if (target && target.length) {
+			target.trigger('focus');
+		} else {
+			container.trigger('focus');
+		}
+	}
+
 	// Already cut to the sites and avatars this widget shows, so nothing is
 	// sliced here; overflow is a count the server sends, not what is left over.
 	function buildListHtml(sites, overflow) {
@@ -263,7 +297,7 @@ class WP_Presence_Network_Widget_Whos_Online {
 
 		var html = '<ul class="presence-user-list">';
 		sites.forEach(function(site) {
-			html += '<li class="presence-site-item">' + window.wpPresenceBuildAvatarStack(site.users, avatarMax);
+			html += '<li class="presence-site-item" data-blog-id="' + parseInt(site.blog_id, 10) + '">' + window.wpPresenceBuildAvatarStack(site.users, avatarMax);
 			html += '<span class="presence-site-info"><a href="' + esc(site.url) + '">' + esc(site.domain + site.path) + '</a></span>';
 			html += '<span class="presence-site-count">' + site.user_count + '</span></li>';
 		});
@@ -308,7 +342,9 @@ class WP_Presence_Network_Widget_Whos_Online {
 		var sig = JSON.stringify([sites, overflow]);
 
 		if (sig !== lastSignature) {
+			var focusInfo = captureFocus(container);
 			container.html(buildListHtml(sites, overflow));
+			restoreFocus(container, focusInfo);
 			lastSignature = sig;
 		}
 	});

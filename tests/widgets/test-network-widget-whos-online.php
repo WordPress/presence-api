@@ -146,6 +146,23 @@ class WP_Test_Presence_Network_Widget_Whos_Online extends WP_Presence_Network_Un
 		$this->assertStringContainsString( 'localhost', $output );
 	}
 
+	public function test_each_rendered_site_carries_its_blog_id() {
+		$blog_id = $this->create_blog();
+		$this->set_presence_on_site( $blog_id, self::$editor_id );
+
+		ob_start();
+		WP_Presence_Network_Widget_Whos_Online::render();
+		$output = ob_get_clean();
+
+		// Heartbeat re-renders restore focus by matching this attribute, so a row
+		// without one drops a keyboard user to the body on every presence change.
+		$this->assertStringContainsString(
+			'data-blog-id="' . $blog_id . '"',
+			$output,
+			'Focus restore has nothing to key on without the blog ID on the row'
+		);
+	}
+
 	/**
 	 * The widget draws five sites and links out for the rest, so it asks the
 	 * read path for five rather than pulling the whole network across and
