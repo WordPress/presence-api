@@ -1,5 +1,57 @@
 # Changelog
 
+## [0.2.0](https://github.com/WordPress/presence-api/compare/v0.1.24...v0.2.0) (2026-08-28)
+
+
+### Features
+
+* add a network-wide presence summary table ([6173f42](https://github.com/WordPress/presence-api/commit/6173f4202b9a94eca61a31a9ae07e176460551b0))
+* add a Who's Online widget to the Network Admin dashboard ([01af7da](https://github.com/WordPress/presence-api/commit/01af7daa6ca04a2d8e3c30cae7e6a13aa06a2fb7))
+* add a wp presence network CLI subcommand for the network-wide summary ([8755969](https://github.com/WordPress/presence-api/commit/875596906dd0f12aae72e016f0d38bad678b97e4))
+* add an Online column to the Network Sites list ([74ad3e1](https://github.com/WordPress/presence-api/commit/74ad3e15b3027f812d01dcbe48593cf59b44835d))
+* add an Online view and column to the Network Users list ([8cee7a2](https://github.com/WordPress/presence-api/commit/8cee7a26266fac8e99a2f2d17612dbb20dfd1482))
+* add network-scoped REST routes for reading presence across a network ([4307b2b](https://github.com/WordPress/presence-api/commit/4307b2b4a01b1b9828deeb0c042b164b583b6356))
+* add Playground blueprint for multisite network demo ([7eb22f0](https://github.com/WordPress/presence-api/commit/7eb22f0053dc41ac309109b52af4ac3118022bbe))
+* announce admin room changes with an action ([23f84b9](https://github.com/WordPress/presence-api/commit/23f84b9f1a9eaf438b2d6a872497f7b43fb1f339))
+* expose network presence via REST and WP-CLI ([795f672](https://github.com/WordPress/presence-api/commit/795f6725da33f1eb273e2aebbff371a66bb2dd60))
+* let the network summary skip sites so callers can paginate ([78f92c9](https://github.com/WordPress/presence-api/commit/78f92c907262fec6544630576909497e16b7c4b8))
+* push each site's online set into the network summary ([d0d6abf](https://github.com/WordPress/presence-api/commit/d0d6abf6457a72ccc58735d9372ecf9b64d2c429))
+* read the network summary as a capped snapshot ([c323b1f](https://github.com/WordPress/presence-api/commit/c323b1fbdc5373ae9ab77e2bca4e33614b66942f))
+
+
+### Bug Fixes
+
+* boot the multisite Playground preview through wp-cli steps ([3c60516](https://github.com/WordPress/presence-api/commit/3c60516431d76368e4b7206957dd977c6a1f30c0))
+* bring the stale-screen banner back after a dismissal ([2558c15](https://github.com/WordPress/presence-api/commit/2558c151d98f0167dd66a62f4e97768e90efca3c))
+* carry each site's own scheme in the network summary row ([e2bedb1](https://github.com/WordPress/presence-api/commit/e2bedb1b19e26eebc0b596289d8be9c3633e1977))
+* clear a user's presence when their account or site membership ends ([a0c8471](https://github.com/WordPress/presence-api/commit/a0c84712a34ebb7a6752613d11a1ff978d9e5211))
+* detect the collaboration edge across requests ([817efa7](https://github.com/WordPress/presence-api/commit/817efa75ed451609667ac5b2ce5448efacdfe72f))
+* exclude Codecov config and Jest test from release zip ([5dead26](https://github.com/WordPress/presence-api/commit/5dead26443a62952514eb63c0ae7d37b72974767))
+* outlast core's unfocused heartbeat interval in the presence TTL ([4817945](https://github.com/WordPress/presence-api/commit/4817945c8815c5be0322be692c02f1ea823f7639))
+* preserve focus across heartbeat re-renders in the network Who's Online widget ([33e6548](https://github.com/WordPress/presence-api/commit/33e65485574320f1df9d77fb35661524bf90fa0a))
+* refresh the network summary timestamp unconditionally ([60d674d](https://github.com/WordPress/presence-api/commit/60d674d522d68c30005e6eeb1ff3d121dd6a764e))
+* register the network summary table name idempotently ([80607e6](https://github.com/WordPress/presence-api/commit/80607e6b607ef1100f74202c7b2f00682719ae8b))
+* register the presence table name idempotently ([549800e](https://github.com/WordPress/presence-api/commit/549800ebd38292751972e8db639610c48d43d336))
+* require manage_options to reach the debugger widget ([2acf1fe](https://github.com/WordPress/presence-api/commit/2acf1feb6c1d101bf63a1c6b6b9c293448b06224))
+* serve Playground preview assets over an origin that allows CORS ([b51f5dd](https://github.com/WordPress/presence-api/commit/b51f5dd4ff36c8fe1a79dddd5c88c07ae168fc7e))
+* skip an avatar-less user in the stack instead of drawing an empty img ([c57e864](https://github.com/WordPress/presence-api/commit/c57e8647d2817ff64cb0cb5e457626b2ed290d04))
+* skip notifications for no-op presence changes ([1f7bd62](https://github.com/WordPress/presence-api/commit/1f7bd622d8ec9e31506478a592bf01954079c744))
+* store collaboration state only while two editors are present ([9f88651](https://github.com/WordPress/presence-api/commit/9f88651f2637881b0e29c9e8c4683d730110ccb6))
+* style the avatar stack on the Network Admin Sites list ([2404a75](https://github.com/WordPress/presence-api/commit/2404a75ffd1011b3683201286857caa02f3b4c2c))
+
+
+### Performance Improvements
+
+* gate network presence aggregation on wp_is_large_network() ([d336595](https://github.com/WordPress/presence-api/commit/d336595310180b2c14c7e47963d2b742f874de10))
+* gate network summary reads on wp_is_large_network() ([49ded9c](https://github.com/WordPress/presence-api/commit/49ded9c9e4fe80f3111ef8b3157871f6f1e8ea1b))
+* gate the network summary push on wp_is_large_network() ([72d589e](https://github.com/WordPress/presence-api/commit/72d589ef1e3aebeabbc08fdcd5f80b73fa4427d7))
+
+
+### Dependencies
+
+* **deps:** bump astral-sh/setup-uv from 10.0.0 to 10.0.1 ([7942967](https://github.com/WordPress/presence-api/commit/7942967b086fa0f4b213e1517494654c273df26b))
+* **deps:** bump the codeql-action group with 3 updates ([78f8886](https://github.com/WordPress/presence-api/commit/78f8886afebdfbee94db52a4da09887c46b853f6))
+
 ## [0.1.24](https://github.com/WordPress/presence-api/compare/v0.1.23...v0.1.24) (2026-08-22)
 
 
