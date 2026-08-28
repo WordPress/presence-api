@@ -1,9 +1,9 @@
 === Presence API ===
-Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas, aldorza, bejignesh
+Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas, aldorza, bejignesh, stfulldev, obenland, moriikuri
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.0
-Stable tag: 0.1.24
+Stable tag: 0.2.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -15,9 +15,10 @@ System-wide presence and awareness for WordPress.
 
 Presence API gives WordPress a system-wide awareness layer. It tracks which users are logged in, which admin screen they are on, and which posts they are editing.
 
-Data flows through the Heartbeat API and is stored in a dedicated `wp_presence` table with a 60-second TTL. No writes to `wp_postmeta` means no post-cache invalidation on every heartbeat.
+Data flows through the Heartbeat API and is stored in a dedicated `wp_presence` table with a 150-second TTL. No writes to `wp_postmeta` means no post-cache invalidation on every heartbeat.
 
-[Test in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json) without installing anything.
+On a multisite network, Network Admin gets its own view of the same data: a Who's Online dashboard widget listing the busiest sites and who is on each, an Online column in the Sites list, and an Online view, filter, and column in the Users list. These require the `manage_network` capability.
+
 
 = Features =
 
@@ -45,9 +46,51 @@ Or install manually:
 1. Download the zip and upload the `presence-api` folder to `/wp-content/plugins/`.
 2. Activate through the **Plugins** menu.
 
-Or [try it in WordPress Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json) without installing anything.
+== Frequently Asked Questions ==
+
+= Does it work on multisite? =
+
+Yes. Network-activate it and Network Admin gains a Who's Online dashboard widget listing the busiest sites and who is on each, an Online column in the Sites list, and an Online view, filter, and column in the Users list. Every site keeps its own widgets and lists, counting only the people on that site.
+
+= Who can see network-wide presence? =
+
+Anyone with the `manage_network` capability, which on a default network means super admins. The `wp_presence_network_capability` filter changes what is required.
 
 == Changelog ==
+
+= 0.2.0 =
+* Add a network-wide presence summary table.
+* Add a Who's Online widget to the Network Admin dashboard.
+* Add a wp presence network CLI subcommand for the network-wide summary.
+* Add an Online column to the Network Sites list.
+* Add an Online view and column to the Network Users list.
+* Add network-scoped REST routes for reading presence across a network.
+* Add Playground blueprint for multisite network demo.
+* Announce admin room changes with an action.
+* Expose network presence via REST and WP-CLI.
+* Let the network summary skip sites so callers can paginate.
+* Push each site's online set into the network summary.
+* Read the network summary as a capped snapshot.
+* Boot the multisite Playground preview through wp-cli steps.
+* Bring the stale-screen banner back after a dismissal.
+* Carry each site's own scheme in the network summary row.
+* Clear a user's presence when their account or site membership ends.
+* Detect the collaboration edge across requests.
+* Exclude Codecov config and Jest test from release zip.
+* Outlast core's unfocused heartbeat interval in the presence TTL.
+* Preserve focus across heartbeat re-renders in the network Who's Online widget.
+* Refresh the network summary timestamp unconditionally.
+* Register the network summary table name idempotently.
+* Register the presence table name idempotently.
+* Require manage_options to reach the debugger widget.
+* Serve Playground preview assets over an origin that allows CORS.
+* Skip an avatar-less user in the stack instead of drawing an empty img.
+* Skip notifications for no-op presence changes.
+* Store collaboration state only while two editors are present.
+* Style the avatar stack on the Network Admin Sites list.
+* Gate network presence aggregation on wp_is_large_network().
+* Gate network summary reads on wp_is_large_network().
+* Gate the network summary push on wp_is_large_network().
 
 = 0.1.24 =
 * Add idle backoff config for heartbeat presence ping.

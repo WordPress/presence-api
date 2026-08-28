@@ -128,6 +128,18 @@ window.wpPresencePublic = function () {};`;
   assert.deepEqual(js(source), ['js-global:window.wpPresencePublic']);
 });
 
+test('@access private withdraws a surface the same way', () => {
+  const source = `/**
+ * Fires internally.
+ *
+ * @since 0.1.0
+ * @access private
+ */
+do_action( 'wp_presence_internal' );`;
+  assert.deepEqual(php(source), []);
+  assert.deepEqual(php(source.replace(' * @access private\n', '')), ['action:wp_presence_internal']);
+});
+
 test('@private reads the same above a php hook', () => {
   const source = `/**
  * Fires internally.

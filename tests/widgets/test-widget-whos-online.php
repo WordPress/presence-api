@@ -341,6 +341,8 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers WP_Presence_Widget_Whos_Online::enqueue_scripts
+	 * @covers ::wp_presence_enqueue_avatar_stack_style
+	 * @covers ::wp_presence_enqueue_avatar_stack_script
 	 */
 	public function test_the_dashboard_gets_the_widget_style_and_heartbeat_script() {
 		WP_Presence_Widget_Whos_Online::enqueue_scripts( 'index.php' );
@@ -350,8 +352,13 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 		$css = wp_styles()->get_data( 'presence-dashboard-widget', 'after' );
 		$this->assertStringContainsString( '#presence-whos-online-list', implode( '', (array) $css ) );
 
-		$script = implode( '', (array) wp_scripts()->get_data( 'heartbeat', 'after' ) );
+		$script = implode( '', (array) wp_scripts()->get_data( 'presence-dashboard-widget', 'after' ) );
 		$this->assertStringContainsString( 'presence-whos-online-list', $script );
+
+		// The inline script calls into the shared file, so it has to load first.
+		$this->assertTrue( wp_script_is( 'wp-presence-avatar-stack', 'enqueued' ) );
+		$this->assertContains( 'wp-presence-avatar-stack', wp_scripts()->registered['presence-dashboard-widget']->deps );
+		$this->assertContains( 'heartbeat', wp_scripts()->registered['presence-dashboard-widget']->deps );
 	}
 
 	/**

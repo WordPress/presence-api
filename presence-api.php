@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Presence API
  * Description: System-wide presence and awareness for WordPress.
- * Version: 0.1.24
+ * Version: 0.2.0
  * Requires at least: 7.0
  * Requires PHP: 7.4
  * Author: WordPress Core Team
@@ -45,7 +45,7 @@ if ( isset( $wpdb->presence ) ) {
 	return;
 }
 
-define( 'WP_PRESENCE_VERSION', '0.1.24' );
+define( 'WP_PRESENCE_VERSION', '0.2.0' );
 define( 'WP_PRESENCE_DB_VERSION', 2 );
 define( 'WP_PRESENCE_NETWORK_SUMMARY_DB_VERSION', 1 );
 define( 'WP_PRESENCE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -56,8 +56,11 @@ define( 'WP_PRESENCE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 // two distinct clients onto one UNIQUE KEY (room, client_id) row.
 define( 'WP_PRESENCE_MAX_KEY_LENGTH', 191 );
 
+// Core pins an unfocused, or five-minute-idle, tab to a 120-second Heartbeat
+// interval that no client-side call can shorten, so a shorter TTL drops a tab
+// that is still open and still pinging. Core sizes post locks at 150 the same way.
 if ( ! defined( 'WP_PRESENCE_DEFAULT_TTL' ) ) {
-	define( 'WP_PRESENCE_DEFAULT_TTL', 60 );
+	define( 'WP_PRESENCE_DEFAULT_TTL', 150 );
 }
 
 /**
@@ -369,6 +372,7 @@ add_filter( 'heartbeat_received', array( 'WP_Presence_Widget_Active_Posts', 'hea
 if ( is_multisite() ) {
 	add_filter( 'wpmu_blogs_columns', 'wp_presence_register_network_sites_column' );
 	add_action( 'manage_sites_custom_column', 'wp_presence_render_network_sites_column', 10, 2 );
+	add_action( 'admin_enqueue_scripts', 'wp_presence_enqueue_network_sites_assets' );
 
 	add_filter( 'views_users-network', 'wp_presence_network_users_views' );
 	add_filter( 'users_list_table_query_args', 'wp_presence_filter_network_online_users' );

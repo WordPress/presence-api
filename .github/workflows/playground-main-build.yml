@@ -1,0 +1,73 @@
+name: Playground Main Build
+
+# Builds `presence-api.zip` from `main` and force-pushes it to the
+# `preview-main` branch, which is what the repo's blueprints install.
+# Without this they would install the last wordpress.org release, so the
+# README badge would boot older code than the repo it sits in.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - '.github/**'
+      - 'tests/**'
+  workflow_dispatch:
+
+# Queued, not cancelled: the last push to finish is the one that wins.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.3'
+
+      - name: Build presence-api.zip
+        run: |
+          set -euo pipefail
+          mkdir -p build/presence-api
+          rsync -a --exclude-from='.distignore' --exclude='build' ./ build/presence-api/
+          (cd build && zip -qr presence-api.zip presence-api/)
+
+      # Same guard as the PR preview: a `.distignore` that drifts out of
+      # sync with the `require_once` graph installs fine and then fatals.
+      - name: Smoke-test the build
+        run: |
+          set -euo pipefail
+          test -f build/presence-api/presence-api.php
+          find build/presence-api -name '*.php' -print0 \
+            | xargs -0 -n1 -P 4 php -l > /dev/null
+
+      - name: Publish to the preview-main branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          # Force-pushed from a throwaway repo so no zip reaches the history
+          # everyone clones. The path is fixed because the blueprints commit
+          # to it; raw serves it with a five-minute cache.
+          mkdir -p preview
+          cp build/presence-api.zip preview/
+
+          cd preview
+          git init -q -b preview-main
+          git add -A
+          git -c user.name='github-actions[bot]' \
+            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -qm "Playground build of ${SHA}"
+          git push -q --force \
+            "https://x-access-token:${GH_TOKEN}@github.com/${GH_REPO}.git" preview-main

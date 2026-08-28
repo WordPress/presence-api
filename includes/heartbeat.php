@@ -337,6 +337,21 @@ function wp_presence_editor_heartbeat_received( $response, $data, $screen_id ) {
 }
 
 /**
+ * Builds the transient key holding a room's last observed editor count.
+ *
+ * @since 0.2.0
+ *
+ * @access private
+ * @param string $room The presence room identifier.
+ * @return string The transient key.
+ */
+function wp_presence_collaboration_state_key( $room ) {
+	// A room runs to `WP_PRESENCE_MAX_KEY_LENGTH`, past the 172 a transient key
+	// holds once `_transient_timeout_` is prefixed.
+	return 'wp_presence_collab_' . md5( $room );
+}
+
+/**
  * Checks if the collaboration threshold has been crossed and fires appropriate actions.
  *
  * Fires 'wp_presence_collaboration_started' when editor count goes from 1 to 2+.
@@ -358,8 +373,12 @@ function wp_presence_check_collaboration_threshold( $room ) {
 		)
 	);
 
-	static $previous = array();
-	$prev_count      = $previous[ $room ] ?? 1;
+	// Every tick is its own request, so this cannot be held in memory. The
+	// transient expires on the presence TTL: once the entries it describes
+	// have aged out there is no earlier count left to be the edge from.
+	$key        = wp_presence_collaboration_state_key( $room );
+	$stored     = get_transient( $key );
+	$prev_count = false === $stored ? 1 : (int) $stored;
 
 	if ( 1 === $prev_count && $editor_count >= 2 ) {
 		/**
@@ -383,5 +402,12 @@ function wp_presence_check_collaboration_threshold( $room ) {
 		do_action( 'wp_presence_collaboration_ended', $room, $entries );
 	}
 
-	$previous[ $room ] = $editor_count;
+	// Rewritten every tick, not only when the count moves: a steady pair that
+	// let this lapse would read back as a fresh start and re-announce itself.
+	// Below two there is nothing to hold, since absent already reads as 1.
+	if ( $editor_count >= 2 ) {
+		set_transient( $key, $editor_count, wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL ) );
+	} elseif ( false !== $stored ) {
+		delete_transient( $key );
+	}
 }

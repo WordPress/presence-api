@@ -219,10 +219,10 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		wp_set_presence( 'test/room', 'old-client', array(), self::$editor_id );
 		wp_set_presence( 'test/room', 'new-client', array(), self::$editor_id );
 
-		// Backdate one entry.
+		// Backdate one entry past the cutoff the cleanup reads.
 		$wpdb->update(
 			$wpdb->presence,
-			array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - 120 ) ),
+			array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - WP_PRESENCE_DEFAULT_TTL - MINUTE_IN_SECONDS ) ),
 			array( 'client_id' => 'old-client' ),
 			array( '%s' ),
 			array( '%s' )
@@ -252,7 +252,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		$wpdb->query(
 			$wpdb->prepare(
 				"UPDATE {$wpdb->presence} SET date_gmt = %s",
-				gmdate( 'Y-m-d H:i:s', time() - 120 )
+				gmdate( 'Y-m-d H:i:s', time() - WP_PRESENCE_DEFAULT_TTL - MINUTE_IN_SECONDS )
 			)
 		);
 
@@ -585,27 +585,25 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_get_timeout
 	 */
 	public function test_ttl_filter() {
-		add_filter( 'wp_presence_default_ttl', function () {
-			return 120;
-		} );
+		add_filter( 'wp_presence_default_ttl', fn() => WP_PRESENCE_DEFAULT_TTL * 2 );
 
 		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
 
-		// Backdate entry to 90 seconds ago — beyond default 60s but within filtered 120s.
+		// Beyond the default cutoff, within the filtered one.
 		global $wpdb;
 		$wpdb->update(
 			$wpdb->presence,
-			array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - 90 ) ),
+			array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - WP_PRESENCE_DEFAULT_TTL - 30 ) ),
 			array( 'room' => 'test/room', 'client_id' => 'client-1' )
 		);
 
 		$entries = wp_get_presence( 'test/room' );
-		$this->assertCount( 1, $entries, 'Entry should be visible with filtered 120s TTL.' );
+		$this->assertCount( 1, $entries, 'Entry should be visible with the filtered TTL.' );
 
 		remove_all_filters( 'wp_presence_default_ttl' );
 
 		$entries = wp_get_presence( 'test/room' );
-		$this->assertCount( 0, $entries, 'Entry should be expired with default 60s TTL.' );
+		$this->assertCount( 0, $entries, 'Entry should be expired with the default TTL.' );
 	}
 
 	/**
@@ -793,10 +791,36 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		);
 
 		$this->assertSame( 4, substr_count( wp_presence_render_avatar_stack( $users ), '<img ' ) );
+		$this->assertSame( 2, substr_count( wp_presence_render_avatar_stack( $users, 2 ), '<img ' ) );
+	}
 
-		$sized = wp_presence_render_avatar_stack( $users, 2, 24 );
+	/**
+	 * get_avatar_url() returns false with the Show Avatars setting off, and the
+	 * Heartbeat render skips those users. A src-less <img> here would paint a
+	 * broken avatar until the first tick swept it away.
+	 *
+	 * @covers ::wp_presence_render_avatar_stack
+	 */
+	public function test_avatar_stack_skips_a_user_with_no_avatar() {
+		$html = wp_presence_render_avatar_stack(
+			array(
+				array(
+					'avatar_url'   => '',
+					'display_name' => 'Ana',
+				),
+				array(
+					'avatar_url'   => 'https://example.com/bo.png',
+					'display_name' => 'Bo',
+				),
+				array(
+					'avatar_url'   => false,
+					'display_name' => 'Cyd',
+				),
+			)
+		);
 
-		$this->assertSame( 2, substr_count( $sized, '<img ' ) );
-		$this->assertStringContainsString( 'width="24" height="24"', $sized );
+		$this->assertSame( 1, substr_count( $html, '<img ' ) );
+		$this->assertStringNotContainsString( 'Ana', $html );
+		$this->assertStringContainsString( 'z-index:1', $html, 'The z-index counts the avatars drawn, not the users passed in.' );
 	}
 }

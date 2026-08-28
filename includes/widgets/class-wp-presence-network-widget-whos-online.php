@@ -54,7 +54,14 @@ class WP_Presence_Network_Widget_Whos_Online {
 		}
 
 		wp_enqueue_script( 'heartbeat' );
-		wp_add_inline_script( 'heartbeat', self::get_inline_script() );
+		wp_presence_enqueue_avatar_stack_script();
+
+		// A handle of its own so the inline script can declare what it needs.
+		wp_register_script( 'presence-network-widget', false, array( 'jquery', 'heartbeat', 'wp-presence-avatar-stack' ), WP_PRESENCE_VERSION, true );
+		wp_enqueue_script( 'presence-network-widget' );
+		wp_add_inline_script( 'presence-network-widget', self::get_inline_script() );
+
+		wp_presence_enqueue_avatar_stack_style();
 
 		wp_register_style( 'presence-network-widget', false, array(), WP_PRESENCE_VERSION );
 		wp_enqueue_style( 'presence-network-widget' );
@@ -74,10 +81,7 @@ class WP_Presence_Network_Widget_Whos_Online {
 			#presence-network-widget-list .presence-site-info { flex: 1; min-width: 0; }
 			#presence-network-widget-list .presence-site-count { color: #646970; font-size: 12px; }
 			#presence-network-widget-list .presence-more-link { display: block; padding: 6px 12px; color: var(--wp-admin-theme-color, #2271b1); font-size: 13px; text-decoration: none; }
-			#presence-network-widget-list .presence-more-link:hover { text-decoration: underline; }
-			#presence-network-widget-list .presence-avatar-stack { display: inline-flex; align-items: center; }
-			#presence-network-widget-list .presence-avatar-stack img { border-radius: 50%; width: 20px; height: 20px; margin-inline-start: -6px; box-shadow: 0 0 0 2px #fff; position: relative; }
-			#presence-network-widget-list .presence-avatar-stack img:first-child { margin-inline-start: 0; }';
+			#presence-network-widget-list .presence-more-link:hover { text-decoration: underline; }';
 	}
 
 	/**
@@ -131,7 +135,7 @@ class WP_Presence_Network_Widget_Whos_Online {
 		echo '<ul class="presence-user-list" aria-label="' . esc_attr__( 'Sites with online users', 'presence-api' ) . '">';
 
 		foreach ( $summary['sites'] as $site ) {
-			echo '<li class="presence-site-item">';
+			echo '<li class="presence-site-item" data-blog-id="' . (int) $site['blog_id'] . '">';
 			echo wp_kses_post( wp_presence_render_avatar_stack( $site['users'], WP_PRESENCE_NETWORK_AVATARS ) );
 			echo '<span class="presence-site-info"><a href="' . esc_url( $site['url'] ) . '">' . esc_html( $site['domain'] . $site['path'] ) . '</a></span>';
 			echo '<span class="presence-site-count">' . (int) $site['user_count'] . '</span>';
@@ -250,16 +254,38 @@ class WP_Presence_Network_Widget_Whos_Online {
 		return el.innerHTML;
 	}
 
-	function buildAvatarStack(users) {
-		var stackMax = Math.min(users.length, avatarMax);
-		var html = '<span class="presence-avatar-stack">';
-		users.slice(0, stackMax).forEach(function(user, idx) {
-			if (user.avatar_url) {
-				html += '<img src="' + esc(user.avatar_url) + '" width="20" height="20" style="z-index:' + (stackMax - idx) + '" alt="' + esc(user.display_name) + '" />';
-			}
-		});
-		html += '</span>';
-		return html;
+	// The swap below replaces every node, so a keyboard user standing on a site
+	// link lands on the body unless the spot is recorded and handed back.
+	function captureFocus(container) {
+		var active = document.activeElement;
+		if (!active || !$.contains(container[0], active)) {
+			return null;
+		}
+		var item = $(active).closest('[data-blog-id]');
+		if (item.length) {
+			return { type: 'site', id: item.data('blog-id') };
+		}
+		if ($(active).hasClass('presence-more-link')) {
+			return { type: 'more' };
+		}
+		return { type: 'none' };
+	}
+
+	function restoreFocus(container, info) {
+		if (!info) {
+			return;
+		}
+		var target = null;
+		if (info.type === 'site') {
+			target = container.find('[data-blog-id="' + info.id + '"] a').first();
+		} else if (info.type === 'more') {
+			target = container.find('.presence-more-link');
+		}
+		if (target && target.length) {
+			target.trigger('focus');
+		} else {
+			container.trigger('focus');
+		}
 	}
 
 	// Already cut to the sites and avatars this widget shows, so nothing is
@@ -271,7 +297,7 @@ class WP_Presence_Network_Widget_Whos_Online {
 
 		var html = '<ul class="presence-user-list">';
 		sites.forEach(function(site) {
-			html += '<li class="presence-site-item">' + buildAvatarStack(site.users);
+			html += '<li class="presence-site-item" data-blog-id="' + parseInt(site.blog_id, 10) + '">' + window.wpPresenceBuildAvatarStack(site.users, avatarMax);
 			html += '<span class="presence-site-info"><a href="' + esc(site.url) + '">' + esc(site.domain + site.path) + '</a></span>';
 			html += '<span class="presence-site-count">' + site.user_count + '</span></li>';
 		});
@@ -316,7 +342,9 @@ class WP_Presence_Network_Widget_Whos_Online {
 		var sig = JSON.stringify([sites, overflow]);
 
 		if (sig !== lastSignature) {
+			var focusInfo = captureFocus(container);
 			container.html(buildListHtml(sites, overflow));
+			restoreFocus(container, focusInfo);
 			lastSignature = sig;
 		}
 	});
