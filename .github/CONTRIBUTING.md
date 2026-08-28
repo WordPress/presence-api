@@ -29,6 +29,8 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
+The Network Admin specs need a network, which is a second wp-env instance on [localhost:8890](http://localhost:8890/wp-admin/network/) with its own database. `npm run test:e2e` starts and seeds it on demand, so the first run after a fresh checkout takes a few minutes longer. `npm run env:stop:multisite` shuts it down.
+
 ## Claiming an issue
 
 [Open and unassigned](https://github.com/WordPress/presence-api/issues?q=is%3Aissue+is%3Aopen+no%3Aassignee+-label%3A%22Needs+Discussion%22) issues are available. `Good First Issue` marks the ones suited to new contributors.
