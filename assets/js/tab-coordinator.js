@@ -24,7 +24,7 @@
 		// No Locks API: ping independently, same as before.
 		var isPingLeader = ! hasLocks;
 
-		var channel = typeof BroadcastChannel === 'function'
+		var channel = hasLocks && typeof BroadcastChannel === 'function'
 			? new BroadcastChannel( key )
 			: null;
 
