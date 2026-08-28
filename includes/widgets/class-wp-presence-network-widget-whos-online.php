@@ -231,7 +231,11 @@ class WP_Presence_Network_Widget_Whos_Online {
 		$i18n_json = wp_json_encode(
 			array(
 				'noUsersOnline' => __( 'No users are currently online anywhere on the network.', 'presence-api' ),
-				'viewAll'       => __( 'view all', 'presence-api' ),
+				'sitesOnline'   => __( 'Sites with online users', 'presence-api' ),
+				/* translators: %d: Number of additional sites with online users. */
+				'moreSite'      => __( '+%d more site — view all', 'presence-api' ),
+				/* translators: %d: Number of additional sites with online users. */
+				'moreSites'     => __( '+%d more sites — view all', 'presence-api' ),
 			)
 		);
 
@@ -295,7 +299,7 @@ class WP_Presence_Network_Widget_Whos_Online {
 			return '<p>' + esc(i18n.noUsersOnline) + '</p>';
 		}
 
-		var html = '<ul class="presence-user-list">';
+		var html = '<ul class="presence-user-list" aria-label="' + esc(i18n.sitesOnline) + '">';
 		sites.forEach(function(site) {
 			html += '<li class="presence-site-item" data-blog-id="' + parseInt(site.blog_id, 10) + '">' + window.wpPresenceBuildAvatarStack(site.users, avatarMax);
 			html += '<span class="presence-site-info"><a href="' + esc(site.url) + '">' + esc(site.domain + site.path) + '</a></span>';
@@ -304,7 +308,10 @@ class WP_Presence_Network_Widget_Whos_Online {
 		html += '</ul>';
 
 		if (overflow > 0) {
-			html += '<a href="' + esc(viewAllUrl) + '" class="presence-more-link">+' + overflow + ' — ' + esc(i18n.viewAll) + '</a>';
+			// Both forms come from the server because _n() cannot be called from
+			// here; picking on the count is as close as this gets to its rules.
+			var moreLabel = (overflow === 1 ? i18n.moreSite : i18n.moreSites).replace('%%d', overflow);
+			html += '<a href="' + esc(viewAllUrl) + '" class="presence-more-link">' + esc(moreLabel) + '</a>';
 		}
 
 		return html;
