@@ -407,18 +407,18 @@ class WP_Presence_Widget_Whos_Online {
 		return html;
 	}
 
-	function buildFullHtml(visible, overflow) {
+	function buildFullHtml(visible, overflow, overflowTotal) {
 		var html = '<ul class="presence-user-list" aria-label="' + esc(i18n.usersOnline) + '">';
 		visible.forEach(function(entry) {
 			html += '<li class="presence-user-item" data-user-id="' + entry.user_id + '">' + buildRowHtml(entry) + '</li>';
 		});
 		html += '</ul>';
 		if (overflow.length) {
-			if (overflow.length > overflowThreshold) {
+			if (overflowTotal > overflowThreshold) {
 				// Summary mode: avatar stack + count linking to Users page.
 				html += '<a href="' + esc(usersUrl) + '" class="presence-overflow-toggle">';
 				html += window.wpPresenceBuildAvatarStack(overflow, avatarMax);
-				html += '<span class="presence-overflow-text">' + esc(i18n.moreCountLink.replace('%%d', overflow.length)) + '</span></a>';
+				html += '<span class="presence-overflow-text">' + esc(i18n.moreCountLink.replace('%%d', overflowTotal)) + '</span></a>';
 			} else {
 				// Expandable list mode.
 				html += '<button type="button" class="presence-overflow-toggle" data-action="expand" aria-expanded="' + (isExpanded ? 'true' : 'false') + '" aria-controls="presence-overflow-list"';
@@ -496,13 +496,20 @@ class WP_Presence_Widget_Whos_Online {
 		var visible = entries.slice(0, maxRows);
 		var overflow = entries.slice(maxRows);
 
-		// Build a signature of user IDs + screens to detect real changes.
-		var sig = entries.map(function(e) { return e.user_id + ':' + (e.screen || ''); }).join(',');
+		// The payload is capped, so its length understates a large room. Below
+		// the threshold the cap cannot bite and the array holds all of them.
+		var total = typeof data['presence-online-total'] === 'number' ? data['presence-online-total'] : entries.length;
+		var overflowTotal = total - maxRows;
+
+		// Build a signature of user IDs + screens to detect real changes. The
+		// total leads it because the overflow count is now derived from the
+		// total, which moves while the capped entries stay identical.
+		var sig = total + '|' + entries.map(function(e) { return e.user_id + ':' + (e.screen || ''); }).join(',');
 
 		if (sig !== lastSignature) {
 			// Content changed — swap HTML instantly.
 			var focusInfo = captureFocus(container);
-			container.html(buildFullHtml(visible, overflow));
+			container.html(buildFullHtml(visible, overflow, overflowTotal));
 			restoreFocus(container, focusInfo);
 			lastSignature = sig;
 		} else {
@@ -619,12 +626,19 @@ JS,
 	}
 
 	/**
-	 * Renders the dashboard widget.
+	 * Drops the viewer's own entry from a room's presence list.
+	 *
+	 * The widget never lists the person reading it, so the server render and the
+	 * Heartbeat payload have to describe the same set. When they diverge the
+	 * overflow count the client derives from the total is one too high.
+	 *
+	 * @param array $entries Presence entries for the admin room.
+	 * @return array Entries for every user but the current one.
 	 */
-	public static function render() {
-		$entries     = wp_get_presence( wp_presence_admin_room() );
+	private static function without_current_user( $entries ) {
 		$current_uid = get_current_user_id();
-		$entries     = array_values(
+
+		return array_values(
 			array_filter(
 				$entries,
 				function ( $e ) use ( $current_uid ) {
@@ -632,6 +646,13 @@ JS,
 				}
 			)
 		);
+	}
+
+	/**
+	 * Renders the dashboard widget.
+	 */
+	public static function render() {
+		$entries = self::without_current_user( wp_get_presence( wp_presence_admin_room() ) );
 
 		echo '<div id="presence-whos-online-list" aria-live="polite" tabindex="-1">';
 
@@ -751,12 +772,14 @@ JS,
 			return $response;
 		}
 
+		$others = self::without_current_user( $entries );
+
 		// Cap to visible rows plus overflow threshold (expandable list max).
 		$cap                               = self::VISIBLE_ROWS + self::get_overflow_threshold();
 		$response['presence-online']       = self::build_online_entries(
-			array_slice( $entries, 0, $cap )
+			array_slice( $others, 0, $cap )
 		);
-		$response['presence-online-total'] = count( $entries );
+		$response['presence-online-total'] = count( $others );
 		$response['presence-online-hash']  = $hash;
 
 		return $response;

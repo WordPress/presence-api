@@ -223,4 +223,74 @@ test.describe( 'Presence Widgets', () => {
 		);
 		await expect( postLink ).toBeFocused();
 	} );
+	/**
+	 * The heartbeat payload is capped well below a large room, so the overflow
+	 * count and its link to the Users screen can only come from the total the
+	 * response carries. Reading them off the capped array instead replaces a
+	 * correct server render with a smaller count on the first tick.
+	 */
+	test( "Who's Online counts the overflow from the payload total", async ( {
+		admin,
+		page,
+	} ) => {
+		const others = 26;
+		const visibleRows = 3;
+
+		wpCli(
+			`eval-file wp-content/plugins/presence-api/tests/e2e/whos-online-overflow-seeder.php ${ others }`
+		);
+
+		try {
+			await page.addInitScript( () => {
+				window.__presenceTicks = 0;
+				document.addEventListener( 'DOMContentLoaded', () => {
+					jQuery( document ).on( 'heartbeat-tick', ( event, data ) => {
+						if ( data[ 'presence-online' ] ) {
+							window.__presenceTicks++;
+						}
+					} );
+				} );
+			} );
+
+			await admin.visitAdminPage( '/' );
+
+			const summary = page.locator(
+				'#presence-whos-online-list a.presence-overflow-toggle'
+			);
+
+			const tick = async () => {
+				const before = await page.evaluate( () => window.__presenceTicks );
+				await page.evaluate( () => wp.heartbeat.connectNow() );
+				await page.waitForFunction(
+					( seen ) => window.__presenceTicks > seen,
+					before,
+					{ timeout: 30_000 }
+				);
+			};
+
+			await tick();
+
+			await expect( summary ).toContainText( `+${ others - visibleRows } more` );
+			await expect(
+				page.locator( '#presence-whos-online-list #presence-overflow-list' )
+			).toHaveCount( 0 );
+
+			// Drop a user ranked below the payload cap: the entries the client
+			// receives are byte-identical and only the total moves, so a
+			// signature built from the entries alone leaves the count stale.
+			wpCli(
+				'eval-file wp-content/plugins/presence-api/tests/e2e/whos-online-overflow-seeder.php drop-oldest'
+			);
+
+			await tick();
+
+			await expect( summary ).toContainText(
+				`+${ others - visibleRows - 1 } more`
+			);
+		} finally {
+			wpCli(
+				'eval-file wp-content/plugins/presence-api/tests/e2e/whos-online-overflow-seeder.php clean'
+			);
+		}
+	} );
 } );

@@ -73,11 +73,13 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 	public function test_heartbeat_received_returns_online_users() {
 		wp_set_current_user( self::$editor_id );
 
+		$other_id = $this->add_user_to_room( 'dashboard', 0 );
+
 		$response = $this->tick();
 
 		$this->assertArrayHasKey( 'presence-online', $response );
 		$this->assertCount( 1, $response['presence-online'] );
-		$this->assertSame( self::$editor_id, $response['presence-online'][0]['user_id'] );
+		$this->assertSame( $other_id, $response['presence-online'][0]['user_id'] );
 		$this->assertArrayHasKey( 'avatar_url', $response['presence-online'][0] );
 		$this->assertArrayHasKey( 'date_gmt', $response['presence-online'][0] );
 	}
@@ -101,6 +103,8 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 	 */
 	public function test_heartbeat_response_returns_structured_data() {
 		wp_set_current_user( self::$editor_id );
+
+		$this->add_user_to_room( 'dashboard', 0 );
 
 		$response = $this->tick();
 
@@ -260,8 +264,47 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 		// Should only send VISIBLE_ROWS + OVERFLOW_THRESHOLD entries.
 		$this->assertCount( 23, $response['presence-online'] );
 
-		// Total should reflect all users.
-		$this->assertSame( 31, $response['presence-online-total'] );
+		// Total should reflect every user the widget would list.
+		$this->assertSame( 30, $response['presence-online-total'] );
+	}
+	/**
+	 * The client derives the overflow count from the total, so the total has to
+	 * describe the set the widget renders, which never includes the viewer.
+	 *
+	 * @covers WP_Presence_Widget_Whos_Online::heartbeat_received
+	 */
+	public function test_online_total_excludes_the_pinging_user() {
+		wp_set_current_user( self::$editor_id );
+
+		for ( $i = 0; $i < 30; $i++ ) {
+			$this->add_user_to_room( 'dashboard', 0 );
+		}
+
+		$response = $this->tick();
+
+		$this->assertSame( 30, $response['presence-online-total'] );
+	}
+
+	/**
+	 * At exactly the expandable maximum the client renders the overflow from
+	 * the payload rather than the count, so the cap has to leave room for every
+	 * other user once the viewer's own entry is gone.
+	 *
+	 * @covers WP_Presence_Widget_Whos_Online::heartbeat_received
+	 */
+	public function test_heartbeat_payload_holds_every_other_user_at_the_expandable_maximum() {
+		wp_set_current_user( self::$editor_id );
+
+		$others = WP_Presence_Widget_Whos_Online::VISIBLE_ROWS + WP_Presence_Widget_Whos_Online::get_overflow_threshold();
+
+		for ( $i = 0; $i < $others; $i++ ) {
+			$this->add_user_to_room( 'dashboard', 0 );
+		}
+
+		$ids = wp_list_pluck( $this->tick()['presence-online'], 'user_id' );
+
+		$this->assertNotContains( self::$editor_id, $ids );
+		$this->assertCount( $others, $ids );
 	}
 
 	/**
