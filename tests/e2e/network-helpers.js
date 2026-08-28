@@ -165,8 +165,35 @@ export function networkUserId( login ) {
  * @returns {number} Blog ID.
  */
 export function networkSiteId( slug ) {
-	return parseInt(
-		wpCli( `eval 'echo get_id_from_blogname( "${ slug }" );'` ),
+	const id = parseInt(
+		wpCli( `eval 'echo (int) get_id_from_blogname( "${ slug }" );'` ),
 		10
 	);
+
+	return Number.isNaN( id ) ? 0 : id;
+}
+
+/**
+ * Creates a sub-site if the fixture network does not have it yet.
+ *
+ * Used by the overflow case, which needs more sites online than the widget
+ * shows. They are left behind on purpose: the other specs address rows by ID,
+ * so a wider network costs them nothing, and creating a site is slow enough to
+ * be worth doing once per environment rather than once per run.
+ *
+ * @param {string} slug Sub-site slug.
+ * @returns {number} Blog ID.
+ */
+export function ensureNetworkSite( slug ) {
+	const existing = networkSiteId( slug );
+
+	if ( existing ) {
+		return existing;
+	}
+
+	wpCli(
+		`site create --slug=${ slug } --title="${ slug }" --email=wordpress@example.com`
+	);
+
+	return networkSiteId( slug );
 }
