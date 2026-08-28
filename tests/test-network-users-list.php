@@ -200,23 +200,23 @@ class WP_Test_Network_Users_List extends WP_Presence_Network_UnitTestCase {
 
 	/**
 	 * The Network Users "Online" column lists the sites a user is active on.
-	 * If the user's only active site is archived, the column must show a dash
+	 * If the user's only active site is marked as spam, the column must show a dash
 	 * rather than naming a site that is no longer live.
 	 *
 	 * @covers ::wp_presence_render_network_users_column
 	 * @covers ::wp_presence_get_network_sites_for_user
 	 */
-	public function test_users_column_omits_archived_site() {
+	public function test_users_column_omits_spam_site() {
 		$this->become_network_admin();
 
 		$blog_id = $this->create_blog();
 		$this->set_presence_on_site( $blog_id, self::$editor_id );
 
-		update_blog_status( $blog_id, 'archived', 1 );
+		update_blog_status( $blog_id, 'spam', 1 );
 		wp_presence_flush_network_summary_cache();
 
 		$output = wp_presence_render_network_users_column( '', 'presence_online', self::$editor_id );
 
-		$this->assertSame( '&#8212;', $output, 'An archived site must not appear in the Online column for a user.' );
+		$this->assertSame( '&#8212;', $output, 'A spam site must not appear in the Online column for a user.' );
 	}
 }

@@ -250,25 +250,25 @@ class WP_Test_Network_Summary_Push extends WP_Presence_Network_UnitTestCase {
 
 	/**
 	 * A summary row survives until cleanup runs even if the site is later
-	 * archived. An archived site with a fresh row must not appear in the
+	 * marked as deleted. A deleted site with a fresh row must not appear in the
 	 * network snapshot, or it reads as live on the dashboard widget and the
 	 * Users list column.
 	 *
 	 * @covers ::wp_presence_compute_network_snapshot
 	 */
-	public function test_snapshot_excludes_archived_site_with_fresh_row() {
+	public function test_snapshot_excludes_deleted_site_with_fresh_row() {
 		$blog_id = $this->create_blog();
 		$this->set_presence_on_site( $blog_id, self::$editor_id );
 
-		// Archive the site after the summary row has been pushed.
-		update_blog_status( $blog_id, 'archived', 1 );
+		// Mark the site as deleted after the summary row has been pushed.
+		update_blog_status( $blog_id, 'deleted', 1 );
 
 		// Flush the request cache so the next read recomputes from the database
-		// rather than serving the value built before the site was archived.
+		// rather than serving the value built before the site was deleted.
 		wp_presence_flush_network_summary_cache();
 
 		$snapshot = wp_presence_get_network_snapshot();
 
-		$this->assertArrayNotHasKey( $blog_id, $snapshot['sites'], 'An archived site must not appear in the network snapshot.' );
+		$this->assertArrayNotHasKey( $blog_id, $snapshot['sites'], 'A deleted site must not appear in the network snapshot.' );
 	}
 }
