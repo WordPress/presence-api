@@ -99,4 +99,23 @@ class WP_Test_Network_Sites_Column extends WP_Presence_Network_UnitTestCase {
 
 		$this->assertSame( '', $output );
 	}
+
+	/**
+	 * @covers ::wp_presence_render_network_sites_column
+	 */
+	public function test_sites_column_shows_dash_for_archived_site() {
+		$this->become_network_admin();
+
+		$blog_id = $this->create_blog();
+		$this->set_presence_on_site( $blog_id, self::$editor_id );
+
+		update_blog_status( $blog_id, 'archived', 1 );
+		wp_presence_flush_network_summary_cache();
+
+		ob_start();
+		wp_presence_render_network_sites_column( 'presence_online', $blog_id );
+		$output = ob_get_clean();
+
+		$this->assertSame( '&#8212;', $output, 'An archived site must show a dash in the Online column.' );
+	}
 }
