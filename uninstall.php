@@ -46,10 +46,13 @@ global $wpdb;
 if ( is_multisite() ) {
 	$sites = get_sites(
 		array(
-			'fields' => 'ids',
-			'number' => 0,
+			'fields'                 => 'ids',
+			'number'                 => 0,
+			'update_site_meta_cache' => false,
 		)
 	);
+
+	$sites = is_array( $sites ) ? $sites : array();
 
 	foreach ( $sites as $site_id ) {
 		switch_to_blog( $site_id );
