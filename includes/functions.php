@@ -197,7 +197,7 @@ function wp_presence_admin_room_changed() {
 	 *
 	 * Fires when an admin-room write changes at least one row.
 	 *
-	 * @since 0.1.25
+	 * @since 0.2.0
 	 */
 	do_action( 'wp_presence_admin_room_changed' );
 }

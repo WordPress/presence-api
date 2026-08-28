@@ -179,7 +179,7 @@ function wp_presence_network_summary_refresh_interval() {
 	 *
 	 * Clamped to the read cutoff minus the idle heartbeat interval.
 	 *
-	 * @since 0.1.25
+	 * @since 0.2.0
 	 *
 	 * @param int $interval Seconds. Default is the clamp maximum.
 	 */
@@ -664,7 +664,7 @@ function wp_presence_flush_network_summary_cache() {
  * expensive half and is left to wp_presence_hydrate_network_snapshot(), which
  * runs against a handful of users rather than every user online.
  *
- * @since 0.1.25
+ * @since 0.2.0
  *
  * @param array $by_site Blog ID to array of user IDs.
  * @return array The same map with unknown users, and any site left empty by
