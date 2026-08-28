@@ -7,7 +7,6 @@
 
 * add a network-wide presence summary table ([6173f42](https://github.com/WordPress/presence-api/commit/6173f4202b9a94eca61a31a9ae07e176460551b0))
 * add a Who's Online widget to the Network Admin dashboard ([01af7da](https://github.com/WordPress/presence-api/commit/01af7daa6ca04a2d8e3c30cae7e6a13aa06a2fb7))
-* add a Who's Online widget to the Network Admin dashboard ([a05a58c](https://github.com/WordPress/presence-api/commit/a05a58c978d92172c69b5245efa1e84845cd77ea))
 * add a wp presence network CLI subcommand for the network-wide summary ([8755969](https://github.com/WordPress/presence-api/commit/875596906dd0f12aae72e016f0d38bad678b97e4))
 * add an Online column to the Network Sites list ([74ad3e1](https://github.com/WordPress/presence-api/commit/74ad3e15b3027f812d01dcbe48593cf59b44835d))
 * add an Online view and column to the Network Users list ([8cee7a2](https://github.com/WordPress/presence-api/commit/8cee7a26266fac8e99a2f2d17612dbb20dfd1482))
@@ -24,32 +23,20 @@
 
 * boot the multisite Playground preview through wp-cli steps ([3c60516](https://github.com/WordPress/presence-api/commit/3c60516431d76368e4b7206957dd977c6a1f30c0))
 * bring the stale-screen banner back after a dismissal ([2558c15](https://github.com/WordPress/presence-api/commit/2558c151d98f0167dd66a62f4e97768e90efca3c))
-* bring the stale-screen banner back after a dismissal ([46e757d](https://github.com/WordPress/presence-api/commit/46e757d6b1b0aead816c6bd76411fd99b71b9b1e))
 * carry each site's own scheme in the network summary row ([e2bedb1](https://github.com/WordPress/presence-api/commit/e2bedb1b19e26eebc0b596289d8be9c3633e1977))
-* carry each site's own scheme in the network summary row ([2ca2e33](https://github.com/WordPress/presence-api/commit/2ca2e333b0ab2f5bc6d5c72d50b3efe579675bde))
 * clear a user's presence when their account or site membership ends ([a0c8471](https://github.com/WordPress/presence-api/commit/a0c84712a34ebb7a6752613d11a1ff978d9e5211))
 * detect the collaboration edge across requests ([817efa7](https://github.com/WordPress/presence-api/commit/817efa75ed451609667ac5b2ce5448efacdfe72f))
-* detect the collaboration edge across requests ([a85c416](https://github.com/WordPress/presence-api/commit/a85c416836f53c588ec4e5186b37f93c5265f9bf))
 * exclude Codecov config and Jest test from release zip ([5dead26](https://github.com/WordPress/presence-api/commit/5dead26443a62952514eb63c0ae7d37b72974767))
-* exclude Codecov config and Jest test from release zip ([666cb07](https://github.com/WordPress/presence-api/commit/666cb07f1a50e40626a325c3db5b9b1275ba0a8d))
 * outlast core's unfocused heartbeat interval in the presence TTL ([4817945](https://github.com/WordPress/presence-api/commit/4817945c8815c5be0322be692c02f1ea823f7639))
-* outlast core's unfocused heartbeat interval in the presence TTL ([924f8a9](https://github.com/WordPress/presence-api/commit/924f8a92c7725878b8c88211db0c3bacbf00c752))
 * preserve focus across heartbeat re-renders in the network Who's Online widget ([33e6548](https://github.com/WordPress/presence-api/commit/33e65485574320f1df9d77fb35661524bf90fa0a))
-* preserve focus across heartbeat re-renders in the network Who's Online widget ([add22c4](https://github.com/WordPress/presence-api/commit/add22c43b6cf4863a184f0e6b42ba7f6d0532066))
 * refresh the network summary timestamp unconditionally ([60d674d](https://github.com/WordPress/presence-api/commit/60d674d522d68c30005e6eeb1ff3d121dd6a764e))
-* refresh the network summary timestamp unconditionally ([e8f8a24](https://github.com/WordPress/presence-api/commit/e8f8a2492b70026487ebdf107bf544f724e7a35f))
 * register the network summary table name idempotently ([80607e6](https://github.com/WordPress/presence-api/commit/80607e6b607ef1100f74202c7b2f00682719ae8b))
-* register the network summary table name idempotently ([aac5bb5](https://github.com/WordPress/presence-api/commit/aac5bb51af2db14584e62bc19fe6b8241cb2cbdb))
 * register the presence table name idempotently ([549800e](https://github.com/WordPress/presence-api/commit/549800ebd38292751972e8db639610c48d43d336))
-* register the presence table name idempotently ([cab36c4](https://github.com/WordPress/presence-api/commit/cab36c417825b8031a8faf5eb6f747623221a18b))
 * require manage_options to reach the debugger widget ([2acf1fe](https://github.com/WordPress/presence-api/commit/2acf1feb6c1d101bf63a1c6b6b9c293448b06224))
-* require manage_options to reach the debugger widget ([25a1aec](https://github.com/WordPress/presence-api/commit/25a1aecdeeae021570fa894d507b06c92a301f63))
 * serve Playground preview assets over an origin that allows CORS ([b51f5dd](https://github.com/WordPress/presence-api/commit/b51f5dd4ff36c8fe1a79dddd5c88c07ae168fc7e))
 * skip an avatar-less user in the stack instead of drawing an empty img ([c57e864](https://github.com/WordPress/presence-api/commit/c57e8647d2817ff64cb0cb5e457626b2ed290d04))
 * skip notifications for no-op presence changes ([1f7bd62](https://github.com/WordPress/presence-api/commit/1f7bd622d8ec9e31506478a592bf01954079c744))
-* skip notifications for no-op presence changes ([c4a039b](https://github.com/WordPress/presence-api/commit/c4a039b557165ca33eb02bfb7d0bf7187641a9e5))
 * store collaboration state only while two editors are present ([9f88651](https://github.com/WordPress/presence-api/commit/9f88651f2637881b0e29c9e8c4683d730110ccb6))
-* store collaboration state only while two editors are present ([16b3991](https://github.com/WordPress/presence-api/commit/16b39918bfa6dd8c3fc9c947743af8e52c5cbdd0))
 * style the avatar stack on the Network Admin Sites list ([2404a75](https://github.com/WordPress/presence-api/commit/2404a75ffd1011b3683201286857caa02f3b4c2c))
 
 
@@ -63,9 +50,7 @@
 ### Dependencies
 
 * **deps:** bump astral-sh/setup-uv from 10.0.0 to 10.0.1 ([7942967](https://github.com/WordPress/presence-api/commit/7942967b086fa0f4b213e1517494654c273df26b))
-* **deps:** bump astral-sh/setup-uv from 10.0.0 to 10.0.1 ([091ff05](https://github.com/WordPress/presence-api/commit/091ff05b600d19299e46c5bb8e326bb6b29a62aa))
 * **deps:** bump the codeql-action group with 3 updates ([78f8886](https://github.com/WordPress/presence-api/commit/78f8886afebdfbee94db52a4da09887c46b853f6))
-* **deps:** bump the codeql-action group with 3 updates ([ba43461](https://github.com/WordPress/presence-api/commit/ba43461924513875528274f3d7b43a9e0d1db600))
 
 ## [0.1.24](https://github.com/WordPress/presence-api/compare/v0.1.23...v0.1.24) (2026-08-22)
 
