@@ -41,6 +41,12 @@ jobs:
       # is true, so Playwright attaches to this instance rather than a second.
       - run: npx wp-env start
 
+      # The network the Network Admin specs run against. A second instance
+      # rather than a flag on the first one, for the reason given in
+      # scripts/start-multisite-env.sh. Started here for the same reason as the
+      # line above, and because this one seeds its fixture network too.
+      - run: npm run env:start:multisite
+
       - run: npm run test:e2e
 
       # Screenshots are produced on success too, which is the point of keeping
@@ -61,6 +67,15 @@ jobs:
         if: ${{ failure() }}
         run: npx wp-env run tests-cli -- cat wp-content/debug.log || true
 
+      # wp-env selects an instance by the directory it runs in, so the network's
+      # log is only reachable from the directory holding its config.
+      - name: WordPress debug log (multisite)
+        if: ${{ failure() }}
+        working-directory: tests/e2e/multisite
+        run: npx wp-env run cli -- cat wp-content/debug.log || true
+
       - name: Stop the testing environment
         if: ${{ always() }}
-        run: npx wp-env stop || true
+        run: |
+          npx wp-env stop || true
+          npm run env:stop:multisite || true

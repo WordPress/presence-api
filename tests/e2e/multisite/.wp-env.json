@@ -1,0 +1,11 @@
+{
+	"core": null,
+	"plugins": [ "../../.." ],
+	"multisite": true,
+	"testsEnvironment": false,
+	"port": 8890,
+	"config": {
+		"WP_DEBUG": true,
+		"WP_DEBUG_LOG": true
+	}
+}

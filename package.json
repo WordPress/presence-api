@@ -3,7 +3,9 @@
 	"private": true,
 	"scripts": {
 		"env:start": "wp-env start",
+		"env:start:multisite": "bash scripts/start-multisite-env.sh",
 		"env:stop": "wp-env stop",
+		"env:stop:multisite": "cd tests/e2e/multisite && wp-env stop",
 		"env:cli": "wp-env run cli wp",
 		"test": "wp-env run tests-cli --env-cwd='wp-content/plugins/presence-api' -- ./vendor/bin/phpunit --testdox",
 		"test:e2e": "playwright test --config tests/e2e/playwright.config.js",
