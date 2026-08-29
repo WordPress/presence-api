@@ -182,6 +182,89 @@ class WP_Test_Network_Presence extends WP_Presence_Network_UnitTestCase {
 	}
 
 	/**
+	 * The read only hides an expired row. Nothing else takes it off disk, so a
+	 * site that goes idle would hold the user IDs it last pushed indefinitely.
+	 *
+	 * @covers ::wp_presence_delete_expired_network_summary_rows
+	 */
+	public function test_cleanup_deletes_a_row_past_the_read_cutoff() {
+		$blog_id = $this->create_blog();
+
+		$this->set_network_summary_row(
+			$blog_id,
+			array( self::$editor_id ),
+			gmdate( 'Y-m-d H:i:s', time() - WP_PRESENCE_DEFAULT_TTL - 1 )
+		);
+
+		wp_presence_delete_expired_network_summary_rows();
+
+		$this->assertNull( $this->get_network_summary_row( $blog_id ) );
+	}
+
+	/**
+	 * @covers ::wp_presence_delete_expired_network_summary_rows
+	 */
+	public function test_cleanup_leaves_a_row_inside_the_read_cutoff() {
+		$blog_id = $this->create_blog();
+
+		$this->set_network_summary_row( $blog_id, array( self::$editor_id ) );
+
+		wp_presence_delete_expired_network_summary_rows();
+
+		$this->assertNotNull( $this->get_network_summary_row( $blog_id ) );
+	}
+
+	/**
+	 * A single invocation deletes at most batch_size * max_passes rows and
+	 * leaves the remainder for the next scheduled run.
+	 *
+	 * @covers ::wp_presence_delete_expired_network_summary_rows
+	 */
+	public function test_cleanup_is_bounded_per_invocation() {
+		global $wpdb;
+
+		$expired = gmdate( 'Y-m-d H:i:s', time() - WP_PRESENCE_DEFAULT_TTL - 1 );
+
+		for ( $i = 0; $i < 5; $i++ ) {
+			$this->set_network_summary_row( $this->create_blog(), array( self::$editor_id ), $expired );
+		}
+
+		$before = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->presence_network_summary}" );
+
+		$two = static function () {
+			return 2;
+		};
+		add_filter( 'wp_presence_cleanup_batch_size', $two );
+		add_filter( 'wp_presence_cleanup_max_passes', $two );
+
+		wp_presence_delete_expired_network_summary_rows();
+
+		$this->assertSame(
+			$before - 4,
+			(int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->presence_network_summary}" ),
+			'One invocation should delete batch_size * max_passes (4) rows and leave the rest.'
+		);
+
+		remove_filter( 'wp_presence_cleanup_batch_size', $two );
+		remove_filter( 'wp_presence_cleanup_max_passes', $two );
+	}
+
+	/**
+	 * Cron can fire in the request between network activation and the first
+	 * push, before the table exists.
+	 *
+	 * @covers ::wp_presence_delete_expired_network_summary_rows
+	 */
+	public function test_cleanup_is_a_no_op_before_the_table_is_provisioned() {
+		$version = get_site_option( 'wp_presence_network_summary_db_version' );
+		delete_site_option( 'wp_presence_network_summary_db_version' );
+
+		$this->assertNull( wp_presence_delete_expired_network_summary_rows() );
+
+		update_site_option( 'wp_presence_network_summary_db_version', $version );
+	}
+
+	/**
 	 * The read path is reached on a network whose table has not been provisioned
 	 * yet -- the plugin is network activated one request before the first push --
 	 * so it answers from the empty shape rather than querying a missing table.
