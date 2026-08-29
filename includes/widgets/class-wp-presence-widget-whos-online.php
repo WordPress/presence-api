@@ -277,7 +277,7 @@ class WP_Presence_Widget_Whos_Online {
 		$urls_json = wp_json_encode( $screen_urls );
 		$i18n_json = wp_json_encode(
 			array(
-				'noUsersOnline'   => __( 'No other users are online.', 'presence-api' ),
+				'noUsersOnline'   => __( 'No users are online.', 'presence-api' ),
 				'onlineNow'       => __( 'Online now', 'presence-api' ),
 				'usersOnline'     => __( 'Users currently online', 'presence-api' ),
 				'additionalUsers' => __( 'Additional online users', 'presence-api' ),
@@ -307,7 +307,6 @@ class WP_Presence_Widget_Whos_Online {
 	var screenLabels = %s;
 	var screenUrls = %s;
 	var i18n = %s;
-	var currentUserId = %d;
 	var idleThreshold = %d;
 	var overflowThreshold = %d;
 	var usersUrl = %s;
@@ -472,9 +471,7 @@ class WP_Presence_Widget_Whos_Online {
 			return;
 		}
 
-		var entries = data['presence-online'].filter(function(e) {
-			return e.user_id !== currentUserId;
-		});
+		var entries = data['presence-online'];
 		lastEntries = entries;
 
 		if (!entries.length) {
@@ -553,7 +550,6 @@ JS,
 			$labels_json,
 			$urls_json,
 			$i18n_json,
-			get_current_user_id(),
 			self::IDLE_THRESHOLD,
 			self::get_overflow_threshold(),
 			wp_json_encode( admin_url( 'users.php?presence_status=online' ) ),
@@ -622,21 +618,14 @@ JS,
 	 * Renders the dashboard widget.
 	 */
 	public static function render() {
-		$entries     = wp_get_presence( wp_presence_admin_room() );
-		$current_uid = get_current_user_id();
-		$entries     = array_values(
-			array_filter(
-				$entries,
-				function ( $e ) use ( $current_uid ) {
-					return (int) $e->user_id !== $current_uid;
-				}
-			)
-		);
+		// Lists everyone present, you included, so the count agrees with the
+		// admin bar and the users list.
+		$entries = array_values( wp_get_presence( wp_presence_admin_room() ) );
 
 		echo '<div id="presence-whos-online-list" aria-live="polite" tabindex="-1">';
 
 		if ( empty( $entries ) ) {
-			echo '<p>' . esc_html__( 'No other users are online.', 'presence-api' ) . '</p>';
+			echo '<p>' . esc_html__( 'No users are online.', 'presence-api' ) . '</p>';
 		} else {
 			cache_users( wp_list_pluck( $entries, 'user_id' ) );
 

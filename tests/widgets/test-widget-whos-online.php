@@ -377,10 +377,10 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 	/**
 	 * @covers WP_Presence_Widget_Whos_Online::render
 	 */
-	public function test_render_reports_when_nobody_else_is_online() {
+	public function test_render_reports_when_nobody_is_online() {
 		$html = $this->render();
 
-		$this->assertStringContainsString( 'No other users are online.', $html );
+		$this->assertStringContainsString( 'No users are online.', $html );
 		$this->assertStringNotContainsString( '<ul', $html );
 	}
 

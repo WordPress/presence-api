@@ -180,8 +180,8 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * The indicator counts other people, so on your own it says nothing rather
-	 * than reporting a room of one.
+	 * The count includes you, but the node still hides on your own rather than
+	 * reporting a room of one.
 	 */
 	public function test_no_indicator_when_you_are_the_only_one_online() {
 		wp_set_current_user( self::$editor_id );
@@ -222,8 +222,42 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$this->assertArrayHasKey( 'presence-group-here', $nodes );
 		$this->assertArrayHasKey( 'presence-group-elsewhere', $nodes );
 		$this->assertArrayHasKey( 'presence-user-' . $here->ID, $nodes );
-		// The avatar stack is built from the people on this page only.
+		// The avatar stack is built from the people on this page, you included.
 		$this->assertStringContainsString( 'alt="' . esc_attr( $here->display_name ) . '"', $nodes['presence-online']->title );
+		$this->assertStringContainsString(
+			'alt="' . esc_attr( get_userdata( self::$editor_id )->display_name ) . '"',
+			$nodes['presence-online']->title
+		);
+	}
+
+	/**
+	 * The count agrees with the users list and the network Sites column, all of
+	 * which count everyone present rather than everyone but you.
+	 */
+	public function test_the_count_includes_you() {
+		$this->put_user_on_screen( 'dashboard' );
+		$this->put_user_on_screen( 'edit' );
+
+		wp_set_current_user( self::$editor_id );
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'dashboard' ), self::$editor_id );
+
+		$nodes = $this->render_nodes();
+
+		$this->assertStringContainsString( '3 online', $nodes['presence-online']->title );
+		$this->assertSame( '3 users online', $nodes['presence-online']->meta['aria-label'] );
+	}
+
+	/**
+	 * Your row is absent on screens that never ping, so the total is already
+	 * others-only and must not be decremented again.
+	 */
+	public function test_the_count_includes_you_when_your_own_row_has_expired() {
+		$this->put_user_on_screen( 'dashboard' );
+
+		wp_set_current_user( self::$editor_id );
+		$nodes = $this->render_nodes();
+
+		$this->assertStringContainsString( '2 online', $nodes['presence-online']->title );
 	}
 
 	/**
