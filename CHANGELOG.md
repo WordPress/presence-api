@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.1](https://github.com/WordPress/presence-api/compare/v0.2.0...v0.2.1) (2026-08-29)
+
+
+### Bug Fixes
+
+* Filter out archived, spam, and deleted sites from network presence ([86de587](https://github.com/WordPress/presence-api/commit/86de587bc6f9acb36fc3c02386101a5a353f8bd4))
+* gate cross-tab relay on Web Locks availability ([6c9e05d](https://github.com/WordPress/presence-api/commit/6c9e05d57b9c2bea501c44a57abfe6b165f3d5e2))
+* prune network summary rows past the read cutoff ([7da3d1a](https://github.com/WordPress/presence-api/commit/7da3d1a31576883cdb12df3fd951fa19ecfc04ea))
+* prune network summary rows past the read cutoff ([7a35279](https://github.com/WordPress/presence-api/commit/7a35279e147a23beb068f6b074e50507875b2569))
+* stop tab coordinator rebroadcast loop when Web Locks is unavailable ([bb96d69](https://github.com/WordPress/presence-api/commit/bb96d6949f01cafb28a5b561df07c5764a241790))
+
 ## [0.2.0](https://github.com/WordPress/presence-api/compare/v0.1.24...v0.2.0) (2026-08-28)
 
 
