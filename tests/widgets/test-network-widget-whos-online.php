@@ -219,6 +219,21 @@ class WP_Test_Presence_Network_Widget_Whos_Online extends WP_Presence_Network_Un
 		$this->assertSame( 'Renamed Editor', $second['presence-network-widget'][0]['users'][0]['display_name'] );
 	}
 
+	/**
+	 * The tick replaces the whole list, so anything the server render says has
+	 * to be said again by the script that rebuilds it. The list's name and the
+	 * overflow link's wording were dropped there and are cheap to lose again.
+	 */
+	public function test_inline_script_carries_the_accessible_names_the_render_uses() {
+		WP_Presence_Network_Widget_Whos_Online::enqueue_scripts( 'index.php' );
+
+		$script = implode( '', (array) wp_scripts()->get_data( 'presence-network-widget', 'after' ) );
+
+		$this->assertStringContainsString( 'Sites with online users', $script, 'The rebuilt list has no accessible name.' );
+		$this->assertStringContainsString( '+%d more site \u2014 view all', $script, 'The rebuilt overflow link stops saying what it counts.' );
+		$this->assertStringContainsString( '+%d more sites \u2014 view all', $script );
+	}
+
 	public function test_render_reports_nobody_online() {
 		ob_start();
 		WP_Presence_Network_Widget_Whos_Online::render();
