@@ -53,7 +53,7 @@
 		},
 		{
 			"step": "wp-cli",
-			"command": "wp eval 'require \"/wordpress/wp-content/plugins/presence-api/demo-seeder.php\"; $counts = array( 2, 1, 1, 1 ); $offset = 0; foreach ( get_sites( array( \"number\" => 100, \"orderby\" => \"id\" ) ) as $i => $site ) { $count = isset( $counts[ $i ] ) ? $counts[ $i ] : 1; $blog_id = (int) $site->blog_id; switch_to_blog( $blog_id ); foreach ( wp_presence_demo_seed( $count, $offset ) as $user_id ) { add_user_to_blog( $blog_id, $user_id, \"editor\" ); } restore_current_blog(); $offset += $count; } update_user_meta( 1, \"show_welcome_panel\", 0 );'"
+			"command": "wp eval 'require \"/wordpress/wp-content/plugins/presence-api/demo-seeder.php\"; $counts = array( 16, 10, 8, 6 ); $offset = 0; foreach ( get_sites( array( \"number\" => 100, \"orderby\" => \"id\" ) ) as $i => $site ) { $count = isset( $counts[ $i ] ) ? $counts[ $i ] : 1; $blog_id = (int) $site->blog_id; switch_to_blog( $blog_id ); foreach ( wp_presence_demo_seed( $count, $offset ) as $user_id ) { add_user_to_blog( $blog_id, $user_id, \"editor\" ); } restore_current_blog(); $offset += $count; } update_user_meta( 1, \"show_welcome_panel\", 0 );'"
 		}
 	]
 }

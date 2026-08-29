@@ -235,11 +235,14 @@ function wp_presence_demo_ensure_posts() {
  * Creates N demo users and seeds their presence entries.
  *
  * @since 7.1.0
+ * @since 0.2.2 Added the `$offset` parameter.
  *
- * @param int $count Number of users to create.
+ * @param int $count  Number of users to create.
+ * @param int $offset Index to start the username sequence at. Multisite users are
+ *                    network-global, so each site needs its own slice.
  * @return array Array of created user IDs.
  */
-function wp_presence_demo_seed( $count ) {
+function wp_presence_demo_seed( $count, $offset = 0 ) {
 	$user_ids = array();
 	$has_cli  = defined( 'WP_CLI' ) && WP_CLI;
 
@@ -251,13 +254,13 @@ function wp_presence_demo_seed( $count ) {
 	}
 
 	for ( $i = 0; $i < $count; $i++ ) {
-		$username = 'presence-demo-' . ( $i + 1 );
+		$username = 'presence-demo-' . ( $offset + $i + 1 );
 		$user     = get_user_by( 'login', $username );
 
 		if ( $user ) {
 			$user_ids[] = $user->ID;
 		} else {
-			$name = wp_presence_demo_name( $i );
+			$name = wp_presence_demo_name( $offset + $i );
 
 			$user_id = wp_insert_user(
 				array(

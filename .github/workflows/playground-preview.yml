@@ -75,7 +75,7 @@ jobs:
       - name: Schema-validate blueprints
         run: |
           set -euo pipefail
-          for f in blueprint.json blueprint-40.json blueprint-multisite.json; do
+          for f in blueprint.json blueprint-40.json blueprint-multisite.json blueprint-multisite-40.json; do
             # This step is the base's, the checkout is the PR's head.
             if [ ! -f "$f" ]; then
               echo "::notice::$f is not on this branch, so nothing to validate."
