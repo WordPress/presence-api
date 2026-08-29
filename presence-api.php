@@ -326,6 +326,7 @@ if ( is_multisite() ) {
 	add_action( 'wp_presence_admin_room_changed', 'wp_presence_push_network_summary' );
 	add_action( 'wp_presence_admin_room_changed', 'wp_presence_flush_network_summary_cache' );
 	add_action( 'wp_delete_site', 'wp_presence_on_delete_site' );
+	add_action( 'wp_delete_expired_presence_data', 'wp_presence_delete_expired_network_summary_rows' );
 }
 // Priority 99 to run after core's wp_initialize_site() at 10.
 add_action( 'wp_initialize_site', 'wp_presence_on_initialize_site', 99 );

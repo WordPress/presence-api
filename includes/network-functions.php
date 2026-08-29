@@ -403,6 +403,78 @@ function wp_presence_on_delete_site( $old_site ) {
 }
 
 /**
+ * Deletes summary rows that are already past the read cutoff.
+ *
+ * Runs on wp_delete_expired_presence_data. Every site prunes the whole table
+ * rather than its own row: the site whose row went stale is the one whose cron
+ * has stopped firing.
+ *
+ * Not gated on wp_presence_network_aggregation_enabled(), which stops rows
+ * being written without clearing the ones already there.
+ *
+ * @access private
+ *
+ * @global wpdb $wpdb WordPress database abstraction object.
+ */
+function wp_presence_delete_expired_network_summary_rows() {
+	global $wpdb;
+
+	if ( ! wp_presence_has_network_summary_table() ) {
+		return;
+	}
+
+	$timeout = wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL );
+	$cutoff  = gmdate( 'Y-m-d H:i:s', time() - $timeout );
+
+	/** This filter is documented in includes/functions.php */
+	$batch_size = (int) apply_filters( 'wp_presence_cleanup_batch_size', 1000 );
+
+	/** This filter is documented in includes/functions.php */
+	$max_passes = (int) apply_filters( 'wp_presence_cleanup_max_passes', 10 );
+
+	if ( $batch_size < 1 || $max_passes < 1 ) {
+		return;
+	}
+
+	$deleted = false;
+
+	for ( $pass = 0; $pass < $max_passes; $pass++ ) {
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$blog_ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT blog_id FROM {$wpdb->presence_network_summary} WHERE updated_gmt <= %s ORDER BY blog_id ASC LIMIT %d",
+				$cutoff,
+				$batch_size
+			)
+		);
+
+		if ( empty( $blog_ids ) ) {
+			break;
+		}
+
+		$blog_ids     = array_map( 'intval', $blog_ids );
+		$placeholders = implode( ', ', array_fill( 0, count( $blog_ids ), '%d' ) );
+
+		// The repeated cutoff keeps a row re-pushed since the select above.
+		//
+		// IDs are cast to integers above and passed to prepare() as %d
+		// replacements, so the interpolated placeholder list is safe.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+		$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->presence_network_summary} WHERE blog_id IN ( $placeholders ) AND updated_gmt <= %s", array_merge( $blog_ids, array( $cutoff ) ) ) );
+
+		$deleted = true;
+
+		if ( count( $blog_ids ) < $batch_size ) {
+			break;
+		}
+	}
+
+	if ( $deleted ) {
+		wp_presence_flush_network_summary_cache();
+	}
+}
+
+/**
  * Returns the capability required to see network-wide presence data.
  *
  * @access private
