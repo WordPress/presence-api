@@ -198,20 +198,16 @@ jobs:
             const url = process.env.PLAYGROUND_URL;
             const url40 = process.env.PLAYGROUND_URL_40;
             const urlMultisite = process.env.PLAYGROUND_URL_MULTISITE;
-            const sha = process.env.HEAD_SHA;
+            const sha = process.env.HEAD_SHA.slice(0, 7);
             const prNumber = parseInt(process.env.PR_NUMBER, 10);
             const badge = (variant) =>
               `https://img.shields.io/badge/Playground-${variant}-3858E9?logo=wordpress&logoColor=white`;
 
             const body = [
               marker,
-              '## ▶ Preview in WordPress Playground',
+              `[![Single site](${badge('Single%20site')})](${url}) [![Multisite](${badge('Multisite')})](${urlMultisite}) [![40 users](${badge('40%20users')})](${url40})`,
               '',
-              `[![Single site](${badge('Single%20site')})](${url}) [![Multisite network](${badge('Multisite%20network')})](${urlMultisite})`,
-              '',
-              "Both boot a fresh WordPress with this PR's presence-api build and log you in. Single site seeds 5 demo users and lands on the dashboard. Multisite network adds three sub-sites alongside the main one, seeds 5 users on each, and lands on Network Admin.",
-              '',
-              `<sub>Stress-test variant: [40 demo users](${url40}) · Built from \`${sha}\`. Auto-updates when you push.</sub>`,
+              `<sub>Fresh WordPress with this PR's build, logged in and seeded. Built from \`${sha}\`, rebuilt on every push.</sub>`,
             ].join('\n');
 
             const comments = await github.paginate(github.rest.issues.listComments, {
