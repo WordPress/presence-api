@@ -206,17 +206,17 @@ jobs:
             const sha = fullSha.slice(0, 7);
             const commitUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/commit/${fullSha}`;
             const prNumber = parseInt(process.env.PR_NUMBER, 10);
-            const badge = 'https://img.shields.io/badge/Launch-3858E9?logo=wordpress&logoColor=white';
+            const badge = 'https://img.shields.io/badge/Launch-3858E9?style=for-the-badge&logo=wordpress&logoColor=white';
             const launch = (href) => `[![Launch](${badge})](${href})`;
 
             const body = [
               marker,
-              '| Playground | 5 users | 40 users |',
+              '| 🛝 Playground | 5 users | 40 users |',
               '| --- | --- | --- |',
               `| **Single site** | ${launch(url)} | ${launch(url40)} |`,
               `| **Multisite** | ${launch(urlMultisite)} | ${launch(urlMultisite40)} |`,
               '',
-              `<sub>Boots WordPress Playground with this PR's build, logged in and seeded.<br>Built from [\`${sha}\`](${commitUrl}), rebuilt on every push.</sub>`,
+              `<sub>Built from [\`${sha}\`](${commitUrl}), rebuilt on every push.</sub>`,
             ].join('\n');
 
             const comments = await github.paginate(github.rest.issues.listComments, {
