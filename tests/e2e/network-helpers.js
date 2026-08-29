@@ -55,6 +55,19 @@ export function siteUrl( slug = '' ) {
 }
 
 /**
+ * Returns the label the Network Users "Online" column prints for a site.
+ *
+ * The column names sites as domain plus path, which on a subdirectory network
+ * is the host and port the instance runs on.
+ *
+ * @param {string} [slug] Sub-site slug, omitted for the main site.
+ * @returns {string} Site label, e.g. `localhost:8890/team/`.
+ */
+export function siteLabel( slug = '' ) {
+	return new URL( siteUrl( slug ) ).host + ( slug ? `/${ slug }/` : '/' );
+}
+
+/**
  * Runs a WP-CLI command against the multisite instance.
  *
  * @param {string} command WP-CLI command, without the leading `wp`.
@@ -133,6 +146,16 @@ export async function forceHeartbeatTick( page ) {
 				wp.heartbeat.connectNow();
 			} )
 	);
+}
+
+/**
+ * Returns the ID of a seeded user.
+ *
+ * @param {string} login Seeded user's login.
+ * @returns {number} User ID.
+ */
+export function networkUserId( login ) {
+	return parseInt( wpCli( `user get ${ login } --field=ID` ), 10 );
 }
 
 /**
