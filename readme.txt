@@ -1,9 +1,9 @@
 === Presence API ===
-Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas, aldorza, bejignesh, stfulldev, obenland, moriikuri
+Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas, aldorza, bejignesh, stfulldev, obenland, moriikuri, ishitaj34
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.0
-Stable tag: 0.2.0
+Stable tag: 0.2.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -57,6 +57,12 @@ Yes. Network-activate it and Network Admin gains a Who's Online dashboard widget
 Anyone with the `manage_network` capability, which on a default network means super admins. The `wp_presence_network_capability` filter changes what is required.
 
 == Changelog ==
+
+= 0.2.1 =
+* Filter out archived, spam, and deleted sites from network presence.
+* Gate cross-tab relay on Web Locks availability.
+* Prune network summary rows past the read cutoff.
+* Stop tab coordinator rebroadcast loop when Web Locks is unavailable.
 
 = 0.2.0 =
 * Add a network-wide presence summary table.
