@@ -64,9 +64,12 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           PR_NUMBER: ${{ fromJSON(needs.release-please.outputs.pr).number }}
         run: node .github/scripts/sync-contributors.js readme.txt
+      # Pushed with the same token release-please uses. A commit pushed under
+      # GITHUB_TOKEN leaves the PR's head build stuck at `action_required`, so
+      # the release PR never gets a Playground preview of what is shipping.
       - name: Commit synced versions back to the release PR
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
         run: |
           if ! git diff --quiet; then
             git config user.name "github-actions[bot]"
