@@ -48,18 +48,18 @@ Every open issue carries one `[Type]`, at least one `[Area]`, and a milestone. `
 Color groups labels rather than identifying them. Labels on most rows stay in a highlighter tone, saturation is reserved for the few that want something from you, and anything a bot applies is gray.
 
 <details>
-<summary>The twelve colors</summary>
+<summary>What each color marks</summary>
 
 | Color | Labels |
 | --- | --- |
-| `#FEF298` | the nine `[Area]` labels |
+| `#FEF298` | every `[Area]` label |
 | `#FFB7B0` | `[Type] Bug` |
 | `#E2C8FF` | `[Type] Enhancement` |
 | `#B5E0FF` | `[Type] Feature` |
 | `#B8EAE0` | `[Type] Documentation` |
 | `#DED6B0` | `Performance`, `Privacy`, `Public API` |
 | `#97EDA0` | `Good First Issue`, `Good First Review`, `help wanted` |
-| `#F2994A` | the three `Needs` labels and `Close Candidate` |
+| `#F2994A` | the `Needs` labels and `Close Candidate` |
 | `#DC3545` | `blocked` |
 | `#CED4DA` | anything a bot applies, languages included |
 | `#ADB5BD` | `duplicate`, `invalid` |
