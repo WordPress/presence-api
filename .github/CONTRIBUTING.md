@@ -41,6 +41,36 @@ Assignment is not a commitment. If you stop, comment and we will unassign it. If
 
 Assigned issues left quiet for two weeks may be unassigned. Comment to pick one back up.
 
+### Labels
+
+Every open issue carries one `[Type]`, at least one `[Area]`, and a milestone. `[Area] Infrastructure` covers CI and the toolchain.
+
+Color groups labels rather than identifying them. Labels on most rows stay in a highlighter tone, saturation is reserved for the few that want something from you, and anything a bot applies is gray.
+
+<details>
+<summary>What each color marks</summary>
+
+| Color | Labels |
+| --- | --- |
+| `#FEF298` | every `[Area]` label |
+| `#FFB7B0` | `[Type] Bug` |
+| `#E2C8FF` | `[Type] Enhancement` |
+| `#B5E0FF` | `[Type] Feature` |
+| `#B8EAE0` | `[Type] Documentation` |
+| `#DED6B0` | `Performance`, `Privacy`, `Public API` |
+| `#97EDA0` | `Good First Issue`, `Good First Review`, `help wanted` |
+| `#F2994A` | the `Needs` labels and `Close Candidate` |
+| `#DC3545` | `blocked` |
+| `#CED4DA` | anything a bot applies, languages included |
+| `#ADB5BD` | `duplicate`, `invalid` |
+| `#FFFFFF` | `wontfix` |
+
+Rendered, they are on the [labels page](https://github.com/WordPress/presence-api/labels).
+
+A new label joins an existing color. If it genuinely needs its own, check it in both themes: GitHub picks the text color from the label's lightness and lightens the label itself on dark backgrounds.
+
+</details>
+
 ## Pull requests
 
 1. Branch off `main`.
@@ -54,7 +84,12 @@ A hook, REST route, WP-CLI command, guarded constant, or browser global that a s
 
 Written about means a docblock directly above it with a sentence saying what it is for. That is where WordPress core's code reference reads from, and it keeps the write-up next to the code instead of in a hand-kept list that drifts the first time someone forgets it. `README.md` narrates the surfaces worth a worked example; it is not the inventory.
 
-Some names are reachable without being a promise, like a global that only exists so two enqueued scripts can share a renderer. Mark those private in that same docblock and the check leaves them alone. In PHP use `@access private`, the marker [core's documentation standards](https://developer.wordpress.org/coding-standards/inline-documentation-standards/php/) name, directly below `@since`:
+Some names are reachable without being a promise, like a global that only exists so two enqueued scripts can share a renderer. Mark those private in that same docblock and the check leaves them alone.
+
+<details>
+<summary>Marking a name private</summary>
+
+In PHP use `@access private`, the marker [core's documentation standards](https://developer.wordpress.org/coding-standards/inline-documentation-standards/php/) name, directly below `@since`:
 
 ```php
 /**
@@ -76,6 +111,8 @@ JavaScript has no `@since` line to sit under, so `@private` on its own is enough
  */
 window.wpPresenceBuildAvatarStack = function ( users, max ) {};
 ```
+
+</details>
 
 ## Getting credited
 
@@ -99,8 +136,13 @@ Releases are automated by [release-please](https://github.com/googleapis/release
 
 When the release-please PR is merged, the tag, GitHub Release, and zip asset are produced automatically.
 
+<details>
+<summary>Keeping the version numbers in step</summary>
+
 `scripts/sync-versions.sh` reads the version from `.release-please-manifest.json` and updates the plugin header `Version:`, the `WP_PRESENCE_VERSION` constant, and `readme.txt`'s `Stable tag:`. The release-please workflow runs it on every release PR; you can run it locally too:
 
 ```bash
 bash scripts/sync-versions.sh
 ```
+
+</details>
