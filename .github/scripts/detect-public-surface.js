@@ -115,15 +115,15 @@ function newSurfaces(base, head) {
     .sort((a, b) => a.id.localeCompare(b.id));
 }
 
-// The instruction is the same for every entry, so it is given once in the lead
-// sentence and each entry here is just the name and what kind of thing it is.
+// Kind first, so every line opens on the same kind of token instead of a name
+// of arbitrary length, and what is left to do trails the name in italics so it
+// reads as an aside rather than part of the surface.
 function formatAudit(surfaces) {
   return surfaces
     .map(({ id, documented }) => {
       const at = id.indexOf(':');
-      const entry = `- \`${id.slice(at + 1)}\` (${id.slice(0, at)})`;
 
-      return documented ? entry : `${entry}: undocumented`;
+      return `- (${id.slice(0, at)}) \`${id.slice(at + 1)}\`${documented ? '' : ' - *requires documentation*'}`;
     })
     .join('\n');
 }
@@ -131,20 +131,11 @@ function formatAudit(surfaces) {
 // An h3 heading, matching the Playground preview comment, so the two bots read
 // the same way down a thread.
 function formatComment(surfaces) {
-  const one = 1 === surfaces.length;
-  const headline = surfaces.every((s) => s.documented)
-    ? `${one ? 'It is' : 'They are'} already documented.`
-    : 'Add a docblock above each one saying what it is for.';
-
   return [
     MARKER,
-    `### 🚩 New public surface${one ? '' : 's'}`,
-    '',
-    `This branch adds ${surfaces.length} extension point${one ? '' : 's'} that sites can depend on. ${headline}`,
+    `### 🚩 New public surface${1 === surfaces.length ? '' : 's'}`,
     '',
     formatAudit(surfaces),
-    '',
-    'Worth a line in `README.md`, and `readme.txt` if user-facing.',
     '',
   ].join('\n');
 }

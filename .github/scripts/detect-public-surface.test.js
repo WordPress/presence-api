@@ -231,13 +231,13 @@ test('scans shipped code only', () => {
 // formatAudit
 // ---------------------------------------------------------------------------
 
-test('marks what is undocumented and leaves the rest bare', () => {
+test('leads each entry with its kind and qualifies the undocumented ones', () => {
   const report = formatAudit([surface('filter:wp_presence_new_hook'), surface('action:b', true)]);
-  assert.equal(report, '- `wp_presence_new_hook` (filter): undocumented\n- `b` (action)');
+  assert.equal(report, '- (filter) `wp_presence_new_hook` - *requires documentation*\n- (action) `b`');
 });
 
 test('splits on the first colon so a namespaced hook name survives', () => {
-  assert.match(formatAudit([surface('js-filter:presence.entry', true)]), /`presence\.entry` \(js-filter\)/);
+  assert.match(formatAudit([surface('js-filter:presence.entry', true)]), /\(js-filter\) `presence\.entry`/);
 });
 
 // ---------------------------------------------------------------------------
@@ -248,15 +248,7 @@ test('leads with the marker so the workflow can find its own comment', () => {
   assert.ok(formatComment([surface('filter:a')]).startsWith(`${MARKER}\n### 🚩 New public surface\n`));
 });
 
-test('asks for a docblock only while something is undocumented', () => {
-  const missing = formatComment([surface('filter:a')]);
-  const covered = formatComment([surface('filter:a', true)]);
-  assert.match(missing, /adds 1 extension point that sites can depend on\. Add a docblock/);
-  assert.match(covered, /adds 1 extension point that sites can depend on\. It is already documented\./);
-});
-
 test('agrees in number', () => {
   const two = formatComment([surface('filter:a', true), surface('action:b', true)]);
   assert.match(two, /^### 🚩 New public surfaces$/m);
-  assert.match(two, /adds 2 extension points that sites can depend on\. They are already documented\./);
 });
