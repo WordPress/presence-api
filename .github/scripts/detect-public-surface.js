@@ -116,14 +116,14 @@ function newSurfaces(base, head) {
 }
 
 // Kind first, so every line opens on the same kind of token instead of a name
-// of arbitrary length. The sentence above already counts what is missing, so
-// only the exceptions carry a mark.
+// of arbitrary length. Nothing else: the sentence above carries the docblock
+// count, and a second mark down here competes with the flag in the heading.
 function formatAudit(surfaces) {
   return surfaces
-    .map(({ id, documented }) => {
+    .map(({ id }) => {
       const at = id.indexOf(':');
 
-      return `- ${documented ? '' : '⚠️ '}(${id.slice(0, at)}) \`${id.slice(at + 1)}\``;
+      return `- (${id.slice(0, at)}) \`${id.slice(at + 1)}\``;
     })
     .join('\n');
 }
@@ -132,16 +132,16 @@ function formatAudit(surfaces) {
 // the same way down a thread.
 function formatComment(surfaces) {
   const one = 1 === surfaces.length;
-  // One clause of a fixed shape rather than a second sentence, so nothing but
-  // the counts moves and nothing has to agree with them.
+  // Undocumented reads as an adjective when it covers every surface and as a
+  // count when it covers some, so the sentence never repeats the same number.
   const missing = surfaces.filter((s) => !s.documented).length;
-  const gap = missing ? `, ${missing} without a docblock` : '';
+  const all = missing === surfaces.length;
 
   return [
     MARKER,
     `### 🚩 New public surface${one ? '' : 's'}`,
     '',
-    `This branch adds ${surfaces.length} extension point${one ? '' : 's'} that sites can depend on${gap}.`,
+    `This branch adds ${surfaces.length} ${all ? 'undocumented ' : ''}extension point${one ? '' : 's'} that sites can depend on${missing && !all ? `, ${missing} undocumented` : ''}.`,
     '',
     formatAudit(surfaces),
     '',
