@@ -66,6 +66,7 @@ jobs:
             }
 
       - name: Unpack and validate artifacts
+        id: meta
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
@@ -100,8 +101,14 @@ jobs:
               --jq '.[] | select(.head.sha == env.TRUSTED_HEAD_SHA) | .number'
           )
           PR_NUMBER="${_prs[0]:-}"
-          [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]] \
-            || { echo "Could not resolve an open PR for head SHA $TRUSTED_HEAD_SHA"; exit 1; }
+
+          # A merged or superseded head has no comment left to post, and the push
+          # that superseded it is already building a preview of its own.
+          if [[ ! "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::notice::No open pull request at head SHA $TRUSTED_HEAD_SHA; nothing to publish."
+            echo "skipped=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
           {
             echo "PR_NUMBER=$PR_NUMBER"
@@ -111,6 +118,7 @@ jobs:
       # Playground fetches these from the browser. Release assets send no
       # `Access-Control-Allow-Origin`; raw.githubusercontent.com does.
       - name: Publish preview assets
+        if: ${{ steps.meta.outputs.skipped != 'true' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
@@ -135,6 +143,7 @@ jobs:
 
       - name: Assemble Playground URLs from base-ref blueprints
         id: playground
+        if: ${{ steps.meta.outputs.skipped != 'true' }}
         env:
           REPO: ${{ github.repository }}
         run: |
@@ -187,6 +196,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Post or update sticky comment
+        if: ${{ steps.meta.outputs.skipped != 'true' }}
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           PR_NUMBER: ${{ env.PR_NUMBER }}
