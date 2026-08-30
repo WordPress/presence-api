@@ -144,7 +144,7 @@ function formatComment(surfaces) {
     '',
     formatAudit(surfaces),
     '',
-    'Worth a line in `README.md` too, and in `readme.txt` under `= For Developers =` if it is user-facing.',
+    'Worth a line in `README.md`, and `readme.txt` if user-facing.',
     '',
   ].join('\n');
 }
