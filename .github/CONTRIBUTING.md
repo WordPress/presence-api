@@ -41,6 +41,25 @@ Assignment is not a commitment. If you stop, comment and we will unassign it. If
 
 Assigned issues left quiet for two weeks may be unassigned. Comment to pick one back up.
 
+### Labels
+
+Every open issue carries one `[Type]`, at least one `[Area]`, and a milestone. `[Area] Infrastructure` covers CI and the toolchain, so tooling issues get an area like everything else.
+
+Color groups labels rather than identifying them. Anything that sits on most rows stays in a highlighter tone, saturation is reserved for the few that want something from you, and anything applied automatically is gray.
+
+| Group | Color | Labels |
+| --- | --- | --- |
+| Area | `#FEF298` | the nine `[Area]` labels |
+| Type | `#FFB7B0` `#E2C8FF` `#B5E0FF` `#B8EAE0` | `Bug`, `Enhancement`, `Feature`, `Documentation` |
+| Cross-cutting | `#DED6B0` | `Performance`, `Privacy`, `Public API` |
+| Open to contributors | `#97EDA0` | `Good First Issue`, `Good First Review`, `help wanted` |
+| Waiting on a decision | `#F2994A` | `Needs Decision`, `Needs Discussion`, `Needs WP.org Link`, `Close Candidate` |
+| Waiting on something external | `#DC3545` | `blocked` |
+| Applied automatically | `#CED4DA` | `php`, `javascript`, `dependencies`, `github_actions`, `props-bot`, `skip changelog`, `maybelater`, `autorelease: pending`, `autorelease: tagged` |
+| Resolution | `#ADB5BD` | `duplicate`, `invalid`, and `wontfix` at `#ffffff` |
+
+A new label joins an existing group's color instead of taking a new hue. If it genuinely needs one, check it in both light and dark mode: GitHub picks the text color from the label's lightness and lightens the label itself on dark backgrounds, so a color that only works in one theme is common.
+
 ## Pull requests
 
 1. Branch off `main`.
