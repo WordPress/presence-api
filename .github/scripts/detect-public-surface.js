@@ -116,14 +116,14 @@ function newSurfaces(base, head) {
 }
 
 // Kind first, so every line opens on the same kind of token instead of a name
-// of arbitrary length, and a missing docblock joins it in the same parentheses
-// rather than earning a mark of its own.
+// of arbitrary length, and what is left to do trails the name in italics so it
+// reads as an aside rather than part of the surface.
 function formatAudit(surfaces) {
   return surfaces
     .map(({ id, documented }) => {
       const at = id.indexOf(':');
 
-      return `- (${id.slice(0, at)}${documented ? '' : ', needs docs'}) \`${id.slice(at + 1)}\``;
+      return `- (${id.slice(0, at)}) \`${id.slice(at + 1)}\`${documented ? '' : ' *needs docs*'}`;
     })
     .join('\n');
 }

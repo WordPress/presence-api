@@ -233,7 +233,7 @@ test('scans shipped code only', () => {
 
 test('leads each entry with its kind and qualifies the undocumented ones', () => {
   const report = formatAudit([surface('filter:wp_presence_new_hook'), surface('action:b', true)]);
-  assert.equal(report, '- (filter, needs docs) `wp_presence_new_hook`\n- (action) `b`');
+  assert.equal(report, '- (filter) `wp_presence_new_hook` *needs docs*\n- (action) `b`');
 });
 
 test('splits on the first colon so a namespaced hook name survives', () => {
