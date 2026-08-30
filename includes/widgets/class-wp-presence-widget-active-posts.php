@@ -145,7 +145,7 @@ class WP_Presence_Widget_Active_Posts {
 				// Active is the default state; labeling it adds noise.
 				$status_label = $any_active ? '' : __( 'Idle', 'presence-api' );
 
-				echo '<li class="presence-active-post-item">';
+				echo '<li class="presence-active-post-item" data-post-id="' . (int) $post_data['post_id'] . '">';
 
 				// Avatar stack.
 				echo '<span class="presence-editor-stack">';
