@@ -123,7 +123,7 @@ function formatAudit(surfaces) {
     .map(({ id, documented }) => {
       const at = id.indexOf(':');
 
-      return `- (${id.slice(0, at)}) \`${id.slice(at + 1)}\`${documented ? '' : ' - *needs documentation*'}`;
+      return `- (${id.slice(0, at)}) \`${id.slice(at + 1)}\`${documented ? '' : ' - *requires documentation*'}`;
     })
     .join('\n');
 }
