@@ -207,14 +207,19 @@ jobs:
             const commitUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/commit/${fullSha}`;
             const prNumber = parseInt(process.env.PR_NUMBER, 10);
             const badge = 'https://img.shields.io/badge/Launch-3858E9?style=for-the-badge&logo=wordpress&logoColor=white';
-            const launch = (href) => `[![Launch](${badge})](${href})`;
+
+            // GitHub renders the first column as plain cells, so a table gives a
+            // screen reader no row header; each link's alt text has to stand alone.
+            const launch = (href, label) => `[![${label}](${badge})](${href})`;
 
             const body = [
               marker,
-              '| 🛝 Playground | 5 users | 40 users |',
+              '### 🛝 Playground',
+              '',
+              '|  | 5 users | 40 users |',
               '| --- | --- | --- |',
-              `| **Single site** | ${launch(url)} | ${launch(url40)} |`,
-              `| **Multisite** | ${launch(urlMultisite)} | ${launch(urlMultisite40)} |`,
+              `| **Single site** | ${launch(url, 'Launch single site, 5 users')} | ${launch(url40, 'Launch single site, 40 users')} |`,
+              `| **Multisite** | ${launch(urlMultisite, 'Launch multisite, 5 users')} | ${launch(urlMultisite40, 'Launch multisite, 40 users')} |`,
               '',
               `<sub>Built from [\`${sha}\`](${commitUrl}), rebuilt on every push.</sub>`,
             ].join('\n');
