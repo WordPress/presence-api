@@ -115,15 +115,14 @@ function newSurfaces(base, head) {
     .sort((a, b) => a.id.localeCompare(b.id));
 }
 
-// The instruction is the same for every entry, so it is given once in the lead
-// sentence and each entry here is just the name and what kind of thing it is.
+// The sentence above already counts what is missing, so an entry only has to
+// say which one it is: a mark on the exceptions, nothing on the rest.
 function formatAudit(surfaces) {
   return surfaces
     .map(({ id, documented }) => {
       const at = id.indexOf(':');
-      const entry = `- \`${id.slice(at + 1)}\` (${id.slice(0, at)})`;
 
-      return documented ? entry : `${entry}: undocumented`;
+      return `- ${documented ? '' : '⚠️ '}\`${id.slice(at + 1)}\` (${id.slice(0, at)})`;
     })
     .join('\n');
 }
