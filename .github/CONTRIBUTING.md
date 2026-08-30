@@ -47,6 +47,9 @@ Every open issue carries one `[Type]`, at least one `[Area]`, and a milestone. `
 
 Color groups labels rather than identifying them. Anything that sits on most rows stays in a highlighter tone, saturation is reserved for the few that want something from you, and anything applied automatically is gray.
 
+<details>
+<summary>The groups and their colors</summary>
+
 | Group | Color | Labels |
 | --- | --- | --- |
 | Area | `#FEF298` | the nine `[Area]` labels |
@@ -59,6 +62,8 @@ Color groups labels rather than identifying them. Anything that sits on most row
 | Resolution | `#ADB5BD` | `duplicate`, `invalid`, and `wontfix` at `#ffffff` |
 
 A new label joins an existing group's color instead of taking a new hue. If it genuinely needs one, check it in both light and dark mode: GitHub picks the text color from the label's lightness and lightens the label itself on dark backgrounds, so a color that only works in one theme is common.
+
+</details>
 
 ## Pull requests
 
@@ -73,7 +78,12 @@ A hook, REST route, WP-CLI command, guarded constant, or browser global that a s
 
 Written about means a docblock directly above it with a sentence saying what it is for. That is where WordPress core's code reference reads from, and it keeps the write-up next to the code instead of in a hand-kept list that drifts the first time someone forgets it. `README.md` narrates the surfaces worth a worked example; it is not the inventory.
 
-Some names are reachable without being a promise, like a global that only exists so two enqueued scripts can share a renderer. Mark those private in that same docblock and the check leaves them alone. In PHP use `@access private`, the marker [core's documentation standards](https://developer.wordpress.org/coding-standards/inline-documentation-standards/php/) name, directly below `@since`:
+Some names are reachable without being a promise, like a global that only exists so two enqueued scripts can share a renderer. Mark those private in that same docblock and the check leaves them alone.
+
+<details>
+<summary>Marking a name private</summary>
+
+In PHP use `@access private`, the marker [core's documentation standards](https://developer.wordpress.org/coding-standards/inline-documentation-standards/php/) name, directly below `@since`:
 
 ```php
 /**
@@ -95,6 +105,8 @@ JavaScript has no `@since` line to sit under, so `@private` on its own is enough
  */
 window.wpPresenceBuildAvatarStack = function ( users, max ) {};
 ```
+
+</details>
 
 ## Getting credited
 
@@ -118,8 +130,13 @@ Releases are automated by [release-please](https://github.com/googleapis/release
 
 When the release-please PR is merged, the tag, GitHub Release, and zip asset are produced automatically.
 
+<details>
+<summary>Keeping the version numbers in step</summary>
+
 `scripts/sync-versions.sh` reads the version from `.release-please-manifest.json` and updates the plugin header `Version:`, the `WP_PRESENCE_VERSION` constant, and `readme.txt`'s `Stable tag:`. The release-please workflow runs it on every release PR; you can run it locally too:
 
 ```bash
 bash scripts/sync-versions.sh
 ```
+
+</details>
