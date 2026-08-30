@@ -43,25 +43,31 @@ Assigned issues left quiet for two weeks may be unassigned. Comment to pick one 
 
 ### Labels
 
-Every open issue carries one `[Type]`, at least one `[Area]`, and a milestone. `[Area] Infrastructure` covers CI and the toolchain, so tooling issues get an area like everything else.
+Every open issue carries one `[Type]`, at least one `[Area]`, and a milestone. `[Area] Infrastructure` covers CI and the toolchain.
 
-Color groups labels rather than identifying them. Anything that sits on most rows stays in a highlighter tone, saturation is reserved for the few that want something from you, and anything applied automatically is gray.
+Color groups labels rather than identifying them. Labels on most rows stay in a highlighter tone, saturation is reserved for the few that want something from you, and anything a bot applies is gray.
 
 <details>
-<summary>The groups and their colors</summary>
+<summary>The twelve colors</summary>
 
-| Group | Color | Labels |
-| --- | --- | --- |
-| Area | `#FEF298` | the nine `[Area]` labels |
-| Type | `#FFB7B0` `#E2C8FF` `#B5E0FF` `#B8EAE0` | `Bug`, `Enhancement`, `Feature`, `Documentation` |
-| Cross-cutting | `#DED6B0` | `Performance`, `Privacy`, `Public API` |
-| Open to contributors | `#97EDA0` | `Good First Issue`, `Good First Review`, `help wanted` |
-| Waiting on a decision | `#F2994A` | `Needs Decision`, `Needs Discussion`, `Needs WP.org Link`, `Close Candidate` |
-| Waiting on something external | `#DC3545` | `blocked` |
-| Applied automatically | `#CED4DA` | `php`, `javascript`, `dependencies`, `github_actions`, `props-bot`, `skip changelog`, `maybelater`, `autorelease: pending`, `autorelease: tagged` |
-| Resolution | `#ADB5BD` | `duplicate`, `invalid`, and `wontfix` at `#ffffff` |
+| Color | Labels |
+| --- | --- |
+| `#FEF298` | the nine `[Area]` labels |
+| `#FFB7B0` | `[Type] Bug` |
+| `#E2C8FF` | `[Type] Enhancement` |
+| `#B5E0FF` | `[Type] Feature` |
+| `#B8EAE0` | `[Type] Documentation` |
+| `#DED6B0` | `Performance`, `Privacy`, `Public API` |
+| `#97EDA0` | `Good First Issue`, `Good First Review`, `help wanted` |
+| `#F2994A` | the three `Needs` labels and `Close Candidate` |
+| `#DC3545` | `blocked` |
+| `#CED4DA` | anything a bot applies, languages included |
+| `#ADB5BD` | `duplicate`, `invalid` |
+| `#FFFFFF` | `wontfix` |
 
-A new label joins an existing group's color instead of taking a new hue. If it genuinely needs one, check it in both light and dark mode: GitHub picks the text color from the label's lightness and lightens the label itself on dark backgrounds, so a color that only works in one theme is common.
+Rendered, they are on the [labels page](https://github.com/WordPress/presence-api/labels).
+
+A new label joins an existing color. If it genuinely needs its own, check it in both themes: GitHub picks the text color from the label's lightness and lightens the label itself on dark backgrounds.
 
 </details>
 
