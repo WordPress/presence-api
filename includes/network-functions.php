@@ -87,6 +87,7 @@ function wp_presence_has_network_summary_table() {
  * on drawing the rows it already had with nothing to say the feed had stopped.
  *
  * @since 0.2.0
+ * @since 0.3.0 Promoted from an @access private helper to the public API.
  *
  * @return bool
  */
