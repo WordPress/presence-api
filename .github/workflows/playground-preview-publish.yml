@@ -203,8 +203,6 @@ jobs:
             const urlMultisite = process.env.PLAYGROUND_URL_MULTISITE;
             const urlMultisite40 = process.env.PLAYGROUND_URL_MULTISITE_40;
             const fullSha = process.env.HEAD_SHA;
-            const sha = fullSha.slice(0, 7);
-            const commitUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/commit/${fullSha}`;
             const prNumber = parseInt(process.env.PR_NUMBER, 10);
             const badge = 'https://img.shields.io/badge/Launch-3858E9?style=for-the-badge&logo=wordpress&logoColor=white';
 
@@ -214,7 +212,9 @@ jobs:
 
             const body = [
               marker,
-              `### 🛝 WordPress Playgrounds built from [\`${sha}\`](${commitUrl})`,
+              // Left bare so GitHub autolinks it into the same abbreviated
+              // commit link, hovercard and all, that the timeline above uses.
+              `### 🛝 WordPress Playgrounds built from ${fullSha}`,
               '',
               '|  | 5 users | 40 users |',
               '| --- | --- | --- |',
