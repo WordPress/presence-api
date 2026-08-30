@@ -128,8 +128,8 @@ function formatAudit(surfaces) {
     .join('\n');
 }
 
-// A heading would open with a rule across the thread for what is usually a
-// one-line note, so the title runs inline and the aside is set small.
+// An h3 heading, matching the Playground preview comment, so the two bots read
+// the same way down a thread.
 function formatComment(surfaces) {
   const one = 1 === surfaces.length;
   const headline = surfaces.every((s) => s.documented)
@@ -138,11 +138,13 @@ function formatComment(surfaces) {
 
   return [
     MARKER,
-    `**New public surface.** This branch adds ${surfaces.length} extension point${one ? '' : 's'} that sites can depend on. ${headline}`,
+    `### 🚩 New public surface${one ? '' : 's'}`,
+    '',
+    `This branch adds ${surfaces.length} extension point${one ? '' : 's'} that sites can depend on. ${headline}`,
     '',
     formatAudit(surfaces),
     '',
-    '<sub>Worth a line in `README.md` too, and in `readme.txt` under `= For Developers =` if it is user-facing.</sub>',
+    'Worth a line in `README.md` too, and in `readme.txt` under `= For Developers =` if it is user-facing.',
     '',
   ].join('\n');
 }

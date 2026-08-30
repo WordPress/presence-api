@@ -245,7 +245,7 @@ test('splits on the first colon so a namespaced hook name survives', () => {
 // ---------------------------------------------------------------------------
 
 test('leads with the marker so the workflow can find its own comment', () => {
-  assert.ok(formatComment([surface('filter:a')]).startsWith(MARKER));
+  assert.ok(formatComment([surface('filter:a')]).startsWith(`${MARKER}\n### 🚩 New public surface\n`));
 });
 
 test('asks for a docblock only while something is undocumented', () => {
@@ -253,11 +253,10 @@ test('asks for a docblock only while something is undocumented', () => {
   const covered = formatComment([surface('filter:a', true)]);
   assert.match(missing, /adds 1 extension point that sites can depend on\. Add a docblock/);
   assert.match(covered, /adds 1 extension point that sites can depend on\. It is already documented\./);
-  // A heading would rule off the thread; the title carries inline instead.
-  assert.doesNotMatch(missing, /^#/m);
 });
 
 test('agrees in number', () => {
   const two = formatComment([surface('filter:a', true), surface('action:b', true)]);
+  assert.match(two, /^### 🚩 New public surfaces$/m);
   assert.match(two, /adds 2 extension points that sites can depend on\. They are already documented\./);
 });
