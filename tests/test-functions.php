@@ -823,4 +823,51 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		$this->assertStringNotContainsString( 'Ana', $html );
 		$this->assertStringContainsString( 'z-index:1', $html, 'The z-index counts the avatars drawn, not the users passed in.' );
 	}
+
+	/**
+	 * Asserted at the table rather than only on the return value: a switch that
+	 * reports false while the row still lands is the failure that matters.
+	 *
+	 * @covers ::wp_presence_recording_enabled
+	 * @covers ::wp_set_presence
+	 */
+	public function test_switching_recording_off_writes_nothing() {
+		add_filter( 'wp_presence_recording_enabled', '__return_false' );
+
+		$result = wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
+
+		$this->assertFalse( $result );
+		$this->assertSame( array(), wp_get_presence( 'test/room' ) );
+	}
+
+	/**
+	 * @covers ::wp_presence_recording_enabled
+	 */
+	public function test_the_network_can_switch_off_a_site_that_allows_recording() {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		add_filter( 'wp_presence_recording_enabled', '__return_true' );
+		add_filter( 'wp_presence_network_recording_enabled', '__return_false' );
+
+		$this->assertFalse( wp_presence_recording_enabled() );
+	}
+
+	/**
+	 * The other half of the same rule, and the one a network-level filter could
+	 * quietly undo if it were consulted unconditionally.
+	 *
+	 * @covers ::wp_presence_recording_enabled
+	 */
+	public function test_a_site_can_switch_off_what_the_network_allows() {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		add_filter( 'wp_presence_recording_enabled', '__return_false' );
+		add_filter( 'wp_presence_network_recording_enabled', '__return_true' );
+
+		$this->assertFalse( wp_presence_recording_enabled() );
+	}
 }
