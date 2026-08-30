@@ -138,7 +138,7 @@ function formatComment(surfaces) {
 
   return [
     MARKER,
-    '### 🚩 New public surface',
+    `### 🚩 New public surface${one ? '' : 's'}`,
     '',
     `This branch adds ${surfaces.length} extension point${one ? '' : 's'} that sites can depend on. ${headline}`,
     '',

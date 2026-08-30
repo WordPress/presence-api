@@ -257,5 +257,6 @@ test('asks for a docblock only while something is undocumented', () => {
 
 test('agrees in number', () => {
   const two = formatComment([surface('filter:a', true), surface('action:b', true)]);
+  assert.match(two, /^### 🚩 New public surfaces$/m);
   assert.match(two, /adds 2 extension points that sites can depend on\. They are already documented\./);
 });
