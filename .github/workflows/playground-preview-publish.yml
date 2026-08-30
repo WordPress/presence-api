@@ -212,9 +212,12 @@ jobs:
 
             const body = [
               marker,
-              // Left bare so GitHub autolinks it into the same abbreviated
-              // commit link, hovercard and all, that the timeline above uses.
-              `### 🛝 WordPress Playgrounds built from ${fullSha}`,
+              '### 🛝 WordPress Playgrounds',
+              '',
+              // Below the heading rather than in it, so the sha inherits body
+              // weight and size, and left bare so GitHub autolinks it into the
+              // same abbreviated commit link the timeline above uses.
+              `Built from ${fullSha}`,
               '',
               '|  | 5 users | 40 users |',
               '| --- | --- | --- |',
