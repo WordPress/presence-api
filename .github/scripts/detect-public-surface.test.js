@@ -233,11 +233,11 @@ test('scans shipped code only', () => {
 
 test('marks what is undocumented and leaves the rest bare', () => {
   const report = formatAudit([surface('filter:wp_presence_new_hook'), surface('action:b', true)]);
-  assert.equal(report, '- ⚠️ `wp_presence_new_hook` (filter)\n- `b` (action)');
+  assert.equal(report, '- ⚠️ (filter) `wp_presence_new_hook`\n- (action) `b`');
 });
 
 test('splits on the first colon so a namespaced hook name survives', () => {
-  assert.match(formatAudit([surface('js-filter:presence.entry', true)]), /`presence\.entry` \(js-filter\)/);
+  assert.match(formatAudit([surface('js-filter:presence.entry', true)]), /\(js-filter\) `presence\.entry`/);
 });
 
 // ---------------------------------------------------------------------------

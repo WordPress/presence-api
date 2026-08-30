@@ -115,14 +115,15 @@ function newSurfaces(base, head) {
     .sort((a, b) => a.id.localeCompare(b.id));
 }
 
-// The sentence above already counts what is missing, so an entry only has to
-// say which one it is: a mark on the exceptions, nothing on the rest.
+// Kind first, so every line opens on the same kind of token instead of a name
+// of arbitrary length. The sentence above already counts what is missing, so
+// only the exceptions carry a mark.
 function formatAudit(surfaces) {
   return surfaces
     .map(({ id, documented }) => {
       const at = id.indexOf(':');
 
-      return `- ${documented ? '' : '⚠️ '}\`${id.slice(at + 1)}\` (${id.slice(0, at)})`;
+      return `- ${documented ? '' : '⚠️ '}(${id.slice(0, at)}) \`${id.slice(at + 1)}\``;
     })
     .join('\n');
 }
