@@ -132,19 +132,16 @@ function formatAudit(surfaces) {
 // the same way down a thread.
 function formatComment(surfaces) {
   const one = 1 === surfaces.length;
-  // Counted, not asserted, so the sentence tracks the list below when only
-  // some of the surfaces are documented.
+  // One clause of a fixed shape rather than a second sentence, so nothing but
+  // the counts moves and nothing has to agree with them.
   const missing = surfaces.filter((s) => !s.documented).length;
-  const headline =
-    0 === missing
-      ? `${one ? 'It is' : 'All are'} documented.`
-      : `${missing} ${1 === missing ? 'needs' : 'need'} a docblock saying what ${1 === missing ? 'it is' : 'they are'} for.`;
+  const gap = missing ? `, ${missing} without a docblock` : '';
 
   return [
     MARKER,
     `### 🚩 New public surface${one ? '' : 's'}`,
     '',
-    `This branch adds ${surfaces.length} extension point${one ? '' : 's'} that sites can depend on. ${headline}`,
+    `This branch adds ${surfaces.length} extension point${one ? '' : 's'} that sites can depend on${gap}.`,
     '',
     formatAudit(surfaces),
     '',
