@@ -214,14 +214,13 @@ jobs:
 
             const body = [
               marker,
-              '### 🛝 Playground',
+              `### 🛝 WordPress Playgrounds built from [\`${sha}\`](${commitUrl})`,
               '',
               '|  | 5 users | 40 users |',
               '| --- | --- | --- |',
               `| **Single site** | ${launch(url, 'Launch single site, 5 users')} | ${launch(url40, 'Launch single site, 40 users')} |`,
               `| **Multisite** | ${launch(urlMultisite, 'Launch multisite, 5 users')} | ${launch(urlMultisite40, 'Launch multisite, 40 users')} |`,
               '',
-              `<sub>Built from [\`${sha}\`](${commitUrl}), rebuilt on every push.</sub>`,
             ].join('\n');
 
             const comments = await github.paginate(github.rest.issues.listComments, {
