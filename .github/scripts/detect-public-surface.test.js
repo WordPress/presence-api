@@ -251,12 +251,21 @@ test('leads with the marker so the workflow can find its own comment', () => {
 test('asks for a docblock only while something is undocumented', () => {
   const missing = formatComment([surface('filter:a')]);
   const covered = formatComment([surface('filter:a', true)]);
-  assert.match(missing, /adds 1 extension point that sites can depend on\. Add a docblock/);
-  assert.match(covered, /adds 1 extension point that sites can depend on\. It is already documented\./);
+  assert.match(missing, /adds 1 extension point that sites can depend on\. 1 needs a docblock saying what it is for\./);
+  assert.match(covered, /adds 1 extension point that sites can depend on\. It is documented\./);
+});
+
+// The count is what is left to do, not the total, so a branch that documents
+// one of two is not told to write a docblock above the one it documented.
+test('counts only the undocumented surfaces', () => {
+  const mixed = formatComment([surface('filter:a', true), surface('action:b')]);
+  assert.match(mixed, /\. 1 needs a docblock saying what it is for\./);
 });
 
 test('agrees in number', () => {
   const two = formatComment([surface('filter:a', true), surface('action:b', true)]);
   assert.match(two, /^### 🚩 New public surfaces$/m);
-  assert.match(two, /adds 2 extension points that sites can depend on\. They are already documented\./);
+  assert.match(two, /adds 2 extension points that sites can depend on\. All are documented\./);
+  const none = formatComment([surface('filter:a'), surface('action:b')]);
+  assert.match(none, /\. 2 need a docblock saying what they are for\./);
 });

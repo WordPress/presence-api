@@ -132,9 +132,13 @@ function formatAudit(surfaces) {
 // the same way down a thread.
 function formatComment(surfaces) {
   const one = 1 === surfaces.length;
-  const headline = surfaces.every((s) => s.documented)
-    ? `${one ? 'It is' : 'They are'} already documented.`
-    : 'Add a docblock above each one saying what it is for.';
+  // Counted, not asserted, so the sentence tracks the list below when only
+  // some of the surfaces are documented.
+  const missing = surfaces.filter((s) => !s.documented).length;
+  const headline =
+    0 === missing
+      ? `${one ? 'It is' : 'All are'} documented.`
+      : `${missing} ${1 === missing ? 'needs' : 'need'} a docblock saying what ${1 === missing ? 'it is' : 'they are'} for.`;
 
   return [
     MARKER,
