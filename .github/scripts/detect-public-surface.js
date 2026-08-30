@@ -148,8 +148,6 @@ function formatComment(surfaces) {
     '',
     formatAudit(surfaces),
     '',
-    'Worth a line in `README.md`, and `readme.txt` if user-facing.',
-    '',
   ].join('\n');
 }
 
