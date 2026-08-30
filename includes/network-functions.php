@@ -310,11 +310,10 @@ function wp_presence_record_network_summary_push( array $user_ids ) {
  * Shaped to be read in a database client, the only place this column is looked
  * at directly:
  *
- *     {
- *         "site": "example.com/shop/",
- *         "scheme": "https",
- *         "online_user_ids": [ 3, 7 ]
- *     }
+ *     {"site":"example.com/shop/","scheme":"https","online_user_ids":[3,7]}
+ *
+ * Three keys stay legible compact, and the read selects this column in full for
+ * every site on each network-admin request, so pretty-printing doubled it.
  *
  * The site label is for that reader; the read path resolves the site from
  * blog_id and ignores it. Logins are left out because resolving them would
@@ -338,7 +337,7 @@ function wp_presence_encode_network_summary_row( $blog_id, array $user_ids ) {
 			'scheme'          => is_ssl() ? 'https' : 'http',
 			'online_user_ids' => $user_ids,
 		),
-		JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
+		JSON_UNESCAPED_SLASHES
 	);
 }
 
