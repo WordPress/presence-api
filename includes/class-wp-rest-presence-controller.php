@@ -422,6 +422,15 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	public function create_item( $request ) {
 		global $wpdb;
 
+		// 501 rather than the 503 below: recording is switched off, not pending a table.
+		if ( ! wp_presence_recording_enabled() ) {
+			return new WP_Error(
+				'rest_presence_recording_disabled',
+				__( 'Presence is not recorded on this site.', 'presence-api' ),
+				array( 'status' => 501 )
+			);
+		}
+
 		if ( ! wp_presence_has_table() ) {
 			return new WP_Error(
 				'rest_presence_unavailable',

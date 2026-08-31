@@ -825,6 +825,15 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * The documented default, and the one the privacy note in the readme states.
+	 *
+	 * @covers ::wp_presence_recording_enabled
+	 */
+	public function test_recording_is_on_with_no_filters_added() {
+		$this->assertTrue( wp_presence_recording_enabled() );
+	}
+
+	/**
 	 * Asserted at the table rather than only on the return value: a switch that
 	 * reports false while the row still lands is the failure that matters.
 	 *
