@@ -153,13 +153,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 
 	$stack_html .= '</span>';
 
-	// Subtract by identity, never arithmetic: your row is absent on screens
-	// that are not writing heartbeats, so the total is already others-only.
-	$online_ids = array_map( 'intval', array_unique( wp_list_pluck( $entries, 'user_id' ) ) );
-	if ( $current_uid && ! in_array( $current_uid, $online_ids, true ) ) {
-		$online_ids[] = $current_uid;
-	}
-	$online_count = count( $online_ids );
+	$online_count = count( wp_presence_online_user_ids( $entries ) );
 
 	/* translators: %d: Number of online users, including the current user. */
 	$label = sprintf( _n( '%d online', '%d online', $online_count, 'presence-api' ), $online_count );

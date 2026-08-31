@@ -81,6 +81,29 @@ function wp_get_presence( $room, $timeout = WP_PRESENCE_DEFAULT_TTL ) {
 }
 
 /**
+ * Returns the user IDs present in a set of entries, the current user included.
+ *
+ * The current user's own row is absent on screens that never ping and once it
+ * ages past the TTL, so it is added by identity rather than by adding one,
+ * which would double-count whenever the row is there.
+ *
+ * @access private
+ *
+ * @param array $entries Presence entries, as returned by wp_get_presence().
+ * @return int[] Unique user IDs.
+ */
+function wp_presence_online_user_ids( $entries ) {
+	$online_ids = array_unique( array_map( 'intval', wp_list_pluck( $entries, 'user_id' ) ) );
+	$current_id = get_current_user_id();
+
+	if ( $current_id && ! in_array( $current_id, $online_ids, true ) ) {
+		$online_ids[] = $current_id;
+	}
+
+	return array_values( $online_ids );
+}
+
+/**
  * Upserts a client's presence state in a room.
  *
  * Uses INSERT ... ON DUPLICATE KEY UPDATE for atomic upserts
