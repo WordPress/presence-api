@@ -24,6 +24,9 @@ composer install
 # Unit tests (requires wp-env running)
 npm test
 
+# Multisite tests (requires wp-env running)
+npm run test:multisite
+
 # E2E tests (requires wp-env running)
 npx playwright install chromium
 npm run test:e2e
