@@ -38,6 +38,10 @@ jobs:
     needs: gate
     uses: ./.github/workflows/e2e.yml
 
+  unit:
+    needs: gate
+    uses: ./.github/workflows/unit.yml
+
   plugin-check:
     needs: gate
     uses: ./.github/workflows/plugin-check.yml
