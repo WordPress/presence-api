@@ -56,6 +56,10 @@ Yes. Network-activate it and Network Admin gains a Who's Online dashboard widget
 
 Anyone with the `manage_network` capability, which on a default network means super admins. The `wp_presence_network_capability` filter changes what is required.
 
+= Can a site stop recording presence? =
+
+Yes. The `wp_presence_recording_enabled` filter switches the write off, and every screen empties within one TTL as the rows already stored expire. On multisite, `wp_presence_network_recording_enabled` does the same for every site at once; whichever switch is off decides.
+
 == Changelog ==
 
 = 0.2.1 =

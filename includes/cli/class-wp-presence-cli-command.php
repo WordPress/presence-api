@@ -46,6 +46,10 @@ class WP_Presence_CLI_Command extends WP_CLI_Command {
 		$room    = $args[0];
 		$user_id = (int) WP_CLI\Utils\get_flag_value( $assoc_args, 'user', 0 );
 
+		if ( ! wp_presence_recording_enabled() ) {
+			WP_CLI::error( __( 'Presence is not recorded on this site.', 'presence-api' ) );
+		}
+
 		if ( $user_id && ! get_user_by( 'id', $user_id ) ) {
 			WP_CLI::error( __( 'User not found.', 'presence-api' ) );
 		}

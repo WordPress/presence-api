@@ -404,6 +404,27 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Not the generic 500, which invites a retry nothing will ever store.
+	 *
+	 * @covers WP_REST_Presence_Controller::create_item
+	 */
+	public function test_rest_create_reports_recording_being_switched_off() {
+		wp_set_current_user( self::$editor_id );
+		add_filter( 'wp_presence_recording_enabled', '__return_false' );
+
+		$request = new WP_REST_Request( 'POST', '/wp-presence/v1/presence' );
+		$request->set_param( 'room', 'room/off' );
+		$request->set_param( 'client_id', 'client-off' );
+
+		$controller = new WP_REST_Presence_Controller();
+		$response   = $controller->create_item( $request );
+
+		$this->assertInstanceOf( 'WP_Error', $response );
+		$this->assertSame( 'rest_presence_recording_disabled', $response->get_error_code() );
+		$this->assertSame( 501, $response->get_error_data()['status'] );
+	}
+
+	/**
 	 * @covers WP_REST_Presence_Controller::bump_screen_revision
 	 */
 	public function test_bump_screen_revision_success() {

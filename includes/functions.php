@@ -2,7 +2,7 @@
 /**
  * Presence API functions.
  *
- * Public API (7 functions):
+ * Public API:
  *   wp_get_presence()
  *   wp_set_presence()
  *   wp_remove_presence()
@@ -10,6 +10,7 @@
  *   wp_can_access_presence_room()
  *   wp_presence_post_room()
  *   wp_presence_admin_room()
+ *   wp_presence_recording_enabled()
  *
  * @package Presence_API
  */
@@ -129,6 +130,53 @@ function wp_presence_with_current_user( $entries ) {
 }
 
 /**
+ * Whether presence is recorded on this site.
+ *
+ * The controller-level switch, checked at the single write path. Nothing new is
+ * stored while this is false and every surface empties within one
+ * WP_PRESENCE_DEFAULT_TTL as the rows already there expire, so there is no
+ * separate teardown to run.
+ *
+ * Recording is on by default. Presence is a negative signal, and the post lock
+ * bridge is where its absence stops two people overwriting each other, so the
+ * default is the safe one; a site that would rather not process it at all
+ * switches it off here and says so in its privacy policy.
+ *
+ * Aggregating those rows into the network-wide view is a separate switch. See
+ * wp_presence_network_aggregation_enabled().
+ *
+ * @since 0.3.0
+ *
+ * @return bool Whether presence is recorded.
+ */
+function wp_presence_recording_enabled() {
+	/**
+	 * Filters whether presence is recorded on this site.
+	 *
+	 * @since 0.3.0
+	 *
+	 * @param bool $enabled Whether to record presence. Default true.
+	 */
+	$enabled = (bool) apply_filters( 'wp_presence_recording_enabled', true );
+
+	if ( ! $enabled || ! is_multisite() ) {
+		return $enabled;
+	}
+
+	/**
+	 * Filters whether presence is recorded anywhere on this network.
+	 *
+	 * Consulted only once the site-level filter has allowed recording, so
+	 * either switch turning off wins and neither can turn the other back on.
+	 *
+	 * @since 0.3.0
+	 *
+	 * @param bool $enabled Whether to record presence. Default true.
+	 */
+	return (bool) apply_filters( 'wp_presence_network_recording_enabled', true );
+}
+
+/**
  * Upserts a client's presence state in a room.
  *
  * Uses INSERT ... ON DUPLICATE KEY UPDATE for atomic upserts
@@ -142,6 +190,10 @@ function wp_presence_with_current_user( $entries ) {
  */
 function wp_set_presence( $room, $client_id, $state, $user_id = 0 ) {
 	global $wpdb;
+
+	if ( ! wp_presence_recording_enabled() ) {
+		return false;
+	}
 
 	if ( ! wp_presence_has_table() ) {
 		return false;
