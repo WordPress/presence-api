@@ -130,8 +130,6 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 		}
 	}
 
-	$current_user = get_userdata( $current_uid );
-
 	// You first, then others on this page. Mirrors the flyout's "On this page".
 	$stack_ids = array( $current_uid );
 	foreach ( $here as $entry ) {
@@ -193,6 +191,8 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 	);
 
 	// Current user first.
+	$current_user = get_userdata( $current_uid );
+
 	$wp_admin_bar->add_node(
 		array(
 			'parent' => 'presence-online',
