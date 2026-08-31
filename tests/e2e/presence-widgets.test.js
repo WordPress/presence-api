@@ -235,6 +235,8 @@ test.describe( 'Presence Widgets', () => {
 	} ) => {
 		const others = 26;
 		const visibleRows = 3;
+		// The seeded users plus you, who the widget counts as well.
+		const online = others + 1;
 
 		try {
 			await page.addInitScript( () => {
@@ -273,7 +275,7 @@ test.describe( 'Presence Widgets', () => {
 
 			await tick();
 
-			await expect( summary ).toContainText( `+${ others - visibleRows } more` );
+			await expect( summary ).toContainText( `+${ online - visibleRows } more` );
 			await expect(
 				page.locator( '#presence-whos-online-list #presence-overflow-list' )
 			).toHaveCount( 0 );
@@ -288,7 +290,7 @@ test.describe( 'Presence Widgets', () => {
 			await tick();
 
 			await expect( summary ).toContainText(
-				`+${ others - visibleRows - 1 } more`
+				`+${ online - visibleRows - 1 } more`
 			);
 		} finally {
 			wpCli(
