@@ -41,7 +41,7 @@ Post types opt in via `add_post_type_support( 'post', 'presence' )`.
 
 ## PHP API
 
-The following public functions are part of the stable public API contract. All other helper functions in `includes/functions.php` (such as `wp_get_active_rooms()`, `wp_get_presence_summary()`, etc.) are marked `@access private`, are intended for internal plugin use only, and may change or be removed without notice.
+The following public functions are part of the stable public API contract. All other helper functions in `includes/functions.php` and `includes/network-functions.php` (such as `wp_get_active_rooms()`, `wp_get_presence_summary()`, etc.) are marked `@access private`, are intended for internal plugin use only, and may change or be removed without notice.
 
 ```php
 // Read all presence entries in a room.
@@ -68,6 +68,15 @@ wp_presence_recording_enabled();
 ```
 
 Each entry object returned by `wp_get_presence()` has: `room`, `client_id`, `user_id`, `data` (array), `date_gmt`.
+
+### Network
+
+Multisite only, from `includes/network-functions.php`. Returns `false` outside multisite.
+
+```php
+// Whether this network assembles its sites' rows into the network-wide view.
+wp_presence_network_aggregation_enabled();
+```
 
 ## Extension Points
 
