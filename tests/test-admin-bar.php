@@ -113,6 +113,24 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Backdates a user's entry so it falls outside the TTL window.
+	 *
+	 * @param int $user_id     The user whose entry to backdate.
+	 * @param int $seconds_ago How far in the past to date the entry.
+	 */
+	private function age_entry( $user_id, $seconds_ago ) {
+		global $wpdb;
+
+		$wpdb->update(
+			$wpdb->presence,
+			array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - $seconds_ago ) ),
+			array( 'client_id' => 'user-' . $user_id ),
+			array( '%s' ),
+			array( '%s' )
+		);
+	}
+
+	/**
 	 * The menu labels each online user with the post they are editing. A
 	 * contributor has `edit_posts`, which is all the node itself requires, but
 	 * must not learn the title of a draft they cannot edit.
@@ -248,13 +266,16 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * Your row is absent on screens that never ping, so the total is already
-	 * others-only and must not be decremented again.
+	 * Your own row ages past the TTL while you are still on the screen, so the
+	 * count has to add you back by identity.
 	 */
 	public function test_the_count_includes_you_when_your_own_row_has_expired() {
 		$this->put_user_on_screen( 'dashboard' );
 
 		wp_set_current_user( self::$editor_id );
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'dashboard' ), self::$editor_id );
+		$this->age_entry( self::$editor_id, WP_PRESENCE_DEFAULT_TTL + 1 );
+
 		$nodes = $this->render_nodes();
 
 		$this->assertStringContainsString( '2 online', $nodes['presence-online']->title );
