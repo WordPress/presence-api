@@ -24,7 +24,7 @@ On a multisite network, Network Admin gets its own view of the same data: a Who'
 
 * Who's Online dashboard widget with idle detection
 * Active Posts dashboard widget grouped by post
-* Admin bar indicator showing who is on the same page
+* Admin bar indicator showing who's online, grouped by who's on this page
 * Editors column in the post list
 * Online filter in the Users list
 
