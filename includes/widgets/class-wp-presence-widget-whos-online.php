@@ -625,85 +625,81 @@ JS,
 	 * Renders the dashboard widget.
 	 */
 	public static function render() {
-		// Lists everyone present, you included, so the count agrees with the
-		// admin bar and the users list.
-		$entries = array_values( wp_get_presence( wp_presence_admin_room() ) );
+		// Lists everyone present, you included, so the rows and the count agree
+		// with the admin bar and the users list. You are always one of them.
+		$entries = array_values( wp_presence_with_current_user( wp_get_presence( wp_presence_admin_room() ) ) );
 
 		echo '<div id="presence-whos-online-list" aria-live="polite" tabindex="-1">';
 
-		if ( empty( $entries ) ) {
-			echo '<p>' . esc_html__( 'No users are online.', 'presence-api' ) . '</p>';
-		} else {
-			cache_users( wp_list_pluck( $entries, 'user_id' ) );
+		cache_users( wp_list_pluck( $entries, 'user_id' ) );
 
-			$visible  = array_slice( $entries, 0, self::VISIBLE_ROWS );
-			$overflow = array_slice( $entries, self::VISIBLE_ROWS );
+		$visible  = array_slice( $entries, 0, self::VISIBLE_ROWS );
+		$overflow = array_slice( $entries, self::VISIBLE_ROWS );
 
-			echo '<ul class="presence-user-list" aria-label="' . esc_attr__( 'Users currently online', 'presence-api' ) . '">';
+		echo '<ul class="presence-user-list" aria-label="' . esc_attr__( 'Users currently online', 'presence-api' ) . '">';
 
-			foreach ( $visible as $entry ) {
-				$user = get_userdata( $entry->user_id );
+		foreach ( $visible as $entry ) {
+			$user = get_userdata( $entry->user_id );
 
-				if ( ! $user ) {
+			if ( ! $user ) {
+				continue;
+			}
+
+			self::render_user_row( $entry, $user );
+		}
+
+		echo '</ul>';
+
+		if ( ! empty( $overflow ) ) {
+			$stack_max   = min( count( $overflow ), self::AVATAR_STACK_MAX );
+			$stack_users = array();
+
+			foreach ( array_slice( $overflow, 0, $stack_max ) as $oentry ) {
+				$ouser = get_userdata( $oentry->user_id );
+
+				if ( ! $ouser ) {
 					continue;
 				}
 
-				self::render_user_row( $entry, $user );
+				$stack_users[] = array(
+					'display_name' => $ouser->display_name,
+					'avatar_url'   => get_avatar_url( $ouser->ID, array( 'size' => 24 ) ),
+				);
 			}
 
-			echo '</ul>';
+			if ( count( $overflow ) > self::get_overflow_threshold() ) {
+				// Summary mode: avatar stack + count linking to Users page.
+				echo '<a href="' . esc_url( admin_url( 'users.php?presence_status=online' ) ) . '" class="presence-overflow-toggle">';
+				echo wp_kses_post( wp_presence_render_avatar_stack( $stack_users, self::AVATAR_STACK_MAX ) );
+				echo '<span class="presence-overflow-text">';
+				/* translators: %d: Number of additional online users. */
+				echo esc_html( sprintf( __( '+%d more — view all users', 'presence-api' ), count( $overflow ) ) );
+				echo '</span></a>';
+			} else {
+				// Expandable list mode.
+				echo '<button type="button" class="presence-overflow-toggle" data-action="expand" aria-expanded="false" aria-controls="presence-overflow-list">';
+				echo wp_kses_post( wp_presence_render_avatar_stack( $stack_users, self::AVATAR_STACK_MAX ) );
+				echo '<span class="presence-overflow-text">';
+				/* translators: %d: Number of additional online users. */
+				echo esc_html( sprintf( __( '+%d more', 'presence-api' ), count( $overflow ) ) );
+				echo '</span></button>';
 
-			if ( ! empty( $overflow ) ) {
-				$stack_max   = min( count( $overflow ), self::AVATAR_STACK_MAX );
-				$stack_users = array();
+				echo '<ul id="presence-overflow-list" class="presence-overflow-expanded" aria-label="' . esc_attr__( 'Additional online users', 'presence-api' ) . '" style="display:none">';
 
-				foreach ( array_slice( $overflow, 0, $stack_max ) as $oentry ) {
-					$ouser = get_userdata( $oentry->user_id );
+				foreach ( $overflow as $entry ) {
+					$user = get_userdata( $entry->user_id );
 
-					if ( ! $ouser ) {
+					if ( ! $user ) {
 						continue;
 					}
 
-					$stack_users[] = array(
-						'display_name' => $ouser->display_name,
-						'avatar_url'   => get_avatar_url( $ouser->ID, array( 'size' => 24 ) ),
-					);
+					self::render_user_row( $entry, $user );
 				}
 
-				if ( count( $overflow ) > self::get_overflow_threshold() ) {
-					// Summary mode: avatar stack + count linking to Users page.
-					echo '<a href="' . esc_url( admin_url( 'users.php?presence_status=online' ) ) . '" class="presence-overflow-toggle">';
-					echo wp_kses_post( wp_presence_render_avatar_stack( $stack_users, self::AVATAR_STACK_MAX ) );
-					echo '<span class="presence-overflow-text">';
-					/* translators: %d: Number of additional online users. */
-					echo esc_html( sprintf( __( '+%d more — view all users', 'presence-api' ), count( $overflow ) ) );
-					echo '</span></a>';
-				} else {
-					// Expandable list mode.
-					echo '<button type="button" class="presence-overflow-toggle" data-action="expand" aria-expanded="false" aria-controls="presence-overflow-list">';
-					echo wp_kses_post( wp_presence_render_avatar_stack( $stack_users, self::AVATAR_STACK_MAX ) );
-					echo '<span class="presence-overflow-text">';
-					/* translators: %d: Number of additional online users. */
-					echo esc_html( sprintf( __( '+%d more', 'presence-api' ), count( $overflow ) ) );
-					echo '</span></button>';
-
-					echo '<ul id="presence-overflow-list" class="presence-overflow-expanded" aria-label="' . esc_attr__( 'Additional online users', 'presence-api' ) . '" style="display:none">';
-
-					foreach ( $overflow as $entry ) {
-						$user = get_userdata( $entry->user_id );
-
-						if ( ! $user ) {
-							continue;
-						}
-
-						self::render_user_row( $entry, $user );
-					}
-
-					echo '</ul>';
-					echo '<button type="button" class="presence-overflow-toggle" data-action="collapse" aria-expanded="false" aria-controls="presence-overflow-list" style="display:none">';
-					echo esc_html__( 'Show less', 'presence-api' );
-					echo '</button>';
-				}
+				echo '</ul>';
+				echo '<button type="button" class="presence-overflow-toggle" data-action="collapse" aria-expanded="false" aria-controls="presence-overflow-list" style="display:none">';
+				echo esc_html__( 'Show less', 'presence-api' );
+				echo '</button>';
 			}
 		}
 

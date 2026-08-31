@@ -93,14 +93,39 @@ function wp_get_presence( $room, $timeout = WP_PRESENCE_DEFAULT_TTL ) {
  * @return int[] Unique user IDs.
  */
 function wp_presence_online_user_ids( $entries ) {
-	$online_ids = array_unique( array_map( 'intval', wp_list_pluck( $entries, 'user_id' ) ) );
+	$online_ids = array_map( 'intval', wp_list_pluck( wp_presence_with_current_user( $entries ), 'user_id' ) );
+
+	return array_values( array_unique( $online_ids ) );
+}
+
+/**
+ * Adds an entry for the current user to a set of entries when their row is absent.
+ *
+ * @access private
+ *
+ * @param array $entries Presence entries, as returned by wp_get_presence().
+ * @return array Entries with the current user included.
+ */
+function wp_presence_with_current_user( $entries ) {
 	$current_id = get_current_user_id();
 
-	if ( $current_id && ! in_array( $current_id, $online_ids, true ) ) {
-		$online_ids[] = $current_id;
+	if ( ! $current_id ) {
+		return $entries;
 	}
 
-	return array_values( $online_ids );
+	foreach ( $entries as $entry ) {
+		if ( (int) $entry->user_id === $current_id ) {
+			return $entries;
+		}
+	}
+
+	$entries[] = (object) array(
+		'user_id'  => $current_id,
+		'date_gmt' => current_time( 'mysql', true ),
+		'data'     => array(),
+	);
+
+	return $entries;
 }
 
 /**

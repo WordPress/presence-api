@@ -282,6 +282,32 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * The three surfaces that report a number have to report the same one. Each
+	 * assembles its own set, so a fix to any single one can drift from the rest.
+	 *
+	 * @covers ::wp_presence_users_views
+	 * @covers WP_Presence_Widget_Whos_Online::render
+	 */
+	public function test_every_surface_reports_the_same_number_when_your_row_is_absent() {
+		$this->put_user_on_screen( 'dashboard' );
+		$this->put_user_on_screen( 'edit' );
+
+		wp_set_current_user( self::$editor_id );
+
+		$nodes = $this->render_nodes();
+
+		ob_start();
+		WP_Presence_Widget_Whos_Online::render();
+		$widget = ob_get_clean();
+
+		$views = wp_presence_users_views( array() );
+
+		$this->assertStringContainsString( '3 online', $nodes['presence-online']->title );
+		$this->assertStringContainsString( '(3)', $views['presence_online'] );
+		$this->assertSame( 3, substr_count( $widget, 'class="presence-user-item"' ) );
+	}
+
+	/**
 	 * An admin page with no entry in the map still groups correctly, keyed on
 	 * its filename, which is what the client reports as window.pagenow.
 	 */

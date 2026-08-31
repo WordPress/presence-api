@@ -77,9 +77,12 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 
 		$response = $this->tick();
 
+		$ids = wp_list_pluck( $response['presence-online'], 'user_id' );
+
 		$this->assertArrayHasKey( 'presence-online', $response );
-		$this->assertCount( 1, $response['presence-online'] );
-		$this->assertSame( $other_id, $response['presence-online'][0]['user_id'] );
+		$this->assertCount( 2, $response['presence-online'] );
+		$this->assertContains( $other_id, $ids );
+		$this->assertContains( self::$editor_id, $ids );
 		$this->assertArrayHasKey( 'avatar_url', $response['presence-online'][0] );
 		$this->assertArrayHasKey( 'date_gmt', $response['presence-online'][0] );
 	}
@@ -264,16 +267,16 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 		// Should only send VISIBLE_ROWS + OVERFLOW_THRESHOLD entries.
 		$this->assertCount( 23, $response['presence-online'] );
 
-		// Total should reflect every user the widget would list.
-		$this->assertSame( 30, $response['presence-online-total'] );
+		// Total should reflect every user the widget would list, you included.
+		$this->assertSame( 31, $response['presence-online-total'] );
 	}
 	/**
 	 * The client derives the overflow count from the total, so the total has to
-	 * describe the set the widget renders, which never includes the viewer.
+	 * describe the set the widget renders, which counts the viewer.
 	 *
 	 * @covers WP_Presence_Widget_Whos_Online::heartbeat_received
 	 */
-	public function test_online_total_excludes_the_pinging_user() {
+	public function test_online_total_includes_the_pinging_user() {
 		wp_set_current_user( self::$editor_id );
 
 		for ( $i = 0; $i < 30; $i++ ) {
@@ -282,32 +285,32 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 
 		$response = $this->tick();
 
-		$this->assertSame( 30, $response['presence-online-total'] );
+		$this->assertSame( 31, $response['presence-online-total'] );
 	}
 
 	/**
 	 * At exactly the expandable maximum the client renders the overflow from
-	 * the payload rather than the count, so the cap has to leave room for every
-	 * other user once the viewer's own entry is gone.
+	 * the payload rather than the count, so nobody the widget would list can
+	 * fall off the cap.
 	 *
 	 * @covers WP_Presence_Widget_Whos_Online::heartbeat_received
 	 */
-	public function test_heartbeat_payload_holds_every_other_user_at_the_expandable_maximum() {
+	public function test_heartbeat_payload_holds_everyone_at_the_expandable_maximum() {
 		wp_set_current_user( self::$editor_id );
 
-		$others = WP_Presence_Widget_Whos_Online::VISIBLE_ROWS + WP_Presence_Widget_Whos_Online::get_overflow_threshold();
+		$cap = WP_Presence_Widget_Whos_Online::VISIBLE_ROWS + WP_Presence_Widget_Whos_Online::get_overflow_threshold();
 
 		// Stagger the ages. wp_get_presence() orders by date_gmt, and at a
 		// shared timestamp where the viewer lands is an unspecified tie, so the
-		// cap could exclude their entry by luck and hide the bug.
-		for ( $i = 0; $i < $others; $i++ ) {
+		// cap could drop someone by luck and hide the bug.
+		for ( $i = 0; $i < $cap - 1; $i++ ) {
 			$this->add_user_to_room( 'dashboard', $i + 1 );
 		}
 
 		$ids = wp_list_pluck( $this->tick()['presence-online'], 'user_id' );
 
-		$this->assertNotContains( self::$editor_id, $ids );
-		$this->assertCount( $others, $ids );
+		$this->assertContains( self::$editor_id, $ids );
+		$this->assertCount( $cap, $ids );
 	}
 
 	/**
@@ -421,13 +424,17 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * You are viewing the dashboard, so the list is never empty.
+	 *
 	 * @covers WP_Presence_Widget_Whos_Online::render
 	 */
-	public function test_render_reports_when_nobody_is_online() {
+	public function test_render_lists_you_when_nobody_else_is_online() {
+		wp_set_current_user( self::$editor_id );
+
 		$html = $this->render();
 
-		$this->assertStringContainsString( 'No users are online.', $html );
-		$this->assertStringNotContainsString( '<ul', $html );
+		$this->assertStringContainsString( 'data-user-id="' . self::$editor_id . '"', $html );
+		$this->assertStringNotContainsString( 'No users are online.', $html );
 	}
 
 	/**
@@ -480,7 +487,10 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 	 * @covers WP_Presence_Widget_Whos_Online::render
 	 */
 	public function test_render_hides_a_short_overflow_behind_an_expand_toggle() {
-		for ( $i = 0; $i < WP_Presence_Widget_Whos_Online::VISIBLE_ROWS + 2; $i++ ) {
+		wp_set_current_user( self::$editor_id );
+
+		// One short, because the render counts you as well.
+		for ( $i = 0; $i < WP_Presence_Widget_Whos_Online::VISIBLE_ROWS + 1; $i++ ) {
 			$this->add_user_to_room( 'dashboard', 0 );
 		}
 
@@ -499,9 +509,12 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 	 * @covers WP_Presence_Widget_Whos_Online::render
 	 */
 	public function test_render_collapses_a_long_overflow_into_a_link_to_all_users() {
+		wp_set_current_user( self::$editor_id );
+
 		$overflow = WP_Presence_Widget_Whos_Online::get_overflow_threshold() + 1;
 
-		for ( $i = 0; $i < WP_Presence_Widget_Whos_Online::VISIBLE_ROWS + $overflow; $i++ ) {
+		// One short, because the render counts you as well.
+		for ( $i = 0; $i < WP_Presence_Widget_Whos_Online::VISIBLE_ROWS + $overflow - 1; $i++ ) {
 			$this->add_user_to_room( 'dashboard', 0 );
 		}
 
