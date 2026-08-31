@@ -137,7 +137,9 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 	foreach ( $here as $entry ) {
 		$stack_ids[] = (int) $entry->user_id;
 	}
-	$stack_ids = array_slice( array_unique( $stack_ids ), 0, 10 );
+	// You, plus nine others. The cap counts you now that you are in the stack.
+	$stack_limit = 10;
+	$stack_ids   = array_slice( array_unique( $stack_ids ), 0, $stack_limit );
 
 	$stack_html = '<span class="presence-bar-avatars">';
 	$z          = count( $stack_ids );
