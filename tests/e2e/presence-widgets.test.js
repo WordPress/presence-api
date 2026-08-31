@@ -236,10 +236,6 @@ test.describe( 'Presence Widgets', () => {
 		const others = 26;
 		const visibleRows = 3;
 
-		wpCli(
-			`eval-file wp-content/plugins/presence-api/tests/e2e/whos-online-overflow-seeder.php ${ others }`
-		);
-
 		try {
 			await page.addInitScript( () => {
 				window.__presenceTicks = 0;
@@ -253,6 +249,13 @@ test.describe( 'Presence Widgets', () => {
 			} );
 
 			await admin.visitAdminPage( '/' );
+
+			// Seed after the page load tick, not before. Seeding first lets that
+			// tick carry the final state, and the forced tick then comes back
+			// `presence-online-unchanged`, which never reaches the listener.
+			wpCli(
+				`eval-file wp-content/plugins/presence-api/tests/e2e/whos-online-overflow-seeder.php ${ others }`
+			);
 
 			const summary = page.locator(
 				'#presence-whos-online-list a.presence-overflow-toggle'

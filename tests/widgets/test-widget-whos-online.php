@@ -297,8 +297,11 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 
 		$others = WP_Presence_Widget_Whos_Online::VISIBLE_ROWS + WP_Presence_Widget_Whos_Online::get_overflow_threshold();
 
+		// Stagger the ages. wp_get_presence() orders by date_gmt, and at a
+		// shared timestamp where the viewer lands is an unspecified tie, so the
+		// cap could exclude their entry by luck and hide the bug.
 		for ( $i = 0; $i < $others; $i++ ) {
-			$this->add_user_to_room( 'dashboard', 0 );
+			$this->add_user_to_room( 'dashboard', $i + 1 );
 		}
 
 		$ids = wp_list_pluck( $this->tick()['presence-online'], 'user_id' );
