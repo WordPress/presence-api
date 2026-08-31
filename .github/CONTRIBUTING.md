@@ -83,7 +83,7 @@ A new label joins an existing color. If it genuinely needs its own, check it in 
 
 ### Public surfaces
 
-A hook, REST route, WP-CLI command, guarded constant, or browser global that a site can reach is a promise: renaming it later breaks that site. `public-surface.yml` labels any pull request that adds one and comments with the ones nothing has been written about yet.
+A hook, REST route, WP-CLI command, constant, or browser global that a site can reach is a promise: renaming it later breaks that site. `public-surface.yml` labels any pull request that adds one and comments with the ones nothing has been written about yet.
 
 Written about means a docblock directly above it with a sentence saying what it is for. That is where WordPress core's code reference reads from, and it keeps the write-up next to the code instead of in a hand-kept list that drifts the first time someone forgets it. `README.md` narrates the surfaces worth a worked example; it is not the inventory.
 
