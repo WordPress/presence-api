@@ -592,13 +592,10 @@ function wp_presence_get_network_sites_for_user( $user_id ) {
 			'site__in' => $blog_ids,
 			'number'   => 0,
 			'orderby'  => 'site__in',
-			'archived' => 0,
-			'spam'     => 0,
-			'deleted'  => 0,
 		)
 	);
 
-	return is_array( $sites ) ? $sites : array();
+	return $sites;
 }
 
 /**
@@ -912,10 +909,6 @@ function wp_presence_compute_network_snapshot( $timeout ) {
 		)
 	);
 
-	if ( ! is_array( $live ) ) {
-		$live = array();
-	}
-
 	$by_site = array_intersect_key( $by_site, array_flip( array_map( 'intval', $live ) ) );
 
 	if ( ! $by_site ) {
@@ -1012,15 +1005,8 @@ function wp_presence_hydrate_network_snapshot( array $snapshot, $max_sites, $use
 		array(
 			'site__in' => array_keys( $by_site ),
 			'number'   => 0,
-			'archived' => 0,
-			'spam'     => 0,
-			'deleted'  => 0,
 		)
 	);
-
-	if ( ! is_array( $found ) ) {
-		$found = array();
-	}
 
 	foreach ( $found as $found_site ) {
 		$found_sites[ (int) $found_site->blog_id ] = $found_site;
