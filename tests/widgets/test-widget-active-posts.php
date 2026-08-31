@@ -434,6 +434,24 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 	/**
 	 * @covers WP_Presence_Widget_Active_Posts::render
 	 */
+	public function test_render_tags_rows_with_the_post_id_focus_restore_keys_on() {
+		wp_set_current_user( self::$editor_id );
+
+		$room = wp_presence_post_room( self::$post_id );
+		wp_set_presence( $room, 'lock-' . self::$editor_id, array(), self::$editor_id );
+
+		ob_start();
+		WP_Presence_Widget_Active_Posts::render();
+		$html = ob_get_clean();
+
+		// Must match the attribute active-posts.js rebuilds rows with, or the
+		// first heartbeat re-render drops focus to the container.
+		$this->assertStringContainsString( 'data-post-id="' . self::$post_id . '"', $html );
+	}
+
+	/**
+	 * @covers WP_Presence_Widget_Active_Posts::render
+	 */
 	public function test_render_counts_a_crowd_and_labels_it_idle_once_everyone_goes_quiet() {
 		global $wpdb;
 

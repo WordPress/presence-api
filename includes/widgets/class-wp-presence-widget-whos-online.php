@@ -406,18 +406,18 @@ class WP_Presence_Widget_Whos_Online {
 		return html;
 	}
 
-	function buildFullHtml(visible, overflow) {
+	function buildFullHtml(visible, overflow, overflowTotal) {
 		var html = '<ul class="presence-user-list" aria-label="' + esc(i18n.usersOnline) + '">';
 		visible.forEach(function(entry) {
 			html += '<li class="presence-user-item" data-user-id="' + entry.user_id + '">' + buildRowHtml(entry) + '</li>';
 		});
 		html += '</ul>';
 		if (overflow.length) {
-			if (overflow.length > overflowThreshold) {
+			if (overflowTotal > overflowThreshold) {
 				// Summary mode: avatar stack + count linking to Users page.
 				html += '<a href="' + esc(usersUrl) + '" class="presence-overflow-toggle">';
 				html += window.wpPresenceBuildAvatarStack(overflow, avatarMax);
-				html += '<span class="presence-overflow-text">' + esc(i18n.moreCountLink.replace('%%d', overflow.length)) + '</span></a>';
+				html += '<span class="presence-overflow-text">' + esc(i18n.moreCountLink.replace('%%d', overflowTotal)) + '</span></a>';
 			} else {
 				// Expandable list mode.
 				html += '<button type="button" class="presence-overflow-toggle" data-action="expand" aria-expanded="' + (isExpanded ? 'true' : 'false') + '" aria-controls="presence-overflow-list"';
@@ -493,13 +493,20 @@ class WP_Presence_Widget_Whos_Online {
 		var visible = entries.slice(0, maxRows);
 		var overflow = entries.slice(maxRows);
 
-		// Build a signature of user IDs + screens to detect real changes.
-		var sig = entries.map(function(e) { return e.user_id + ':' + (e.screen || ''); }).join(',');
+		// The payload is capped, so its length understates a large room. Below
+		// the threshold the cap cannot bite and the array holds all of them.
+		var total = typeof data['presence-online-total'] === 'number' ? data['presence-online-total'] : entries.length;
+		var overflowTotal = total - maxRows;
+
+		// Build a signature of user IDs + screens to detect real changes. The
+		// total leads it because the overflow count is now derived from the
+		// total, which moves while the capped entries stay identical.
+		var sig = total + '|' + entries.map(function(e) { return e.user_id + ':' + (e.screen || ''); }).join(',');
 
 		if (sig !== lastSignature) {
 			// Content changed — swap HTML instantly.
 			var focusInfo = captureFocus(container);
-			container.html(buildFullHtml(visible, overflow));
+			container.html(buildFullHtml(visible, overflow, overflowTotal));
 			restoreFocus(container, focusInfo);
 			lastSignature = sig;
 		} else {

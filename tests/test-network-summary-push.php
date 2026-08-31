@@ -285,7 +285,7 @@ class WP_Test_Network_Summary_Push extends WP_Presence_Network_UnitTestCase {
 
 		$this->assertSame( $site->domain . $site->path, $decoded['site'] );
 		$this->assertSame( array( self::$editor_id ), $decoded['online_user_ids'] );
-		$this->assertStringContainsString( "\n", $data, 'Stored pretty-printed to stay readable.' );
+		$this->assertStringNotContainsString( "\n", $data, 'Stored compact: the column is read in full on every request.' );
 	}
 
 	/**
