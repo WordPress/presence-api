@@ -105,6 +105,20 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 	/**
 	 * @covers WP_Presence_CLI_Command::set
 	 */
+	public function test_set_reports_recording_being_switched_off() {
+		add_filter( 'wp_presence_recording_enabled', '__return_false' );
+
+		$this->assert_halts_with(
+			function () {
+				$this->command->set( array( 'admin/online' ), array( 'user' => self::$user_id ) );
+			},
+			'Presence is not recorded on this site.'
+		);
+	}
+
+	/**
+	 * @covers WP_Presence_CLI_Command::set
+	 */
 	public function test_set_rejects_an_unknown_user() {
 		$unknown = self::$user_id + 1000;
 

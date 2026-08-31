@@ -41,7 +41,7 @@ Post types opt in via `add_post_type_support( 'post', 'presence' )`.
 
 ## PHP API
 
-The following six public functions are part of the stable public API contract. All other helper functions in `includes/functions.php` (such as `wp_get_active_rooms()`, `wp_get_presence_summary()`, etc.) are marked `@access private`, are intended for internal plugin use only, and may change or be removed without notice.
+The following public functions are part of the stable public API contract. All other helper functions in `includes/functions.php` and `includes/network-functions.php` (such as `wp_get_active_rooms()`, `wp_get_presence_summary()`, etc.) are marked `@access private`, are intended for internal plugin use only, and may change or be removed without notice.
 
 ```php
 // Read all presence entries in a room.
@@ -62,9 +62,21 @@ wp_can_access_presence_room( $room, $user_id = 0 );
 // Return the canonical room string for a post, or false if the post type
 // does not support presence.
 $room = wp_presence_post_room( $post );
+
+// Whether this site records presence at all.
+wp_presence_recording_enabled();
 ```
 
 Each entry object returned by `wp_get_presence()` has: `room`, `client_id`, `user_id`, `data` (array), `date_gmt`.
+
+### Network
+
+Multisite only, from `includes/network-functions.php`. Returns `false` outside multisite.
+
+```php
+// Whether this network assembles its sites' rows into the network-wide view.
+wp_presence_network_aggregation_enabled();
+```
 
 ## Extension Points
 
@@ -110,6 +122,20 @@ add_filter( 'wp_presence_current_screen_key', function( $key, $screen ) {
 ```
 
 Keys follow the plugin's slash-separated room convention and are truncated to 191 characters (`WP_PRESENCE_SCREEN_KEY_LIMIT`). Use the same key when bumping the revision from JS via `wp.presence.markScreenStale()`.
+
+#### `wp_presence_recording_enabled`
+Filters whether presence is recorded on this site. Default: `true`. Return `false` and nothing further is written; every surface empties within one TTL as the rows already stored expire, so there is nothing else to clear.
+```php
+add_filter( 'wp_presence_recording_enabled', '__return_false' );
+```
+
+On multisite, `wp_presence_network_recording_enabled` does the same for every site at once. It is consulted only once the site-level filter has allowed recording, so either switch turning off wins and neither can turn the other back on.
+
+#### `wp_presence_network_aggregation_enabled`
+Filters whether a network assembles its sites' rows into the network-wide view behind Network Admin. Default: `true` below [`wp_is_large_network()`](https://developer.wordpress.org/reference/functions/wp_is_large_network/), which answers write concentration rather than policy. Independent of recording: a network can go on recording site by site and still switch the aggregate off.
+```php
+add_filter( 'wp_presence_network_aggregation_enabled', '__return_false' );
+```
 
 ### Actions
 #### `wp_presence_screen_revision_bumped`

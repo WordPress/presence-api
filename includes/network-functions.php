@@ -72,15 +72,23 @@ function wp_presence_has_network_summary_table() {
 /**
  * Whether this network aggregates presence into the summary table.
  *
+ * The network-wide half of the controller-level switch, independent of
+ * wp_presence_recording_enabled(): a network can go on recording presence site
+ * by site and still decline to assemble the view across all of them.
+ *
  * An ms_global_tables entry pins the summary table to the global cluster on a
  * sharded network, so write concentration grows with the site count however
  * rarely any single site pushes. Defaults off above wp_is_large_network()
  * rather than having a network inherit that cost from installing the plugin.
+ * That default answers write concentration rather than policy, so a network
+ * with a view either way should set it deliberately.
  *
  * The read path checks this too, or a network that stopped aggregating would go
  * on drawing the rows it already had with nothing to say the feed had stopped.
  *
- * @access private
+ * @since 0.2.0
+ * @since 0.3.0 Promoted from an @access private helper to the public API.
+ *
  * @return bool
  */
 function wp_presence_network_aggregation_enabled() {
