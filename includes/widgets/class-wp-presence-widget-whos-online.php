@@ -277,7 +277,7 @@ class WP_Presence_Widget_Whos_Online {
 		$urls_json = wp_json_encode( $screen_urls );
 		$i18n_json = wp_json_encode(
 			array(
-				'noUsersOnline'   => __( 'No other users are online.', 'presence-api' ),
+				'noUsersOnline'   => __( 'No users are online.', 'presence-api' ),
 				'onlineNow'       => __( 'Online now', 'presence-api' ),
 				'usersOnline'     => __( 'Users currently online', 'presence-api' ),
 				'additionalUsers' => __( 'Additional online users', 'presence-api' ),
@@ -307,7 +307,6 @@ class WP_Presence_Widget_Whos_Online {
 	var screenLabels = %s;
 	var screenUrls = %s;
 	var i18n = %s;
-	var currentUserId = %d;
 	var idleThreshold = %d;
 	var overflowThreshold = %d;
 	var usersUrl = %s;
@@ -472,9 +471,7 @@ class WP_Presence_Widget_Whos_Online {
 			return;
 		}
 
-		var entries = data['presence-online'].filter(function(e) {
-			return e.user_id !== currentUserId;
-		});
+		var entries = data['presence-online'];
 		lastEntries = entries;
 
 		if (!entries.length) {
@@ -560,7 +557,6 @@ JS,
 			$labels_json,
 			$urls_json,
 			$i18n_json,
-			get_current_user_id(),
 			self::IDLE_THRESHOLD,
 			self::get_overflow_threshold(),
 			wp_json_encode( admin_url( 'users.php?presence_status=online' ) ),
@@ -626,109 +622,84 @@ JS,
 	}
 
 	/**
-	 * Drops the viewer's own entry from a room's presence list.
-	 *
-	 * The widget never lists the person reading it, so the server render and the
-	 * Heartbeat payload have to describe the same set. When they diverge the
-	 * overflow count the client derives from the total is one too high.
-	 *
-	 * @param array $entries Presence entries for the admin room.
-	 * @return array Entries for every user but the current one.
-	 */
-	private static function without_current_user( $entries ) {
-		$current_uid = get_current_user_id();
-
-		return array_values(
-			array_filter(
-				$entries,
-				function ( $e ) use ( $current_uid ) {
-					return (int) $e->user_id !== $current_uid;
-				}
-			)
-		);
-	}
-
-	/**
 	 * Renders the dashboard widget.
 	 */
 	public static function render() {
-		$entries = self::without_current_user( wp_get_presence( wp_presence_admin_room() ) );
+		// Lists everyone present, you included, so the rows and the count agree
+		// with the admin bar and the users list. You are always one of them.
+		$entries = array_values( wp_presence_with_current_user( wp_get_presence( wp_presence_admin_room() ) ) );
 
 		echo '<div id="presence-whos-online-list" aria-live="polite" tabindex="-1">';
 
-		if ( empty( $entries ) ) {
-			echo '<p>' . esc_html__( 'No other users are online.', 'presence-api' ) . '</p>';
-		} else {
-			cache_users( wp_list_pluck( $entries, 'user_id' ) );
+		cache_users( wp_list_pluck( $entries, 'user_id' ) );
 
-			$visible  = array_slice( $entries, 0, self::VISIBLE_ROWS );
-			$overflow = array_slice( $entries, self::VISIBLE_ROWS );
+		$visible  = array_slice( $entries, 0, self::VISIBLE_ROWS );
+		$overflow = array_slice( $entries, self::VISIBLE_ROWS );
 
-			echo '<ul class="presence-user-list" aria-label="' . esc_attr__( 'Users currently online', 'presence-api' ) . '">';
+		echo '<ul class="presence-user-list" aria-label="' . esc_attr__( 'Users currently online', 'presence-api' ) . '">';
 
-			foreach ( $visible as $entry ) {
-				$user = get_userdata( $entry->user_id );
+		foreach ( $visible as $entry ) {
+			$user = get_userdata( $entry->user_id );
 
-				if ( ! $user ) {
+			if ( ! $user ) {
+				continue;
+			}
+
+			self::render_user_row( $entry, $user );
+		}
+
+		echo '</ul>';
+
+		if ( ! empty( $overflow ) ) {
+			$stack_max   = min( count( $overflow ), self::AVATAR_STACK_MAX );
+			$stack_users = array();
+
+			foreach ( array_slice( $overflow, 0, $stack_max ) as $oentry ) {
+				$ouser = get_userdata( $oentry->user_id );
+
+				if ( ! $ouser ) {
 					continue;
 				}
 
-				self::render_user_row( $entry, $user );
+				$stack_users[] = array(
+					'display_name' => $ouser->display_name,
+					'avatar_url'   => get_avatar_url( $ouser->ID, array( 'size' => 24 ) ),
+				);
 			}
 
-			echo '</ul>';
+			if ( count( $overflow ) > self::get_overflow_threshold() ) {
+				// Summary mode: avatar stack + count linking to Users page.
+				echo '<a href="' . esc_url( admin_url( 'users.php?presence_status=online' ) ) . '" class="presence-overflow-toggle">';
+				echo wp_kses_post( wp_presence_render_avatar_stack( $stack_users, self::AVATAR_STACK_MAX ) );
+				echo '<span class="presence-overflow-text">';
+				/* translators: %d: Number of additional online users. */
+				echo esc_html( sprintf( __( '+%d more — view all users', 'presence-api' ), count( $overflow ) ) );
+				echo '</span></a>';
+			} else {
+				// Expandable list mode.
+				echo '<button type="button" class="presence-overflow-toggle" data-action="expand" aria-expanded="false" aria-controls="presence-overflow-list">';
+				echo wp_kses_post( wp_presence_render_avatar_stack( $stack_users, self::AVATAR_STACK_MAX ) );
+				echo '<span class="presence-overflow-text">';
+				/* translators: %d: Number of additional online users. */
+				echo esc_html( sprintf( __( '+%d more', 'presence-api' ), count( $overflow ) ) );
+				echo '</span></button>';
 
-			if ( ! empty( $overflow ) ) {
-				$stack_max   = min( count( $overflow ), self::AVATAR_STACK_MAX );
-				$stack_users = array();
+				echo '<ul id="presence-overflow-list" class="presence-overflow-expanded" aria-label="' . esc_attr__( 'Additional online users', 'presence-api' ) . '" style="display:none">';
 
-				foreach ( array_slice( $overflow, 0, $stack_max ) as $oentry ) {
-					$ouser = get_userdata( $oentry->user_id );
+				foreach ( $overflow as $entry ) {
+					$user = get_userdata( $entry->user_id );
 
-					if ( ! $ouser ) {
+					if ( ! $user ) {
 						continue;
 					}
 
-					$stack_users[] = array(
-						'display_name' => $ouser->display_name,
-						'avatar_url'   => get_avatar_url( $ouser->ID, array( 'size' => 24 ) ),
-					);
+					self::render_user_row( $entry, $user );
 				}
 
-				if ( count( $overflow ) > self::get_overflow_threshold() ) {
-					// Summary mode: avatar stack + count linking to Users page.
-					echo '<a href="' . esc_url( admin_url( 'users.php?presence_status=online' ) ) . '" class="presence-overflow-toggle">';
-					echo wp_kses_post( wp_presence_render_avatar_stack( $stack_users, self::AVATAR_STACK_MAX ) );
-					echo '<span class="presence-overflow-text">';
-					/* translators: %d: Number of additional online users. */
-					echo esc_html( sprintf( __( '+%d more — view all users', 'presence-api' ), count( $overflow ) ) );
-					echo '</span></a>';
-				} else {
-					// Expandable list mode.
-					echo '<button type="button" class="presence-overflow-toggle" data-action="expand" aria-expanded="false" aria-controls="presence-overflow-list">';
-					echo wp_kses_post( wp_presence_render_avatar_stack( $stack_users, self::AVATAR_STACK_MAX ) );
-					echo '<span class="presence-overflow-text">';
-					/* translators: %d: Number of additional online users. */
-					echo esc_html( sprintf( __( '+%d more', 'presence-api' ), count( $overflow ) ) );
-					echo '</span></button>';
-
-					echo '<ul id="presence-overflow-list" class="presence-overflow-expanded" aria-label="' . esc_attr__( 'Additional online users', 'presence-api' ) . '" style="display:none">';
-
-					foreach ( $overflow as $entry ) {
-						$user = get_userdata( $entry->user_id );
-
-						if ( ! $user ) {
-							continue;
-						}
-
-						self::render_user_row( $entry, $user );
-					}
-
-					echo '</ul>';
-					echo '<button type="button" class="presence-overflow-toggle" data-action="collapse" aria-expanded="false" aria-controls="presence-overflow-list" style="display:none">';
-					echo esc_html__( 'Show less', 'presence-api' );
-					echo '</button>';
-				}
+				echo '</ul>';
+				echo '<button type="button" class="presence-overflow-toggle" data-action="collapse" aria-expanded="false" aria-controls="presence-overflow-list" style="display:none">';
+				echo esc_html__( 'Show less', 'presence-api' );
+				echo '</button>';
 			}
 		}
 
@@ -772,14 +743,12 @@ JS,
 			return $response;
 		}
 
-		$others = self::without_current_user( $entries );
-
 		// Cap to visible rows plus overflow threshold (expandable list max).
 		$cap                               = self::VISIBLE_ROWS + self::get_overflow_threshold();
 		$response['presence-online']       = self::build_online_entries(
-			array_slice( $others, 0, $cap )
+			array_slice( $entries, 0, $cap )
 		);
-		$response['presence-online-total'] = count( $others );
+		$response['presence-online-total'] = count( $entries );
 		$response['presence-online-hash']  = $hash;
 
 		return $response;

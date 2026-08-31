@@ -82,6 +82,54 @@ function wp_get_presence( $room, $timeout = WP_PRESENCE_DEFAULT_TTL ) {
 }
 
 /**
+ * Returns the user IDs present in a set of entries, the current user included.
+ *
+ * The current user's own row is absent on screens that never ping and once it
+ * ages past the TTL, so it is added by identity rather than by adding one,
+ * which would double-count whenever the row is there.
+ *
+ * @access private
+ *
+ * @param array $entries Presence entries, as returned by wp_get_presence().
+ * @return int[] Unique user IDs.
+ */
+function wp_presence_online_user_ids( $entries ) {
+	$online_ids = array_map( 'intval', wp_list_pluck( wp_presence_with_current_user( $entries ), 'user_id' ) );
+
+	return array_values( array_unique( $online_ids ) );
+}
+
+/**
+ * Adds an entry for the current user to a set of entries when their row is absent.
+ *
+ * @access private
+ *
+ * @param array $entries Presence entries, as returned by wp_get_presence().
+ * @return array Entries with the current user included.
+ */
+function wp_presence_with_current_user( $entries ) {
+	$current_id = get_current_user_id();
+
+	if ( ! $current_id ) {
+		return $entries;
+	}
+
+	foreach ( $entries as $entry ) {
+		if ( (int) $entry->user_id === $current_id ) {
+			return $entries;
+		}
+	}
+
+	$entries[] = (object) array(
+		'user_id'  => $current_id,
+		'date_gmt' => current_time( 'mysql', true ),
+		'data'     => array(),
+	);
+
+	return $entries;
+}
+
+/**
  * Whether presence is recorded on this site.
  *
  * The controller-level switch, checked at the single write path. Nothing new is

@@ -113,6 +113,24 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Backdates a user's entry so it falls outside the TTL window.
+	 *
+	 * @param int $user_id     The user whose entry to backdate.
+	 * @param int $seconds_ago How far in the past to date the entry.
+	 */
+	private function age_entry( $user_id, $seconds_ago ) {
+		global $wpdb;
+
+		$wpdb->update(
+			$wpdb->presence,
+			array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - $seconds_ago ) ),
+			array( 'client_id' => 'user-' . $user_id ),
+			array( '%s' ),
+			array( '%s' )
+		);
+	}
+
+	/**
 	 * The menu labels each online user with the post they are editing. A
 	 * contributor has `edit_posts`, which is all the node itself requires, but
 	 * must not learn the title of a draft they cannot edit.
@@ -180,8 +198,8 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * The indicator counts other people, so on your own it says nothing rather
-	 * than reporting a room of one.
+	 * The count includes you, but the node still hides on your own rather than
+	 * reporting a room of one.
 	 */
 	public function test_no_indicator_when_you_are_the_only_one_online() {
 		wp_set_current_user( self::$editor_id );
@@ -222,8 +240,71 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$this->assertArrayHasKey( 'presence-group-here', $nodes );
 		$this->assertArrayHasKey( 'presence-group-elsewhere', $nodes );
 		$this->assertArrayHasKey( 'presence-user-' . $here->ID, $nodes );
-		// The avatar stack is built from the people on this page only.
+		// The avatar stack is built from the people on this page, you included.
 		$this->assertStringContainsString( 'alt="' . esc_attr( $here->display_name ) . '"', $nodes['presence-online']->title );
+		$this->assertStringContainsString(
+			'alt="' . esc_attr( get_userdata( self::$editor_id )->display_name ) . '"',
+			$nodes['presence-online']->title
+		);
+	}
+
+	/**
+	 * The count agrees with the users list and the network Sites column, all of
+	 * which count everyone present rather than everyone but you.
+	 */
+	public function test_the_count_includes_you() {
+		$this->put_user_on_screen( 'dashboard' );
+		$this->put_user_on_screen( 'edit' );
+
+		wp_set_current_user( self::$editor_id );
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'dashboard' ), self::$editor_id );
+
+		$nodes = $this->render_nodes();
+
+		$this->assertStringContainsString( '3 online', $nodes['presence-online']->title );
+		$this->assertSame( '3 users online', $nodes['presence-online']->meta['aria-label'] );
+	}
+
+	/**
+	 * Your own row ages past the TTL while you are still on the screen, so the
+	 * count has to add you back by identity.
+	 */
+	public function test_the_count_includes_you_when_your_own_row_has_expired() {
+		$this->put_user_on_screen( 'dashboard' );
+
+		wp_set_current_user( self::$editor_id );
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'dashboard' ), self::$editor_id );
+		$this->age_entry( self::$editor_id, WP_PRESENCE_DEFAULT_TTL + 1 );
+
+		$nodes = $this->render_nodes();
+
+		$this->assertStringContainsString( '2 online', $nodes['presence-online']->title );
+	}
+
+	/**
+	 * The three surfaces that report a number have to report the same one. Each
+	 * assembles its own set, so a fix to any single one can drift from the rest.
+	 *
+	 * @covers ::wp_presence_users_views
+	 * @covers WP_Presence_Widget_Whos_Online::render
+	 */
+	public function test_every_surface_reports_the_same_number_when_your_row_is_absent() {
+		$this->put_user_on_screen( 'dashboard' );
+		$this->put_user_on_screen( 'edit' );
+
+		wp_set_current_user( self::$editor_id );
+
+		$nodes = $this->render_nodes();
+
+		ob_start();
+		WP_Presence_Widget_Whos_Online::render();
+		$widget = ob_get_clean();
+
+		$views = wp_presence_users_views( array() );
+
+		$this->assertStringContainsString( '3 online', $nodes['presence-online']->title );
+		$this->assertStringContainsString( '(3)', $views['presence_online'] );
+		$this->assertSame( 3, substr_count( $widget, 'class="presence-user-item"' ) );
 	}
 
 	/**

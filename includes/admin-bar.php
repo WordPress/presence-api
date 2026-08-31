@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Adds a presence indicator to the admin bar showing other online users.
+ * Adds a presence indicator to the admin bar showing online users.
  *
  * @param WP_Admin_Bar $wp_admin_bar The admin bar instance.
  */
@@ -22,7 +22,8 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 	$entries     = wp_get_presence( wp_presence_admin_room() );
 	$current_uid = get_current_user_id();
 
-	// Only show the admin bar node when other users are online.
+	// The count includes you, the gate does not. A lone user gets no node,
+	// but once anyone else is here the number matches every other surface.
 	$others = array_filter(
 		$entries,
 		function ( $e ) use ( $current_uid ) {
@@ -129,19 +130,20 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 		}
 	}
 
-	// "Here" count includes you.
-	$here_count      = count( $here ) + 1; // +1 for current user.
-	$elsewhere_count = count( $elsewhere );
+	// You first, then others on this page. Mirrors the flyout's "On this page".
+	$stack_ids = array( $current_uid );
+	foreach ( $here as $entry ) {
+		$stack_ids[] = (int) $entry->user_id;
+	}
+	// You, plus nine others. The cap counts you now that you are in the stack.
+	$stack_limit = 10;
+	$stack_ids   = array_slice( array_unique( $stack_ids ), 0, $stack_limit );
 
-	// Build avatar stack from users on this page only (not current user), capped at 10.
-	$stack_html   = '<span class="presence-bar-avatars">';
-	$current_user = get_userdata( $current_uid );
-	$stack_limit  = 10;
-	$stack_show   = array_slice( $here, 0, $stack_limit );
-	$z            = count( $stack_show );
+	$stack_html = '<span class="presence-bar-avatars">';
+	$z          = count( $stack_ids );
 
-	foreach ( $stack_show as $entry ) {
-		$user = get_userdata( $entry->user_id );
+	foreach ( $stack_ids as $stack_uid ) {
+		$user = get_userdata( $stack_uid );
 		if ( ! $user ) {
 			continue;
 		}
@@ -151,10 +153,10 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 
 	$stack_html .= '</span>';
 
-	$others_count = count( $others );
+	$online_count = count( wp_presence_online_user_ids( $entries ) );
 
-	/* translators: %d: Number of other online users (excluding current user). */
-	$label = sprintf( _n( '%d online', '%d online', $others_count, 'presence-api' ), $others_count );
+	/* translators: %d: Number of online users, including the current user. */
+	$label = sprintf( _n( '%d online', '%d online', $online_count, 'presence-api' ), $online_count );
 
 	$wp_admin_bar->add_node(
 		array(
@@ -165,9 +167,9 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 				'class'      => 'presence-bar-node menupop',
 				'tabindex'   => 0,
 				'aria-label' => sprintf(
-				/* translators: %d: Number of other users currently online. */
-					_n( '%d other user online', '%d other users online', $others_count, 'presence-api' ),
-					$others_count
+				/* translators: %d: Number of users currently online. */
+					_n( '%d user online', '%d users online', $online_count, 'presence-api' ),
+					$online_count
 				),
 			),
 		)
@@ -189,6 +191,8 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 	);
 
 	// Current user first.
+	$current_user = get_userdata( $current_uid );
+
 	$wp_admin_bar->add_node(
 		array(
 			'parent' => 'presence-online',

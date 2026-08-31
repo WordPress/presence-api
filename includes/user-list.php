@@ -23,15 +23,8 @@ function wp_presence_users_views( $views ) {
 		return $views;
 	}
 
-	$entries         = wp_get_presence( wp_presence_admin_room() );
-	$online_ids      = array_map( 'intval', array_unique( wp_list_pluck( $entries, 'user_id' ) ) );
-	$current_user_id = get_current_user_id();
-
-	if ( $current_user_id && ! in_array( $current_user_id, $online_ids, true ) ) {
-		$online_ids[] = $current_user_id;
-	}
-
-	$online_count = count( $online_ids );
+	$entries      = wp_get_presence( wp_presence_admin_room() );
+	$online_count = count( wp_presence_online_user_ids( $entries ) );
 	$is_current   = isset( $_GET['presence_status'] ) && 'online' === $_GET['presence_status']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 	$class = $is_current ? 'current' : '';
@@ -76,13 +69,7 @@ function wp_presence_filter_online_users( $query ) {
 		return;
 	}
 
-	$entries         = wp_get_presence( wp_presence_admin_room() );
-	$online_ids      = array_map( 'intval', array_unique( wp_list_pluck( $entries, 'user_id' ) ) );
-	$current_user_id = get_current_user_id();
+	$entries = wp_get_presence( wp_presence_admin_room() );
 
-	if ( $current_user_id && ! in_array( $current_user_id, $online_ids, true ) ) {
-		$online_ids[] = $current_user_id;
-	}
-
-	$query->set( 'include', array_map( 'intval', $online_ids ) );
+	$query->set( 'include', wp_presence_online_user_ids( $entries ) );
 }
