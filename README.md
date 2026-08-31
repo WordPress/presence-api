@@ -124,12 +124,14 @@ add_filter( 'wp_presence_current_screen_key', function( $key, $screen ) {
 Keys follow the plugin's slash-separated room convention and are truncated to 191 characters (`WP_PRESENCE_SCREEN_KEY_LIMIT`). Use the same key when bumping the revision from JS via `wp.presence.markScreenStale()`.
 
 #### `wp_presence_recording_enabled`
-Filters whether presence is recorded on this site. Default: `true`. Return `false` and nothing further is written; every surface empties within one TTL as the rows already stored expire, so there is nothing else to clear.
+Filters whether presence is recorded on this site. Default: the **Presence** checkbox on Settings > General, which is on for a new install. Return `false` and nothing further is written; every surface empties within one TTL as the rows already stored expire, so there is nothing else to clear.
 ```php
 add_filter( 'wp_presence_recording_enabled', '__return_false' );
 ```
 
-On multisite, `wp_presence_network_recording_enabled` does the same for every site at once. It is consulted only once the site-level filter has allowed recording, so either switch turning off wins and neither can turn the other back on.
+Because the checkbox is only the filter's default, a filter always has the last word over whatever an administrator has chosen.
+
+On multisite, `wp_presence_network_recording_enabled` does the same for every site at once, defaulting to the **Presence** checkbox on Network Admin > Settings. It is consulted only once the site-level filter has allowed recording, so either switch turning off wins and neither can turn the other back on.
 
 #### `wp_presence_network_aggregation_enabled`
 Filters whether a network assembles its sites' rows into the network-wide view behind Network Admin. Default: `true` below [`wp_is_large_network()`](https://developer.wordpress.org/reference/functions/wp_is_large_network/), which answers write concentration rather than policy. Independent of recording: a network can go on recording site by site and still switch the aggregate off.
@@ -176,6 +178,13 @@ wp presence summary   # Summary grouped by room
 wp presence set       # Manually upsert an entry
 wp presence cleanup   # Delete expired entries immediately
 wp presence network   # Network-wide summary (multisite only)
+wp presence recording # Read or set the recording switch
+```
+
+```
+wp presence recording get
+wp presence recording set off
+wp presence recording set off --network   # Multisite only
 ```
 
 ## Post-lock bridge

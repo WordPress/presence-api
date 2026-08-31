@@ -169,4 +169,19 @@ class WP_Test_Presence_CLI_Network_Command extends WP_Presence_Network_UnitTestC
 
 		$this->assertSame( array(), WP_CLI::messages( 'error' ) );
 	}
+
+	/**
+	 * The network switch writes a site option, so a site that allows recording
+	 * still stops. Strictest wins, as with the filters.
+	 *
+	 * @covers WP_Presence_CLI_Command::recording
+	 */
+	public function test_recording_set_network_stops_a_site_that_allows_recording() {
+		update_option( 'wp_presence_recording', '1' );
+
+		$this->command->recording( array( 'set', 'off' ), array( 'network' => true ) );
+
+		$this->assertFalse( (bool) get_site_option( 'wp_presence_network_recording' ) );
+		$this->assertFalse( wp_presence_recording_enabled() );
+	}
 }
