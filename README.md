@@ -39,6 +39,12 @@ Then open [localhost:8888/wp-admin/](http://localhost:8888/wp-admin/) (admin / p
 
 Post types opt in via `add_post_type_support( 'post', 'presence' )`.
 
+### Client IDs
+
+Rooms carry no producer namespace of their own — this plugin's own writers are told apart from anyone else's entries in the same room by a `client_id` prefix instead. `user-{user_id}` (admin/online room, from `includes/heartbeat.php` and `includes/lifecycle.php`) and `editor-{user_id}` (post rooms, from `includes/heartbeat.php` and `includes/post-lock-bridge.php`) are reserved this way; a row using either belongs to this plugin and has the state shape its writer expects.
+
+Anything else sharing a room — another plugin relaying awareness from an external source, a REST client, a WP-CLI entry — must prefix its own `client_id` (e.g. `sync-{id}`) so it can't collide with those rows or be mistaken for one.
+
 ## PHP API
 
 The following public functions are part of the stable public API contract. All other helper functions in `includes/functions.php` and `includes/network-functions.php` (such as `wp_get_active_rooms()`, `wp_get_presence_summary()`, etc.) are marked `@access private`, are intended for internal plugin use only, and may change or be removed without notice.
@@ -67,7 +73,15 @@ $room = wp_presence_post_room( $post );
 wp_presence_recording_enabled();
 ```
 
-Each entry object returned by `wp_get_presence()` has: `room`, `client_id`, `user_id`, `data` (array), `date_gmt`.
+Each entry object returned by `wp_get_presence()` has:
+
+| Field       | Type     | Notes                                                                                                                      |
+| ----------- | -------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `room`      | `string` | The room the entry belongs to.                                                                                              |
+| `client_id` | `string` | A `varchar` column — opaque, and not guaranteed numeric even when it looks like one. See [Client IDs](#client-ids).         |
+| `user_id`   | `int`    | `0` for an entry with no signed-in user.                                                                                    |
+| `data`      | `array`  | Decoded from the stored JSON; an empty array if that JSON failed to decode.                                                 |
+| `date_gmt`  | `string` | A MySQL `datetime` string in UTC (e.g. `2024-01-01 12:00:00`), not a Unix timestamp. Convert with `strtotime( $entry->date_gmt . ' UTC' )`. |
 
 ### Network
 
