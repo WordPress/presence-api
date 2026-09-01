@@ -148,6 +148,22 @@ add_action( 'wp_presence_screen_revision_bumped', function( $screen_key, $revisi
 }, 10, 3 );
 ```
 
+#### `wp_presence_collaboration_started`
+Fires when collaboration starts in a room (transition from 1 to 2+ editors). Debounced via transient with TTL equal to the presence TTL, preventing duplicate fires during connection churn.
+```php
+add_action( 'wp_presence_collaboration_started', function( $room, $entries ) {
+    // Announce room active or update integration state
+}, 10, 2 );
+```
+
+#### `wp_presence_collaboration_ended`
+Fires when collaboration ends in a room (transition from 2+ to 1 editor). Debounced via transient with TTL equal to the presence TTL, preventing duplicate fires during disconnection churn.
+```php
+add_action( 'wp_presence_collaboration_ended', function( $room, $entries ) {
+    // Announce room inactive or update integration state
+}, 10, 2 );
+```
+
 ## REST API
 
 All endpoints require `edit_posts`. Responses include `Cache-Control: no-store`.
