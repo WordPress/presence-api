@@ -127,6 +127,11 @@ class WP_Presence_Network_Widget_Whos_Online {
 	 * @param array $summary Return value of self::get_summary().
 	 */
 	private static function render_summary( $summary ) {
+		if ( ! $summary['aggregating'] ) {
+			echo '<p>' . esc_html__( 'Presence is not aggregated across this network, so who is online cannot be shown.', 'presence-api' ) . '</p>';
+			return;
+		}
+
 		if ( empty( $summary['sites'] ) ) {
 			echo '<p>' . esc_html__( 'No users are currently online anywhere on the network.', 'presence-api' ) . '</p>';
 			return;
@@ -195,9 +200,10 @@ class WP_Presence_Network_Widget_Whos_Online {
 			return $response;
 		}
 
-		$response['presence-network-widget']          = $summary['sites'];
-		$response['presence-network-widget-overflow'] = $overflow;
-		$response['presence-network-widget-hash']     = $hash;
+		$response['presence-network-widget']             = $summary['sites'];
+		$response['presence-network-widget-overflow']    = $overflow;
+		$response['presence-network-widget-aggregating'] = $summary['aggregating'];
+		$response['presence-network-widget-hash']        = $hash;
 
 		return $response;
 	}
@@ -214,12 +220,16 @@ class WP_Presence_Network_Widget_Whos_Online {
 	 * The read path already returns sites busiest-first and users by name, so
 	 * there is nothing left to normalize here.
 	 *
+	 * The aggregation flag is in the payload because a network that stops
+	 * aggregating sends the same empty list as a quiet one, and the widget has
+	 * to repaint to start saying so.
+	 *
 	 * @param array $summary  Return value of self::get_summary().
 	 * @param int   $overflow Sites online beyond the ones being sent.
 	 * @return string The state hash.
 	 */
 	private static function hash_summary( $summary, $overflow ) {
-		return md5( (string) wp_json_encode( array( $summary['sites'], $overflow ) ) );
+		return md5( (string) wp_json_encode( array( $summary['sites'], $overflow, $summary['aggregating'] ) ) );
 	}
 
 	/**
@@ -231,6 +241,7 @@ class WP_Presence_Network_Widget_Whos_Online {
 		$i18n_json = wp_json_encode(
 			array(
 				'noUsersOnline' => __( 'No users are currently online anywhere on the network.', 'presence-api' ),
+				'notAggregated' => __( 'Presence is not aggregated across this network, so who is online cannot be shown.', 'presence-api' ),
 				'sitesOnline'   => __( 'Sites with online users', 'presence-api' ),
 				/* translators: %d: Number of additional sites with online users. */
 				'moreSite'      => __( '+%d more site — view all', 'presence-api' ),
@@ -294,7 +305,11 @@ class WP_Presence_Network_Widget_Whos_Online {
 
 	// Already cut to the sites and avatars this widget shows, so nothing is
 	// sliced here; overflow is a count the server sends, not what is left over.
-	function buildListHtml(sites, overflow) {
+	function buildListHtml(sites, overflow, aggregating) {
+		if (!aggregating) {
+			return '<p>' + esc(i18n.notAggregated) + '</p>';
+		}
+
 		if (!sites.length) {
 			return '<p>' + esc(i18n.noUsersOnline) + '</p>';
 		}
@@ -342,15 +357,16 @@ class WP_Presence_Network_Widget_Whos_Online {
 
 		var sites = data['presence-network-widget'];
 		var overflow = data['presence-network-widget-overflow'] || 0;
+		var aggregating = data['presence-network-widget-aggregating'] !== false;
 
 		// Signature over what gets drawn, matching the server-side hash: a
 		// rename or a new avatar has to repaint, and the order is already the
 		// order it renders in.
-		var sig = JSON.stringify([sites, overflow]);
+		var sig = JSON.stringify([sites, overflow, aggregating]);
 
 		if (sig !== lastSignature) {
 			var focusInfo = captureFocus(container);
-			container.html(buildListHtml(sites, overflow));
+			container.html(buildListHtml(sites, overflow, aggregating));
 			restoreFocus(container, focusInfo);
 			lastSignature = sig;
 		}
