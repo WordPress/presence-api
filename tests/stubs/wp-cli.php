@@ -41,6 +41,10 @@ namespace {
 			self::record( 'log', $message );
 		}
 
+		public static function warning( $message ) {
+			self::record( 'warning', $message );
+		}
+
 		/**
 		 * @throws WP_Presence_CLI_Halt Standing in for the process exit, when $confirm_declines is set.
 		 */

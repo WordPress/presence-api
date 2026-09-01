@@ -47,7 +47,46 @@ class WP_Test_Network_Presence_REST_Controller extends WP_Presence_Network_UnitT
 		$this->assertArrayHasKey( 'avatar_url', $data[0]['users'][0] );
 		$this->assertSame( 2, $headers['X-WP-Total'] );
 		$this->assertSame( 3, $headers['X-WP-Presence-Users-Online'] );
+		$this->assertSame( '1', $headers['X-WP-Presence-Aggregating'] );
 		$this->assertSame( 'no-store', $headers['Cache-Control'] );
+	}
+
+	/**
+	 * An empty collection is two answers with the same body and the same 200,
+	 * so a client polling this route has only the header to tell them apart.
+	 */
+	public function test_the_collection_reports_that_the_network_does_not_aggregate() {
+		$this->become_network_admin();
+
+		$this->set_network_summary_row( $this->create_blog(), array( self::$editor_id ) );
+
+		add_filter( 'wp_presence_network_aggregation_enabled', '__return_false' );
+		wp_presence_flush_network_summary_cache();
+
+		$response = $this->get( '/wp-presence/v1/presence/network' );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( array(), $response->get_data() );
+		$this->assertSame( '0', $response->get_headers()['X-WP-Presence-Aggregating'] );
+	}
+
+	/**
+	 * The single-site route answers with an empty user list either way, so it
+	 * needs the same header as the collection.
+	 */
+	public function test_a_single_site_reports_that_the_network_does_not_aggregate() {
+		$this->become_network_admin();
+
+		$blog_id = $this->create_blog();
+		$this->set_network_summary_row( $blog_id, array( self::$editor_id ) );
+
+		add_filter( 'wp_presence_network_aggregation_enabled', '__return_false' );
+		wp_presence_flush_network_summary_cache();
+
+		$response = $this->get( '/wp-presence/v1/presence/network/' . $blog_id );
+
+		$this->assertSame( array(), $response->get_data()['users'] );
+		$this->assertSame( '0', $response->get_headers()['X-WP-Presence-Aggregating'] );
 	}
 
 	public function test_the_collection_paginates_over_sites() {
