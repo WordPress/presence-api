@@ -917,4 +917,114 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 		$this->assertFalse( wp_presence_recording_enabled() );
 	}
+
+	/**
+	 * Reads the stored timestamp for a row, as the raw string the column holds.
+	 */
+	private function stored_date_gmt( $room, $client_id ) {
+		global $wpdb;
+
+		return $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT date_gmt FROM {$wpdb->presence} WHERE room = %s AND client_id = %s",
+				$room,
+				$client_id
+			)
+		);
+	}
+
+	/**
+	 * Backdates a row so the refresh window can be crossed without waiting.
+	 */
+	private function backdate( $room, $client_id, $seconds ) {
+		global $wpdb;
+
+		$wpdb->update(
+			$wpdb->presence,
+			array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - $seconds ) ),
+			array(
+				'room'      => $room,
+				'client_id' => $client_id,
+			),
+			array( '%s' ),
+			array( '%s', '%s' )
+		);
+	}
+
+	/**
+	 * @covers ::wp_set_presence
+	 */
+	public function test_unchanged_state_within_the_refresh_window_skips_the_write() {
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+		$this->backdate( 'test/room', 'client-1', 5 );
+
+		$before = $this->stored_date_gmt( 'test/room', 'client-1' );
+		$result = wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+
+		$this->assertTrue( $result, 'Presence is still recorded, so a skipped write reports success.' );
+		$this->assertSame(
+			$before,
+			$this->stored_date_gmt( 'test/room', 'client-1' ),
+			'An unchanged state inside the refresh window must not touch the row.'
+		);
+	}
+
+	/**
+	 * @covers ::wp_set_presence
+	 */
+	public function test_unchanged_state_past_the_refresh_window_writes() {
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+		$this->backdate( 'test/room', 'client-1', WP_PRESENCE_DEFAULT_TTL - 5 );
+
+		$before = $this->stored_date_gmt( 'test/room', 'client-1' );
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+
+		$this->assertNotSame(
+			$before,
+			$this->stored_date_gmt( 'test/room', 'client-1' ),
+			'A row close to the cutoff must be refreshed even when the state is identical.'
+		);
+	}
+
+	/**
+	 * @covers ::wp_set_presence
+	 */
+	public function test_changed_state_writes_inside_the_refresh_window() {
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+		$this->backdate( 'test/room', 'client-1', 5 );
+
+		$before = $this->stored_date_gmt( 'test/room', 'client-1' );
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'idle' ), self::$editor_id );
+
+		$this->assertNotSame(
+			$before,
+			$this->stored_date_gmt( 'test/room', 'client-1' ),
+			'A state change is the thing the guard must never swallow.'
+		);
+
+		$entries = wp_get_presence( 'test/room' );
+		$this->assertSame( 'idle', $entries[0]->data['action'] );
+	}
+
+	/**
+	 * @covers ::wp_set_presence
+	 */
+	public function test_skipped_write_does_not_announce_an_admin_room_change() {
+		$room = wp_presence_admin_room();
+
+		wp_set_presence( $room, 'user-' . self::$editor_id, array( 'screen' => 'dashboard' ), self::$editor_id );
+		$this->backdate( $room, 'user-' . self::$editor_id, 5 );
+
+		$fired = 0;
+		add_action(
+			'wp_presence_admin_room_changed',
+			static function () use ( &$fired ) {
+				++$fired;
+			}
+		);
+
+		wp_set_presence( $room, 'user-' . self::$editor_id, array( 'screen' => 'dashboard' ), self::$editor_id );
+
+		$this->assertSame( 0, $fired, 'Nobody arrived or left, so no surface needs to re-render.' );
+	}
 }

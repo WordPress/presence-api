@@ -350,4 +350,25 @@ class WP_Test_Network_Summary_Push extends WP_Presence_Network_UnitTestCase {
 
 		$this->assertArrayNotHasKey( $blog_id, $snapshot['sites'], 'A deleted site must not appear in the network snapshot.' );
 	}
+
+	/**
+	 * With aggregation switched off there is no summary row to keep alive, so
+	 * the redundant-write guard is free to skip admin-room writes as usual.
+	 *
+	 * @covers ::wp_presence_network_summary_push_is_due
+	 */
+	public function test_push_is_not_due_when_aggregation_is_off() {
+		add_filter( 'wp_presence_network_aggregation_enabled', '__return_false' );
+
+		$this->assertFalse( wp_presence_network_summary_push_is_due() );
+	}
+
+	/**
+	 * @covers ::wp_presence_network_summary_push_is_due
+	 */
+	public function test_push_is_due_when_the_row_has_never_been_pushed() {
+		delete_option( 'wp_presence_network_pushed' );
+
+		$this->assertTrue( wp_presence_network_summary_push_is_due() );
+	}
 }
