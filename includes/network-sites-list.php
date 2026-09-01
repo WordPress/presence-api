@@ -45,6 +45,32 @@ function wp_presence_enqueue_network_sites_assets( $hook_suffix ) {
 }
 
 /**
+ * Warns above the Sites list when the network does not aggregate presence.
+ *
+ * The column reads the same em dash either way, so the reason is said once
+ * above the table rather than repeated down every row of it.
+ */
+function wp_presence_network_sites_aggregation_notice() {
+	$screen = get_current_screen();
+
+	if ( ! $screen || 'sites-network' !== $screen->id ) {
+		return;
+	}
+
+	if ( ! current_user_can( wp_presence_network_capability() ) ) {
+		return;
+	}
+
+	if ( wp_presence_network_aggregation_enabled() ) {
+		return;
+	}
+
+	echo '<div class="notice notice-warning"><p>';
+	echo esc_html__( 'Presence is not aggregated across this network, so the Online column has no data.', 'presence-api' );
+	echo '</p></div>';
+}
+
+/**
  * Renders the "Online" column for a single row of the Sites list table.
  *
  * Rendered once per page load, the same as every other column on this table
