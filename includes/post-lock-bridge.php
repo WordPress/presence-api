@@ -4,10 +4,10 @@
  *
  * This bridge is transitional. It records the lock on the editing user's
  * presence entry alongside the existing _edit_lock postmeta so both systems
- * coexist. The intent is for the block editor (Gutenberg) to consume presence
- * data directly in the future — enabling real-time awareness (cursors,
- * selections, who's editing which block) rather than the current blunt
- * lock/takeover model.
+ * coexist. See "Relationship to the block editor" in README.md for how this
+ * relates to the block editor's own awareness data (cursors, selections,
+ * who's editing which block), which flows through WP_Sync_Storage rather
+ * than through this bridge.
  *
  * @package Presence_API
  */

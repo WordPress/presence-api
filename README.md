@@ -203,6 +203,14 @@ wp presence recording set off
 wp presence recording set off --network   # Multisite only
 ```
 
+## Relationship to the block editor
+
+Real-time awareness inside the editor — cursors, selections, who's editing which block — is not this plugin's job. The block editor gets that from [`WP_Sync_Storage`](https://github.com/WordPress/sync-storage), consumed through Gutenberg's `__unstable_wp_sync_storage` ([WordPress/gutenberg#81697](https://github.com/WordPress/gutenberg/pull/81697)). Its [HTTP-polling provider](https://github.com/WordPress/sync-storage/blob/main/lib/rtc/class-sync-storage-provider.php) delegates `get_awareness_state()` and `set_awareness_state()` straight to `wp_get_presence()` and `wp_set_presence()`, while keeping CRDT document updates in its own `wp_collaboration` table.
+
+No room mapping sits between the two: sync-storage's room string (`{objectType}:{objectId}`) and this plugin's `postType/{type}:{id}` room ([`wp_presence_post_room()`](#php-api)) already agree, since `objectType` there is `postType/{type}`.
+
+That leaves the split: awareness and cursors inside the editor go through sync-storage; room membership everywhere else in wp-admin — plus the post-lock bridge below — stays this plugin's.
+
 ## Post-lock bridge
 
 Creates presence entries alongside `_edit_lock` postmeta when a post lock is refreshed via Heartbeat. Both systems coexist.
