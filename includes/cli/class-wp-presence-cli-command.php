@@ -280,6 +280,84 @@ class WP_Presence_CLI_Command extends WP_CLI_Command {
 	}
 
 	/**
+	 * Gets or sets whether presence is recorded.
+	 *
+	 * Reports the option rather than the effective state, so a `get` still shows
+	 * what the switch is set to on a site where a filter overrides it.
+	 *
+	 * ## OPTIONS
+	 *
+	 * <action>
+	 * : Whether to read or write the switch.
+	 * ---
+	 * options:
+	 *   - get
+	 *   - set
+	 * ---
+	 *
+	 * [<state>]
+	 * : The state to store. Required for set.
+	 * ---
+	 * options:
+	 *   - on
+	 *   - off
+	 * ---
+	 *
+	 * [--network]
+	 * : Act on the network-wide switch instead. Multisite only.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp presence recording get
+	 *     wp presence recording set off
+	 *     wp presence recording get --network
+	 *     wp presence recording set off --network
+	 *
+	 * @param array $args       Positional arguments.
+	 * @param array $assoc_args Associative arguments.
+	 */
+	public function recording( $args, $assoc_args ) {
+		$network = (bool) WP_CLI\Utils\get_flag_value( $assoc_args, 'network', false );
+
+		if ( $network && ! is_multisite() ) {
+			WP_CLI::error( __( 'This is not a multisite installation.', 'presence-api' ) );
+		}
+
+		$option  = $network ? 'wp_presence_network_recording' : 'wp_presence_recording';
+		$enabled = $network
+			? (bool) get_site_option( $option, true )
+			: (bool) get_option( $option, true );
+
+		if ( 'get' === $args[0] ) {
+			WP_CLI::log( $enabled ? 'on' : 'off' );
+			return;
+		}
+
+		if ( ! isset( $args[1] ) ) {
+			WP_CLI::error( __( 'Specify on or off.', 'presence-api' ) );
+		}
+
+		$target = 'on' === $args[1];
+
+		// Stored as '1' or '0'. A boolean false is indistinguishable from an
+		// absent option, so update_option() would discard it as unchanged.
+		$stored = $target ? '1' : '0';
+
+		if ( $network ) {
+			update_site_option( $option, $stored );
+		} else {
+			update_option( $option, $stored );
+		}
+
+		if ( $target ) {
+			WP_CLI::success( __( 'Presence recording is on.', 'presence-api' ) );
+			return;
+		}
+
+		WP_CLI::success( __( 'Presence recording is off. Existing entries expire on their own.', 'presence-api' ) );
+	}
+
+	/**
 	 * Deletes all presence entries from the table.
 	 *
 	 * ## OPTIONS

@@ -142,6 +142,9 @@ function wp_presence_with_current_user( $entries ) {
  * default is the safe one; a site that would rather not process it at all
  * switches it off here and says so in its privacy policy.
  *
+ * The stored options are passed as the filters' defaults, so a filter always
+ * has the last word over whatever the checkbox says.
+ *
  * Aggregating those rows into the network-wide view is a separate switch. See
  * wp_presence_network_aggregation_enabled().
  *
@@ -155,9 +158,10 @@ function wp_presence_recording_enabled() {
 	 *
 	 * @since 0.3.0
 	 *
-	 * @param bool $enabled Whether to record presence. Default true.
+	 * @param bool $enabled Whether to record presence. Default is the
+	 *                      wp_presence_recording option, true on a new install.
 	 */
-	$enabled = (bool) apply_filters( 'wp_presence_recording_enabled', true );
+	$enabled = (bool) apply_filters( 'wp_presence_recording_enabled', (bool) get_option( 'wp_presence_recording', true ) );
 
 	if ( ! $enabled || ! is_multisite() ) {
 		return $enabled;
@@ -171,9 +175,11 @@ function wp_presence_recording_enabled() {
 	 *
 	 * @since 0.3.0
 	 *
-	 * @param bool $enabled Whether to record presence. Default true.
+	 * @param bool $enabled Whether to record presence. Default is the
+	 *                      wp_presence_network_recording site option, true on a
+	 *                      new install.
 	 */
-	return (bool) apply_filters( 'wp_presence_network_recording_enabled', true );
+	return (bool) apply_filters( 'wp_presence_network_recording_enabled', (bool) get_site_option( 'wp_presence_network_recording', true ) );
 }
 
 /**

@@ -395,4 +395,56 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 			'This is not a multisite installation.'
 		);
 	}
+
+	/**
+	 * @covers WP_Presence_CLI_Command::recording
+	 */
+	public function test_recording_get_reports_the_stored_state() {
+		update_option( 'wp_presence_recording', '0' );
+
+		$this->command->recording( array( 'get' ), array() );
+
+		$this->assertSame( array( 'off' ), WP_CLI::messages( 'log' ) );
+	}
+
+	/**
+	 * Asserted at the option rather than only on the message: a command that
+	 * reports success while storing nothing is the failure that matters.
+	 *
+	 * @covers WP_Presence_CLI_Command::recording
+	 */
+	public function test_recording_set_stores_the_state() {
+		$this->command->recording( array( 'set', 'off' ), array() );
+
+		$this->assertFalse( (bool) get_option( 'wp_presence_recording' ) );
+		$this->assertFalse( wp_presence_recording_enabled() );
+	}
+
+	/**
+	 * @covers WP_Presence_CLI_Command::recording
+	 */
+	public function test_recording_set_requires_a_state() {
+		$this->assert_halts_with(
+			function () {
+				$this->command->recording( array( 'set' ), array() );
+			},
+			'Specify on or off.'
+		);
+	}
+
+	/**
+	 * @covers WP_Presence_CLI_Command::recording
+	 */
+	public function test_recording_refuses_the_network_switch_on_a_single_site() {
+		if ( is_multisite() ) {
+			$this->markTestSkipped( 'Requires single site.' );
+		}
+
+		$this->assert_halts_with(
+			function () {
+				$this->command->recording( array( 'get' ), array( 'network' => true ) );
+			},
+			'This is not a multisite installation.'
+		);
+	}
 }

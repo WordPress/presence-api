@@ -12,6 +12,12 @@ abstract class WP_Presence_UnitTestCase extends WP_UnitTestCase {
 
 	public function tear_down() {
 		global $wpdb;
+		// The TRUNCATE below commits, so an option a test wrote outlives the
+		// rollback. Cleared first, where the same commit carries the delete;
+		// after it the statement lands in a fresh transaction and is rolled back.
+		delete_option( 'wp_presence_recording' );
+		delete_site_option( 'wp_presence_network_recording' );
+
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
 		$wpdb->query( "TRUNCATE TABLE {$wpdb->presence}" );
 

@@ -58,7 +58,9 @@ Anyone with the `manage_network` capability, which on a default network means su
 
 = Can a site stop recording presence? =
 
-Yes. The `wp_presence_recording_enabled` filter switches the write off, and every screen empties within one TTL as the rows already stored expire. On multisite, `wp_presence_network_recording_enabled` does the same for every site at once; whichever switch is off decides.
+Yes. Clear the **Presence** checkbox on Settings > General, or run `wp presence recording set off`. Every screen empties within one TTL as the rows already stored expire. On multisite, Network Admin > Settings has the same checkbox for every site at once; whichever switch is off decides.
+
+For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording_enabled` filters take the checkboxes as their defaults, so a filter always has the last word.
 
 == Changelog ==
 

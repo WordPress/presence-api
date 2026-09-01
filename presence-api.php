@@ -104,6 +104,7 @@ require_once WP_PRESENCE_PLUGIN_DIR . 'includes/cron.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/post-lock-bridge.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/screen-revisions.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/lifecycle.php';
+require_once WP_PRESENCE_PLUGIN_DIR . 'includes/settings.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/admin-bar.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/user-list.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/post-list.php';
@@ -308,6 +309,8 @@ add_action( 'init', 'wp_presence_register_post_type_support' );
 // creation instead; this is the fallback for a site that missed both.
 add_action( 'admin_init', 'wp_maybe_create_presence_table' );
 add_action( 'cli_init', 'wp_maybe_create_presence_table' );
+
+add_action( 'admin_init', 'wp_presence_register_settings' );
 if ( is_multisite() ) {
 	// Global so the keys are not prefixed with a blog ID. The push runs inside
 	// switch_to_blog(), and a per-site group would file the invalidation under
@@ -327,6 +330,8 @@ if ( is_multisite() ) {
 	add_action( 'wp_presence_admin_room_changed', 'wp_presence_flush_network_summary_cache' );
 	add_action( 'wp_delete_site', 'wp_presence_on_delete_site' );
 	add_action( 'wp_delete_expired_presence_data', 'wp_presence_delete_expired_network_summary_rows' );
+	add_action( 'wpmu_options', 'wp_presence_render_network_settings' );
+	add_action( 'update_wpmu_options', 'wp_presence_save_network_settings' );
 }
 // Priority 99 to run after core's wp_initialize_site() at 10.
 add_action( 'wp_initialize_site', 'wp_presence_on_initialize_site', 99 );

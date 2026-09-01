@@ -879,4 +879,42 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 		$this->assertFalse( wp_presence_recording_enabled() );
 	}
+
+	/**
+	 * The switch an owner reaches without writing PHP.
+	 *
+	 * @covers ::wp_presence_recording_enabled
+	 */
+	public function test_the_stored_option_switches_recording_off() {
+		update_option( 'wp_presence_recording', '0' );
+
+		$this->assertFalse( wp_presence_recording_enabled() );
+	}
+
+	/**
+	 * The option is the filter's default, not a second opinion, so code still
+	 * has the last word over whatever the checkbox says.
+	 *
+	 * @covers ::wp_presence_recording_enabled
+	 */
+	public function test_a_filter_overrides_the_stored_option() {
+		update_option( 'wp_presence_recording', '0' );
+		add_filter( 'wp_presence_recording_enabled', '__return_true' );
+
+		$this->assertTrue( wp_presence_recording_enabled() );
+	}
+
+	/**
+	 * @covers ::wp_presence_recording_enabled
+	 */
+	public function test_the_network_option_switches_off_a_site_that_allows_recording() {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		update_option( 'wp_presence_recording', '1' );
+		update_site_option( 'wp_presence_network_recording', '0' );
+
+		$this->assertFalse( wp_presence_recording_enabled() );
+	}
 }
