@@ -600,6 +600,9 @@ function wp_presence_get_network_sites_for_user( $user_id ) {
  *                                       pushed from that site's own request.
  *                                       Absent when the summary is empty. Read
  *                                       only by wp_presence_hydrate_network_snapshot().
+ *     @type bool  $aggregating         Whether the network aggregates at all.
+ *                                       False means nothing is pushing, so the
+ *                                       empty read is not a headcount.
  *     @type int   $total_sites_online
  *     @type int   $total_users_online  Summed per site, so a user online on two
  *                                       sites counts twice.
@@ -640,6 +643,9 @@ function wp_presence_get_network_snapshot( array $args = array() ) {
  *                                       descending, then by blog_id.
  *                                       user_count is the site's real total,
  *                                       which users is capped below.
+ *     @type bool  $aggregating         Whether the network aggregates at all.
+ *                                       False means nothing is pushing, so the
+ *                                       empty read is not a headcount.
  *     @type int   $total_sites_online  Network-wide, not the resolved count.
  *     @type int   $total_users_online  Network-wide, not the resolved count.
  * }
@@ -813,7 +819,8 @@ function wp_presence_filter_network_snapshot_users( array $by_site ) {
  * still a list of IDs, so a stale row is dropped before anything gets loaded.
  *
  * A network that does not aggregate reads as empty rather than as whatever its
- * rows last said, since nothing is keeping them current.
+ * rows last said, since nothing is keeping them current. That read carries
+ * aggregating => false, so callers do not report it as a quiet network.
  *
  * @access private
  * @param int $timeout TTL in seconds; rows untouched longer than this are skipped.
@@ -823,7 +830,9 @@ function wp_presence_compute_network_snapshot( $timeout ) {
 	global $wpdb;
 
 	if ( ! wp_presence_network_aggregation_enabled() || ! wp_presence_has_network_summary_table() ) {
-		return wp_presence_empty_network_summary();
+		// Only the switch means "not aggregating". A network still waiting on
+		// its table aggregates and has nothing yet.
+		return wp_presence_empty_network_summary( wp_presence_network_aggregation_enabled() );
 	}
 
 	$cutoff = gmdate( 'Y-m-d H:i:s', time() - $timeout );
@@ -908,6 +917,7 @@ function wp_presence_compute_network_snapshot( $timeout ) {
 	return array(
 		'sites'              => $by_site,
 		'schemes'            => array_intersect_key( $schemes, $by_site ),
+		'aggregating'        => true,
 		'total_sites_online' => count( $by_site ),
 		'total_users_online' => $total_users,
 	);
@@ -940,6 +950,7 @@ function wp_presence_hydrate_network_snapshot( array $snapshot, $max_sites, $use
 	if ( ! $by_site ) {
 		return array(
 			'sites'              => array(),
+			'aggregating'        => $snapshot['aggregating'],
 			'total_sites_online' => $snapshot['total_sites_online'],
 			'total_users_online' => $snapshot['total_users_online'],
 		);
@@ -1036,6 +1047,7 @@ function wp_presence_hydrate_network_snapshot( array $snapshot, $max_sites, $use
 
 	return array(
 		'sites'              => $sites,
+		'aggregating'        => $snapshot['aggregating'],
 		'total_sites_online' => $snapshot['total_sites_online'],
 		'total_users_online' => $snapshot['total_users_online'],
 	);
@@ -1045,11 +1057,14 @@ function wp_presence_hydrate_network_snapshot( array $snapshot, $max_sites, $use
  * Returns the shape wp_presence_get_network_summary() returns when nobody is online.
  *
  * @access private
+ * @param bool $aggregating Optional. Default true, a network that aggregates
+ *                          and is simply quiet.
  * @return array See wp_presence_get_network_summary().
  */
-function wp_presence_empty_network_summary() {
+function wp_presence_empty_network_summary( $aggregating = true ) {
 	return array(
 		'sites'              => array(),
+		'aggregating'        => (bool) $aggregating,
 		'total_sites_online' => 0,
 		'total_users_online' => 0,
 	);
