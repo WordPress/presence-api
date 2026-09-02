@@ -205,7 +205,7 @@ wp presence recording set off --network   # Multisite only
 
 ## Relationship to the block editor
 
-Real-time awareness inside the editor — cursors, selections, who's editing which block — is not this plugin's job. The block editor gets that from [`WP_Sync_Storage`](https://github.com/WordPress/sync-storage), consumed through Gutenberg's `__unstable_wp_sync_storage` ([WordPress/gutenberg#81697](https://github.com/WordPress/gutenberg/pull/81697)). Its [HTTP-polling provider](https://github.com/WordPress/sync-storage/blob/main/lib/rtc/class-sync-storage-provider.php) delegates `get_awareness_state()` and `set_awareness_state()` straight to `wp_get_presence()` and `wp_set_presence()`, while keeping CRDT document updates in its own `wp_collaboration` table.
+Real-time awareness inside the editor — cursors, selections, who's editing which block — is not this plugin's job. The block editor gets that from the [sync-storage](https://github.com/WordPress/sync-storage) plugin, registered through Gutenberg's [`__unstable_wp_sync_storage`](https://github.com/WordPress/gutenberg/pull/81697) filter as an implementation of Gutenberg's `WP_Sync_Storage` interface. Its [storage provider](https://github.com/WordPress/sync-storage/blob/main/lib/rtc/class-sync-storage-provider.php) backs `get_awareness_state()` and `set_awareness_state()` with `wp_get_presence()` and `wp_set_presence()`, while keeping CRDT document updates in its own `wp_collaboration` table.
 
 No room mapping sits between the two: sync-storage's room string (`{objectType}:{objectId}`) and this plugin's `postType/{type}:{id}` room ([`wp_presence_post_room()`](#php-api)) already agree, since `objectType` there is `postType/{type}`.
 
