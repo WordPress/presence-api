@@ -1,7 +1,7 @@
 <!--
-What would we miss by only reading the diff?
+💬 What would we miss by only reading the diff?
 
-One sentence is enough. A minute of writing here can cost a maintainer an hour of reading.
+⏳ A minute of writing here can cost a maintainer an hour of reading.
 -->
 
 <!--
