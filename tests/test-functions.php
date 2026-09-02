@@ -1015,6 +1015,13 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		wp_set_presence( $room, 'user-' . self::$editor_id, array( 'screen' => 'dashboard' ), self::$editor_id );
 		$this->backdate( $room, 'user-' . self::$editor_id, 5 );
 
+		// Under WP_MULTISITE=1 this class does not provision the summary table, so
+		// wp_presence_network_summary_push_is_due() is false and the guard is free
+		// to skip. The network suite covers the case where a push is owed.
+		if ( function_exists( 'wp_presence_network_summary_push_is_due' ) ) {
+			$this->assertFalse( wp_presence_network_summary_push_is_due(), 'Precondition: no push is owed here.' );
+		}
+
 		$fired = 0;
 		add_action(
 			'wp_presence_admin_room_changed',
