@@ -393,6 +393,7 @@ class WP_Test_Network_Summary_Push extends WP_Presence_Network_UnitTestCase {
 	 *
 	 * @covers ::wp_set_presence
 	 * @covers ::wp_presence_network_summary_push_is_due
+	 * @covers ::wp_presence_write_is_redundant
 	 */
 	public function test_an_overdue_push_keeps_an_unchanged_admin_room_write() {
 		global $wpdb;

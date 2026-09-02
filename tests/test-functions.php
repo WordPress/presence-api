@@ -953,6 +953,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers ::wp_set_presence
+	 * @covers ::wp_presence_write_is_redundant
 	 */
 	public function test_unchanged_state_within_the_refresh_window_skips_the_write() {
 		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
@@ -971,6 +972,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers ::wp_set_presence
+	 * @covers ::wp_presence_write_is_redundant
 	 */
 	public function test_unchanged_state_past_the_refresh_window_writes() {
 		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
@@ -988,6 +990,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers ::wp_set_presence
+	 * @covers ::wp_presence_write_is_redundant
 	 */
 	public function test_changed_state_writes_inside_the_refresh_window() {
 		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
@@ -1008,6 +1011,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers ::wp_set_presence
+	 * @covers ::wp_presence_write_is_redundant
 	 */
 	public function test_skipped_write_does_not_announce_an_admin_room_change() {
 		$room = wp_presence_admin_room();
@@ -1062,6 +1066,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	/**
 	 * @covers ::wp_presence_refresh_threshold
 	 * @covers ::wp_set_presence
+	 * @covers ::wp_presence_write_is_redundant
 	 */
 	public function test_a_ttl_below_the_tick_gap_leaves_no_room_to_skip() {
 		add_filter(
@@ -1087,6 +1092,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * at any age above zero the comparison already refuses to skip.
 	 *
 	 * @covers ::wp_set_presence
+	 * @covers ::wp_presence_write_is_redundant
 	 */
 	public function test_a_zero_threshold_writes_again_inside_the_same_second() {
 		add_filter(
