@@ -15,26 +15,63 @@ const IGNORED = [/^assets\/js\/build\//, /\/test\//, /\.test\.js$/];
 
 // WordPress's own, which a plugin reads without ever owning. `ABSPATH` alone
 // opens every file in the tree, so without this the surfaces that are the
-// plugin's drown in guards that promise a site nothing.
+// plugin's drown in guards that promise a site nothing. This is core's
+// documented `wp-config.php` set plus the flags it defines at run time; a name
+// core adds later belongs here too.
 const CORE_CONSTANTS = new Set([
-  // Bootstrap and paths.
+  // Bootstrap, paths, and URLs.
   'ABSPATH', 'WPINC', 'WP_LANG_DIR', 'WP_CONTENT_DIR', 'WP_CONTENT_URL',
   'WP_PLUGIN_DIR', 'WP_PLUGIN_URL', 'WPMU_PLUGIN_DIR', 'WPMU_PLUGIN_URL',
-  // Debugging.
+  'WP_TEMP_DIR', 'WP_HOME', 'WP_SITEURL', 'UPLOADS', 'TEMPLATEPATH',
+  'STYLESHEETPATH', 'WP_DEFAULT_THEME', 'WP_USE_THEMES', 'SHORTINIT',
+  // Debugging and asset loading.
   'WP_DEBUG', 'WP_DEBUG_LOG', 'WP_DEBUG_DISPLAY', 'SCRIPT_DEBUG', 'SAVEQUERIES',
+  'WP_DISABLE_FATAL_ERROR_HANDLER', 'WP_START_TIMESTAMP', 'WP_MEMORY_LIMIT',
+  'WP_MAX_MEMORY_LIMIT', 'CONCATENATE_SCRIPTS', 'COMPRESS_SCRIPTS',
+  'COMPRESS_CSS', 'ENFORCE_GZIP',
   // Which kind of request this is.
   'DOING_AJAX', 'DOING_CRON', 'DOING_AUTOSAVE', 'REST_REQUEST', 'XMLRPC_REQUEST',
-  'WP_ADMIN', 'WP_NETWORK_ADMIN', 'WP_USER_ADMIN', 'WP_CLI', 'WP_INSTALLING',
-  'WP_INSTALLING_NETWORK', 'WP_SETUP_CONFIG', 'WP_REPAIRING', 'WP_SANDBOX_SCRAPING',
-  'WP_UNINSTALL_PLUGIN',
+  'WP_ADMIN', 'WP_BLOG_ADMIN', 'WP_NETWORK_ADMIN', 'WP_USER_ADMIN', 'WP_CLI',
+  'WP_INSTALLING', 'WP_INSTALLING_NETWORK', 'WP_SETUP_CONFIG', 'WP_REPAIRING',
+  'WP_ALLOW_REPAIR', 'WP_SANDBOX_SCRAPING', 'WP_UNINSTALL_PLUGIN',
+  'WP_LOAD_IMPORTERS', 'WP_IMPORTING', 'IS_PROFILE_PAGE', 'WP_RUN_CORE_TESTS',
   // Multisite.
-  'MULTISITE', 'SUBDOMAIN_INSTALL', 'DOMAIN_CURRENT_SITE', 'PATH_CURRENT_SITE',
-  'SITE_ID_CURRENT_SITE', 'BLOG_ID_CURRENT_SITE',
-  // Behaviour a site configures in `wp-config.php`, WordPress's rather than ours.
-  'WP_CACHE', 'WP_ENVIRONMENT_TYPE', 'WP_DEVELOPMENT_MODE', 'WP_MEMORY_LIMIT',
-  'WP_MAX_MEMORY_LIMIT', 'DISALLOW_FILE_EDIT', 'DISALLOW_FILE_MODS', 'DISABLE_WP_CRON',
-  'ALTERNATE_WP_CRON', 'WP_CRON_LOCK_TIMEOUT', 'EMPTY_TRASH_DAYS', 'AUTOSAVE_INTERVAL',
-  'WP_POST_REVISIONS', 'MEDIA_TRASH', 'FORCE_SSL_ADMIN', 'COOKIE_DOMAIN',
+  'MULTISITE', 'WP_ALLOW_MULTISITE', 'SUBDOMAIN_INSTALL', 'VHOST', 'SUNRISE',
+  'DOMAIN_CURRENT_SITE', 'PATH_CURRENT_SITE', 'SITE_ID_CURRENT_SITE',
+  'BLOG_ID_CURRENT_SITE', 'NOBLOGREDIRECT', 'UPLOADBLOGSDIR', 'BLOGUPLOADDIR',
+  'WPMU_ACCEL_REDIRECT', 'WPMU_SENDFILE',
+  // Cron.
+  'DISABLE_WP_CRON', 'ALTERNATE_WP_CRON', 'WP_CRON_LOCK_TIMEOUT',
+  // Updates and the filesystem API.
+  'WP_AUTO_UPDATE_CORE', 'AUTOMATIC_UPDATER_DISABLED',
+  'CORE_UPGRADE_SKIP_NEW_BUNDLED', 'DISALLOW_FILE_EDIT', 'DISALLOW_FILE_MODS',
+  'DISALLOW_UNFILTERED_HTML', 'ALLOW_UNFILTERED_UPLOADS', 'FS_METHOD',
+  'FS_CHMOD_DIR', 'FS_CHMOD_FILE', 'FTP_BASE', 'FTP_CONTENT_DIR',
+  'FTP_PLUGIN_DIR', 'FTP_HOST', 'FTP_USER', 'FTP_PASS', 'FTP_SSL', 'FTP_PUBKEY',
+  'FTP_PRIKEY',
+  // Content and editing.
+  'EMPTY_TRASH_DAYS', 'AUTOSAVE_INTERVAL', 'WP_POST_REVISIONS', 'MEDIA_TRASH',
+  'IMAGE_EDIT_OVERWRITE',
+  // Database.
+  'DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DB_HOST', 'DB_CHARSET', 'DB_COLLATE',
+  'CUSTOM_USER_TABLE', 'CUSTOM_USER_META_TABLE',
+  // Cookies, keys, and salts.
+  'FORCE_SSL_ADMIN', 'FORCE_SSL_LOGIN', 'COOKIE_DOMAIN', 'COOKIEPATH',
+  'SITECOOKIEPATH', 'ADMIN_COOKIE_PATH', 'PLUGINS_COOKIE_PATH', 'COOKIEHASH',
+  'AUTH_COOKIE', 'SECURE_AUTH_COOKIE', 'LOGGED_IN_COOKIE', 'TEST_COOKIE',
+  'USER_COOKIE', 'PASS_COOKIE', 'RECOVERY_MODE_COOKIE', 'RECOVERY_MODE_EMAIL',
+  'AUTH_KEY', 'SECURE_AUTH_KEY', 'LOGGED_IN_KEY', 'NONCE_KEY', 'AUTH_SALT',
+  'SECURE_AUTH_SALT', 'LOGGED_IN_SALT', 'NONCE_SALT',
+  // Caching and environment.
+  'WP_CACHE', 'WP_CACHE_KEY_SALT', 'WP_ENVIRONMENT_TYPE', 'WP_DEVELOPMENT_MODE',
+  'WP_LOCAL_DEV',
+  // Localization.
+  'WPLANG', 'WP_LANG',
+  // The time and byte spans core defines for everyone.
+  'MINUTE_IN_SECONDS', 'HOUR_IN_SECONDS', 'DAY_IN_SECONDS', 'WEEK_IN_SECONDS',
+  'MONTH_IN_SECONDS', 'YEAR_IN_SECONDS', 'KB_IN_BYTES', 'MB_IN_BYTES',
+  'GB_IN_BYTES', 'TB_IN_BYTES', 'PB_IN_BYTES', 'EB_IN_BYTES', 'ZB_IN_BYTES',
+  'YB_IN_BYTES',
 ]);
 
 const PHP_RULES = [
@@ -108,12 +145,15 @@ function describes(block) {
     .some((line) => '' !== line && !line.startsWith('@'));
 }
 
-// The constants this file defines outright. A `define()` with no `! defined()`
-// guard anywhere leaves a site nothing to set, so the name is the plugin's own
-// rather than a promise to anyone, however often the code reads it back.
-function ownConstants(source) {
-  const named = (regex) => new Set([...source.matchAll(regex)].map((m) => m[2]));
-  const own = named(/\bdefine\s*\(\s*(['"])([A-Z][A-Z0-9_]*)\1/g);
+// The constants a body of source defines outright. A `define()` with no
+// `! defined()` guard anywhere leaves a site nothing to set, so the name is the
+// plugin's own rather than a promise, however often the code reads it back.
+// Sources are weighed together rather than one at a time: the file that defines
+// a constant is rarely the file that reads it, and either half alone misreads
+// the other. The CLI passes the whole ref.
+function ownConstants(sources) {
+  const named = (regex) => sources.flatMap((source) => [...source.matchAll(regex)].map((m) => m[2]));
+  const own = new Set(named(/\bdefine\s*\(\s*(['"])([A-Z][A-Z0-9_]*)\1/g));
 
   for (const name of named(/!\s*defined\s*\(\s*(['"])([A-Z][A-Z0-9_]*)\1/g)) {
     own.delete(name);
@@ -125,9 +165,10 @@ function ownConstants(source) {
 // Identifiers are `kind:name` and carry no path, so the same hook found at a new
 // location is the same surface. Each one also reports whether the docblock above
 // it describes it; a private marker in that docblock withdraws it entirely.
-function findSurfaces(source, path) {
+// `own` names the constants something else already defines outright, which only
+// a caller holding the whole ref can know; alone, a file speaks for itself.
+function findSurfaces(source, path, own = ownConstants([source])) {
   const rules = path.endsWith('.php') ? PHP_RULES : path.endsWith('.js') ? JS_RULES : [];
-  const own = ownConstants(source);
 
   // A constant is only a promise if a site can set it.
   const reachable = (id) => {
@@ -140,12 +181,20 @@ function findSurfaces(source, path) {
     return !CORE_CONSTANTS.has(name) && !own.has(name);
   };
 
-  return rules.flatMap(([regex, build]) =>
+  const found = rules.flatMap(([regex, build]) =>
     [...source.matchAll(regex)]
       .map((m) => ({ id: build(m), block: docblockAbove(source, m.index) }))
-      .filter(({ id, block }) => !id.endsWith(':') && !PRIVATE.test(block) && reachable(id))
-      .map(({ id, block }) => ({ id, documented: describes(block) }))
+      .filter(({ id }) => !id.endsWith(':') && reachable(id))
   );
+
+  // The marker withdraws the name, not the one occurrence carrying it: a
+  // constant declared private and consulted again later is private at the read
+  // too, and nothing is gained by making someone repeat the docblock.
+  const withdrawn = new Set(found.filter(({ block }) => PRIVATE.test(block)).map(({ id }) => id));
+
+  return found
+    .filter(({ id }) => !withdrawn.has(id))
+    .map(({ id, block }) => ({ id, documented: describes(block) }));
 }
 
 // Additions only. A hook fired from two places is documented once and
@@ -197,6 +246,7 @@ module.exports.newSurfaces = newSurfaces;
 module.exports.formatAudit = formatAudit;
 module.exports.formatComment = formatComment;
 module.exports.isScanned = isScanned;
+module.exports.ownConstants = ownConstants;
 module.exports.MARKER = MARKER;
 
 // CLI: `node detect-public-surface.js <base-ref> <head-ref>`. Reads both trees
@@ -223,11 +273,19 @@ if (require.main === module) {
     }
   };
 
-  const scan = (ref) =>
-    git(['ls-tree', '-r', '--name-only', ref])
+  const scan = (ref) => {
+    const files = git(['ls-tree', '-r', '--name-only', ref])
       .split('\n')
       .filter(isScanned)
-      .flatMap((path) => findSurfaces(read(ref, path), path));
+      .map((path) => ({ path, source: read(ref, path) }));
+
+    // One owned set for the whole ref. A constant defined outright in
+    // `presence-api.php` is the plugin's own in every file that reads it, which
+    // no file can tell on its own.
+    const own = ownConstants(files.map(({ source }) => source));
+
+    return files.flatMap(({ path, source }) => findSurfaces(source, path, own));
+  };
 
   const surfaces = newSurfaces(scan(baseRef), scan(headRef));
 
