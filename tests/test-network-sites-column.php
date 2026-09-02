@@ -123,7 +123,7 @@ class WP_Test_Network_Sites_Column extends WP_Presence_Network_UnitTestCase {
 	 * The column reads the same em dash either way, so the screen has to say
 	 * which it is.
 	 *
-	 * @covers ::wp_presence_network_sites_aggregation_notice
+	 * @covers ::wp_presence_network_aggregation_notice
 	 */
 	public function test_sites_list_warns_when_the_network_does_not_aggregate() {
 		$this->become_network_admin();
@@ -132,39 +132,39 @@ class WP_Test_Network_Sites_Column extends WP_Presence_Network_UnitTestCase {
 		add_filter( 'wp_presence_network_aggregation_enabled', '__return_false' );
 
 		ob_start();
-		wp_presence_network_sites_aggregation_notice();
+		wp_presence_network_aggregation_notice();
 		$output = ob_get_clean();
 
 		$this->assertStringContainsString( 'not aggregated across this network', $output );
 	}
 
 	/**
-	 * @covers ::wp_presence_network_sites_aggregation_notice
+	 * @covers ::wp_presence_network_aggregation_notice
 	 */
 	public function test_sites_list_is_silent_while_the_network_aggregates() {
 		$this->become_network_admin();
 		set_current_screen( 'sites-network' );
 
 		ob_start();
-		wp_presence_network_sites_aggregation_notice();
+		wp_presence_network_aggregation_notice();
 
 		$this->assertSame( '', ob_get_clean() );
 	}
 
 	/**
 	 * network_admin_notices fires on every Network Admin screen, so the notice
-	 * has to place itself.
+	 * has to place itself. It belongs on the two that carry an Online column.
 	 *
-	 * @covers ::wp_presence_network_sites_aggregation_notice
+	 * @covers ::wp_presence_network_aggregation_notice
 	 */
-	public function test_the_notice_stays_on_the_sites_list() {
+	public function test_the_notice_stays_off_screens_without_an_online_column() {
 		$this->become_network_admin();
 		set_current_screen( 'dashboard-network' );
 
 		add_filter( 'wp_presence_network_aggregation_enabled', '__return_false' );
 
 		ob_start();
-		wp_presence_network_sites_aggregation_notice();
+		wp_presence_network_aggregation_notice();
 
 		$this->assertSame( '', ob_get_clean() );
 	}
@@ -172,7 +172,7 @@ class WP_Test_Network_Sites_Column extends WP_Presence_Network_UnitTestCase {
 	/**
 	 * The notice names a column only a network administrator is shown.
 	 *
-	 * @covers ::wp_presence_network_sites_aggregation_notice
+	 * @covers ::wp_presence_network_aggregation_notice
 	 */
 	public function test_the_notice_requires_capability() {
 		wp_set_current_user( self::$editor_id );
@@ -181,7 +181,7 @@ class WP_Test_Network_Sites_Column extends WP_Presence_Network_UnitTestCase {
 		add_filter( 'wp_presence_network_aggregation_enabled', '__return_false' );
 
 		ob_start();
-		wp_presence_network_sites_aggregation_notice();
+		wp_presence_network_aggregation_notice();
 
 		$this->assertSame( '', ob_get_clean() );
 	}

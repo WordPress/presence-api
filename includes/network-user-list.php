@@ -23,6 +23,14 @@ function wp_presence_network_users_views( $views ) {
 		return $views;
 	}
 
+	// Withheld rather than shown as zero, matching what `wp presence network`
+	// does with its totals: nobody online is an answer this network cannot
+	// give, and the filter behind the link would return nothing on any reading.
+	// wp_presence_network_aggregation_notice() says why the column is empty.
+	if ( ! wp_presence_network_aggregation_enabled() ) {
+		return $views;
+	}
+
 	$online_count = count( wp_presence_get_network_online_user_ids() );
 	$is_current   = isset( $_GET['presence_status'] ) && 'online' === $_GET['presence_status']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
