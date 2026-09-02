@@ -16,9 +16,9 @@
 	"devDependencies": {
 		"@playwright/test": "^1.62.1",
 		"@testing-library/react": "^16.3.2",
-		"@wordpress/e2e-test-utils-playwright": "^1.51.0",
-		"@wordpress/env": "^11.13.0",
-		"@wordpress/scripts": "^34.1.0"
+		"@wordpress/e2e-test-utils-playwright": "^1.54.0",
+		"@wordpress/env": "^11.14.0",
+		"@wordpress/scripts": "^34.2.0"
 	},
 	"peerDependencies": {
 		"@wordpress/api-fetch": "^7.0.0",

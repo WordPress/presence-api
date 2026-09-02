@@ -1,9 +1,9 @@
 === Presence API ===
-Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas, aldorza, bejignesh, stfulldev, obenland, moriikuri, ishitaj34
+Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas, aldorza, bejignesh, stfulldev, obenland, moriikuri, ishitaj34, theaminuldev, muneebashraf, mindctrl, zahidui
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
-Tested up to: 7.0
-Stable tag: 0.2.1
+Tested up to: 7.1
+Stable tag: 0.3.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -63,6 +63,29 @@ Yes. Clear the **Presence** checkbox on Settings > General, or run `wp presence 
 For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording_enabled` filters take the checkboxes as their defaults, so a filter always has the last word.
 
 == Changelog ==
+
+= 0.3.0 =
+* Add a site and network switch for whether presence is recorded.
+* Add policy content, exporter and eraser for presence data.
+* Switch presence recording on and off from Settings and WP-CLI.
+* Add data-post-id to server-rendered Active Posts rows.
+* Collapse the duplicated online-ID assembly into one helper.
+* Count everyone present, including yourself, on every surface.
+* Count Who's Online overflow from the heartbeat total.
+* Declare the current user next to where the bar renders it.
+* Distinguish a non-aggregating network from a quiet one.
+* Keep the network Who's Online widget's accessible names across a re-render.
+* List yourself in the widget so its rows match the count above them.
+* Preserve accessible names across heartbeat re-renders in the network Who's Online widget.
+* Report a switched-off site rather than a failed write.
+* Report network aggregation state from the REST and CLI network reads.
+* Restore the named stack limit on the admin bar avatar cap.
+* Run workflows on the release pull request's final commit.
+* Say so on the network dashboard widget when the network does not aggregate.
+* Say the network does not aggregate on the Users list too.
+* Skip the Playground preview publish when the built SHA is superseded.
+* Warn on the Network Sites list when the network does not aggregate presence.
+* Store network summary rows compact.
 
 = 0.2.1 =
 * Filter out archived, spam, and deleted sites from network presence.
