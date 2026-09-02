@@ -157,7 +157,7 @@ add_action( 'wp_presence_collaboration_started', function( $room, $entries ) {
 ```
 
 #### `wp_presence_collaboration_ended`
-Fires when collaboration ends in a room (transition from 2+ to 1 editor). Debounced via transient with TTL equal to the presence TTL, preventing duplicate fires during disconnection churn.
+Fires when collaboration ends in a room (transition from 2+ to exactly 1 editor). The check runs on an editor heartbeat tick, so if every editor leaves at once there is nobody left to tick and the hook does not fire; the transient expires on the presence TTL and the room resets quietly.
 ```php
 add_action( 'wp_presence_collaboration_ended', function( $room, $entries ) {
     // Announce room inactive or update integration state
