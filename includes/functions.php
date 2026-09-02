@@ -187,7 +187,7 @@ function wp_presence_recording_enabled() {
  *
  * @access private
  *
- * @since 0.3.0
+ * @since 0.4.0
  *
  * @return int Seconds.
  */
@@ -221,7 +221,7 @@ function wp_presence_next_tick_gap() {
  *
  * @access private
  *
- * @since 0.3.0
+ * @since 0.4.0
  *
  * @return int Age in seconds. 0 means never skip.
  */
@@ -240,7 +240,7 @@ function wp_presence_refresh_threshold() {
  *
  * @access private
  *
- * @since 0.3.0
+ * @since 0.4.0
  *
  * @param string $room      The room identifier.
  * @param string $client_id The client identifier.

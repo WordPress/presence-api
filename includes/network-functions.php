@@ -274,7 +274,7 @@ function wp_presence_push_network_summary() {
  *
  * @access private
  *
- * @since 0.3.0
+ * @since 0.4.0
  *
  * @return bool True when a push is owed.
  */

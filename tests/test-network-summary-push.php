@@ -371,4 +371,81 @@ class WP_Test_Network_Summary_Push extends WP_Presence_Network_UnitTestCase {
 
 		$this->assertTrue( wp_presence_network_summary_push_is_due() );
 	}
+
+	/**
+	 * @covers ::wp_presence_network_summary_push_is_due
+	 */
+	public function test_push_is_not_due_when_the_row_was_pushed_recently() {
+		update_option(
+			'wp_presence_network_pushed',
+			array(
+				'users' => (string) self::$editor_id,
+				'time'  => time(),
+			)
+		);
+
+		$this->assertFalse( wp_presence_network_summary_push_is_due() );
+	}
+
+	/**
+	 * The redundant-write guard has to keep admin-room writes alive while a push
+	 * is owed, because the push only runs off wp_presence_admin_room_changed.
+	 *
+	 * @covers ::wp_set_presence
+	 * @covers ::wp_presence_network_summary_push_is_due
+	 */
+	public function test_an_overdue_push_keeps_an_unchanged_admin_room_write() {
+		global $wpdb;
+
+		$blog_id = $this->create_blog();
+		$this->set_presence_on_site( $blog_id, self::$editor_id );
+
+		switch_to_blog( $blog_id );
+
+		$client_id = 'user-' . self::$editor_id;
+
+		// Old enough that the guard would otherwise skip it.
+		$wpdb->update(
+			$wpdb->presence,
+			array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - 5 ) ),
+			array(
+				'room'      => wp_presence_admin_room(),
+				'client_id' => $client_id,
+			),
+			array( '%s' ),
+			array( '%s', '%s' )
+		);
+
+		update_option(
+			'wp_presence_network_pushed',
+			array(
+				'users' => (string) self::$editor_id,
+				'time'  => time() - wp_presence_network_summary_refresh_interval() - 1,
+			)
+		);
+
+		$this->assertTrue( wp_presence_network_summary_push_is_due(), 'Precondition: the push has to be overdue for this to test anything.' );
+
+		$before = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT date_gmt FROM {$wpdb->presence} WHERE room = %s AND client_id = %s",
+				wp_presence_admin_room(),
+				$client_id
+			)
+		);
+
+		wp_set_presence( wp_presence_admin_room(), $client_id, array( 'screen' => 'dashboard' ), self::$editor_id );
+
+		$after = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT date_gmt FROM {$wpdb->presence} WHERE room = %s AND client_id = %s",
+				wp_presence_admin_room(),
+				$client_id
+			)
+		);
+
+		restore_current_blog();
+
+		$this->assertNotSame( $before, $after, 'An unchanged state still writes while the summary push is owed.' );
+	}
 }

@@ -1027,4 +1027,98 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 		$this->assertSame( 0, $fired, 'Nobody arrived or left, so no surface needs to re-render.' );
 	}
+
+	/**
+	 * Counts INSERT statements against the presence table during a callback.
+	 */
+	private function count_presence_inserts( callable $during ) {
+		global $wpdb;
+
+		$count = 0;
+		$table = $wpdb->presence;
+
+		$counter = static function ( $query ) use ( &$count, $table ) {
+			if ( 0 === strpos( ltrim( $query ), 'INSERT' ) && false !== strpos( $query, $table ) ) {
+				++$count;
+			}
+
+			return $query;
+		};
+
+		add_filter( 'query', $counter );
+		$during();
+		remove_filter( 'query', $counter );
+
+		return $count;
+	}
+
+	/**
+	 * @covers ::wp_presence_refresh_threshold
+	 * @covers ::wp_set_presence
+	 */
+	public function test_a_ttl_below_the_tick_gap_leaves_no_room_to_skip() {
+		add_filter(
+			'wp_presence_default_ttl',
+			static function () {
+				return 60;
+			}
+		);
+
+		$this->assertSame( 0, wp_presence_refresh_threshold(), 'A 60s TTL against a 120s gap cannot afford to skip anything.' );
+
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+		$this->backdate( 'test/room', 'client-1', 1 );
+
+		$before = $this->stored_date_gmt( 'test/room', 'client-1' );
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+
+		$this->assertNotSame( $before, $this->stored_date_gmt( 'test/room', 'client-1' ) );
+	}
+
+	/**
+	 * The zero threshold is the only case the early return decides on its own:
+	 * at any age above zero the comparison already refuses to skip.
+	 *
+	 * @covers ::wp_set_presence
+	 */
+	public function test_a_zero_threshold_writes_again_inside_the_same_second() {
+		add_filter(
+			'wp_presence_default_ttl',
+			static function () {
+				return 60;
+			}
+		);
+
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+
+		$inserts = $this->count_presence_inserts(
+			function () {
+				wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+			}
+		);
+
+		$this->assertSame( 1, $inserts, 'A row written this same second is still owed its refresh.' );
+	}
+
+	/**
+	 * @covers ::wp_presence_next_tick_gap
+	 */
+	public function test_the_tick_gap_assumes_a_blurred_window_unless_the_request_says_otherwise() {
+		$this->assertSame( 120, wp_presence_next_tick_gap(), 'Nothing outside a Heartbeat request says how long the gap is.' );
+
+		$_POST['interval']  = '10';
+		$_POST['has_focus'] = 'false';
+
+		$this->assertSame( 120, wp_presence_next_tick_gap(), 'A blurred tab returns in 120s whatever interval it reports.' );
+
+		$_POST['has_focus'] = 'true';
+
+		$this->assertSame( 10, wp_presence_next_tick_gap() );
+
+		$_POST['interval'] = '0';
+
+		$this->assertSame( 120, wp_presence_next_tick_gap(), 'An unusable interval falls back rather than skipping forever.' );
+
+		unset( $_POST['interval'], $_POST['has_focus'] );
+	}
 }
