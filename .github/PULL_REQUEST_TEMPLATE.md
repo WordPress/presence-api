@@ -14,7 +14,11 @@ If this is your first time contributing, the following may be helpful:
 - ✨ If you are using AI tools, you must adhere to the AI Guidelines: https://make.wordpress.org/ai/handbook/ai-guidelines/
 -->
 
-<!-- Insert a description of your changes here -->
+<!--
+What would we miss by only reading the diff?
+
+One sentence is enough. Review time is the one thing WordPress cannot make more of.
+-->
 
 Fixes #
 
