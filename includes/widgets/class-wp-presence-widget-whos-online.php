@@ -47,7 +47,7 @@ class WP_Presence_Widget_Whos_Online {
 	const AVATAR_STACK_MAX = 4;
 
 	/**
-	 * Returns the overflow threshold, filtered for customization.
+	 * Returns the fixed overflow threshold.
 	 *
 	 * When the number of overflow users exceeds this value, the widget
 	 * switches from an expandable list to a compact summary linking to
