@@ -17,7 +17,7 @@ If this is your first time contributing, the following may be helpful:
 <!--
 What would we miss by only reading the diff?
 
-One sentence is enough. Review time is the one thing WordPress cannot make more of.
+One sentence is enough. A minute of writing here can cost a maintainer an hour of reading.
 -->
 
 Fixes #
