@@ -1,7 +1,7 @@
 <!--
 💬 What would we miss by only reading the diff?
 
-⏳ A minute of writing here can cost a maintainer an hour of reading.
+⏳ A minute of writing here can save a maintainer an hour of reading.
 -->
 
 <!--
