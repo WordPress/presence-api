@@ -39,6 +39,14 @@ Then open [localhost:8888/wp-admin/](http://localhost:8888/wp-admin/) (admin / p
 
 Post types opt in via `add_post_type_support( 'post', 'presence' )`.
 
+### Client IDs
+
+Rooms carry no producer namespace of their own — this plugin's own writers are told apart from anyone else's entries in the same room by a `client_id` prefix instead. `user-{user_id}` (admin/online room, from `includes/heartbeat.php` and `includes/lifecycle.php`), `editor-{user_id}` (post rooms, from `includes/heartbeat.php` and `includes/post-lock-bridge.php`) and `cli-{user_id}` (any room, from `includes/cli/class-wp-presence-cli-command.php`, the default when `wp presence set` is given no client ID) are reserved this way; a row using any of them belongs to this plugin and has the state shape its writer expects.
+
+Anything else sharing a room — another plugin relaying awareness from an external source, a REST client — must prefix its own `client_id` so it can't collide with those rows or be mistaken for one. `sync-` is already spoken for: the [sync-storage](https://github.com/WordPress/sync-storage) plugin writes Gutenberg awareness into the same post rooms under that prefix.
+
+The `editor-` prefix is load-bearing rather than cosmetic: `includes/heartbeat.php` counts the editors in a post room with `str_starts_with( $entry->client_id, 'editor-' )`, so a colliding prefix inflates that count.
+
 ## PHP API
 
 The following public functions are part of the stable public API contract. All other helper functions in `includes/functions.php` and `includes/network-functions.php` (such as `wp_get_active_rooms()`, `wp_get_presence_summary()`, etc.) are marked `@access private`, are intended for internal plugin use only, and may change or be removed without notice.
@@ -67,7 +75,15 @@ $room = wp_presence_post_room( $post );
 wp_presence_recording_enabled();
 ```
 
-Each entry object returned by `wp_get_presence()` has: `room`, `client_id`, `user_id`, `data` (array), `date_gmt`.
+Each entry object returned by `wp_get_presence()` has:
+
+| Field       | Type     | Notes                                                                                                                      |
+| ----------- | -------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `room`      | `string` | The room the entry belongs to.                                                                                              |
+| `client_id` | `string` | A `varchar` column — opaque, and not guaranteed numeric even when it looks like one. See [Client IDs](#client-ids).         |
+| `user_id`   | `string` | `"0"` for an entry with no signed-in user. Every column comes back as a string, so cast before a strict comparison. |
+| `data`      | `array`  | Decoded from the stored JSON; an empty array if that JSON failed to decode.                                                 |
+| `date_gmt`  | `string` | A MySQL `datetime` string in UTC (e.g. `2024-01-01 12:00:00`), not a Unix timestamp. Convert with `strtotime( $entry->date_gmt . ' UTC' )`. |
 
 ### Network
 
