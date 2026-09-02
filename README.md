@@ -149,7 +149,7 @@ add_action( 'wp_presence_screen_revision_bumped', function( $screen_key, $revisi
 ```
 
 #### `wp_presence_collaboration_started`
-Fires when collaboration starts in a room (transition from 1 to 2+ editors). Debounced via transient with TTL equal to the presence TTL, preventing duplicate fires during connection churn.
+Fires when collaboration starts in a room (transition from 1 to 2+ editors). Only entries whose `client_id` begins with `editor-` count toward the transition, while `$entries` is every entry in the room. The previous count is held in a transient that expires on the presence TTL, so once those entries have aged out the next pair reads as a fresh start.
 ```php
 add_action( 'wp_presence_collaboration_started', function( $room, $entries ) {
     // Announce room active or update integration state
