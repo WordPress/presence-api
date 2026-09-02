@@ -81,6 +81,10 @@ A new label joins an existing color. If it genuinely needs its own, check it in 
 3. All CI checks must pass before merge (PHPCS, PHPStan, PHPUnit across PHP 7.4 + 8.3 plus a multisite run, Playwright).
 4. Keep commits focused, one logical change per commit.
 
+### Descriptions
+
+WordPress moves at the speed of volunteer review, and there is only so much of it to go around. The thing that helps most is a sentence at the top saying what we would miss by only reading the diff. That is the whole ask. Short is good, "couldn't test this on multisite" is good, and if it only occurs to you after opening, just edit it in.
+
 ### Public surfaces
 
 A hook, REST route, WP-CLI command, constant, or browser global that a site can reach is a promise: renaming it later breaks that site. `public-surface.yml` labels any pull request that adds one and comments with the ones nothing has been written about yet.

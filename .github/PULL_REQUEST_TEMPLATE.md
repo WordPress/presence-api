@@ -1,4 +1,10 @@
 <!--
+💬 What would we miss by only reading the diff?
+
+⏳ A minute of writing here can save a maintainer an hour of reading.
+-->
+
+<!--
 Hi there! Thanks for contributing to the Presence API feature plugin.
 
 This GitHub repository is where the feature plugin's work happens — issues
@@ -13,8 +19,6 @@ If this is your first time contributing, the following may be helpful:
 - Proper spelling and grammar related best practices: https://make.wordpress.org/core/handbook/best-practices/spelling/
 - ✨ If you are using AI tools, you must adhere to the AI Guidelines: https://make.wordpress.org/ai/handbook/ai-guidelines/
 -->
-
-<!-- Insert a description of your changes here -->
 
 Fixes #
 
