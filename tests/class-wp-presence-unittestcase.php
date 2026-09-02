@@ -33,9 +33,9 @@ abstract class WP_Presence_UnitTestCase extends WP_UnitTestCase {
 	/**
 	 * Returns every live presence entry for one user, across all rooms.
 	 *
-	 * Reads the table directly. Nothing in the plugin needs a per-user view, so
-	 * this stays a test affordance rather than an API function kept alive only
-	 * by the assertions below it.
+	 * Reads the table directly. The privacy exporter reads every stored row,
+	 * expired ones included, so nothing in the plugin needs this TTL-filtered
+	 * view and it stays a test affordance rather than an API function.
 	 *
 	 * @param int $user_id The user whose entries to read.
 	 * @param int $timeout Optional. TTL in seconds. Default WP_PRESENCE_DEFAULT_TTL.

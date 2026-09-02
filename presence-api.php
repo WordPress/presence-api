@@ -104,6 +104,7 @@ require_once WP_PRESENCE_PLUGIN_DIR . 'includes/cron.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/post-lock-bridge.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/screen-revisions.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/lifecycle.php';
+require_once WP_PRESENCE_PLUGIN_DIR . 'includes/privacy.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/settings.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/admin-bar.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/user-list.php';
@@ -339,6 +340,9 @@ add_action( 'rest_api_init', 'wp_presence_register_rest_routes' );
 
 add_action( 'wp_delete_expired_presence_data', 'wp_delete_expired_presence_data' );
 add_action( 'admin_init', 'wp_presence_schedule_cleanup' );
+add_action( 'admin_init', 'wp_presence_add_privacy_policy_content' );
+add_filter( 'wp_privacy_personal_data_exporters', 'wp_presence_register_personal_data_exporter' );
+add_filter( 'wp_privacy_personal_data_erasers', 'wp_presence_register_personal_data_eraser' );
 // phpcs:ignore WordPress.WP.CronInterval -- 60-second interval is intentional for presence cleanup.
 add_filter( 'cron_schedules', 'wp_presence_cron_schedules' );
 
