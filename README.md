@@ -43,7 +43,7 @@ Post types opt in via `add_post_type_support( 'post', 'presence' )`.
 
 Rooms carry no producer namespace of their own — this plugin's own writers are told apart from anyone else's entries in the same room by a `client_id` prefix instead. `user-{user_id}` (admin/online room, from `includes/heartbeat.php` and `includes/lifecycle.php`) and `editor-{user_id}` (post rooms, from `includes/heartbeat.php` and `includes/post-lock-bridge.php`) are reserved this way; a row using either belongs to this plugin and has the state shape its writer expects.
 
-Anything else sharing a room — another plugin relaying awareness from an external source, a REST client, a WP-CLI entry — must prefix its own `client_id` (e.g. `sync-{id}`) so it can't collide with those rows or be mistaken for one.
+Anything else sharing a room — another plugin relaying awareness from an external source, a REST client — must prefix its own `client_id` so it can't collide with those rows or be mistaken for one. `sync-` is already spoken for: the [sync-storage](https://github.com/WordPress/sync-storage) plugin writes Gutenberg awareness into the same post rooms under that prefix.
 
 The `editor-` prefix is load-bearing rather than cosmetic: `includes/heartbeat.php` counts the editors in a post room with `str_starts_with( $entry->client_id, 'editor-' )`, so a colliding prefix inflates that count.
 
