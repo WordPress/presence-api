@@ -45,6 +45,8 @@ Rooms carry no producer namespace of their own — this plugin's own writers are
 
 Anything else sharing a room — another plugin relaying awareness from an external source, a REST client, a WP-CLI entry — must prefix its own `client_id` (e.g. `sync-{id}`) so it can't collide with those rows or be mistaken for one.
 
+The `editor-` prefix is load-bearing rather than cosmetic: `includes/heartbeat.php` counts the editors in a post room with `str_starts_with( $entry->client_id, 'editor-' )`, so a colliding prefix inflates that count.
+
 ## PHP API
 
 The following public functions are part of the stable public API contract. All other helper functions in `includes/functions.php` and `includes/network-functions.php` (such as `wp_get_active_rooms()`, `wp_get_presence_summary()`, etc.) are marked `@access private`, are intended for internal plugin use only, and may change or be removed without notice.
