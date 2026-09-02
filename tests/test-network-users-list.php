@@ -71,6 +71,44 @@ class WP_Test_Network_Users_List extends WP_Presence_Network_UnitTestCase {
 	}
 
 	/**
+	 * A count of zero is a headcount, and a network that does not aggregate has
+	 * not taken one. Rows are sitting there so the number would be wrong rather
+	 * than merely unknown.
+	 *
+	 * @covers ::wp_presence_network_users_views
+	 */
+	public function test_users_view_is_withheld_when_the_network_does_not_aggregate() {
+		$this->become_network_admin();
+		$this->set_network_summary_row( $this->create_blog(), array( self::$editor_id ) );
+
+		add_filter( 'wp_presence_network_aggregation_enabled', '__return_false' );
+		wp_presence_flush_network_summary_cache();
+
+		$views = wp_presence_network_users_views( array() );
+
+		$this->assertArrayNotHasKey( 'presence_online', $views );
+	}
+
+	/**
+	 * Withholding the view leaves a column of em dashes and nothing saying why,
+	 * so the screen has to carry the same notice the Sites list does.
+	 *
+	 * @covers ::wp_presence_network_aggregation_notice
+	 */
+	public function test_the_users_list_warns_when_the_network_does_not_aggregate() {
+		$this->become_network_admin();
+		set_current_screen( 'users-network' );
+
+		add_filter( 'wp_presence_network_aggregation_enabled', '__return_false' );
+
+		ob_start();
+		wp_presence_network_aggregation_notice();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString( 'not aggregated across this network', $output );
+	}
+
+	/**
 	 * @covers ::wp_presence_filter_network_online_users
 	 */
 	public function test_users_query_filter_requires_network_admin_context() {
