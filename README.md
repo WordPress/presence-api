@@ -148,6 +148,22 @@ add_action( 'wp_presence_screen_revision_bumped', function( $screen_key, $revisi
 }, 10, 3 );
 ```
 
+#### `wp_presence_collaboration_started`
+Fires when collaboration starts in a room (transition from 1 to 2+ editors). Only entries whose `client_id` begins with `editor-` count toward the transition, while `$entries` is every entry in the room. The previous count is held in a transient that expires on the presence TTL, so once those entries have aged out the next pair reads as a fresh start.
+```php
+add_action( 'wp_presence_collaboration_started', function( $room, $entries ) {
+    // Announce room active or update integration state
+}, 10, 2 );
+```
+
+#### `wp_presence_collaboration_ended`
+Fires when collaboration ends in a room (transition from 2+ to exactly 1 editor). The check runs on an editor heartbeat tick, so if every editor leaves at once there is nobody left to tick and the hook does not fire; the transient expires on the presence TTL and the room resets quietly.
+```php
+add_action( 'wp_presence_collaboration_ended', function( $room, $entries ) {
+    // Announce room inactive or update integration state
+}, 10, 2 );
+```
+
 ## REST API
 
 All endpoints require `edit_posts`. Responses include `Cache-Control: no-store`.
