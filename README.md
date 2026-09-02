@@ -79,7 +79,7 @@ Each entry object returned by `wp_get_presence()` has:
 | ----------- | -------- | --------------------------------------------------------------------------------------------------------------------------- |
 | `room`      | `string` | The room the entry belongs to.                                                                                              |
 | `client_id` | `string` | A `varchar` column — opaque, and not guaranteed numeric even when it looks like one. See [Client IDs](#client-ids).         |
-| `user_id`   | `int`    | `0` for an entry with no signed-in user.                                                                                    |
+| `user_id`   | `string` | `"0"` for an entry with no signed-in user. Every column comes back as a string, so cast before a strict comparison. |
 | `data`      | `array`  | Decoded from the stored JSON; an empty array if that JSON failed to decode.                                                 |
 | `date_gmt`  | `string` | A MySQL `datetime` string in UTC (e.g. `2024-01-01 12:00:00`), not a Unix timestamp. Convert with `strtotime( $entry->date_gmt . ' UTC' )`. |
 
