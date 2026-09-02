@@ -162,6 +162,9 @@ class WP_REST_Presence_Network_Controller extends WP_REST_Controller {
 		$response->header( 'X-WP-Total', $summary['total_sites_online'] );
 		$response->header( 'X-WP-TotalPages', (int) ceil( $summary['total_sites_online'] / $per_page ) );
 		$response->header( 'X-WP-Presence-Users-Online', $summary['total_users_online'] );
+		// An empty collection is two answers, and the body and status are the
+		// same for both.
+		$response->header( 'X-WP-Presence-Aggregating', $summary['aggregating'] ? '1' : '0' );
 		$response->header( 'Cache-Control', 'no-store' );
 
 		return $response;
@@ -199,6 +202,7 @@ class WP_REST_Presence_Network_Controller extends WP_REST_Controller {
 
 		$response = rest_ensure_response( $this->prepare_item_for_response( $item, $request )->get_data() );
 
+		$response->header( 'X-WP-Presence-Aggregating', $summary['aggregating'] ? '1' : '0' );
 		$response->header( 'Cache-Control', 'no-store' );
 
 		return $response;

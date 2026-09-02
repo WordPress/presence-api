@@ -241,4 +241,56 @@ class WP_Test_Presence_Network_Widget_Whos_Online extends WP_Presence_Network_Un
 
 		$this->assertStringContainsString( 'No users are currently online', $output );
 	}
+
+	/**
+	 * A network that has stopped aggregating knows nothing about who is online,
+	 * so reporting that nobody is would be an answer it cannot give.
+	 */
+	public function test_render_reports_that_the_network_does_not_aggregate() {
+		$this->set_presence_on_site( $this->create_blog(), self::$editor_id );
+
+		add_filter( 'wp_presence_network_aggregation_enabled', '__return_false' );
+		wp_presence_flush_network_summary_cache();
+
+		ob_start();
+		WP_Presence_Network_Widget_Whos_Online::render();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString( 'not aggregated across this network', $output );
+		$this->assertStringNotContainsString( 'No users are currently online', $output );
+	}
+
+	/**
+	 * Both states send an empty site list and no overflow, so on a quiet network
+	 * the flag is the only thing the hash has to go on: without it the switch
+	 * going off reports unchanged and the widget never starts saying so.
+	 */
+	public function test_heartbeat_repaints_when_a_quiet_network_stops_aggregating() {
+		$this->become_network_admin();
+
+		$first = $this->tick();
+
+		$this->assertTrue( $first['presence-network-widget-aggregating'] );
+		$this->assertSame( array(), $first['presence-network-widget'] );
+
+		add_filter( 'wp_presence_network_aggregation_enabled', '__return_false' );
+		wp_presence_flush_network_summary_cache();
+
+		$second = $this->tick( array( 'presence-network-widget-hash' => $first['presence-network-widget-hash'] ) );
+
+		$this->assertArrayHasKey( 'presence-network-widget', $second, 'The switch going off reported unchanged.' );
+		$this->assertFalse( $second['presence-network-widget-aggregating'] );
+	}
+
+	/**
+	 * The tick replaces the whole list, so a network that stops aggregating
+	 * mid-session has to be told about by the script too, not just the render.
+	 */
+	public function test_inline_script_carries_the_not_aggregated_message() {
+		WP_Presence_Network_Widget_Whos_Online::enqueue_scripts( 'index.php' );
+
+		$script = implode( '', (array) wp_scripts()->get_data( 'presence-network-widget', 'after' ) );
+
+		$this->assertStringContainsString( 'not aggregated across this network', $script );
+	}
 }

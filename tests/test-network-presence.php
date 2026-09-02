@@ -302,9 +302,66 @@ class WP_Test_Network_Presence extends WP_Presence_Network_UnitTestCase {
 		add_filter( 'wp_is_large_network', '__return_true' );
 		wp_presence_flush_network_summary_cache();
 
-		$this->assertSame( wp_presence_empty_network_summary(), wp_presence_get_network_summary() );
+		$this->assertSame( wp_presence_empty_network_summary( false ), wp_presence_get_network_summary() );
 		$this->assertSame( array(), wp_presence_get_network_online_user_ids() );
 		$this->assertSame( array(), wp_presence_get_network_sites_for_user( self::$editor_id ) );
+	}
+
+	/**
+	 * A network crosses wp_is_large_network() on its own, so unless the read
+	 * itself tells the two apart, the screens go quietly from correct to wrong.
+	 *
+	 * @covers ::wp_presence_compute_network_snapshot
+	 * @covers ::wp_presence_empty_network_summary
+	 */
+	public function test_summary_reports_that_a_gated_network_does_not_aggregate() {
+		add_filter( 'wp_presence_network_aggregation_enabled', '__return_false' );
+		wp_presence_flush_network_summary_cache();
+
+		$this->assertFalse( wp_presence_get_network_summary()['aggregating'] );
+		$this->assertFalse( wp_presence_get_network_snapshot()['aggregating'] );
+	}
+
+	/**
+	 * The quiet network the gated one has to be told apart from.
+	 *
+	 * @covers ::wp_presence_compute_network_snapshot
+	 * @covers ::wp_presence_empty_network_summary
+	 */
+	public function test_summary_reports_an_aggregating_network_with_nobody_online() {
+		$this->assertSame( array(), wp_presence_get_network_summary()['sites'] );
+		$this->assertTrue( wp_presence_get_network_summary()['aggregating'] );
+	}
+
+	/**
+	 * Only one half of the gate is a policy: a network activated one request
+	 * before its table exists aggregates, and answers quiet rather than gated.
+	 *
+	 * @covers ::wp_presence_compute_network_snapshot
+	 * @covers ::wp_presence_empty_network_summary
+	 */
+	public function test_summary_still_reports_aggregating_before_the_table_is_provisioned() {
+		$version = get_site_option( 'wp_presence_network_summary_db_version' );
+		delete_site_option( 'wp_presence_network_summary_db_version' );
+
+		$aggregating = wp_presence_get_network_summary()['aggregating'];
+
+		update_site_option( 'wp_presence_network_summary_db_version', $version );
+
+		$this->assertTrue( $aggregating );
+	}
+
+	/**
+	 * The flag tracks the feed, not whether the read came back empty.
+	 *
+	 * @covers ::wp_presence_compute_network_snapshot
+	 */
+	public function test_summary_reports_aggregating_on_a_populated_network() {
+		$blog_id = $this->create_blog();
+		$this->set_network_summary_row( $blog_id, array( self::$editor_id ) );
+		wp_presence_flush_network_summary_cache();
+
+		$this->assertTrue( wp_presence_get_network_summary()['aggregating'] );
 	}
 
 	/**

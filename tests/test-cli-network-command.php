@@ -87,6 +87,35 @@ class WP_Test_Presence_CLI_Network_Command extends WP_Presence_Network_UnitTestC
 		$this->assertSame( array(), WP_CLI::$formatted );
 	}
 
+	/**
+	 * Zero sites and zero users is the answer a network that has stopped
+	 * aggregating cannot give, so it says what it does not know instead.
+	 */
+	public function test_a_network_that_does_not_aggregate_says_so_instead_of_reporting_zero() {
+		$this->set_network_summary_row( $this->create_blog(), array( self::$editor_id ) );
+
+		add_filter( 'wp_presence_network_aggregation_enabled', '__return_false' );
+		wp_presence_flush_network_summary_cache();
+
+		$this->command->network( array(), array() );
+
+		$this->assertSame( array(), WP_CLI::messages( 'log' ) );
+		$this->assertStringContainsString( 'not aggregated across this network', WP_CLI::messages( 'warning' )[0] );
+	}
+
+	/**
+	 * A script reading the JSON gets the flag rather than the warning, which
+	 * only ever reaches STDERR.
+	 */
+	public function test_json_carries_the_aggregation_state() {
+		add_filter( 'wp_presence_network_aggregation_enabled', '__return_false' );
+		wp_presence_flush_network_summary_cache();
+
+		$this->command->network( array(), array( 'format' => 'json' ) );
+
+		$this->assertFalse( json_decode( WP_CLI::messages( 'log' )[0], true )['aggregating'] );
+	}
+
 	public function test_json_emits_the_whole_summary() {
 		$blog_id = $this->create_blog();
 

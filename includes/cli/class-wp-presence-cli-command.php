@@ -255,6 +255,13 @@ class WP_Presence_CLI_Command extends WP_CLI_Command {
 			return;
 		}
 
+		// Reported instead of the totals, not alongside them: zero sites and
+		// zero users is the answer this network cannot give.
+		if ( ! $summary['aggregating'] ) {
+			WP_CLI::warning( __( 'Presence is not aggregated across this network, so who is online cannot be reported.', 'presence-api' ) );
+			return;
+		}
+
 		/* translators: %d: Number of sites with someone online. */
 		WP_CLI::log( sprintf( __( 'Sites online: %d', 'presence-api' ), $summary['total_sites_online'] ) );
 		/* translators: %d: Number of users online, summed per site. */
