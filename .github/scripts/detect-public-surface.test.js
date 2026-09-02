@@ -4,7 +4,8 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 
 const findSurfaces = require('./detect-public-surface.js');
-const { newSurfaces, formatAudit, formatComment, isScanned, MARKER } = findSurfaces;
+const { newSurfaces, ownConstants, formatAudit, formatComment, isScanned, MARKER } =
+  findSurfaces;
 
 const ids = (surfaces) => surfaces.map((s) => s.id);
 const php = (source) => ids(findSurfaces(source, 'includes/functions.php'));
@@ -52,6 +53,144 @@ test('counts a guarded constant, ignores a bare define and core guards', () => {
     define( 'WP_PRESENCE_INTERNAL', 5 );
   `;
   assert.deepEqual(php(source), ['constant:WP_PRESENCE_DEFAULT_TTL']);
+});
+
+test('counts a constant the plugin only ever reads', () => {
+  // Nothing here defines it: a site sets it in `wp-config.php` or it stays
+  // undefined, which is what makes the name a promise in the first place.
+  const source = `
+    if ( defined( 'DISABLE_WP_PRESENCE' ) && DISABLE_WP_PRESENCE ) {
+      return;
+    }
+  `;
+  assert.deepEqual(php(source), ['constant:DISABLE_WP_PRESENCE']);
+});
+
+test("a name outside the plugin's prefix is still the plugin's promise", () => {
+  assert.deepEqual(php("if ( defined( 'PRESENCE_API_DEBUG' ) ) {}"), [
+    'constant:PRESENCE_API_DEBUG',
+  ]);
+});
+
+test("core constants are WordPress's promise, in either form", () => {
+  const source = `
+    if ( ! defined( 'ABSPATH' ) ) {
+      exit;
+    }
+    if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
+      exit;
+    }
+    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {}
+    if ( defined( 'WP_CLI' ) && WP_CLI ) {}
+    if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {}
+  `;
+  assert.deepEqual(php(source), []);
+});
+
+test('a constant defined outright stays internal, however often it is read', () => {
+  const source = `
+    define( 'WP_PRESENCE_MAX_KEY_LENGTH', 191 );
+    if ( defined( 'WP_PRESENCE_MAX_KEY_LENGTH' ) ) {
+      $max = WP_PRESENCE_MAX_KEY_LENGTH;
+    }
+  `;
+  assert.deepEqual(php(source), []);
+});
+
+test('a guarded define and a read of it are the one surface', () => {
+  const source = `
+    if ( ! defined( 'WP_PRESENCE_DEFAULT_TTL' ) ) {
+      define( 'WP_PRESENCE_DEFAULT_TTL', 150 );
+    }
+    if ( defined( 'WP_PRESENCE_DEFAULT_TTL' ) && WP_PRESENCE_DEFAULT_TTL ) {
+      $ttl = WP_PRESENCE_DEFAULT_TTL;
+    }
+  `;
+  assert.deepEqual(ids(newSurfaces([], findSurfaces(source, 'includes/functions.php'))), [
+    'constant:WP_PRESENCE_DEFAULT_TTL',
+  ]);
+});
+
+test('a docblock above the read documents the constant', () => {
+  const [read] = findSurfaces(
+    `/**
+ * Whether presence is switched off for the whole site.
+ */
+if ( defined( 'DISABLE_WP_PRESENCE' ) && DISABLE_WP_PRESENCE ) {}`,
+    'includes/functions.php'
+  );
+  assert.equal(read.id, 'constant:DISABLE_WP_PRESENCE');
+  assert.equal(read.documented, true);
+});
+
+test('@access private withdraws a constant the same way', () => {
+  const source = `/**
+ * Internal kill switch.
+ *
+ * @since 0.1.0
+ * @access private
+ */
+if ( defined( 'WP_PRESENCE_INTERNAL_OFF' ) && WP_PRESENCE_INTERNAL_OFF ) {}`;
+  assert.deepEqual(php(source), []);
+  assert.deepEqual(php(source.replace(' * @access private\n', '')), [
+    'constant:WP_PRESENCE_INTERNAL_OFF',
+  ]);
+});
+
+test('the core list covers the constants a plugin actually guards on', () => {
+  const source = `
+    if ( defined( 'SHORTINIT' ) && SHORTINIT ) {}
+    if ( defined( 'WP_USE_THEMES' ) && WP_USE_THEMES ) {}
+    if ( defined( 'WP_ALLOW_REPAIR' ) && WP_ALLOW_REPAIR ) {}
+    if ( defined( 'WP_AUTO_UPDATE_CORE' ) ) {}
+    if ( defined( 'DISALLOW_FILE_MODS' ) && DISALLOW_FILE_MODS ) {}
+    if ( defined( 'DAY_IN_SECONDS' ) ) {}
+    if ( defined( 'DB_HOST' ) ) {}
+    if ( defined( 'COOKIEHASH' ) ) {}
+    if ( defined( 'SUNRISE' ) && SUNRISE ) {}
+  `;
+  assert.deepEqual(php(source), []);
+});
+
+test("a constant defined in one file is the plugin's own in every other", () => {
+  const bootstrap = "define( 'WP_PRESENCE_MAX_KEY_LENGTH', 191 );";
+  const reader = "if ( defined( 'WP_PRESENCE_MAX_KEY_LENGTH' ) ) {}";
+
+  // Alone, the reading file cannot tell an internal from a promise.
+  assert.deepEqual(php(reader), ['constant:WP_PRESENCE_MAX_KEY_LENGTH']);
+
+  // Weighed with the file that defines it, the way the CLI weighs a whole ref.
+  const own = ownConstants([bootstrap, reader]);
+  assert.deepEqual(ids(findSurfaces(reader, 'includes/functions.php', own)), []);
+});
+
+test('a guard anywhere in the ref keeps the constant settable', () => {
+  const bootstrap = `if ( ! defined( 'WP_PRESENCE_DEFAULT_TTL' ) ) {
+      define( 'WP_PRESENCE_DEFAULT_TTL', 150 );
+    }`;
+  const reader = "if ( defined( 'WP_PRESENCE_DEFAULT_TTL' ) ) {}";
+  const own = ownConstants([bootstrap, reader]);
+
+  assert.deepEqual(ids(findSurfaces(reader, 'includes/functions.php', own)), [
+    'constant:WP_PRESENCE_DEFAULT_TTL',
+  ]);
+});
+
+test('a private declaration stays private where the constant is read again', () => {
+  const source = `/**
+ * Internal kill switch.
+ *
+ * @since 0.1.0
+ * @access private
+ */
+if ( ! defined( 'WP_PRESENCE_INTERNAL' ) ) {
+	define( 'WP_PRESENCE_INTERNAL', 5 );
+}
+
+if ( defined( 'WP_PRESENCE_INTERNAL' ) && WP_PRESENCE_INTERNAL ) {
+	return;
+}`;
+  assert.deepEqual(php(source), []);
 });
 
 test('reads a route through a variable namespace', () => {
