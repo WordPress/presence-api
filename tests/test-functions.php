@@ -94,6 +94,59 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * No explicit timestamp still stamps the row with now, unchanged from
+	 * before the $date_gmt parameter existed.
+	 *
+	 * @covers ::wp_set_presence
+	 */
+	public function test_set_presence_defaults_date_gmt_to_now() {
+		$before = gmdate( 'Y-m-d H:i:s' );
+		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
+		$after = gmdate( 'Y-m-d H:i:s' );
+
+		$entries = wp_get_presence( 'test/room' );
+
+		$this->assertGreaterThanOrEqual( $before, $entries[0]->date_gmt );
+		$this->assertLessThanOrEqual( $after, $entries[0]->date_gmt );
+	}
+
+	/**
+	 * A caller relaying awareness on behalf of another client can preserve
+	 * that client's own timestamp instead of stamping it with the relay's
+	 * clock.
+	 *
+	 * @covers ::wp_set_presence
+	 */
+	public function test_set_presence_accepts_an_explicit_past_timestamp() {
+		$past = gmdate( 'Y-m-d H:i:s', time() - 60 );
+
+		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id, $past );
+
+		$entries = wp_get_presence( 'test/room' );
+
+		$this->assertSame( $past, $entries[0]->date_gmt );
+	}
+
+	/**
+	 * A future timestamp would let a caller pin a row past the TTL
+	 * indefinitely, so it is clamped to now instead of trusted as given.
+	 *
+	 * @covers ::wp_set_presence
+	 */
+	public function test_set_presence_clamps_a_future_timestamp_to_now() {
+		$future = gmdate( 'Y-m-d H:i:s', time() + HOUR_IN_SECONDS );
+
+		$before = gmdate( 'Y-m-d H:i:s' );
+		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id, $future );
+		$after = gmdate( 'Y-m-d H:i:s' );
+
+		$entries = wp_get_presence( 'test/room' );
+
+		$this->assertGreaterThanOrEqual( $before, $entries[0]->date_gmt );
+		$this->assertLessThanOrEqual( $after, $entries[0]->date_gmt );
+	}
+
+	/**
 	 * @covers ::wp_remove_presence
 	 */
 	public function test_remove_presence() {
