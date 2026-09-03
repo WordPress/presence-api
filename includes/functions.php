@@ -183,6 +183,106 @@ function wp_presence_recording_enabled() {
 }
 
 /**
+ * Returns how long until the client is expected to send its next Heartbeat.
+ *
+ * @access private
+ *
+ * @since 0.4.0
+ *
+ * @return int Seconds.
+ */
+function wp_presence_next_tick_gap() {
+	// Core's scheduleNextTick() overrides the interval to 120s whenever the
+	// window is blurred, and never reflects that back into the interval it
+	// reports in the same request, so the reported value understates the real
+	// gap on an unfocused tab. That is the worst case, and the assumption to
+	// make whenever the request does not say otherwise.
+	$blurred = 120;
+
+	// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled by WordPress in wp_ajax_heartbeat() before any of this runs.
+	if ( ! isset( $_POST['interval'], $_POST['has_focus'] ) || 'true' !== $_POST['has_focus'] ) {
+		return $blurred;
+	}
+
+	// phpcs:ignore WordPress.Security.NonceVerification.Missing -- As above.
+	$interval = absint( $_POST['interval'] );
+
+	return $interval > 0 ? $interval : $blurred;
+}
+
+/**
+ * Returns the age at which an unchanged presence row still has to be rewritten.
+ *
+ * Skipping a write leaves the row's existing date_gmt in place, so it is only
+ * safe while the row will still be inside wp_get_presence()'s cutoff when the
+ * next tick arrives. Deriving this from wp_presence_get_timeout() rather than
+ * WP_PRESENCE_DEFAULT_TTL matters: a site filtering the TTL below the tick
+ * interval would otherwise make its users blink offline.
+ *
+ * @access private
+ *
+ * @since 0.4.0
+ *
+ * @return int Age in seconds. 0 means never skip.
+ */
+function wp_presence_refresh_threshold() {
+	// Mirrors TTL_SAFETY_MARGIN in assets/js/presence-ping.js, which caps the
+	// client's own idle backoff against the same TTL. The two have to agree.
+	$margin = 15;
+
+	$timeout = wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL );
+
+	return max( 0, $timeout - $margin - wp_presence_next_tick_gap() );
+}
+
+/**
+ * Reports whether a write would leave the stored row exactly as it already is.
+ *
+ * @access private
+ *
+ * @since 0.4.0
+ *
+ * @param string $room      The room identifier.
+ * @param string $client_id The client identifier.
+ * @param string $data_json The encoded state about to be written.
+ * @return bool True when the row can be left alone.
+ */
+function wp_presence_write_is_redundant( $room, $client_id, $data_json ) {
+	global $wpdb;
+
+	$threshold = wp_presence_refresh_threshold();
+
+	if ( $threshold <= 0 ) {
+		return false;
+	}
+
+	// The network summary push hangs off wp_presence_admin_room_changed, so an
+	// admin-room write that is skipped also skips the push. Loaded on multisite
+	// only, hence the guard.
+	if ( wp_presence_admin_room() === $room
+		&& function_exists( 'wp_presence_network_summary_push_is_due' )
+		&& wp_presence_network_summary_push_is_due()
+	) {
+		return false;
+	}
+
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+	$current = $wpdb->get_row(
+		$wpdb->prepare(
+			"SELECT data, date_gmt FROM {$wpdb->presence} WHERE room = %s AND client_id = %s",
+			$room,
+			$client_id
+		)
+	);
+
+	if ( ! $current || $current->data !== $data_json ) {
+		return false;
+	}
+
+	return ( time() - (int) strtotime( $current->date_gmt . ' UTC' ) ) <= $threshold;
+}
+
+/**
  * Upserts a client's presence state in a room.
  *
  * Uses INSERT ... ON DUPLICATE KEY UPDATE for atomic upserts
@@ -207,6 +307,10 @@ function wp_set_presence( $room, $client_id, $state, $user_id = 0 ) {
 
 	$data_json = wp_json_encode( $state );
 	$now       = gmdate( 'Y-m-d H:i:s' );
+
+	if ( wp_presence_write_is_redundant( $room, $client_id, $data_json ) ) {
+		return true;
+	}
 
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	$result = $wpdb->query(

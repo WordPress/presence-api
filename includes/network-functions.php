@@ -261,6 +261,38 @@ function wp_presence_push_network_summary() {
 }
 
 /**
+ * Reports whether this site's network summary row is due to be rewritten.
+ *
+ * The push runs off wp_presence_admin_room_changed, which only fires on a real
+ * write. A presence write skipped as redundant therefore has to keep firing the
+ * push on schedule, or the summary row decays past the read cutoff and every
+ * network surface reports nobody online.
+ *
+ * Only the staleness half of wp_presence_network_summary_needs_push() applies
+ * here: a membership change is somebody else's state changing, and their own
+ * write announces it.
+ *
+ * @access private
+ *
+ * @since 0.4.0
+ *
+ * @return bool True when a push is owed.
+ */
+function wp_presence_network_summary_push_is_due() {
+	if ( ! wp_presence_network_aggregation_enabled() || ! wp_presence_has_network_summary_table() ) {
+		return false;
+	}
+
+	$last = get_option( 'wp_presence_network_pushed' );
+
+	if ( ! is_array( $last ) || ! isset( $last['time'] ) ) {
+		return true;
+	}
+
+	return (int) $last['time'] <= time() - wp_presence_network_summary_refresh_interval();
+}
+
+/**
  * Decides whether this site has anything to write into the summary table.
  *
  * True when the online set differs from the one this site last pushed, or when
