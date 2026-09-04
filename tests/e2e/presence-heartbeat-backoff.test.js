@@ -97,22 +97,19 @@ test.describe( 'Presence Heartbeat Idle Backoff', () => {
 
 		// One tick establishes the room's hash; repeat until the client sees
 		// enough consecutive unchanged ticks to back off.
-		let widened = false;
-		for ( let i = 0; i < 10 && ! widened; i++ ) {
-			await captureHeartbeatTick( page );
-			const current = await page.evaluate( () =>
-				wp.heartbeat.interval()
-			);
-			if ( current > normalInterval ) {
-				widened = true;
-			}
-		}
-
-		expect( widened ).toBe( true );
-		const widenedInterval = await page.evaluate( () =>
-			wp.heartbeat.interval()
-		);
-		expect( widenedInterval ).toBeGreaterThan( normalInterval );
+		let widenedInterval = normalInterval;
+		await expect
+			.poll(
+				async () => {
+					await captureHeartbeatTick( page );
+					widenedInterval = await page.evaluate( () =>
+						wp.heartbeat.interval()
+					);
+					return widenedInterval;
+				},
+				{ intervals: [ 0 ], timeout: 20_000 }
+			)
+			.toBeGreaterThan( normalInterval );
 		// The idle interval is itself under the TTL.
 		const idleInterval = await page.evaluate(
 			() => window.wpPresenceConfig.idleInterval

@@ -79,10 +79,18 @@ module.exports = [
 				wp: 'readonly',
 			},
 		},
+	},
+
+	{
+		// A screenshot-artifact generator, not a correctness suite: waits are
+		// real time (idle/expiry has no DOM signal), the admin bar dropdown
+		// check is screen-size dependent, and a captured screenshot is the
+		// pass condition rather than an expect().
+		files: [ 'tests/e2e/presence-screenshots.test.js' ],
 		rules: {
-			// Swapping these waits changes what the specs actually wait for,
-			// so they are flagged to be revisited rather than failed on.
-			'playwright/no-networkidle': 'warn',
+			'playwright/expect-expect': 'off',
+			'playwright/no-wait-for-timeout': 'off',
+			'playwright/no-conditional-in-test': 'off',
 		},
 	},
 

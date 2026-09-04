@@ -71,13 +71,8 @@ async function loginHeadlessUser( headlessBrowser, user, destinationUrl ) {
 
 	const userPage = await context.newPage();
 	await userPage.goto( destinationUrl || `${ BASE_URL }/wp-admin/` );
-	await userPage.waitForLoadState( 'networkidle' );
-
-	await userPage.evaluate( () => {
-		if ( typeof wp !== 'undefined' && wp.heartbeat ) {
-			wp.heartbeat.connectNow();
-		}
-	} );
+	await waitForHeartbeat( userPage );
+	await userPage.evaluate( () => wp.heartbeat.connectNow() );
 
 	return { context, page: userPage };
 }

@@ -83,14 +83,23 @@ function captureHeartbeatSend( page ) {
 }
 
 async function waitForLeaderPing( page, maxAttempts = 20 ) {
-	for ( let attempt = 0; attempt < maxAttempts; attempt++ ) {
-		const data = await captureHeartbeatSend( page );
-		if ( data[ 'presence-screen-ping' ] ) {
-			return data;
-		}
-		await page.waitForTimeout( 100 );
-	}
-	throw new Error( 'Tab never won presence-screen-ping leadership.' );
+	let winningData;
+
+	await expect
+		.poll(
+			async () => {
+				winningData = await captureHeartbeatSend( page );
+				return Boolean( winningData[ 'presence-screen-ping' ] );
+			},
+			{
+				intervals: [ 0 ],
+				timeout: maxAttempts * 100,
+				message: 'Tab never won presence-screen-ping leadership.',
+			}
+		)
+		.toBe( true );
+
+	return winningData;
 }
 
 test.describe( 'Presence Stale-Screen Tab Coalescing', () => {
@@ -188,9 +197,9 @@ test.describe( 'Presence Stale-Screen Tab Coalescing', () => {
 		);
 
 		await Promise.all( [
-			sibling.waitForSelector( '.wp-presence-stale-notice', {
-				timeout: 8000,
-			} ),
+			expect(
+				sibling.locator( '.wp-presence-stale-notice' )
+			).toBeVisible( { timeout: 8000 } ),
 			page.evaluate( () => wp.heartbeat.connectNow() ),
 		] );
 
@@ -246,23 +255,27 @@ test.describe( 'Presence Stale-Screen Banner', () => {
 
 		editAsUser( post.id, otherUserId );
 		await Promise.all( [
-			page.waitForSelector( '.wp-presence-stale-notice', {
+			expect( page.locator( '.wp-presence-stale-notice' ) ).toBeVisible( {
 				timeout: 8000,
 			} ),
 			page.evaluate( () => wp.heartbeat.connectNow() ),
 		] );
 
-		await page.click( '.wp-presence-stale-notice .notice-dismiss' );
+		await page
+			.locator( '.wp-presence-stale-notice .notice-dismiss' )
+			.click();
 		await expect( page.locator( '.wp-presence-stale-notice' ) ).toHaveCount(
 			0
 		);
 
-		// Past the one-second resolution of the revision.
+		// Past the one-second resolution of the revision — no DOM state to
+		// poll for yet, so the wait has to be real time.
+		// eslint-disable-next-line playwright/no-wait-for-timeout
 		await page.waitForTimeout( 1200 );
 		editAsUser( post.id, otherUserId );
 
 		await Promise.all( [
-			page.waitForSelector( '.wp-presence-stale-notice', {
+			expect( page.locator( '.wp-presence-stale-notice' ) ).toBeVisible( {
 				timeout: 8000,
 			} ),
 			page.evaluate( () => wp.heartbeat.connectNow() ),
@@ -290,6 +303,9 @@ test.describe( 'Presence Stale-Screen Banner', () => {
 		editAsUser( post.id, viewerId );
 		for ( let tick = 0; tick < 3; tick++ ) {
 			await page.evaluate( () => wp.heartbeat.connectNow() );
+			// Paces ticks a fixed interval apart; there is no DOM state to
+			// poll for between them.
+			// eslint-disable-next-line playwright/no-wait-for-timeout
 			await page.waitForTimeout( 500 );
 		}
 		await expect( page.locator( '.wp-presence-stale-notice' ) ).toHaveCount(
@@ -297,11 +313,13 @@ test.describe( 'Presence Stale-Screen Banner', () => {
 		);
 
 		// A banner here proves the self-save advanced the baseline rather
-		// than the screen having gone inert.
+		// than the screen having gone inert. Past the one-second resolution
+		// of the revision — no DOM state to poll for yet.
+		// eslint-disable-next-line playwright/no-wait-for-timeout
 		await page.waitForTimeout( 1200 );
 		editAsUser( post.id, otherUserId );
 		await Promise.all( [
-			page.waitForSelector( '.wp-presence-stale-notice', {
+			expect( page.locator( '.wp-presence-stale-notice' ) ).toBeVisible( {
 				timeout: 8000,
 			} ),
 			page.evaluate( () => wp.heartbeat.connectNow() ),
@@ -325,19 +343,24 @@ test.describe( 'Presence Stale-Screen Banner', () => {
 
 		editAsUser( post.id, otherUserId );
 		await Promise.all( [
-			page.waitForSelector( '.wp-presence-stale-notice', {
+			expect( page.locator( '.wp-presence-stale-notice' ) ).toBeVisible( {
 				timeout: 8000,
 			} ),
 			page.evaluate( () => wp.heartbeat.connectNow() ),
 		] );
 
-		await page.click( '.wp-presence-stale-notice .notice-dismiss' );
+		await page
+			.locator( '.wp-presence-stale-notice .notice-dismiss' )
+			.click();
 
 		// The revision that raised the banner is still ahead of the page's
 		// original baseline, so a fix that only clears the shown flag brings
 		// the same banner straight back.
 		for ( let tick = 0; tick < 3; tick++ ) {
 			await page.evaluate( () => wp.heartbeat.connectNow() );
+			// Paces ticks a fixed interval apart; there is no DOM state to
+			// poll for between them.
+			// eslint-disable-next-line playwright/no-wait-for-timeout
 			await page.waitForTimeout( 500 );
 		}
 

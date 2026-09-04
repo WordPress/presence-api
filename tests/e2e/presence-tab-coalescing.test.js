@@ -57,14 +57,23 @@ function captureHeartbeatSend( page ) {
  * @return {Promise<object>} The `heartbeat-send` data from the winning attempt.
  */
 async function waitForLeaderPing( page, maxAttempts = 20 ) {
-	for ( let attempt = 0; attempt < maxAttempts; attempt++ ) {
-		const data = await captureHeartbeatSend( page );
-		if ( data[ 'presence-ping' ] ) {
-			return data;
-		}
-		await page.waitForTimeout( 100 );
-	}
-	throw new Error( 'Tab never won presence-ping leadership.' );
+	let winningData;
+
+	await expect
+		.poll(
+			async () => {
+				winningData = await captureHeartbeatSend( page );
+				return Boolean( winningData[ 'presence-ping' ] );
+			},
+			{
+				intervals: [ 0 ],
+				timeout: maxAttempts * 100,
+				message: 'Tab never won presence-ping leadership.',
+			}
+		)
+		.toBe( true );
+
+	return winningData;
 }
 
 /**
