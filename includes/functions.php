@@ -288,7 +288,7 @@ function wp_presence_write_is_redundant( $room, $client_id, $data_json ) {
  * Uses INSERT ... ON DUPLICATE KEY UPDATE for atomic upserts
  * via the UNIQUE KEY (room, client_id).
  *
- * @since 0.3.0 Added the $date_gmt parameter.
+ * @since 0.4.0 Added the $date_gmt parameter.
  *
  * @param string      $room      The room identifier.
  * @param string      $client_id The client identifier.
