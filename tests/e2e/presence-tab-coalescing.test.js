@@ -24,7 +24,8 @@ import { test, expect } from '@wordpress/e2e-test-utils-playwright';
  */
 function waitForHeartbeat( page ) {
 	return page.waitForFunction(
-		() => typeof wp !== 'undefined' && wp.heartbeat && wp.heartbeat.connectNow
+		() =>
+			typeof wp !== 'undefined' && wp.heartbeat && wp.heartbeat.connectNow
 	);
 }
 
@@ -33,7 +34,7 @@ function waitForHeartbeat( page ) {
  * `heartbeat-send` listeners saw.
  *
  * @param {import('@playwright/test').Page} page
- * @return {Promise<object>}
+ * @return {Promise<object>} The recorded Heartbeat activity.
  */
 function captureHeartbeatSend( page ) {
 	return page.evaluate(
@@ -72,7 +73,7 @@ async function waitForLeaderPing( page, maxAttempts = 20 ) {
  *
  * @param {import('@playwright/test').Page} page
  * @param {number}                          timeoutMs
- * @return {Promise<object>}
+ * @return {Promise<object>} The recorded Heartbeat activity.
  */
 function waitForOnlineDataTick( page, timeoutMs = 8000 ) {
 	return page.evaluate( ( timeout ) => {
@@ -164,7 +165,8 @@ test.describe( 'Presence Tab Coalescing', () => {
 		] );
 
 		expect(
-			relayed[ 'presence-online' ] || relayed[ 'presence-online-unchanged' ]
+			relayed[ 'presence-online' ] ||
+				relayed[ 'presence-online-unchanged' ]
 		).toBeTruthy();
 
 		await sibling.close();
@@ -189,9 +191,7 @@ test.describe( 'Presence Tab Coalescing', () => {
 		expect( dataA[ 'presence-editor-ping' ].post_id ).toBe( postA.id );
 
 		const pageB = await page.context().newPage();
-		await pageB.goto(
-			`/wp-admin/post.php?post=${ postB.id }&action=edit`
-		);
+		await pageB.goto( `/wp-admin/post.php?post=${ postB.id }&action=edit` );
 		await waitForHeartbeat( pageB );
 
 		// A different post is a different context, so this tab must win

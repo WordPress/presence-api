@@ -31,7 +31,7 @@ function assertNotMultisite() {
 
 /**
  * @param {import('@playwright/test').FullConfig} config
- * @returns {Promise<void>}
+ * @return {Promise<void>}
  */
 async function globalSetup( config ) {
 	const authenticated = new Set();

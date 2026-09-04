@@ -44,7 +44,8 @@ const test = base.extend( {
 
 function waitForHeartbeat( page ) {
 	return page.waitForFunction(
-		() => typeof wp !== 'undefined' && wp.heartbeat && wp.heartbeat.connectNow
+		() =>
+			typeof wp !== 'undefined' && wp.heartbeat && wp.heartbeat.connectNow
 	);
 }
 
@@ -52,7 +53,7 @@ function waitForHeartbeat( page ) {
  * Forces a heartbeat tick and resolves with the data object the tick carried.
  *
  * @param {import('@playwright/test').Page} page
- * @returns {Promise<object>}
+ * @return {Promise<object>} The recorded Heartbeat activity.
  */
 function captureHeartbeatTick( page ) {
 	return page.evaluate(
@@ -75,19 +76,23 @@ test.describe( 'Presence Heartbeat Idle Backoff', () => {
 		admin,
 		page,
 		requestUtils,
-		testUsers,
 	} ) => {
 		const post = await requestUtils.createPost( {
 			title: 'E2E Heartbeat Backoff Test',
 			status: 'publish',
 		} );
 
-		await admin.visitAdminPage( 'post.php', `post=${ post.id }&action=edit` );
+		await admin.visitAdminPage(
+			'post.php',
+			`post=${ post.id }&action=edit`
+		);
 		await waitForHeartbeat( page );
 
 		// The post-lock dialog is present (2+ users exist), so post.js has
 		// already set the interval to 10 seconds by the time heartbeat is ready.
-		const normalInterval = await page.evaluate( () => wp.heartbeat.interval() );
+		const normalInterval = await page.evaluate( () =>
+			wp.heartbeat.interval()
+		);
 		expect( normalInterval ).toBe( 10 );
 
 		// One tick establishes the room's hash; repeat until the client sees
@@ -95,24 +100,34 @@ test.describe( 'Presence Heartbeat Idle Backoff', () => {
 		let widened = false;
 		for ( let i = 0; i < 10 && ! widened; i++ ) {
 			await captureHeartbeatTick( page );
-			const current = await page.evaluate( () => wp.heartbeat.interval() );
+			const current = await page.evaluate( () =>
+				wp.heartbeat.interval()
+			);
 			if ( current > normalInterval ) {
 				widened = true;
 			}
 		}
 
 		expect( widened ).toBe( true );
-		const widenedInterval = await page.evaluate( () => wp.heartbeat.interval() );
+		const widenedInterval = await page.evaluate( () =>
+			wp.heartbeat.interval()
+		);
 		expect( widenedInterval ).toBeGreaterThan( normalInterval );
 		// The idle interval is itself under the TTL.
-		const idleInterval = await page.evaluate( () => window.wpPresenceConfig.idleInterval );
+		const idleInterval = await page.evaluate(
+			() => window.wpPresenceConfig.idleInterval
+		);
 		expect( widenedInterval ).toBeLessThanOrEqual( idleInterval );
 
 		await page.evaluate( () => {
-			document.dispatchEvent( new KeyboardEvent( 'keydown', { bubbles: true } ) );
+			document.dispatchEvent(
+				new KeyboardEvent( 'keydown', { bubbles: true } )
+			);
 		} );
 
-		const afterKeydown = await page.evaluate( () => wp.heartbeat.interval() );
+		const afterKeydown = await page.evaluate( () =>
+			wp.heartbeat.interval()
+		);
 		expect( afterKeydown ).toBe( normalInterval );
 	} );
 } );

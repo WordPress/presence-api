@@ -20,7 +20,8 @@ import { test, expect } from '@wordpress/e2e-test-utils-playwright';
 
 function waitForHeartbeat( page ) {
 	return page.waitForFunction(
-		() => typeof wp !== 'undefined' && wp.heartbeat && wp.heartbeat.connectNow
+		() =>
+			typeof wp !== 'undefined' && wp.heartbeat && wp.heartbeat.connectNow
 	);
 }
 
@@ -143,7 +144,9 @@ test.describe( 'Presence Active Posts Tab Coalescing', () => {
 			page.evaluate( () => wp.heartbeat.connectNow() ),
 		] );
 
-		expect( relayed[ 'presence-active-posts' ].length ).toBeGreaterThan( 0 );
+		expect( relayed[ 'presence-active-posts' ].length ).toBeGreaterThan(
+			0
+		);
 		expect( relayed[ 'presence-active-posts' ][ 0 ].post_id ).toBe(
 			post.id
 		);

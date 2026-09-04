@@ -65,7 +65,8 @@ function wpEval( phpExpression ) {
 
 function waitForHeartbeat( page ) {
 	return page.waitForFunction(
-		() => typeof wp !== 'undefined' && wp.heartbeat && wp.heartbeat.connectNow
+		() =>
+			typeof wp !== 'undefined' && wp.heartbeat && wp.heartbeat.connectNow
 	);
 }
 
@@ -252,9 +253,9 @@ test.describe( 'Presence Stale-Screen Banner', () => {
 		] );
 
 		await page.click( '.wp-presence-stale-notice .notice-dismiss' );
-		await expect(
-			page.locator( '.wp-presence-stale-notice' )
-		).toHaveCount( 0 );
+		await expect( page.locator( '.wp-presence-stale-notice' ) ).toHaveCount(
+			0
+		);
 
 		// Past the one-second resolution of the revision.
 		await page.waitForTimeout( 1200 );
@@ -291,9 +292,9 @@ test.describe( 'Presence Stale-Screen Banner', () => {
 			await page.evaluate( () => wp.heartbeat.connectNow() );
 			await page.waitForTimeout( 500 );
 		}
-		await expect(
-			page.locator( '.wp-presence-stale-notice' )
-		).toHaveCount( 0 );
+		await expect( page.locator( '.wp-presence-stale-notice' ) ).toHaveCount(
+			0
+		);
 
 		// A banner here proves the self-save advanced the baseline rather
 		// than the screen having gone inert.
@@ -340,8 +341,8 @@ test.describe( 'Presence Stale-Screen Banner', () => {
 			await page.waitForTimeout( 500 );
 		}
 
-		await expect(
-			page.locator( '.wp-presence-stale-notice' )
-		).toHaveCount( 0 );
+		await expect( page.locator( '.wp-presence-stale-notice' ) ).toHaveCount(
+			0
+		);
 	} );
 } );

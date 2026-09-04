@@ -1,127 +1,153 @@
 /**
  * Network Who's Online dashboard widget client.
  *
+ * @param {jQuery} $ The jQuery instance.
  * @package Presence_API
  */
 
-(function($) {
-	if (typeof wp === 'undefined' || typeof wp.heartbeat === 'undefined') {
+( function ( $ ) {
+	if ( typeof wp === 'undefined' || typeof wp.heartbeat === 'undefined' ) {
 		return;
 	}
 
-	var config = window.wpPresenceNetworkWhosOnline || {};
-	var i18n = config.i18n || {};
-	var viewAllUrl = config.viewAllUrl || '';
-	var avatarMax = config.avatarMax;
-	var lastHash = '';
-	var lastSignature = '';
+	const config = window.wpPresenceNetworkWhosOnline || {};
+	const i18n = config.i18n || {};
+	const viewAllUrl = config.viewAllUrl || '';
+	const avatarMax = config.avatarMax;
+	let lastHash = '';
+	let lastSignature = '';
 
-	function esc(str) {
-		var el = document.createElement('span');
+	function esc( str ) {
+		const el = document.createElement( 'span' );
 		el.textContent = str;
 		return el.innerHTML;
 	}
 
 	// The swap below replaces every node, so a keyboard user standing on a site
 	// link lands on the body unless the spot is recorded and handed back.
-	function captureFocus(container) {
-		var active = document.activeElement;
-		if (!active || !$.contains(container[0], active)) {
+	function captureFocus( container ) {
+		const active = document.activeElement;
+		if ( ! active || ! $.contains( container[ 0 ], active ) ) {
 			return null;
 		}
-		var item = $(active).closest('[data-blog-id]');
-		if (item.length) {
-			return { type: 'site', id: item.data('blog-id') };
+		const item = $( active ).closest( '[data-blog-id]' );
+		if ( item.length ) {
+			return { type: 'site', id: item.data( 'blog-id' ) };
 		}
-		if ($(active).hasClass('presence-more-link')) {
+		if ( $( active ).hasClass( 'presence-more-link' ) ) {
 			return { type: 'more' };
 		}
 		return { type: 'none' };
 	}
 
-	function restoreFocus(container, info) {
-		if (!info) {
+	function restoreFocus( container, info ) {
+		if ( ! info ) {
 			return;
 		}
-		var target = null;
-		if (info.type === 'site') {
-			target = container.find('[data-blog-id="' + info.id + '"] a').first();
-		} else if (info.type === 'more') {
-			target = container.find('.presence-more-link');
+		let target = null;
+		if ( info.type === 'site' ) {
+			target = container
+				.find( '[data-blog-id="' + info.id + '"] a' )
+				.first();
+		} else if ( info.type === 'more' ) {
+			target = container.find( '.presence-more-link' );
 		}
-		if (target && target.length) {
-			target.trigger('focus');
+		if ( target && target.length ) {
+			target.trigger( 'focus' );
 		} else {
-			container.trigger('focus');
+			container.trigger( 'focus' );
 		}
 	}
 
 	// Already cut to the sites and avatars this widget shows, so nothing is
 	// sliced here; overflow is a count the server sends, not what is left over.
-	function buildListHtml(sites, overflow, aggregating) {
-		if (!aggregating) {
-			return '<p>' + esc(i18n.notAggregated) + '</p>';
+	function buildListHtml( sites, overflow, aggregating ) {
+		if ( ! aggregating ) {
+			return '<p>' + esc( i18n.notAggregated ) + '</p>';
 		}
 
-		if (!sites.length) {
-			return '<p>' + esc(i18n.noUsersOnline) + '</p>';
+		if ( ! sites.length ) {
+			return '<p>' + esc( i18n.noUsersOnline ) + '</p>';
 		}
 
-		var html = '<ul class="presence-user-list" aria-label="' + esc(i18n.sitesOnline) + '">';
-		sites.forEach(function(site) {
-			html += '<li class="presence-site-item" data-blog-id="' + parseInt(site.blog_id, 10) + '">' + window.wpPresenceBuildAvatarStack(site.users, avatarMax);
-			html += '<span class="presence-site-info"><a href="' + esc(site.url) + '">' + esc(site.domain + site.path) + '</a></span>';
-			html += '<span class="presence-site-count">' + site.user_count + '</span></li>';
-		});
+		let html =
+			'<ul class="presence-user-list" aria-label="' +
+			esc( i18n.sitesOnline ) +
+			'">';
+		sites.forEach( function ( site ) {
+			html +=
+				'<li class="presence-site-item" data-blog-id="' +
+				parseInt( site.blog_id, 10 ) +
+				'">' +
+				window.wpPresenceBuildAvatarStack( site.users, avatarMax );
+			html +=
+				'<span class="presence-site-info"><a href="' +
+				esc( site.url ) +
+				'">' +
+				esc( site.domain + site.path ) +
+				'</a></span>';
+			html +=
+				'<span class="presence-site-count">' +
+				site.user_count +
+				'</span></li>';
+		} );
 		html += '</ul>';
 
-		if (overflow > 0) {
+		if ( overflow > 0 ) {
 			// Both forms come from the server because _n() cannot be called from
 			// here; picking on the count is as close as this gets to its rules.
-			var moreLabel = (overflow === 1 ? i18n.moreSite : i18n.moreSites).replace('%d', overflow);
-			html += '<a href="' + esc(viewAllUrl) + '" class="presence-more-link">' + esc(moreLabel) + '</a>';
+			const moreLabel = (
+				overflow === 1 ? i18n.moreSite : i18n.moreSites
+			).replace( '%d', overflow );
+			html +=
+				'<a href="' +
+				esc( viewAllUrl ) +
+				'" class="presence-more-link">' +
+				esc( moreLabel ) +
+				'</a>';
 		}
 
 		return html;
 	}
 
-	$(document).on('heartbeat-send', function(event, data) {
-		data['presence-network-widget-ping'] = true;
-		if (lastHash) {
-			data['presence-network-widget-hash'] = lastHash;
+	$( document ).on( 'heartbeat-send', function ( event, data ) {
+		data[ 'presence-network-widget-ping' ] = true;
+		if ( lastHash ) {
+			data[ 'presence-network-widget-hash' ] = lastHash;
 		}
-	});
+	} );
 
-	$(document).on('heartbeat-tick', function(event, data) {
-		if (data['presence-network-widget-unchanged']) {
+	$( document ).on( 'heartbeat-tick', function ( event, data ) {
+		if ( data[ 'presence-network-widget-unchanged' ] ) {
 			return;
 		}
 
-		if (!data['presence-network-widget']) {
+		if ( ! data[ 'presence-network-widget' ] ) {
 			return;
 		}
 
-		lastHash = data['presence-network-widget-hash'] || '';
+		lastHash = data[ 'presence-network-widget-hash' ] || '';
 
-		var container = $('#presence-network-widget-list');
-		if (!container.length) {
+		const container = $( '#presence-network-widget-list' );
+		if ( ! container.length ) {
 			return;
 		}
 
-		var sites = data['presence-network-widget'];
-		var overflow = data['presence-network-widget-overflow'] || 0;
-		var aggregating = data['presence-network-widget-aggregating'] !== false;
+		const sites = data[ 'presence-network-widget' ];
+		const overflow = data[ 'presence-network-widget-overflow' ] || 0;
+		const aggregating =
+			data[ 'presence-network-widget-aggregating' ] !== false;
 
 		// Signature over what gets drawn, matching the server-side hash: a
 		// rename or a new avatar has to repaint, and the order is already the
 		// order it renders in.
-		var sig = JSON.stringify([sites, overflow, aggregating]);
+		const sig = JSON.stringify( [ sites, overflow, aggregating ] );
 
-		if (sig !== lastSignature) {
-			var focusInfo = captureFocus(container);
-			container.html(buildListHtml(sites, overflow, aggregating));
-			restoreFocus(container, focusInfo);
+		if ( sig !== lastSignature ) {
+			const focusInfo = captureFocus( container );
+			container.html( buildListHtml( sites, overflow, aggregating ) );
+			restoreFocus( container, focusInfo );
 			lastSignature = sig;
 		}
-	});
-})(jQuery);
+	} );
+} )( jQuery );
