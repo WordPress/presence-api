@@ -42,6 +42,10 @@ jobs:
     needs: gate
     uses: ./.github/workflows/unit.yml
 
+  lint-js:
+    needs: gate
+    uses: ./.github/workflows/lint-js.yml
+
   plugin-check:
     needs: gate
     uses: ./.github/workflows/plugin-check.yml
