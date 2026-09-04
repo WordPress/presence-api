@@ -362,7 +362,7 @@ function wp_presence_collaboration_state_key( $room ) {
  * Fires 'wp_presence_collaboration_ended' when editor count goes from 2+ to 1.
  *
  * @since 0.1.21
- * @since 0.3.0 Returns the current editor count instead of void.
+ * @since 0.4.0 Returns the current editor count instead of void.
  *
  * @param string $room The presence room identifier.
  * @return int The number of editors currently present in the room.
