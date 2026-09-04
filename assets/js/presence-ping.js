@@ -69,6 +69,7 @@
 		'presence-heartbeat-query-ms',
 		'presence-heartbeat-ttl',
 		'presence-heartbeat-room-list',
+		'presence-heartbeat-collaborators',
 	];
 
 	const tabCoordinator = window.wpPresenceCreateTabCoordinator(pingContextKey, RELAYED_TICK_KEYS);
