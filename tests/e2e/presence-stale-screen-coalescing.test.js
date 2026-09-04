@@ -22,8 +22,8 @@ import { execSync } from 'node:child_process';
 
 const TEST_USERS = [
 	{
-		username: 'presence_test_stale_b',
-		email: 'presence_test_stale_b@example.com',
+		username: 'presenceteststaleb',
+		email: 'presenceteststaleb@example.com',
 		firstName: 'Stale',
 		lastName: 'B',
 		password: 'password',

@@ -23,8 +23,8 @@ const BASE_URL = ( process.env.WP_BASE_URL || 'http://localhost:8888' ).replace(
 
 const TEST_USERS = [
 	{
-		username: 'presence_test_b',
-		email: 'presence_test_b@example.com',
+		username: 'presencetestb',
+		email: 'presencetestb@example.com',
 		firstName: 'User',
 		lastName: 'B',
 		password: 'password',
