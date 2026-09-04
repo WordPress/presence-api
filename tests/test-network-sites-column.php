@@ -14,9 +14,11 @@
 class WP_Test_Network_Sites_Column extends WP_Presence_Network_UnitTestCase {
 
 	private static $editor_id;
+	private static $subscriber_id;
 
 	public static function wpSetUpBeforeClass( WP_UnitTest_Factory $factory ) {
-		self::$editor_id = $factory->user->create( array( 'role' => 'editor' ) );
+		self::$editor_id     = $factory->user->create( array( 'role' => 'editor' ) );
+		self::$subscriber_id = $factory->user->create( array( 'role' => 'subscriber' ) );
 	}
 
 	/**
@@ -26,6 +28,27 @@ class WP_Test_Network_Sites_Column extends WP_Presence_Network_UnitTestCase {
 		$columns = wp_presence_register_network_sites_column( array( 'blogname' => 'Site' ) );
 
 		$this->assertArrayNotHasKey( 'presence_online', $columns, 'A visitor with no capability should not see the column.' );
+	}
+
+	/**
+	 * The header is gated, so nothing registers this column for a user without
+	 * the capability. That holds only while ours is the only thing that can put
+	 * the name on the screen, which is not a property this file controls.
+	 *
+	 * @covers ::wp_presence_render_network_sites_column
+	 */
+	public function test_sites_column_renders_nothing_without_capability() {
+		$this->become_network_admin();
+		$blog_id = $this->create_blog();
+		$this->set_presence_on_site( $blog_id, self::$editor_id );
+
+		wp_set_current_user( self::$subscriber_id );
+
+		ob_start();
+		wp_presence_render_network_sites_column( 'presence_online', $blog_id );
+		$output = ob_get_clean();
+
+		$this->assertSame( '', $output );
 	}
 
 	/**

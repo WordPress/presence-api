@@ -16,9 +16,11 @@
 class WP_Test_Network_Users_List extends WP_Presence_Network_UnitTestCase {
 
 	private static $editor_id;
+	private static $subscriber_id;
 
 	public static function wpSetUpBeforeClass( WP_UnitTest_Factory $factory ) {
-		self::$editor_id = $factory->user->create( array( 'role' => 'editor' ) );
+		self::$editor_id     = $factory->user->create( array( 'role' => 'editor' ) );
+		self::$subscriber_id = $factory->user->create( array( 'role' => 'subscriber' ) );
 	}
 
 	/**
@@ -211,9 +213,30 @@ class WP_Test_Network_Users_List extends WP_Presence_Network_UnitTestCase {
 	 * @covers ::wp_presence_get_network_sites_for_user
 	 */
 	public function test_users_column_shows_a_dash_for_an_offline_user() {
+		$this->become_network_admin();
+
 		$output = wp_presence_render_network_users_column( '', 'presence_online', self::$editor_id );
 
 		$this->assertSame( '&#8212;', $output );
+	}
+
+	/**
+	 * test_users_column_shows_a_dash_for_an_offline_user() also calls this
+	 * uncapped, but it passes because that user is offline. This one is online,
+	 * so only a gate can keep the site names back.
+	 *
+	 * @covers ::wp_presence_render_network_users_column
+	 */
+	public function test_users_column_renders_nothing_without_capability() {
+		$this->become_network_admin();
+		$blog_id = $this->create_blog();
+		$this->set_presence_on_site( $blog_id, self::$editor_id );
+
+		wp_set_current_user( self::$subscriber_id );
+
+		$output = wp_presence_render_network_users_column( 'unchanged', 'presence_online', self::$editor_id );
+
+		$this->assertSame( 'unchanged', $output );
 	}
 
 	/**

@@ -86,11 +86,19 @@ function wp_presence_network_aggregation_notice() {
  * snapshot is read once for the request; what each row adds is resolving the
  * handful of people whose avatars it is about to draw.
  *
+ * Gates on the capability again rather than trusting the registration above:
+ * core calls this for whatever columns the screen ended up with, and ours is
+ * not the only thing that can put a name in that list.
+ *
  * @param string $column_name Column being rendered.
  * @param int    $blog_id     The site ID for the current row.
  */
 function wp_presence_render_network_sites_column( $column_name, $blog_id ) {
 	if ( 'presence_online' !== $column_name ) {
+		return;
+	}
+
+	if ( ! current_user_can( wp_presence_network_capability() ) ) {
 		return;
 	}
 
