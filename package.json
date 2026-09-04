@@ -8,6 +8,7 @@
 		"env:stop": "wp-env stop",
 		"env:stop:multisite": "cd tests/e2e/multisite && wp-env stop",
 		"env:cli": "wp-env run cli wp",
+		"lint:js": "wp-scripts lint-js",
 		"test": "wp-env run tests-cli --env-cwd='wp-content/plugins/presence-api' -- ./vendor/bin/phpunit --testdox",
 		"test:multisite": "wp-env run tests-cli --env-cwd='wp-content/plugins/presence-api' -- env WP_MULTISITE=1 ./vendor/bin/phpunit --testdox",
 		"test:e2e": "playwright test --config tests/e2e/playwright.config.js",
@@ -19,7 +20,9 @@
 		"@testing-library/react": "^16.3.2",
 		"@wordpress/e2e-test-utils-playwright": "^1.54.0",
 		"@wordpress/env": "^11.14.0",
-		"@wordpress/scripts": "^34.2.0"
+		"@wordpress/eslint-plugin": "^25.9.0",
+		"@wordpress/scripts": "^34.2.0",
+		"globals": "^16.5.0"
 	},
 	"peerDependencies": {
 		"@wordpress/api-fetch": "^7.0.0",
