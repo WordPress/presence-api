@@ -227,7 +227,7 @@ class WP_Test_Presence_Network_Widget_Whos_Online extends WP_Presence_Network_Un
 	public function test_inline_script_carries_the_accessible_names_the_render_uses() {
 		WP_Presence_Network_Widget_Whos_Online::enqueue_scripts( 'index.php' );
 
-		$script = implode( '', (array) wp_scripts()->get_data( 'presence-network-widget', 'after' ) );
+		$script = implode( '', (array) wp_scripts()->get_data( 'presence-network-widget', 'before' ) );
 
 		$this->assertStringContainsString( 'Sites with online users', $script, 'The rebuilt list has no accessible name.' );
 		$this->assertStringContainsString( '+%d more site \u2014 view all', $script, 'The rebuilt overflow link stops saying what it counts.' );
@@ -289,7 +289,7 @@ class WP_Test_Presence_Network_Widget_Whos_Online extends WP_Presence_Network_Un
 	public function test_inline_script_carries_the_not_aggregated_message() {
 		WP_Presence_Network_Widget_Whos_Online::enqueue_scripts( 'index.php' );
 
-		$script = implode( '', (array) wp_scripts()->get_data( 'presence-network-widget', 'after' ) );
+		$script = implode( '', (array) wp_scripts()->get_data( 'presence-network-widget', 'before' ) );
 
 		$this->assertStringContainsString( 'not aggregated across this network', $script );
 	}
