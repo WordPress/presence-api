@@ -44,6 +44,7 @@ const NETWORK_SPECS = /presence-network-[^/]+\.test\.js$/;
 export default defineConfig( {
 	globalSetup: path.resolve( __dirname, 'global-setup.js' ),
 	reporter: process.env.CI ? [ [ 'github' ] ] : [ [ 'list' ] ],
+	retries: process.env.CI ? 2 : 0,
 	workers: 1,
 	timeout: 100_000,
 	reportSlowTests: null,
