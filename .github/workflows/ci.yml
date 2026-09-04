@@ -20,32 +20,65 @@ jobs:
     steps:
       - run: true
 
-  phpcs:
+  # Docs-only PRs (README, CHANGELOG, etc.) don't need the wp-env/Playwright
+  # jobs below — `workflow_call` jobs can't use `paths:` themselves, so the
+  # filter has to run as its own job and gate the rest with `if:`.
+  changes:
     needs: gate
+    runs-on: ubuntu-24.04
+    permissions:
+      pull-requests: read
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          filters: |
+            code:
+              - '**.php'
+              - '**.js'
+              - '**.json'
+              - 'phpcs.xml.dist'
+              - 'phpstan.neon.dist'
+              - 'phpunit.xml.dist'
+              - 'readme.txt'
+              - '.github/workflows/**'
+
+  phpcs:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     uses: ./.github/workflows/phpcs.yml
 
   phpstan:
-    needs: gate
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     uses: ./.github/workflows/phpstan.yml
 
   phpunit:
-    needs: gate
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     uses: ./.github/workflows/phpunit.yml
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   e2e:
-    needs: gate
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     uses: ./.github/workflows/e2e.yml
 
   unit:
-    needs: gate
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     uses: ./.github/workflows/unit.yml
 
   plugin-check:
-    needs: gate
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     uses: ./.github/workflows/plugin-check.yml
 
+  # Spell-checks docs too, so it stays outside the code gate.
   typos:
     needs: gate
     uses: ./.github/workflows/typos.yml
