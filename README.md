@@ -7,6 +7,9 @@
 
 System-wide presence and awareness for WordPress.
 
+> [!IMPORTANT]
+> **Built for the lowest common denominator of environments.** No object cache, no WebSockets, no extra services — a dedicated table with a TTL is the only moving part. Anything a managed host offers on top is a bonus, never a dependency.
+
 ## Problem
 
 WordPress has no way to know who is logged in, what screen they are on, or which posts are being edited — without writing to shared tables like `wp_postmeta` or `wp_options`. High-frequency writes to those tables invalidate caches site-wide ([#64696](https://core.trac.wordpress.org/ticket/64696)). This plugin uses a dedicated `wp_presence` table with a 150-second TTL to provide that awareness with zero cache side effects.
