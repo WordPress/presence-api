@@ -32,16 +32,16 @@ function wpCliOutput( command ) {
 
 const TEST_USERS = [
 	{
-		username: 'presence_test_b',
-		email: 'presence_test_b@example.com',
+		username: 'presencetestb',
+		email: 'presencetestb@example.com',
 		firstName: 'User',
 		lastName: 'B',
 		password: 'password',
 		roles: [ 'editor' ],
 	},
 	{
-		username: 'presence_test_c',
-		email: 'presence_test_c@example.com',
+		username: 'presencetestc',
+		email: 'presencetestc@example.com',
 		firstName: 'User',
 		lastName: 'C',
 		password: 'password',

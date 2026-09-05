@@ -14,8 +14,8 @@ import { test as base, expect } from '@wordpress/e2e-test-utils-playwright';
 
 const TEST_USERS = [
 	{
-		username: 'presence_test_backoff',
-		email: 'presence_test_backoff@example.com',
+		username: 'presencetestbackoff',
+		email: 'presencetestbackoff@example.com',
 		firstName: 'User',
 		lastName: 'B',
 		password: 'password',
