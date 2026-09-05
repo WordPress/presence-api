@@ -11,7 +11,6 @@
 ### Bug Fixes
 
 * gate the network column renderers on the network capability ([75868a7](https://github.com/WordPress/presence-api/commit/75868a74dd13f2c112e71ae402a517c0abc79998))
-* gate the network column renderers on the network capability ([4048c5d](https://github.com/WordPress/presence-api/commit/4048c5d930f44c6d105580a40ee7de8b69ea80d4))
 * pin the patched bullseye apt sources to the image's own frozen snapshot ([6393e7c](https://github.com/WordPress/presence-api/commit/6393e7c0dae59225f85c42b33b7bf0e73495737b))
 * public surface read constants ([0bb1403](https://github.com/WordPress/presence-api/commit/0bb14035e86c5ab6e10c59e0f0e305ac83e129a4))
 
@@ -28,11 +27,9 @@
 * **deps-dev:** bump @wordpress/e2e-test-utils-playwright from 1.53.0 to 1.54.0 ([5edffec](https://github.com/WordPress/presence-api/commit/5edffec40984fb36d55219178e0de5d83b2a8efc))
 * **deps-dev:** bump @wordpress/env from 11.13.0 to 11.14.0 ([dc3e48a](https://github.com/WordPress/presence-api/commit/dc3e48a31d693be03eebb81a4b9e672a733dd826))
 * **deps-dev:** bump @wordpress/scripts from 34.1.0 to 34.2.0 ([8f377cf](https://github.com/WordPress/presence-api/commit/8f377cf5a88c0695337d73b9944101872835fdbc))
-* **deps-dev:** bump @wordpress/scripts from 34.1.0 to 34.2.0 ([00fe779](https://github.com/WordPress/presence-api/commit/00fe7797719838ee4ad5b2182881b68e1c8a037d))
 * **deps-dev:** update phpstan/phpstan requirement from 2.2.8 to 2.2.9 ([996f59d](https://github.com/WordPress/presence-api/commit/996f59d36b958507f84097ff01afd3102735ee7a))
 * **deps:** bump the codeql-action group with 3 updates ([7230078](https://github.com/WordPress/presence-api/commit/72300782f139f16fe54a91a9a6bca0da86f4c181))
 * patch wp-env's PHP 7.4 image for Debian bullseye's EOL archive ([775b2cb](https://github.com/WordPress/presence-api/commit/775b2cbead00e2d99481c96da055d760fefda153))
-* patch wp-env's PHP 7.4 image for Debian bullseye's EOL archive ([d941447](https://github.com/WordPress/presence-api/commit/d941447d9fcee0cb20bcdb00968ab9ef308fa614))
 
 ## [0.3.0](https://github.com/WordPress/presence-api/compare/v0.2.1...v0.3.0) (2026-09-02)
 
