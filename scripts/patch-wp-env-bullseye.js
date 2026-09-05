@@ -5,9 +5,9 @@ const fs = require( 'node:fs' );
 const FILE = 'node_modules/@wordpress/env/lib/runtime/docker/docker-config.js';
 const ANCHOR = '# buster (';
 const PATCH = `# bullseye (LTS ended 2026-08-31)
-RUN sed -i 's|deb.debian.org/debian bullseye|archive.debian.org/debian bullseye|g' /etc/apt/sources.list
-RUN sed -i 's|security.debian.org/debian-security bullseye-security|archive.debian.org/debian-security bullseye-security|g' /etc/apt/sources.list
-RUN sed -i '/bullseye-updates/d' /etc/apt/sources.list
+RUN echo 'deb http://snapshot.debian.org/archive/debian/20221114T000000Z bullseye main' > /etc/apt/sources.list
+RUN echo 'deb http://snapshot.debian.org/archive/debian-security/20221114T000000Z bullseye-security main' >> /etc/apt/sources.list
+RUN echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99no-check-valid-until
 
 ${ ANCHOR }`;
 
