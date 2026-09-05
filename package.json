@@ -2,6 +2,7 @@
 	"name": "presence-api",
 	"private": true,
 	"scripts": {
+		"postinstall": "node scripts/patch-wp-env-bullseye.js",
 		"env:start": "wp-env start",
 		"env:start:multisite": "bash scripts/start-multisite-env.sh",
 		"env:stop": "wp-env stop",
