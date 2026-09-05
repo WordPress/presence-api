@@ -3,7 +3,7 @@ Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas,
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.1
-Stable tag: 0.3.0
+Stable tag: 0.4.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -63,6 +63,13 @@ Yes. Clear the **Presence** checkbox on Settings > General, or run `wp presence 
 For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording_enabled` filters take the checkboxes as their defaults, so a filter always has the last word.
 
 == Changelog ==
+
+= 0.4.0 =
+* Carry the room's editor count on the editor heartbeat response.
+* Gate the network column renderers on the network capability.
+* Pin the patched bullseye apt sources to the image's own frozen snapshot.
+* Public surface read constants.
+* Skip presence writes that would only move the timestamp.
 
 = 0.3.0 =
 * Add a site and network switch for whether presence is recorded.
