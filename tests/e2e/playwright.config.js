@@ -19,9 +19,7 @@ process.env.MULTISITE_STORAGE_STATE_PATH ??= path.join(
 	'storage-states/admin-multisite.json'
 );
 
-const baseUrl = new URL(
-	process.env.WP_BASE_URL || 'http://localhost:8888'
-);
+const baseUrl = new URL( process.env.WP_BASE_URL || 'http://localhost:8888' );
 
 process.env.WP_BASE_URL = baseUrl.href;
 

@@ -7,6 +7,7 @@
  * translated strings are passed in via `window.wpPresenceStaleScreen`,
  * which the enqueue handler emits as a `before` inline script.
  *
+ * @param {jQuery} $ The jQuery instance.
  * @package Presence_API
  */
 
@@ -17,11 +18,11 @@
 		return;
 	}
 
-	const config      = window.wpPresenceStaleScreen || {};
-	const screenKey   = config.screenKey || '';
-	const strings     = config.strings || {};
-	let baselineRev   = parseInt( config.baselineRev, 10 ) || 0;
-	let bannerShown   = false;
+	const config = window.wpPresenceStaleScreen || {};
+	const screenKey = config.screenKey || '';
+	const strings = config.strings || {};
+	let baselineRev = parseInt( config.baselineRev, 10 ) || 0;
+	let bannerShown = false;
 
 	if ( ! screenKey ) {
 		return;
@@ -30,7 +31,10 @@
 	// Tabs on the same screen send an identical ping — key by screenKey.
 	const pingContextKey = 'wp-presence-screen-ping:' + screenKey;
 
-	const tabCoordinator = window.wpPresenceCreateTabCoordinator( pingContextKey, [ 'presence-screen-rev' ] );
+	const tabCoordinator = window.wpPresenceCreateTabCoordinator(
+		pingContextKey,
+		[ 'presence-screen-rev' ]
+	);
 
 	window.wp = window.wp || {};
 	window.wp.presence = window.wp.presence || {};
@@ -41,18 +45,20 @@
 	 * Custom REST or AJAX-driven screens should call this after a successful
 	 * save so other users viewing the same screen receive a stale notice.
 	 *
-	 * @param {string} key     The screen key (e.g. 'options/my-plugin').
+	 * @param {string} key The screen key (e.g. 'options/my-plugin').
 	 * @return {Promise} jQuery Promise.
 	 */
 	window.wp.presence.markScreenStale = function ( key ) {
 		if ( ! config.restUrl || ! config.nonce ) {
-			return $.Deferred().reject( 'Missing REST configuration.' ).promise();
+			return $.Deferred()
+				.reject( 'Missing REST configuration.' )
+				.promise();
 		}
 
 		return $.ajax( {
 			url: config.restUrl,
 			method: 'POST',
-			beforeSend: function ( xhr ) {
+			beforeSend( xhr ) {
 				xhr.setRequestHeader( 'X-WP-Nonce', config.nonce );
 			},
 			data: {
@@ -97,7 +103,9 @@
 	} );
 
 	function showBanner( info, rev ) {
-		const target = document.querySelector( '.wrap' ) || document.getElementById( 'wpbody-content' );
+		const target =
+			document.querySelector( '.wrap' ) ||
+			document.getElementById( 'wpbody-content' );
 		if ( ! target ) {
 			return;
 		}
@@ -106,10 +114,14 @@
 		// Place the notice after the screen heading, matching where
 		// `do_action('admin_notices')` injects on a normal page load.
 		const heading = target.querySelector( ':scope > h1' );
-		const before  = heading && heading.nextSibling ? heading.nextSibling : target.firstChild;
+		const before =
+			heading && heading.nextSibling
+				? heading.nextSibling
+				: target.firstChild;
 
 		const notice = document.createElement( 'div' );
-		notice.className = 'notice notice-warning is-dismissible wp-presence-stale-notice';
+		notice.className =
+			'notice notice-warning is-dismissible wp-presence-stale-notice';
 		// Announce the new banner to assistive tech without interrupting
 		// whatever the user is currently doing on the screen.
 		notice.setAttribute( 'role', 'status' );
@@ -119,23 +131,23 @@
 
 		if ( info.actor_avatar_url ) {
 			const avatar = document.createElement( 'img' );
-			avatar.src       = info.actor_avatar_url;
-			avatar.width     = 24;
-			avatar.height    = 24;
+			avatar.src = info.actor_avatar_url;
+			avatar.width = 24;
+			avatar.height = 24;
 			// Decorative — the actor name is already in the adjacent text.
-			avatar.alt       = '';
+			avatar.alt = '';
 			avatar.className = 'wp-presence-stale-avatar';
 			p.appendChild( avatar );
 		}
 
 		const text = document.createElement( 'span' );
-		text.className   = 'wp-presence-stale-text';
+		text.className = 'wp-presence-stale-text';
 		text.textContent = formatMessage( info );
 		p.appendChild( text );
 
 		const reload = document.createElement( 'button' );
-		reload.type        = 'button';
-		reload.className   = 'button button-primary';
+		reload.type = 'button';
+		reload.className = 'button button-primary';
 		reload.textContent = strings.reload || 'Reload';
 		reload.addEventListener( 'click', function () {
 			window.location.reload();
@@ -144,10 +156,10 @@
 		notice.appendChild( p );
 
 		const dismiss = document.createElement( 'button' );
-		dismiss.type      = 'button';
+		dismiss.type = 'button';
 		dismiss.className = 'notice-dismiss';
 		const sr = document.createElement( 'span' );
-		sr.className   = 'screen-reader-text';
+		sr.className = 'screen-reader-text';
 		sr.textContent = strings.dismiss || 'Dismiss this notice.';
 		dismiss.appendChild( sr );
 		dismiss.addEventListener( 'click', function () {
@@ -170,10 +182,13 @@
 			// interpretation so display names with `$&`, `$1`, etc. don't
 			// get reinterpreted as backreferences.
 			return ( strings.updatedBy || '%1$s updated this screen %2$s.' )
-				.split( '%1$s' ).join( info.actor_name )
-				.split( '%2$s' ).join( timeAgo );
+				.split( '%1$s' )
+				.join( info.actor_name )
+				.split( '%2$s' )
+				.join( timeAgo );
 		}
 		return ( strings.updatedAnonymously || 'This screen was updated %s.' )
-			.split( '%s' ).join( timeAgo );
+			.split( '%s' )
+			.join( timeAgo );
 	}
 } )( jQuery );

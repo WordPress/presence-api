@@ -10,12 +10,15 @@
  * @package WordPress
  * @since 7.1.0
  */
-import { test as base, expect } from '@wordpress/e2e-test-utils-playwright';
+import { test as base } from '@wordpress/e2e-test-utils-playwright';
 import { execSync } from 'node:child_process';
 import path from 'node:path';
 import fs from 'node:fs';
 
-const SCREENSHOTS_DIR = path.resolve( __dirname, '../../artifacts/screenshots' );
+const SCREENSHOTS_DIR = path.resolve(
+	__dirname,
+	'../../artifacts/screenshots'
+);
 
 function wpCli( command ) {
 	execSync( `npx wp-env run cli wp ${ command }`, {
@@ -78,8 +81,16 @@ test.describe.serial( 'Presence Screenshots', () => {
 		await page.waitForTimeout( 3000 );
 
 		await snap( page, '01-empty-dashboard' );
-		await snapElement( page, '#presence-whos-online-list', '01-empty-whos-online' );
-		await snapElement( page, '#presence-active-posts-list', '01-empty-active-posts' );
+		await snapElement(
+			page,
+			'#presence-whos-online-list',
+			'01-empty-whos-online'
+		);
+		await snapElement(
+			page,
+			'#presence-active-posts-list',
+			'01-empty-active-posts'
+		);
 	} );
 
 	test( '02 — Active users (5)', async ( { admin, page } ) => {
@@ -89,9 +100,21 @@ test.describe.serial( 'Presence Screenshots', () => {
 		await page.waitForTimeout( 3000 );
 
 		await snap( page, '02-active-dashboard' );
-		await snapElement( page, '#presence-whos-online-list', '02-active-whos-online' );
-		await snapElement( page, '#presence-active-posts-list', '02-active-active-posts' );
-		await snapElement( page, '#wp-admin-bar-presence-online', '02-active-admin-bar' );
+		await snapElement(
+			page,
+			'#presence-whos-online-list',
+			'02-active-whos-online'
+		);
+		await snapElement(
+			page,
+			'#presence-active-posts-list',
+			'02-active-active-posts'
+		);
+		await snapElement(
+			page,
+			'#wp-admin-bar-presence-online',
+			'02-active-admin-bar'
+		);
 
 		const barNode = page.locator( '#wp-admin-bar-presence-online' );
 		if ( await barNode.isVisible().catch( () => false ) ) {
@@ -110,8 +133,16 @@ test.describe.serial( 'Presence Screenshots', () => {
 		await page.waitForTimeout( 3000 );
 
 		await snap( page, '03-scale-dashboard' );
-		await snapElement( page, '#presence-whos-online-list', '03-scale-whos-online' );
-		await snapElement( page, '#presence-active-posts-list', '03-scale-active-posts' );
+		await snapElement(
+			page,
+			'#presence-whos-online-list',
+			'03-scale-whos-online'
+		);
+		await snapElement(
+			page,
+			'#presence-active-posts-list',
+			'03-scale-active-posts'
+		);
 	} );
 
 	test( '04 — Post list editors column', async ( { admin, page } ) => {
@@ -133,8 +164,16 @@ test.describe.serial( 'Presence Screenshots', () => {
 		await page.waitForTimeout( 3000 );
 
 		await snap( page, '06-idle-dashboard' );
-		await snapElement( page, '#presence-whos-online-list', '06-idle-whos-online' );
-		await snapElement( page, '#presence-active-posts-list', '06-idle-active-posts' );
+		await snapElement(
+			page,
+			'#presence-whos-online-list',
+			'06-idle-whos-online'
+		);
+		await snapElement(
+			page,
+			'#presence-active-posts-list',
+			'06-idle-active-posts'
+		);
 	} );
 
 	test( '07 — Expired (back to empty)', async ( { admin, page } ) => {

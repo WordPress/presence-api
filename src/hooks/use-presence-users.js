@@ -32,10 +32,11 @@ import { subscribeToPresencePolling } from '../utils/presence-poll-coordinator';
  *     avatarUrl: string
  *   }>,
  *   error: Error|null
- * }}
+ * }} The room's occupants and the state of the poll behind them.
  */
 export default function usePresenceUsers( room, options = {} ) {
-	const { includeSelf = false, fields = 'user_id,display_name,avatar_url' } = options;
+	const { includeSelf = false, fields = 'user_id,display_name,avatar_url' } =
+		options;
 
 	const [ users, setUsers ] = useState( [] );
 	const [ isLoading, setIsLoading ] = useState( true );

@@ -28,44 +28,46 @@ const HEADING = /^#{1,6}\s/;
 // The text of an entry with everything that distinguishes the two copies of
 // the same change removed, leaving the subject the conventional commit and the
 // pull request title share.
-function entryKey(line) {
-  return line.replace(SHA_LINK, '').replace(CLOSES, '').trim();
+function entryKey( line ) {
+	return line.replace( SHA_LINK, '' ).replace( CLOSES, '' ).trim();
 }
 
-function dedupeChangelog(text) {
-  const out = [];
-  // Scoped per heading, so the same subject under Features and under Bug
-  // Fixes stays in both, and two releases that each fix the same thing keep
-  // their own entry.
-  let seen = new Map();
+function dedupeChangelog( text ) {
+	const out = [];
+	// Scoped per heading, so the same subject under Features and under Bug
+	// Fixes stays in both, and two releases that each fix the same thing keep
+	// their own entry.
+	let seen = new Map();
 
-  for (const line of text.split('\n')) {
-    if (HEADING.test(line)) {
-      seen = new Map();
-      out.push(line);
-      continue;
-    }
+	for ( const line of text.split( '\n' ) ) {
+		if ( HEADING.test( line ) ) {
+			seen = new Map();
+			out.push( line );
+			continue;
+		}
 
-    if (!ENTRY.test(line)) {
-      out.push(line);
-      continue;
-    }
+		if ( ! ENTRY.test( line ) ) {
+			out.push( line );
+			continue;
+		}
 
-    const key = entryKey(line);
-    const previous = seen.get(key);
+		const key = entryKey( line );
+		const previous = seen.get( key );
 
-    if (previous === undefined) {
-      seen.set(key, out.push(line) - 1);
-      continue;
-    }
+		if ( previous === undefined ) {
+			seen.set( key, out.push( line ) - 1 );
+			continue;
+		}
 
-    // Keep whichever copy says more. The branch commit's entry is the one
-    // that carries the `closes` link, and it is always the second of the
-    // pair, so keeping the first would drop the issue reference every time.
-    if (line.length > out[previous].length) out[previous] = line;
-  }
+		// Keep whichever copy says more. The branch commit's entry is the one
+		// that carries the `closes` link, and it is always the second of the
+		// pair, so keeping the first would drop the issue reference every time.
+		if ( line.length > out[ previous ].length ) {
+			out[ previous ] = line;
+		}
+	}
 
-  return out.join('\n');
+	return out.join( '\n' );
 }
 
 module.exports = dedupeChangelog;
@@ -74,21 +76,26 @@ module.exports.entryKey = entryKey;
 
 // CLI: `node dedupe-changelog.js CHANGELOG.md`. Rewrites in place, and says
 // nothing when there was nothing to remove so the workflow log stays quiet.
-if (require.main === module) {
-  const fs = require('node:fs');
-  const file = process.argv[2];
+if ( require.main === module ) {
+	const fs = require( 'node:fs' );
+	const file = process.argv[ 2 ];
 
-  if (!file) {
-    console.error('Usage: node dedupe-changelog.js <file>');
-    process.exit(1);
-  }
+	if ( ! file ) {
+		console.error( 'Usage: node dedupe-changelog.js <file>' );
+		process.exit( 1 );
+	}
 
-  const original = fs.readFileSync(file, 'utf8');
-  const deduped = dedupeChangelog(original);
+	const original = fs.readFileSync( file, 'utf8' );
+	const deduped = dedupeChangelog( original );
 
-  if (deduped !== original) {
-    fs.writeFileSync(file, deduped);
-    const removed = original.split('\n').length - deduped.split('\n').length;
-    console.log(`Removed ${removed} duplicate changelog ${removed === 1 ? 'entry' : 'entries'} from ${file}.`);
-  }
+	if ( deduped !== original ) {
+		fs.writeFileSync( file, deduped );
+		const removed =
+			original.split( '\n' ).length - deduped.split( '\n' ).length;
+		console.log(
+			`Removed ${ removed } duplicate changelog ${
+				removed === 1 ? 'entry' : 'entries'
+			} from ${ file }.`
+		);
+	}
 }

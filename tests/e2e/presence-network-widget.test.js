@@ -40,7 +40,7 @@ const OVERFLOW_SLUGS = [ 'over1', 'over2', 'over3', 'over4', 'over5' ];
 let mainSiteId;
 let teamSiteId;
 
-test.describe( 'Network Who\'s Online widget', () => {
+test.describe( "Network Who's Online widget", () => {
 	test.beforeAll( () => {
 		mainSiteId = 1;
 		teamSiteId = networkSiteId( SITE_SLUG );
@@ -56,16 +56,18 @@ test.describe( 'Network Who\'s Online widget', () => {
 
 	/**
 	 * @param {import('@playwright/test').Page} page
-	 * @returns {import('@playwright/test').Locator}
+	 * @return {import('@playwright/test').Locator} The matching element.
 	 */
 	function widgetList( page ) {
-		return page.locator( '#presence-network-widget-list ul.presence-user-list' );
+		return page.locator(
+			'#presence-network-widget-list ul.presence-user-list'
+		);
 	}
 
 	/**
 	 * @param {import('@playwright/test').Page} page
-	 * @param {number} blogId
-	 * @returns {import('@playwright/test').Locator}
+	 * @param {number}                          blogId
+	 * @return {import('@playwright/test').Locator} The matching element.
 	 */
 	function siteItem( page, blogId ) {
 		return page.locator(
@@ -94,7 +96,9 @@ test.describe( 'Network Who\'s Online widget', () => {
 		await expect( team.locator( '.presence-site-info a' ) ).toHaveText(
 			siteLabel( SITE_SLUG )
 		);
-		await expect( team.locator( '.presence-site-count' ) ).toHaveText( '1' );
+		await expect( team.locator( '.presence-site-count' ) ).toHaveText(
+			'1'
+		);
 	} );
 
 	test( 'adds a site over a heartbeat tick, without a reload', async ( {
