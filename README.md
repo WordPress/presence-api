@@ -1,7 +1,6 @@
 # Presence API
 
 [![CI](https://github.com/WordPress/presence-api/actions/workflows/ci.yml/badge.svg)](https://github.com/WordPress/presence-api/actions/workflows/ci.yml)
-[![Open in WordPress Playground](https://img.shields.io/badge/Open%20in-WordPress%20Playground-3858E9?logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json)
 
 > **Status:** Experimental feature plugin
 
@@ -24,6 +23,15 @@ npx wp-env start
 ```
 
 Then open [localhost:8888/wp-admin/](http://localhost:8888/wp-admin/) (admin / password).
+
+## WordPress Playground
+
+No install needed — launch a scratch site straight from `main`.
+
+|  | 5 users | 40 users |
+| --- | --- | --- |
+| **Single site** | [![Launch single site, 5 users](https://img.shields.io/badge/Launch-3858E9?style=for-the-badge&logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json) | [![Launch single site, 40 users](https://img.shields.io/badge/Launch-3858E9?style=for-the-badge&logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint-40.json) |
+| **Multisite** | [![Launch multisite, 5 users](https://img.shields.io/badge/Launch-3858E9?style=for-the-badge&logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint-multisite.json) | [![Launch multisite, 40 users](https://img.shields.io/badge/Launch-3858E9?style=for-the-badge&logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint-multisite-40.json) |
 
 ## Data flow
 
@@ -51,6 +59,9 @@ Anything else sharing a room — another plugin relaying awareness from an exter
 The `editor-` prefix is load-bearing rather than cosmetic: `includes/heartbeat.php` counts the editors in a post room with `str_starts_with( $entry->client_id, 'editor-' )`, so a colliding prefix inflates that count.
 
 ## PHP API
+
+<details>
+<summary>Functions, return shapes, and network variants</summary>
 
 The following public functions are part of the stable public API contract. All other helper functions in `includes/functions.php` and `includes/network-functions.php` (such as `wp_get_active_rooms()`, `wp_get_presence_summary()`, etc.) are marked `@access private`, are intended for internal plugin use only, and may change or be removed without notice.
 
@@ -97,6 +108,8 @@ Multisite only, from `includes/network-functions.php`. Returns `false` outside m
 wp_presence_network_aggregation_enabled();
 ```
 
+</details>
+
 ## Extension Points
 
 ### Post Type Support
@@ -112,6 +125,9 @@ add_post_type_support( 'my-post-type', 'presence' );
 ```
 
 Without support, `wp_presence_post_room()` returns `false` for that post type and no per-post room is created.
+
+<details>
+<summary>Filters and actions</summary>
 
 ### Filters
 #### `wp_presence_default_ttl`
@@ -183,9 +199,14 @@ add_action( 'wp_presence_collaboration_ended', function( $room, $entries ) {
 }, 10, 2 );
 ```
 
+</details>
+
 ## REST API
 
 All endpoints require `edit_posts`. Responses include `Cache-Control: no-store`.
+
+<details>
+<summary>Endpoints</summary>
 
 | Method | Path | Description |
 |---|---|---|
@@ -205,7 +226,12 @@ Multisite only, and gated on `manage_network` rather than `edit_posts`.
 
 The collection accepts `page` and `per_page` (default 50, max 100), counting sites in `X-WP-Total` and `X-WP-TotalPages` and the network headcount in `X-WP-Presence-Users-Online`. Both routes accept `users_per_site` to cap the users named per site (default 0, every user); each site's `user_count` stays its real total. A site nobody is on answers with an empty user list, so only an unknown `blog_id` is a 404.
 
+</details>
+
 ## WP-CLI
+
+<details>
+<summary>Commands</summary>
 
 ```
 wp presence list      # List all active presence entries
@@ -221,6 +247,8 @@ wp presence recording get
 wp presence recording set off
 wp presence recording set off --network   # Multisite only
 ```
+
+</details>
 
 ## Relationship to the block editor
 
