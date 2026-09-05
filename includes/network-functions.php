@@ -523,6 +523,12 @@ function wp_presence_network_capability() {
 	/**
 	 * Filters the capability required to see network-wide presence data.
 	 *
+	 * What this guards is network-wide: who is online on every site, and which
+	 * sites a given user is online on. Lowering it to a capability a site-level
+	 * role already holds, such as 'edit_posts', hands presence for the whole
+	 * network to every holder on every site, including sites they are not a
+	 * member of.
+	 *
 	 * @param string $capability Default 'manage_network'.
 	 */
 	return apply_filters( 'wp_presence_network_capability', 'manage_network' );

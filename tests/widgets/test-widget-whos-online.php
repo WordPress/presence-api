@@ -156,6 +156,11 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 	public function test_unchanged_response_carries_last_seen_timestamps() {
 		$idle_id = $this->add_user_to_room( 'dashboard', 40 );
 
+		// Read back the stored value: the tick()s below take real time, so a
+		// fresh time() - 40 can land a second off from what age_entry() wrote.
+		$idle_entries  = wp_list_filter( wp_get_presence( wp_presence_admin_room() ), array( 'client_id' => 'user-' . $idle_id ) );
+		$idle_date_gmt = reset( $idle_entries )->date_gmt;
+
 		wp_set_current_user( self::$editor_id );
 
 		$hash = $this->tick()['presence-online-hash'];
@@ -165,7 +170,7 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 		$after  = time();
 
 		$this->assertSame(
-			gmdate( 'Y-m-d H:i:s', time() - 40 ),
+			$idle_date_gmt,
 			$seen->{$idle_id},
 			'A user who stopped pinging must keep their stale timestamp.'
 		);
