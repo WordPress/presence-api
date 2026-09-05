@@ -288,13 +288,25 @@ function wp_presence_write_is_redundant( $room, $client_id, $data_json ) {
  * Uses INSERT ... ON DUPLICATE KEY UPDATE for atomic upserts
  * via the UNIQUE KEY (room, client_id).
  *
- * @param string $room      The room identifier.
- * @param string $client_id The client identifier.
- * @param array  $state     The presence state data.
- * @param int    $user_id   Optional. The user ID. Default 0.
+ * @since 0.4.0 Added the $date_gmt parameter.
+ *
+ * @param string      $room      The room identifier.
+ * @param string      $client_id The client identifier.
+ * @param array       $state     The presence state data.
+ * @param int         $user_id   Optional. The user ID. Default 0.
+ * @param string|null $date_gmt  Optional. The GMT timestamp to stamp the row
+ *                                with, as 'Y-m-d H:i:s' (the same shape
+ *                                `wp_get_presence()` returns as `date_gmt`).
+ *                                For a caller relaying awareness on behalf of
+ *                                other clients, so it can preserve their
+ *                                timestamps instead of stamping every
+ *                                relayed row with its own clock. A value in
+ *                                the future is clamped to now, since
+ *                                otherwise a caller could pin a row past the
+ *                                TTL indefinitely. Default null (now).
  * @return bool True on success, false on failure.
  */
-function wp_set_presence( $room, $client_id, $state, $user_id = 0 ) {
+function wp_set_presence( $room, $client_id, $state, $user_id = 0, $date_gmt = null ) {
 	global $wpdb;
 
 	if ( ! wp_presence_recording_enabled() ) {
@@ -306,7 +318,8 @@ function wp_set_presence( $room, $client_id, $state, $user_id = 0 ) {
 	}
 
 	$data_json = wp_json_encode( $state );
-	$now       = gmdate( 'Y-m-d H:i:s' );
+	$current   = gmdate( 'Y-m-d H:i:s' );
+	$now       = null === $date_gmt ? $current : min( $date_gmt, $current );
 
 	if ( wp_presence_write_is_redundant( $room, $client_id, $data_json ) ) {
 		return true;

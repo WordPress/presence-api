@@ -70,7 +70,11 @@ The following public functions are part of the stable public API contract. All o
 $entries = wp_get_presence( $room, $timeout = WP_PRESENCE_DEFAULT_TTL );
 
 // Upsert a client's presence state. Atomic via INSERT … ON DUPLICATE KEY UPDATE.
-wp_set_presence( $room, $client_id, $state, $user_id = 0 );
+// $date_gmt ('Y-m-d H:i:s') lets a caller relaying awareness on behalf of
+// other clients preserve their timestamps instead of stamping every relayed
+// row with its own clock; a value in the future is clamped to now. Defaults
+// to now.
+wp_set_presence( $room, $client_id, $state, $user_id = 0, $date_gmt = null );
 
 // Remove a single client from a room.
 wp_remove_presence( $room, $client_id );
