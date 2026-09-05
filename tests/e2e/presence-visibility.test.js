@@ -19,7 +19,10 @@
 import { test as base, expect } from '@wordpress/e2e-test-utils-playwright';
 import { chromium } from '@playwright/test';
 
-const BASE_URL = ( process.env.WP_BASE_URL || 'http://localhost:8888' ).replace( /\/$/, '' );
+const BASE_URL = ( process.env.WP_BASE_URL || 'http://localhost:8888' ).replace(
+	/\/$/,
+	''
+);
 
 const TEST_USERS = [
 	{
@@ -68,13 +71,8 @@ async function loginHeadlessUser( headlessBrowser, user, destinationUrl ) {
 
 	const userPage = await context.newPage();
 	await userPage.goto( destinationUrl || `${ BASE_URL }/wp-admin/` );
-	await userPage.waitForLoadState( 'networkidle' );
-
-	await userPage.evaluate( () => {
-		if ( typeof wp !== 'undefined' && wp.heartbeat ) {
-			wp.heartbeat.connectNow();
-		}
-	} );
+	await waitForHeartbeat( userPage );
+	await userPage.evaluate( () => wp.heartbeat.connectNow() );
 
 	return { context, page: userPage };
 }
@@ -86,7 +84,8 @@ async function loginHeadlessUser( headlessBrowser, user, destinationUrl ) {
  */
 function waitForHeartbeat( page ) {
 	return page.waitForFunction(
-		() => typeof wp !== 'undefined' && wp.heartbeat && wp.heartbeat.connectNow
+		() =>
+			typeof wp !== 'undefined' && wp.heartbeat && wp.heartbeat.connectNow
 	);
 }
 
@@ -111,7 +110,7 @@ async function setVisibility( page, state ) {
  * `heartbeat-send` listeners (including the plugin's) saw.
  *
  * @param {import('@playwright/test').Page} page
- * @returns {Promise<object>}
+ * @return {Promise<object>} The recorded Heartbeat activity.
  */
 function captureHeartbeatSend( page ) {
 	return page.evaluate(
@@ -205,7 +204,9 @@ test.describe( 'Presence Visibility', () => {
 			);
 
 			// User B clicks "Take over" to become the active lock holder.
-			const takeOverButton = userB.page.locator( 'a:has-text("Take over")' );
+			const takeOverButton = userB.page.locator(
+				'a:has-text("Take over")'
+			);
 			await takeOverButton.click();
 
 			// Wait for heartbeat library on User B's page.
@@ -214,7 +215,9 @@ test.describe( 'Presence Visibility', () => {
 			// Verify that wp-refresh-post-lock is present when visible initially.
 			const initial = await captureHeartbeatSend( userB.page );
 			expect( initial[ 'wp-refresh-post-lock' ] ).toBeDefined();
-			expect( initial[ 'wp-refresh-post-lock' ].post_id ).toBe( String( post.id ) );
+			expect( initial[ 'wp-refresh-post-lock' ].post_id ).toBe(
+				String( post.id )
+			);
 
 			// Verify that wp-refresh-post-lock is deleted when page is hidden.
 			await setVisibility( userB.page, 'hidden' );

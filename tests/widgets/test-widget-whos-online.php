@@ -406,8 +406,10 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 		$css = wp_styles()->get_data( 'presence-dashboard-widget', 'after' );
 		$this->assertStringContainsString( '#presence-whos-online-list', implode( '', (array) $css ) );
 
-		$script = implode( '', (array) wp_scripts()->get_data( 'presence-dashboard-widget', 'after' ) );
-		$this->assertStringContainsString( 'presence-whos-online-list', $script );
+		$this->assertStringContainsString( 'assets/js/whos-online-widget.js', wp_scripts()->registered['presence-dashboard-widget']->src );
+
+		$config = implode( '', (array) wp_scripts()->get_data( 'presence-dashboard-widget', 'before' ) );
+		$this->assertStringContainsString( 'window.wpPresenceWhosOnline', $config );
 
 		// The inline script calls into the shared file, so it has to load first.
 		$this->assertTrue( wp_script_is( 'wp-presence-avatar-stack', 'enqueued' ) );

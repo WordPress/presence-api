@@ -45,8 +45,8 @@ test.describe( 'Network Users Online view and column', () => {
 	 * Returns the Online cell of one user's row.
 	 *
 	 * @param {import('@playwright/test').Page} page
-	 * @param {number} userId
-	 * @returns {import('@playwright/test').Locator}
+	 * @param {number}                          userId
+	 * @return {import('@playwright/test').Locator} The matching cell.
 	 */
 	function onlineCell( page, userId ) {
 		return page.locator( `#user-${ userId } .column-presence_online` );
@@ -56,7 +56,7 @@ test.describe( 'Network Users Online view and column', () => {
 	 * Returns the "Online" entry in the list of views above the table.
 	 *
 	 * @param {import('@playwright/test').Page} page
-	 * @returns {import('@playwright/test').Locator}
+	 * @return {import('@playwright/test').Locator} The matching cell.
 	 */
 	function onlineView( page ) {
 		return page.locator( '.subsubsub li.presence_online a' );
@@ -72,7 +72,9 @@ test.describe( 'Network Users Online view and column', () => {
 
 		// User A on the sub-site, plus the admin this page just wrote online.
 		await expect( onlineView( page ) ).toContainText( 'Online' );
-		await expect( onlineView( page ).locator( '.count' ) ).toHaveText( '(2)' );
+		await expect( onlineView( page ).locator( '.count' ) ).toHaveText(
+			'(2)'
+		);
 	} );
 
 	test( 'names the sites a user is online on, and an em dash for a user online nowhere', async ( {
@@ -83,7 +85,9 @@ test.describe( 'Network Users Online view and column', () => {
 
 		await admin.visitAdminPage( 'network/users.php' );
 
-		await expect( onlineCell( page, userA ) ).toHaveText( siteLabel( SITE_SLUG ) );
+		await expect( onlineCell( page, userA ) ).toHaveText(
+			siteLabel( SITE_SLUG )
+		);
 		await expect( onlineCell( page, userB ) ).toHaveText( '—' );
 	} );
 

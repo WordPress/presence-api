@@ -13,7 +13,11 @@ import { test as base, expect } from '@wordpress/e2e-test-utils-playwright';
 import { chromium } from '@playwright/test';
 import { execSync } from 'node:child_process';
 
-const BASE_URL = process.env.WP_BASE_URL || 'http://localhost:8888';
+// Trailing slash stripped so `${BASE_URL}/wp-admin/` below can't double up.
+const BASE_URL = ( process.env.WP_BASE_URL || 'http://localhost:8888' ).replace(
+	/\/$/,
+	''
+);
 
 function wpCli( command ) {
 	execSync( `npx wp-env run cli wp ${ command }`, {
@@ -67,10 +71,25 @@ const test = base.extend( {
 } );
 
 /**
+ * Waits until the WordPress heartbeat library is ready on the page.
+ *
+ * @param {import('@playwright/test').Page} page
+ */
+function waitForHeartbeat( page ) {
+	return page.waitForFunction(
+		() =>
+			typeof wp !== 'undefined' && wp.heartbeat && wp.heartbeat.connectNow
+	);
+}
+
+/**
  * Log in a user on a headless browser and navigate to a URL.
  *
  * Uses request-based auth (POST to wp-login.php) to avoid
  * form interaction issues with WordPress 7.0's login page.
+ * @param {import('@playwright/test').Browser}   headlessBrowser The browser to open a context on.
+ * @param {{username: string, password: string}} user            Credentials to log in with.
+ * @param {string}                               destinationUrl  Where to land after logging in.
  */
 async function loginHeadlessUser( headlessBrowser, user, destinationUrl ) {
 	const context = await headlessBrowser.newContext( {
@@ -91,19 +110,14 @@ async function loginHeadlessUser( headlessBrowser, user, destinationUrl ) {
 
 	const userPage = await context.newPage();
 	await userPage.goto( destinationUrl || `${ BASE_URL }/wp-admin/` );
-	await userPage.waitForLoadState( 'networkidle' );
-
-	await userPage.evaluate( () => {
-		if ( typeof wp !== 'undefined' && wp.heartbeat ) {
-			wp.heartbeat.connectNow();
-		}
-	} );
+	await waitForHeartbeat( userPage );
+	await userPage.evaluate( () => wp.heartbeat.connectNow() );
 
 	return { context, page: userPage };
 }
 
 test.describe( 'Presence Widgets', () => {
-	test( 'User B appears in Who\'s Online widget', async ( {
+	test( "User B appears in Who's Online widget", async ( {
 		admin,
 		page,
 		testUsers,
@@ -138,26 +152,38 @@ test.describe( 'Presence Widgets', () => {
 		page,
 		testUsers,
 	} ) => {
-		const userBId = wpCliOutput( `user get ${ testUsers[ 0 ].username } --field=ID` );
+		const userBId = wpCliOutput(
+			`user get ${ testUsers[ 0 ].username } --field=ID`
+		);
 
 		await admin.visitAdminPage( '/' );
 		await page.evaluate( () => wp.heartbeat.connectNow() );
 
-		wpCli( `eval 'wp_set_presence( wp_presence_admin_room(), "session-b", array( "screen" => "dashboard" ), ${ userBId } );'` );
+		wpCli(
+			`eval 'wp_set_presence( wp_presence_admin_room(), "session-b", array( "screen" => "dashboard" ), ${ userBId } );'`
+		);
 		await page.evaluate( () => wp.heartbeat.connectNow() );
 
-		const userRow = page.locator( `#presence-whos-online-list [data-user-id="${ userBId }"]` );
+		const userRow = page.locator(
+			`#presence-whos-online-list [data-user-id="${ userBId }"]`
+		);
 		await expect( userRow ).toBeVisible( { timeout: 30_000 } );
 
 		const userLink = userRow.locator( 'a' ).first();
 		await userLink.focus();
 		await expect( userLink ).toBeFocused();
 
-		wpCli( `eval 'wp_set_presence( wp_presence_admin_room(), "session-b", array( "screen" => "edit" ), ${ userBId } );'` );
+		wpCli(
+			`eval 'wp_set_presence( wp_presence_admin_room(), "session-b", array( "screen" => "edit" ), ${ userBId } );'`
+		);
 		await page.evaluate( () => wp.heartbeat.connectNow() );
 
 		await expect(
-			page.locator( `#presence-whos-online-list [data-user-id="${ userBId }"] a` ).first()
+			page
+				.locator(
+					`#presence-whos-online-list [data-user-id="${ userBId }"] a`
+				)
+				.first()
 		).toBeFocused( { timeout: 30_000 } );
 	} );
 
@@ -172,11 +198,12 @@ test.describe( 'Presence Widgets', () => {
 		} );
 
 		// Seed a presence entry for the post via wp eval (CLI --user flag collides with WP-CLI global).
-		wpCli( `eval 'wp_set_presence( "postType/post:${ post.id }", "editor-1", array( "action" => "editing", "screen" => "post" ), 1 );'` );
+		wpCli(
+			`eval 'wp_set_presence( "postType/post:${ post.id }", "editor-1", array( "action" => "editing", "screen" => "post" ), 1 );'`
+		);
 
 		await admin.visitAdminPage( '/' );
 		await page.evaluate( () => wp.heartbeat.connectNow() );
-		await page.waitForTimeout( 3000 );
 
 		const activePostsList = page.locator( '#presence-active-posts-list' );
 		await expect( activePostsList ).toContainText(
@@ -195,7 +222,9 @@ test.describe( 'Presence Widgets', () => {
 			status: 'draft',
 		} );
 
-		wpCli( `eval 'wp_set_presence( "postType/post:${ post.id }", "session-a", array( "action" => "editing", "screen" => "post" ), 1 );'` );
+		wpCli(
+			`eval 'wp_set_presence( "postType/post:${ post.id }", "session-a", array( "action" => "editing", "screen" => "post" ), 1 );'`
+		);
 
 		await admin.visitAdminPage( '/' );
 		await page.evaluate( () => wp.heartbeat.connectNow() );
@@ -217,12 +246,12 @@ test.describe( 'Presence Widgets', () => {
 		);
 		await page.evaluate( () => wp.heartbeat.connectNow() );
 
-		await expect( page.locator( '#presence-active-posts-list' ) ).toContainText(
-			'Idle',
-			{ timeout: 30_000 }
-		);
+		await expect(
+			page.locator( '#presence-active-posts-list' )
+		).toContainText( 'Idle', { timeout: 30_000 } );
 		await expect( postLink ).toBeFocused();
 	} );
+
 	/**
 	 * The heartbeat payload is capped well below a large room, so the overflow
 	 * count and its link to the Users screen can only come from the total the
@@ -242,11 +271,14 @@ test.describe( 'Presence Widgets', () => {
 			await page.addInitScript( () => {
 				window.__presenceTicks = 0;
 				document.addEventListener( 'DOMContentLoaded', () => {
-					jQuery( document ).on( 'heartbeat-tick', ( event, data ) => {
-						if ( data[ 'presence-online' ] ) {
-							window.__presenceTicks++;
+					jQuery( document ).on(
+						'heartbeat-tick',
+						( event, data ) => {
+							if ( data[ 'presence-online' ] ) {
+								window.__presenceTicks++;
+							}
 						}
-					} );
+					);
 				} );
 			} );
 
@@ -264,7 +296,9 @@ test.describe( 'Presence Widgets', () => {
 			);
 
 			const tick = async () => {
-				const before = await page.evaluate( () => window.__presenceTicks );
+				const before = await page.evaluate(
+					() => window.__presenceTicks
+				);
 				await page.evaluate( () => wp.heartbeat.connectNow() );
 				await page.waitForFunction(
 					( seen ) => window.__presenceTicks > seen,
@@ -275,9 +309,13 @@ test.describe( 'Presence Widgets', () => {
 
 			await tick();
 
-			await expect( summary ).toContainText( `+${ online - visibleRows } more` );
+			await expect( summary ).toContainText(
+				`+${ online - visibleRows } more`
+			);
 			await expect(
-				page.locator( '#presence-whos-online-list #presence-overflow-list' )
+				page.locator(
+					'#presence-whos-online-list #presence-overflow-list'
+				)
 			).toHaveCount( 0 );
 
 			// Drop a user ranked below the payload cap: the entries the client

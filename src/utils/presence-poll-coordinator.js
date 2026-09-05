@@ -75,7 +75,9 @@ function createCoordinator( room, fields ) {
 		heartbeatCleanup: null,
 		releaseLock: null,
 		lockAbortController:
-			typeof AbortController === 'function' ? new AbortController() : null,
+			typeof AbortController === 'function'
+				? new AbortController()
+				: null,
 		channel:
 			typeof BroadcastChannel === 'function'
 				? new BroadcastChannel( lockName )
@@ -137,7 +139,9 @@ function createCoordinator( room, fields ) {
 
 	function becomeLeader() {
 		fetchAndBroadcast();
-		coordinator.heartbeatCleanup = onHeartbeatTick( () => fetchAndBroadcast() );
+		coordinator.heartbeatCleanup = onHeartbeatTick( () =>
+			fetchAndBroadcast()
+		);
 	}
 
 	coordinator.start = function () {
@@ -164,10 +168,15 @@ function createCoordinator( room, fields ) {
 		// The rest wait and listen on BroadcastChannel instead. Closing or
 		// crashing the leader's tab releases the lock automatically.
 		navigator.locks
-			.request( lockName, options, () => new Promise( ( resolve ) => {
-				coordinator.releaseLock = resolve;
-				becomeLeader();
-			} ) )
+			.request(
+				lockName,
+				options,
+				() =>
+					new Promise( ( resolve ) => {
+						coordinator.releaseLock = resolve;
+						becomeLeader();
+					} )
+			)
 			.catch( () => {} );
 	};
 

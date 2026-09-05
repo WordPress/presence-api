@@ -36,9 +36,7 @@ function relativeLuminance( rgb ) {
 		} );
 
 	return (
-		0.2126 * channels[ 0 ] +
-		0.7152 * channels[ 1 ] +
-		0.0722 * channels[ 2 ]
+		0.2126 * channels[ 0 ] + 0.7152 * channels[ 1 ] + 0.0722 * channels[ 2 ]
 	);
 }
 
@@ -88,29 +86,29 @@ test.describe.serial( 'Presence admin bar contrast', () => {
 		demoSeeder( 'wp_presence_demo_cleanup();' );
 	} );
 
-	test(
-		'Light scheme text meets WCAG AA contrast',
-		async ( { admin, page } ) => {
-			await admin.visitAdminPage( '/' );
+	test( 'Light scheme text meets WCAG AA contrast', async ( {
+		admin,
+		page,
+	} ) => {
+		await admin.visitAdminPage( '/' );
 
-			const barNode = page.locator( '#wp-admin-bar-presence-online' );
-			await expect( barNode ).toBeVisible();
-			await barNode.hover();
+		const barNode = page.locator( '#wp-admin-bar-presence-online' );
+		await expect( barNode ).toBeVisible();
+		await barNode.hover();
 
-			const text = [
-				page.locator( '.presence-bar-count' ).first(),
-				page.locator( '.presence-bar-you' ).first(),
-				page.locator( '.presence-bar-screen' ).first(),
-				page.locator( '.presence-bar-group-label' ).first(),
-			];
+		const text = [
+			page.locator( '.presence-bar-count' ).first(),
+			page.locator( '.presence-bar-you' ).first(),
+			page.locator( '.presence-bar-screen' ).first(),
+			page.locator( '.presence-bar-group-label' ).first(),
+		];
 
-			for ( const element of text ) {
-				await expect( element ).toBeVisible();
-				const { foreground, background } = await computedColors( element );
-				expect( contrastRatio( foreground, background ) ).toBeGreaterThanOrEqual(
-					4.5
-				);
-			}
+		for ( const element of text ) {
+			await expect( element ).toBeVisible();
+			const { foreground, background } = await computedColors( element );
+			expect(
+				contrastRatio( foreground, background )
+			).toBeGreaterThanOrEqual( 4.5 );
 		}
-	);
+	} );
 } );
