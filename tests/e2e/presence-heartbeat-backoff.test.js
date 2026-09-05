@@ -76,6 +76,8 @@ test.describe( 'Presence Heartbeat Idle Backoff', () => {
 		admin,
 		page,
 		requestUtils,
+		// eslint-disable-next-line no-unused-vars -- requested only to create the second user the post-lock dialog needs.
+		testUsers,
 	} ) => {
 		const post = await requestUtils.createPost( {
 			title: 'E2E Heartbeat Backoff Test',

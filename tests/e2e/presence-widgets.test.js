@@ -13,7 +13,11 @@ import { test as base, expect } from '@wordpress/e2e-test-utils-playwright';
 import { chromium } from '@playwright/test';
 import { execSync } from 'node:child_process';
 
-const BASE_URL = process.env.WP_BASE_URL || 'http://localhost:8888';
+// Trailing slash stripped so `${BASE_URL}/wp-admin/` below can't double up.
+const BASE_URL = ( process.env.WP_BASE_URL || 'http://localhost:8888' ).replace(
+	/\/$/,
+	''
+);
 
 function wpCli( command ) {
 	execSync( `npx wp-env run cli wp ${ command }`, {
