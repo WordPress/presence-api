@@ -56,10 +56,19 @@ class WP_Presence_Network_Widget_Whos_Online {
 		wp_enqueue_script( 'heartbeat' );
 		wp_presence_enqueue_avatar_stack_script();
 
-		// A handle of its own so the inline script can declare what it needs.
-		wp_register_script( 'presence-network-widget', false, array( 'jquery', 'heartbeat', 'wp-presence-avatar-stack' ), WP_PRESENCE_VERSION, true );
-		wp_enqueue_script( 'presence-network-widget' );
-		wp_add_inline_script( 'presence-network-widget', self::get_inline_script() );
+		wp_enqueue_script(
+			'presence-network-widget',
+			WP_PRESENCE_PLUGIN_URL . 'assets/js/network-whos-online-widget.js',
+			array( 'jquery', 'heartbeat', 'wp-presence-avatar-stack' ),
+			WP_PRESENCE_VERSION,
+			true
+		);
+
+		wp_add_inline_script(
+			'presence-network-widget',
+			sprintf( 'window.wpPresenceNetworkWhosOnline = %s;', wp_json_encode( self::get_script_config() ) ),
+			'before'
+		);
 
 		wp_presence_enqueue_avatar_stack_style();
 
@@ -233,13 +242,15 @@ class WP_Presence_Network_Widget_Whos_Online {
 	}
 
 	/**
-	 * Returns the inline JavaScript for Heartbeat integration.
+	 * Returns the configuration the widget's client script reads.
 	 *
-	 * @return string JavaScript code.
+	 * @return array Script configuration.
 	 */
-	private static function get_inline_script() {
-		$i18n_json = wp_json_encode(
-			array(
+	private static function get_script_config() {
+		return array(
+			'viewAllUrl' => esc_url_raw( network_admin_url( 'sites.php' ) ),
+			'avatarMax'  => WP_PRESENCE_NETWORK_AVATARS,
+			'i18n'       => array(
 				'noUsersOnline' => __( 'No users are currently online anywhere on the network.', 'presence-api' ),
 				'notAggregated' => __( 'Presence is not aggregated across this network, so who is online cannot be shown.', 'presence-api' ),
 				'sitesOnline'   => __( 'Sites with online users', 'presence-api' ),
@@ -247,135 +258,7 @@ class WP_Presence_Network_Widget_Whos_Online {
 				'moreSite'      => __( '+%d more site — view all', 'presence-api' ),
 				/* translators: %d: Number of additional sites with online users. */
 				'moreSites'     => __( '+%d more sites — view all', 'presence-api' ),
-			)
-		);
-
-		return sprintf(
-			<<<'JS'
-(function($) {
-	if (typeof wp === 'undefined' || typeof wp.heartbeat === 'undefined') {
-		return;
-	}
-
-	var i18n = %s;
-	var viewAllUrl = %s;
-	var avatarMax = %d;
-	var lastHash = '';
-	var lastSignature = '';
-
-	function esc(str) {
-		var el = document.createElement('span');
-		el.textContent = str;
-		return el.innerHTML;
-	}
-
-	// The swap below replaces every node, so a keyboard user standing on a site
-	// link lands on the body unless the spot is recorded and handed back.
-	function captureFocus(container) {
-		var active = document.activeElement;
-		if (!active || !$.contains(container[0], active)) {
-			return null;
-		}
-		var item = $(active).closest('[data-blog-id]');
-		if (item.length) {
-			return { type: 'site', id: item.data('blog-id') };
-		}
-		if ($(active).hasClass('presence-more-link')) {
-			return { type: 'more' };
-		}
-		return { type: 'none' };
-	}
-
-	function restoreFocus(container, info) {
-		if (!info) {
-			return;
-		}
-		var target = null;
-		if (info.type === 'site') {
-			target = container.find('[data-blog-id="' + info.id + '"] a').first();
-		} else if (info.type === 'more') {
-			target = container.find('.presence-more-link');
-		}
-		if (target && target.length) {
-			target.trigger('focus');
-		} else {
-			container.trigger('focus');
-		}
-	}
-
-	// Already cut to the sites and avatars this widget shows, so nothing is
-	// sliced here; overflow is a count the server sends, not what is left over.
-	function buildListHtml(sites, overflow, aggregating) {
-		if (!aggregating) {
-			return '<p>' + esc(i18n.notAggregated) + '</p>';
-		}
-
-		if (!sites.length) {
-			return '<p>' + esc(i18n.noUsersOnline) + '</p>';
-		}
-
-		var html = '<ul class="presence-user-list" aria-label="' + esc(i18n.sitesOnline) + '">';
-		sites.forEach(function(site) {
-			html += '<li class="presence-site-item" data-blog-id="' + parseInt(site.blog_id, 10) + '">' + window.wpPresenceBuildAvatarStack(site.users, avatarMax);
-			html += '<span class="presence-site-info"><a href="' + esc(site.url) + '">' + esc(site.domain + site.path) + '</a></span>';
-			html += '<span class="presence-site-count">' + site.user_count + '</span></li>';
-		});
-		html += '</ul>';
-
-		if (overflow > 0) {
-			// Both forms come from the server because _n() cannot be called from
-			// here; picking on the count is as close as this gets to its rules.
-			var moreLabel = (overflow === 1 ? i18n.moreSite : i18n.moreSites).replace('%%d', overflow);
-			html += '<a href="' + esc(viewAllUrl) + '" class="presence-more-link">' + esc(moreLabel) + '</a>';
-		}
-
-		return html;
-	}
-
-	$(document).on('heartbeat-send', function(event, data) {
-		data['presence-network-widget-ping'] = true;
-		if (lastHash) {
-			data['presence-network-widget-hash'] = lastHash;
-		}
-	});
-
-	$(document).on('heartbeat-tick', function(event, data) {
-		if (data['presence-network-widget-unchanged']) {
-			return;
-		}
-
-		if (!data['presence-network-widget']) {
-			return;
-		}
-
-		lastHash = data['presence-network-widget-hash'] || '';
-
-		var container = $('#presence-network-widget-list');
-		if (!container.length) {
-			return;
-		}
-
-		var sites = data['presence-network-widget'];
-		var overflow = data['presence-network-widget-overflow'] || 0;
-		var aggregating = data['presence-network-widget-aggregating'] !== false;
-
-		// Signature over what gets drawn, matching the server-side hash: a
-		// rename or a new avatar has to repaint, and the order is already the
-		// order it renders in.
-		var sig = JSON.stringify([sites, overflow, aggregating]);
-
-		if (sig !== lastSignature) {
-			var focusInfo = captureFocus(container);
-			container.html(buildListHtml(sites, overflow, aggregating));
-			restoreFocus(container, focusInfo);
-			lastSignature = sig;
-		}
-	});
-})(jQuery);
-JS,
-			$i18n_json,
-			wp_json_encode( esc_url_raw( network_admin_url( 'sites.php' ) ) ),
-			WP_PRESENCE_NETWORK_AVATARS
+			),
 		);
 	}
 }

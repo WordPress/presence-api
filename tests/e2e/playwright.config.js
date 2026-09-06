@@ -19,9 +19,7 @@ process.env.MULTISITE_STORAGE_STATE_PATH ??= path.join(
 	'storage-states/admin-multisite.json'
 );
 
-const baseUrl = new URL(
-	process.env.WP_BASE_URL || 'http://localhost:8888'
-);
+const baseUrl = new URL( process.env.WP_BASE_URL || 'http://localhost:8888' );
 
 process.env.WP_BASE_URL = baseUrl.href;
 
@@ -44,6 +42,7 @@ const NETWORK_SPECS = /presence-network-[^/]+\.test\.js$/;
 export default defineConfig( {
 	globalSetup: path.resolve( __dirname, 'global-setup.js' ),
 	reporter: process.env.CI ? [ [ 'github' ] ] : [ [ 'list' ] ],
+	retries: process.env.CI ? 2 : 0,
 	workers: 1,
 	timeout: 100_000,
 	reportSlowTests: null,

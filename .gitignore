@@ -7,4 +7,5 @@ build/
 coverage.xml
 .env
 .wp-env.override.json
+plugin-check.json
 .DS_Store

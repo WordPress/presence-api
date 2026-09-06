@@ -23,10 +23,14 @@ export function onHeartbeatTick( callback ) {
 	};
 
 	if ( typeof window.jQuery !== 'undefined' ) {
-		window.jQuery( document ).on( 'heartbeat-tick.presenceApi', wrappedCallback );
+		window
+			.jQuery( document )
+			.on( 'heartbeat-tick.presenceApi', wrappedCallback );
 
 		return () => {
-			window.jQuery( document ).off( 'heartbeat-tick.presenceApi', wrappedCallback );
+			window
+				.jQuery( document )
+				.off( 'heartbeat-tick.presenceApi', wrappedCallback );
 		};
 	}
 

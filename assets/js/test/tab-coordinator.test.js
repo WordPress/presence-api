@@ -74,7 +74,11 @@ class FakeBroadcastChannel {
  * @param {number} maxRounds
  */
 function drainDeliveries( maxRounds = 10 ) {
-	for ( let round = 0; round < maxRounds && pendingDeliveries.length; round++ ) {
+	for (
+		let round = 0;
+		round < maxRounds && pendingDeliveries.length;
+		round++
+	) {
 		const batch = pendingDeliveries;
 		pendingDeliveries = [];
 		batch.forEach( ( deliver ) => deliver() );

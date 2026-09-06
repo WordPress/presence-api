@@ -42,7 +42,7 @@ test.describe( 'Network Sites Online column', () => {
 	 * network.
 	 *
 	 * @param {import('@playwright/test').Page} page
-	 * @returns {import('@playwright/test').Locator}
+	 * @return {import('@playwright/test').Locator} The matching cell.
 	 */
 	function onlineCell( page ) {
 		return page
@@ -63,7 +63,9 @@ test.describe( 'Network Sites Online column', () => {
 			'Online'
 		);
 
-		const avatars = onlineCell( page ).locator( '.presence-avatar-stack img' );
+		const avatars = onlineCell( page ).locator(
+			'.presence-avatar-stack img'
+		);
 
 		await expect( avatars ).toHaveCount( 1 );
 		await expect( avatars ).toHaveAttribute(

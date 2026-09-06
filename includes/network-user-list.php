@@ -108,6 +108,10 @@ function wp_presence_register_network_users_column( $columns ) {
  * avatar URL for everyone online would be the whole cost of the read for
  * output this column never uses.
  *
+ * Gates on the capability again rather than trusting the registration above:
+ * core calls this for whatever columns the screen ended up with, and ours is
+ * not the only thing that can put a name in that list.
+ *
  * @param string $output      Existing column output.
  * @param string $column_name Column being rendered.
  * @param int    $user_id     The user ID for the current row.
@@ -115,6 +119,10 @@ function wp_presence_register_network_users_column( $columns ) {
  */
 function wp_presence_render_network_users_column( $output, $column_name, $user_id ) {
 	if ( 'presence_online' !== $column_name ) {
+		return $output;
+	}
+
+	if ( ! current_user_can( wp_presence_network_capability() ) ) {
 		return $output;
 	}
 

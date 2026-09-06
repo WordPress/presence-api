@@ -49,4 +49,15 @@ jobs:
           wp-env run cli wp plugin activate presence-api
 
       - name: Run Plugin Check
-        run: wp-env run cli wp plugin check presence-api --format=strict-table
+        run: |
+          wp-env run cli wp plugin check presence-api \
+            --format=strict-json \
+            --fields=file,line,column,type,code,message > plugin-check.json
+
+          jq -r '.[] | "\(.type)  \(.file):\(.line):\(.column)  \(.code)\n    \(.message)"' plugin-check.json
+
+          errors="$( jq '[ .[] | select( .type == "ERROR" ) ] | length' plugin-check.json )"
+          if [ "$errors" -gt 0 ]; then
+            echo "Plugin Check reported $errors error(s)."
+            exit 1
+          fi

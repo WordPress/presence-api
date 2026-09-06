@@ -280,6 +280,10 @@ function wp_presence_admin_heartbeat_received( $response, $data, $screen_id ) { 
 /**
  * Handles the editor presence heartbeat and creates a presence entry for the post being edited.
  *
+ * Also carries the room's current editor count back as
+ * `presence-heartbeat-collaborators`, so a client can decide whether to start
+ * a real-time sync loop without polling for it separately.
+ *
  * @param array  $response  The Heartbeat response.
  * @param array  $data      The $_POST data sent.
  * @param string $screen_id The screen ID.
@@ -331,7 +335,7 @@ function wp_presence_editor_heartbeat_received( $response, $data, $screen_id ) {
 		$user_id
 	);
 
-	wp_presence_check_collaboration_threshold( $room );
+	$response['presence-heartbeat-collaborators'] = wp_presence_check_collaboration_threshold( $room );
 
 	return $response;
 }
@@ -358,8 +362,10 @@ function wp_presence_collaboration_state_key( $room ) {
  * Fires 'wp_presence_collaboration_ended' when editor count goes from 2+ to 1.
  *
  * @since 0.1.21
+ * @since 0.4.0 Returns the current editor count instead of void.
  *
  * @param string $room The presence room identifier.
+ * @return int The number of editors currently present in the room.
  */
 function wp_presence_check_collaboration_threshold( $room ) {
 	$entries = wp_get_presence( $room );
@@ -410,4 +416,6 @@ function wp_presence_check_collaboration_threshold( $room ) {
 	} elseif ( false !== $stored ) {
 		delete_transient( $key );
 	}
+
+	return $editor_count;
 }

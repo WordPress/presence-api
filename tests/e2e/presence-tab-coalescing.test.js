@@ -24,7 +24,8 @@ import { test, expect } from '@wordpress/e2e-test-utils-playwright';
  */
 function waitForHeartbeat( page ) {
 	return page.waitForFunction(
-		() => typeof wp !== 'undefined' && wp.heartbeat && wp.heartbeat.connectNow
+		() =>
+			typeof wp !== 'undefined' && wp.heartbeat && wp.heartbeat.connectNow
 	);
 }
 
@@ -33,7 +34,7 @@ function waitForHeartbeat( page ) {
  * `heartbeat-send` listeners saw.
  *
  * @param {import('@playwright/test').Page} page
- * @return {Promise<object>}
+ * @return {Promise<object>} The recorded Heartbeat activity.
  */
 function captureHeartbeatSend( page ) {
 	return page.evaluate(
@@ -56,14 +57,23 @@ function captureHeartbeatSend( page ) {
  * @return {Promise<object>} The `heartbeat-send` data from the winning attempt.
  */
 async function waitForLeaderPing( page, maxAttempts = 20 ) {
-	for ( let attempt = 0; attempt < maxAttempts; attempt++ ) {
-		const data = await captureHeartbeatSend( page );
-		if ( data[ 'presence-ping' ] ) {
-			return data;
-		}
-		await page.waitForTimeout( 100 );
-	}
-	throw new Error( 'Tab never won presence-ping leadership.' );
+	let winningData;
+
+	await expect
+		.poll(
+			async () => {
+				winningData = await captureHeartbeatSend( page );
+				return Boolean( winningData[ 'presence-ping' ] );
+			},
+			{
+				intervals: [ 0 ],
+				timeout: maxAttempts * 100,
+				message: 'Tab never won presence-ping leadership.',
+			}
+		)
+		.toBe( true );
+
+	return winningData;
 }
 
 /**
@@ -72,7 +82,7 @@ async function waitForLeaderPing( page, maxAttempts = 20 ) {
  *
  * @param {import('@playwright/test').Page} page
  * @param {number}                          timeoutMs
- * @return {Promise<object>}
+ * @return {Promise<object>} The recorded Heartbeat activity.
  */
 function waitForOnlineDataTick( page, timeoutMs = 8000 ) {
 	return page.evaluate( ( timeout ) => {
@@ -164,7 +174,8 @@ test.describe( 'Presence Tab Coalescing', () => {
 		] );
 
 		expect(
-			relayed[ 'presence-online' ] || relayed[ 'presence-online-unchanged' ]
+			relayed[ 'presence-online' ] ||
+				relayed[ 'presence-online-unchanged' ]
 		).toBeTruthy();
 
 		await sibling.close();
@@ -189,9 +200,7 @@ test.describe( 'Presence Tab Coalescing', () => {
 		expect( dataA[ 'presence-editor-ping' ].post_id ).toBe( postA.id );
 
 		const pageB = await page.context().newPage();
-		await pageB.goto(
-			`/wp-admin/post.php?post=${ postB.id }&action=edit`
-		);
+		await pageB.goto( `/wp-admin/post.php?post=${ postB.id }&action=edit` );
 		await waitForHeartbeat( pageB );
 
 		// A different post is a different context, so this tab must win
