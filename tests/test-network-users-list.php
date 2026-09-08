@@ -16,9 +16,11 @@
 class WP_Test_Network_Users_List extends WP_Presence_Network_UnitTestCase {
 
 	private static $editor_id;
+	private static $subscriber_id;
 
 	public static function wpSetUpBeforeClass( WP_UnitTest_Factory $factory ) {
-		self::$editor_id = $factory->user->create( array( 'role' => 'editor' ) );
+		self::$editor_id     = $factory->user->create( array( 'role' => 'editor' ) );
+		self::$subscriber_id = $factory->user->create( array( 'role' => 'subscriber' ) );
 	}
 
 	/**
@@ -68,6 +70,44 @@ class WP_Test_Network_Users_List extends WP_Presence_Network_UnitTestCase {
 		$this->assertArrayHasKey( 'presence_online', $views );
 		// One distinct user online across both sites, not two.
 		$this->assertStringContainsString( '(1)', $views['presence_online'] );
+	}
+
+	/**
+	 * A count of zero is a headcount, and a network that does not aggregate has
+	 * not taken one. Rows are sitting there so the number would be wrong rather
+	 * than merely unknown.
+	 *
+	 * @covers ::wp_presence_network_users_views
+	 */
+	public function test_users_view_is_withheld_when_the_network_does_not_aggregate() {
+		$this->become_network_admin();
+		$this->set_network_summary_row( $this->create_blog(), array( self::$editor_id ) );
+
+		add_filter( 'wp_presence_network_aggregation_enabled', '__return_false' );
+		wp_presence_flush_network_summary_cache();
+
+		$views = wp_presence_network_users_views( array() );
+
+		$this->assertArrayNotHasKey( 'presence_online', $views );
+	}
+
+	/**
+	 * Withholding the view leaves a column of em dashes and nothing saying why,
+	 * so the screen has to carry the same notice the Sites list does.
+	 *
+	 * @covers ::wp_presence_network_aggregation_notice
+	 */
+	public function test_the_users_list_warns_when_the_network_does_not_aggregate() {
+		$this->become_network_admin();
+		set_current_screen( 'users-network' );
+
+		add_filter( 'wp_presence_network_aggregation_enabled', '__return_false' );
+
+		ob_start();
+		wp_presence_network_aggregation_notice();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString( 'not aggregated across this network', $output );
 	}
 
 	/**
@@ -173,9 +213,30 @@ class WP_Test_Network_Users_List extends WP_Presence_Network_UnitTestCase {
 	 * @covers ::wp_presence_get_network_sites_for_user
 	 */
 	public function test_users_column_shows_a_dash_for_an_offline_user() {
+		$this->become_network_admin();
+
 		$output = wp_presence_render_network_users_column( '', 'presence_online', self::$editor_id );
 
 		$this->assertSame( '&#8212;', $output );
+	}
+
+	/**
+	 * test_users_column_shows_a_dash_for_an_offline_user() also calls this
+	 * uncapped, but it passes because that user is offline. This one is online,
+	 * so only a gate can keep the site names back.
+	 *
+	 * @covers ::wp_presence_render_network_users_column
+	 */
+	public function test_users_column_renders_nothing_without_capability() {
+		$this->become_network_admin();
+		$blog_id = $this->create_blog();
+		$this->set_presence_on_site( $blog_id, self::$editor_id );
+
+		wp_set_current_user( self::$subscriber_id );
+
+		$output = wp_presence_render_network_users_column( 'unchanged', 'presence_online', self::$editor_id );
+
+		$this->assertSame( 'unchanged', $output );
 	}
 
 	/**

@@ -23,6 +23,14 @@ function wp_presence_network_users_views( $views ) {
 		return $views;
 	}
 
+	// Withheld rather than shown as zero, matching what `wp presence network`
+	// does with its totals: nobody online is an answer this network cannot
+	// give, and the filter behind the link would return nothing on any reading.
+	// wp_presence_network_aggregation_notice() says why the column is empty.
+	if ( ! wp_presence_network_aggregation_enabled() ) {
+		return $views;
+	}
+
 	$online_count = count( wp_presence_get_network_online_user_ids() );
 	$is_current   = isset( $_GET['presence_status'] ) && 'online' === $_GET['presence_status']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
@@ -100,6 +108,10 @@ function wp_presence_register_network_users_column( $columns ) {
  * avatar URL for everyone online would be the whole cost of the read for
  * output this column never uses.
  *
+ * Gates on the capability again rather than trusting the registration above:
+ * core calls this for whatever columns the screen ended up with, and ours is
+ * not the only thing that can put a name in that list.
+ *
  * @param string $output      Existing column output.
  * @param string $column_name Column being rendered.
  * @param int    $user_id     The user ID for the current row.
@@ -107,6 +119,10 @@ function wp_presence_register_network_users_column( $columns ) {
  */
 function wp_presence_render_network_users_column( $output, $column_name, $user_id ) {
 	if ( 'presence_online' !== $column_name ) {
+		return $output;
+	}
+
+	if ( ! current_user_can( wp_presence_network_capability() ) ) {
 		return $output;
 	}
 

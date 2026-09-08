@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Presence API
  * Description: System-wide presence and awareness for WordPress.
- * Version: 0.2.1
+ * Version: 0.4.0
  * Requires at least: 7.0
  * Requires PHP: 7.4
  * Author: WordPress Core Team
@@ -45,7 +45,7 @@ if ( isset( $wpdb->presence ) ) {
 	return;
 }
 
-define( 'WP_PRESENCE_VERSION', '0.2.1' );
+define( 'WP_PRESENCE_VERSION', '0.4.0' );
 define( 'WP_PRESENCE_DB_VERSION', 2 );
 define( 'WP_PRESENCE_NETWORK_SUMMARY_DB_VERSION', 1 );
 define( 'WP_PRESENCE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -385,7 +385,7 @@ if ( is_multisite() ) {
 	add_filter( 'wpmu_blogs_columns', 'wp_presence_register_network_sites_column' );
 	add_action( 'manage_sites_custom_column', 'wp_presence_render_network_sites_column', 10, 2 );
 	add_action( 'admin_enqueue_scripts', 'wp_presence_enqueue_network_sites_assets' );
-	add_action( 'network_admin_notices', 'wp_presence_network_sites_aggregation_notice' );
+	add_action( 'network_admin_notices', 'wp_presence_network_aggregation_notice' );
 
 	add_filter( 'views_users-network', 'wp_presence_network_users_views' );
 	add_filter( 'users_list_table_query_args', 'wp_presence_filter_network_online_users' );

@@ -1,6 +1,7 @@
 /**
  * Active Posts dashboard widget client.
  *
+ * @param {jQuery} $ The jQuery instance.
  * @package Presence_API
  */
 
@@ -11,110 +12,158 @@
 		return;
 	}
 
-	var i18n = window.wpPresenceActivePosts || {};
+	const i18n = window.wpPresenceActivePosts || {};
 
 	// Sitewide data, no per-tab context — the dedupe key is fixed.
-	var pingContextKey = 'wp-presence-active-posts-ping';
+	const pingContextKey = 'wp-presence-active-posts-ping';
 
-	var tabCoordinator = window.wpPresenceCreateTabCoordinator( pingContextKey, [ 'presence-active-posts' ] );
+	const tabCoordinator = window.wpPresenceCreateTabCoordinator(
+		pingContextKey,
+		[ 'presence-active-posts' ]
+	);
 
-	function esc(str) {
-		var el = document.createElement('span');
+	function esc( str ) {
+		const el = document.createElement( 'span' );
 		el.textContent = str;
 		return el.innerHTML;
 	}
 
-	$(document).on('heartbeat-send', function(event, data) {
+	$( document ).on( 'heartbeat-send', function ( event, data ) {
 		if ( ! tabCoordinator.isLeader() ) {
 			return;
 		}
-		data['presence-active-posts-ping'] = true;
-	});
+		data[ 'presence-active-posts-ping' ] = true;
+	} );
 
-	var lastSignature = '';
+	let lastSignature = '';
 
-	function captureFocus(container) {
-		var active = document.activeElement;
-		if (!active || !$.contains(container[0], active)) {
+	function captureFocus( container ) {
+		const active = document.activeElement;
+		if ( ! active || ! $.contains( container[ 0 ], active ) ) {
 			return null;
 		}
-		var item = $(active).closest('[data-post-id]');
-		return { postId: item.length ? item.data('post-id') : null };
+		const item = $( active ).closest( '[data-post-id]' );
+		return { postId: item.length ? item.data( 'post-id' ) : null };
 	}
 
-	function restoreFocus(container, info) {
-		if (!info) {
+	function restoreFocus( container, info ) {
+		if ( ! info ) {
 			return;
 		}
-		var target = null;
-		if (info.postId !== null && info.postId !== undefined) {
-			target = container.find('[data-post-id="' + info.postId + '"] a').first();
+		let target = null;
+		if ( info.postId !== null && info.postId !== undefined ) {
+			target = container
+				.find( '[data-post-id="' + info.postId + '"] a' )
+				.first();
 		}
-		if (target && target.length) {
-			target.trigger('focus');
+		if ( target && target.length ) {
+			target.trigger( 'focus' );
 		} else {
-			container.trigger('focus');
+			container.trigger( 'focus' );
 		}
 	}
 
-	function buildFullPostsHtml(posts) {
-		var html = '<ul class="presence-active-posts-list" aria-label="' + esc(i18n.postsBeingEdited) + '">';
-		posts.forEach(function(post) {
-			var anyActive = post.editors.some(function(e) { return e.status === 'active'; });
-			var statusLabel = anyActive ? '' : i18n.statusIdle;
-			html += '<li class="presence-active-post-item" data-post-id="' + post.post_id + '">';
+	function buildFullPostsHtml( posts ) {
+		let html =
+			'<ul class="presence-active-posts-list" aria-label="' +
+			esc( i18n.postsBeingEdited ) +
+			'">';
+		posts.forEach( function ( post ) {
+			const anyActive = post.editors.some( function ( e ) {
+				return e.status === 'active';
+			} );
+			const statusLabel = anyActive ? '' : i18n.statusIdle;
+			html +=
+				'<li class="presence-active-post-item" data-post-id="' +
+				post.post_id +
+				'">';
 			html += '<span class="presence-editor-stack">';
-			var stackMax = Math.min(post.editors.length, 4);
-			post.editors.slice(0, stackMax).forEach(function(editor, idx) {
-				if (editor.avatar_url) {
-					html += '<img src="' + esc(editor.avatar_url) + '" width="24" height="24" style="z-index:' + (stackMax - idx) + '" alt="' + esc(editor.display_name) + '" />';
-				}
-			});
+			const stackMax = Math.min( post.editors.length, 4 );
+			post.editors
+				.slice( 0, stackMax )
+				.forEach( function ( editor, idx ) {
+					if ( editor.avatar_url ) {
+						html +=
+							'<img src="' +
+							esc( editor.avatar_url ) +
+							'" width="24" height="24" style="z-index:' +
+							( stackMax - idx ) +
+							'" alt="' +
+							esc( editor.display_name ) +
+							'" />';
+					}
+				} );
 			html += '</span>';
 			html += '<div class="presence-active-post-info">';
-			if (post.editors.length === 1) {
-				html += '<div><span class="presence-editor-count">' + esc(post.editors[0].display_name) + '</span></div>';
+			if ( post.editors.length === 1 ) {
+				html +=
+					'<div><span class="presence-editor-count">' +
+					esc( post.editors[ 0 ].display_name ) +
+					'</span></div>';
 			} else {
-				html += '<div><span class="presence-editor-count">' + esc(i18n.editorCount.replace('%d', post.editors.length)) + '</span></div>';
+				html +=
+					'<div><span class="presence-editor-count">' +
+					esc(
+						i18n.editorCount.replace( '%d', post.editors.length )
+					) +
+					'</span></div>';
 			}
-			html += '<div><span class="presence-post-title"><a href="' + esc(post.edit_url) + '">' + esc(post.post_title) + '</a></span></div>';
+			html +=
+				'<div><span class="presence-post-title"><a href="' +
+				esc( post.edit_url ) +
+				'">' +
+				esc( post.post_title ) +
+				'</a></span></div>';
 			html += '</div>';
-			html += '<span class="presence-status-text">' + esc(statusLabel) + '</span>';
+			html +=
+				'<span class="presence-status-text">' +
+				esc( statusLabel ) +
+				'</span>';
 			html += '</li>';
-		});
+		} );
 		html += '</ul>';
 		return html;
 	}
 
-	$(document).on('heartbeat-tick', function(event, data) {
-		if (!data['presence-active-posts']) {
+	$( document ).on( 'heartbeat-tick', function ( event, data ) {
+		if ( ! data[ 'presence-active-posts' ] ) {
 			return;
 		}
 
-		var container = $('#presence-active-posts-list');
-		if (!container.length) {
+		const container = $( '#presence-active-posts-list' );
+		if ( ! container.length ) {
 			return;
 		}
 
-		var posts = data['presence-active-posts'];
-		if (!posts.length) {
-			if (lastSignature !== '') {
-				var clearFocus = captureFocus(container);
-				container.html('<p>' + esc(i18n.noPostsEdited) + '</p>');
-				restoreFocus(container, clearFocus);
+		const posts = data[ 'presence-active-posts' ];
+		if ( ! posts.length ) {
+			if ( lastSignature !== '' ) {
+				const clearFocus = captureFocus( container );
+				container.html( '<p>' + esc( i18n.noPostsEdited ) + '</p>' );
+				restoreFocus( container, clearFocus );
 				lastSignature = '';
 			}
 			return;
 		}
 
-		var sig = posts.map(function(p) {
-			return p.post_id + ':' + p.editors.map(function(e) { return e.user_id + '/' + e.status; }).join('+');
-		}).join(',');
-		if (sig !== lastSignature) {
-			var focusInfo = captureFocus(container);
-			container.html(buildFullPostsHtml(posts));
-			restoreFocus(container, focusInfo);
+		const sig = posts
+			.map( function ( p ) {
+				return (
+					p.post_id +
+					':' +
+					p.editors
+						.map( function ( e ) {
+							return e.user_id + '/' + e.status;
+						} )
+						.join( '+' )
+				);
+			} )
+			.join( ',' );
+		if ( sig !== lastSignature ) {
+			const focusInfo = captureFocus( container );
+			container.html( buildFullPostsHtml( posts ) );
+			restoreFocus( container, focusInfo );
 			lastSignature = sig;
 		}
-	});
-})(jQuery);
+	} );
+} )( jQuery );

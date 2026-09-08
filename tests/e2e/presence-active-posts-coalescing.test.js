@@ -20,7 +20,8 @@ import { test, expect } from '@wordpress/e2e-test-utils-playwright';
 
 function waitForHeartbeat( page ) {
 	return page.waitForFunction(
-		() => typeof wp !== 'undefined' && wp.heartbeat && wp.heartbeat.connectNow
+		() =>
+			typeof wp !== 'undefined' && wp.heartbeat && wp.heartbeat.connectNow
 	);
 }
 
@@ -37,14 +38,23 @@ function captureHeartbeatSend( page ) {
 }
 
 async function waitForLeaderPing( page, maxAttempts = 20 ) {
-	for ( let attempt = 0; attempt < maxAttempts; attempt++ ) {
-		const data = await captureHeartbeatSend( page );
-		if ( data[ 'presence-active-posts-ping' ] ) {
-			return data;
-		}
-		await page.waitForTimeout( 100 );
-	}
-	throw new Error( 'Tab never won presence-active-posts-ping leadership.' );
+	let winningData;
+
+	await expect
+		.poll(
+			async () => {
+				winningData = await captureHeartbeatSend( page );
+				return Boolean( winningData[ 'presence-active-posts-ping' ] );
+			},
+			{
+				intervals: [ 0 ],
+				timeout: maxAttempts * 100,
+				message: 'Tab never won presence-active-posts-ping leadership.',
+			}
+		)
+		.toBe( true );
+
+	return winningData;
 }
 
 function waitForActivePostsTick( page, timeoutMs = 8000 ) {
@@ -143,7 +153,9 @@ test.describe( 'Presence Active Posts Tab Coalescing', () => {
 			page.evaluate( () => wp.heartbeat.connectNow() ),
 		] );
 
-		expect( relayed[ 'presence-active-posts' ].length ).toBeGreaterThan( 0 );
+		expect( relayed[ 'presence-active-posts' ].length ).toBeGreaterThan(
+			0
+		);
 		expect( relayed[ 'presence-active-posts' ][ 0 ].post_id ).toBe(
 			post.id
 		);

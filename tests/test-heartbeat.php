@@ -279,7 +279,72 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 		$this->assertSame( 'editing', $entries[0]->data['action'] );
 		$this->assertSame( 'post', $entries[0]->data['screen'] );
 
-		$this->assertSame( array( 'existing' => true ), $response );
+		$this->assertSame(
+			array(
+				'existing'                        => true,
+				'presence-heartbeat-collaborators' => 1,
+			),
+			$response
+		);
+	}
+
+	/**
+	 * Gutenberg reads this to decide whether to start its sync loop, so the
+	 * count has to reflect everyone in the room, not just the ticking client.
+	 *
+	 * @covers ::wp_presence_editor_heartbeat_received
+	 */
+	public function test_editor_heartbeat_response_carries_the_room_s_editor_count() {
+		$post_id  = self::factory()->post->create();
+		$editor_2 = self::factory()->user->create( array( 'role' => 'editor' ) );
+
+		wp_set_current_user( $editor_2 );
+		wp_presence_editor_heartbeat_received(
+			array(),
+			array( 'presence-editor-ping' => array( 'post_id' => $post_id ) ),
+			'post'
+		);
+
+		wp_set_current_user( self::$editor_id );
+		$response = wp_presence_editor_heartbeat_received(
+			array(),
+			array( 'presence-editor-ping' => array( 'post_id' => $post_id ) ),
+			'post'
+		);
+
+		$this->assertSame( 2, $response['presence-heartbeat-collaborators'] );
+	}
+
+	/**
+	 * A ping that never reaches the write path (no post ID, missing
+	 * capability) has no count to report, so the key must not appear.
+	 *
+	 * @covers ::wp_presence_editor_heartbeat_received
+	 */
+	public function test_editor_heartbeat_omits_collaborator_count_without_a_post_id() {
+		wp_set_current_user( self::$editor_id );
+
+		$response = wp_presence_editor_heartbeat_received( array(), array(), 'post' );
+
+		$this->assertArrayNotHasKey( 'presence-heartbeat-collaborators', $response );
+	}
+
+	/**
+	 * The admin heartbeat handler is a different write path (admin/online,
+	 * not a post room), so it has no editor count of its own to report.
+	 *
+	 * @covers ::wp_presence_admin_heartbeat_received
+	 */
+	public function test_admin_heartbeat_omits_collaborator_count() {
+		wp_set_current_user( self::$editor_id );
+
+		$response = wp_presence_admin_heartbeat_received(
+			array(),
+			array( 'presence-ping' => array( 'screen' => 'dashboard' ) ),
+			'dashboard'
+		);
+
+		$this->assertArrayNotHasKey( 'presence-heartbeat-collaborators', $response );
 	}
 
 	/**

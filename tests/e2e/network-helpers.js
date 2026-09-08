@@ -48,7 +48,7 @@ export const NETWORK_USERS = {
  * Returns the admin URL of a site on the fixture network.
  *
  * @param {string} [slug] Sub-site slug, omitted for the main site.
- * @returns {string} Site URL, with a trailing slash.
+ * @return {string} Site URL, with a trailing slash.
  */
 export function siteUrl( slug = '' ) {
 	return slug ? `${ BASE_URL }/${ slug }/` : `${ BASE_URL }/`;
@@ -61,7 +61,7 @@ export function siteUrl( slug = '' ) {
  * is the host and port the instance runs on.
  *
  * @param {string} [slug] Sub-site slug, omitted for the main site.
- * @returns {string} Site label, e.g. `localhost:8890/team/`.
+ * @return {string} Site label, e.g. `localhost:8890/team/`.
  */
 export function siteLabel( slug = '' ) {
 	return new URL( siteUrl( slug ) ).host + ( slug ? `/${ slug }/` : '/' );
@@ -70,10 +70,10 @@ export function siteLabel( slug = '' ) {
 /**
  * Runs a WP-CLI command against the multisite instance.
  *
- * @param {string} command WP-CLI command, without the leading `wp`.
+ * @param {string} command       WP-CLI command, without the leading `wp`.
  * @param {Object} [options]
  * @param {string} [options.url] Site to run against, for a per-site command.
- * @returns {string} The command's last line of output, trimmed.
+ * @return {string} The command's last line of output, trimmed.
  */
 export function wpCli( command, { url } = {} ) {
 	const scope = url ? ` --url=${ url }` : '';
@@ -132,11 +132,12 @@ export function clearNetworkPresence() {
  * available on all three screens under test.
  *
  * @param {import('@playwright/test').Page} page
- * @returns {Promise<void>}
+ * @return {Promise<void>}
  */
 export async function forceHeartbeatTick( page ) {
 	await page.waitForFunction(
-		() => typeof wp !== 'undefined' && wp.heartbeat && wp.heartbeat.connectNow
+		() =>
+			typeof wp !== 'undefined' && wp.heartbeat && wp.heartbeat.connectNow
 	);
 
 	await page.evaluate(
@@ -152,7 +153,7 @@ export async function forceHeartbeatTick( page ) {
  * Returns the ID of a seeded user.
  *
  * @param {string} login Seeded user's login.
- * @returns {number} User ID.
+ * @return {number} User ID.
  */
 export function networkUserId( login ) {
 	return parseInt( wpCli( `user get ${ login } --field=ID` ), 10 );
@@ -162,7 +163,7 @@ export function networkUserId( login ) {
  * Returns the blog ID of a site on the fixture network.
  *
  * @param {string} slug Sub-site slug.
- * @returns {number} Blog ID.
+ * @return {number} Blog ID.
  */
 export function networkSiteId( slug ) {
 	const id = parseInt(
@@ -182,7 +183,7 @@ export function networkSiteId( slug ) {
  * be worth doing once per environment rather than once per run.
  *
  * @param {string} slug Sub-site slug.
- * @returns {number} Blog ID.
+ * @return {number} Blog ID.
  */
 export function ensureNetworkSite( slug ) {
 	const existing = networkSiteId( slug );

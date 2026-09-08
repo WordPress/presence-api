@@ -11,7 +11,7 @@
 	'use strict';
 
 	function esc( str ) {
-		var el = document.createElement( 'span' );
+		const el = document.createElement( 'span' );
 		el.textContent = str;
 		return el.innerHTML;
 	}
@@ -30,17 +30,24 @@
 	 */
 	window.wpPresenceBuildAvatarStack = function ( users, max ) {
 		// get_avatar_url() returns false with the Show Avatars setting off.
-		var shown = users.slice( 0, max ).filter( function ( user ) {
+		const shown = users.slice( 0, max ).filter( function ( user ) {
 			return !! user.avatar_url;
 		} );
 
-		var html = '<span class="presence-avatar-stack">';
+		let html = '<span class="presence-avatar-stack">';
 
 		// The avatars overlap, so the first one has to paint on top.
 		shown.forEach( function ( user, index ) {
-			html += '<img src="' + esc( user.avatar_url ) + '" width="20" height="20" style="z-index:' + ( shown.length - index ) + '" alt="' + esc( user.display_name ) + '" />';
+			html +=
+				'<img src="' +
+				esc( user.avatar_url ) +
+				'" width="20" height="20" style="z-index:' +
+				( shown.length - index ) +
+				'" alt="' +
+				esc( user.display_name ) +
+				'" />';
 		} );
 
 		return html + '</span>';
 	};
-}() );
+} )();

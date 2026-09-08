@@ -6,6 +6,7 @@
  * pinging independently. Falls back to independent pinging when Web Locks
  * or BroadcastChannel aren't available.
  *
+ * @param {jQuery} $ The jQuery instance.
  * @package Presence_API
  */
 ( function ( $ ) {
@@ -17,16 +18,18 @@
 	 * @return {{isLeader: function(): boolean}} Coordinator handle.
 	 */
 	window.wpPresenceCreateTabCoordinator = function ( key, relayedKeys ) {
-		var hasLocks = typeof navigator !== 'undefined' &&
+		const hasLocks =
+			typeof navigator !== 'undefined' &&
 			navigator.locks &&
 			typeof navigator.locks.request === 'function';
 
 		// No Locks API: ping independently, same as before.
-		var isPingLeader = ! hasLocks;
+		let isPingLeader = ! hasLocks;
 
-		var channel = hasLocks && typeof BroadcastChannel === 'function'
-			? new BroadcastChannel( key )
-			: null;
+		const channel =
+			hasLocks && typeof BroadcastChannel === 'function'
+				? new BroadcastChannel( key )
+				: null;
 
 		if ( channel ) {
 			channel.addEventListener( 'message', function ( event ) {
@@ -52,11 +55,13 @@
 					return;
 				}
 
-				var relayed = {};
-				var hasRelayedData = false;
+				const relayed = {};
+				let hasRelayedData = false;
 
 				relayedKeys.forEach( function ( relayedKey ) {
-					if ( Object.prototype.hasOwnProperty.call( data, relayedKey ) ) {
+					if (
+						Object.prototype.hasOwnProperty.call( data, relayedKey )
+					) {
 						relayed[ relayedKey ] = data[ relayedKey ];
 						hasRelayedData = true;
 					}
@@ -69,7 +74,7 @@
 		}
 
 		return {
-			isLeader: function () {
+			isLeader() {
 				return isPingLeader;
 			},
 		};

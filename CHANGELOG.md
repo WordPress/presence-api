@@ -1,5 +1,72 @@
 # Changelog
 
+## [0.4.0](https://github.com/WordPress/presence-api/compare/v0.3.0...v0.4.0) (2026-09-05)
+
+
+### Features
+
+* carry the room's editor count on the editor heartbeat response ([10e1a47](https://github.com/WordPress/presence-api/commit/10e1a4716da9f782d4bab49bc367b97cc9e26367))
+
+
+### Bug Fixes
+
+* gate the network column renderers on the network capability ([75868a7](https://github.com/WordPress/presence-api/commit/75868a74dd13f2c112e71ae402a517c0abc79998))
+* pin the patched bullseye apt sources to the image's own frozen snapshot ([6393e7c](https://github.com/WordPress/presence-api/commit/6393e7c0dae59225f85c42b33b7bf0e73495737b))
+* public surface read constants ([0bb1403](https://github.com/WordPress/presence-api/commit/0bb14035e86c5ab6e10c59e0f0e305ac83e129a4))
+
+
+### Performance Improvements
+
+* skip presence writes that would only move the timestamp ([f8d578d](https://github.com/WordPress/presence-api/commit/f8d578d21fac3fa5fe37c8a94ebb91c96b9a3e9c))
+
+
+### Dependencies
+
+* add ESLint on the WordPress recommended ruleset ([bb52662](https://github.com/WordPress/presence-api/commit/bb52662dbae2b2ea84eeaa34d0b1cde7b0825163))
+* **deps-dev:** bump @wordpress/e2e-test-utils-playwright ([bdd7e37](https://github.com/WordPress/presence-api/commit/bdd7e374dbb918bce046107ffeacceedf7583066))
+* **deps-dev:** bump @wordpress/e2e-test-utils-playwright from 1.53.0 to 1.54.0 ([5edffec](https://github.com/WordPress/presence-api/commit/5edffec40984fb36d55219178e0de5d83b2a8efc))
+* **deps-dev:** bump @wordpress/env from 11.13.0 to 11.14.0 ([dc3e48a](https://github.com/WordPress/presence-api/commit/dc3e48a31d693be03eebb81a4b9e672a733dd826))
+* **deps-dev:** bump @wordpress/scripts from 34.1.0 to 34.2.0 ([8f377cf](https://github.com/WordPress/presence-api/commit/8f377cf5a88c0695337d73b9944101872835fdbc))
+* **deps-dev:** update phpstan/phpstan requirement from 2.2.8 to 2.2.9 ([996f59d](https://github.com/WordPress/presence-api/commit/996f59d36b958507f84097ff01afd3102735ee7a))
+* **deps:** bump the codeql-action group with 3 updates ([7230078](https://github.com/WordPress/presence-api/commit/72300782f139f16fe54a91a9a6bca0da86f4c181))
+* patch wp-env's PHP 7.4 image for Debian bullseye's EOL archive ([775b2cb](https://github.com/WordPress/presence-api/commit/775b2cbead00e2d99481c96da055d760fefda153))
+
+## [0.3.0](https://github.com/WordPress/presence-api/compare/v0.2.1...v0.3.0) (2026-09-02)
+
+
+### Features
+
+* add a site and network switch for whether presence is recorded ([8502a69](https://github.com/WordPress/presence-api/commit/8502a6989441cd76e1ba3d227e85a5a06fd8af52))
+* add policy content, exporter and eraser for presence data ([8e1f895](https://github.com/WordPress/presence-api/commit/8e1f895bd10d343472b2488c4e3f5b9f7fb00bd9))
+* switch presence recording on and off from Settings and WP-CLI ([6d7f433](https://github.com/WordPress/presence-api/commit/6d7f433820aca497fdb27a55ba05aa2b3d8075bf))
+
+
+### Bug Fixes
+
+* add data-post-id to server-rendered Active Posts rows ([48583ce](https://github.com/WordPress/presence-api/commit/48583ce5d866f5b750d36e071dc051050278801c))
+* collapse the duplicated online-ID assembly into one helper ([3596d53](https://github.com/WordPress/presence-api/commit/3596d53aa0b0baa00e4ddf8117f04f85dc2fe8bb))
+* count everyone present, including yourself, on every surface ([2adb11f](https://github.com/WordPress/presence-api/commit/2adb11ffb9b700aabe372fd0447921b546bc6a97))
+* count Who's Online overflow from the heartbeat total ([3b68fe0](https://github.com/WordPress/presence-api/commit/3b68fe0212a684569bcfb0e909f4cc0b121e9ba5))
+* declare the current user next to where the bar renders it ([e4f2471](https://github.com/WordPress/presence-api/commit/e4f2471d2a91168b5116375439f2ace383fb279a))
+* distinguish a non-aggregating network from a quiet one ([c9b4e70](https://github.com/WordPress/presence-api/commit/c9b4e70aa91e346bb4ed5fc8e8141e21f158ff4e))
+* distinguish a non-aggregating network from an empty one in the network read ([dcb081b](https://github.com/WordPress/presence-api/commit/dcb081b5a96154dc7d2b89956eae2cc6f9440fbb))
+* keep the network Who's Online widget's accessible names across a re-render ([5d95bfe](https://github.com/WordPress/presence-api/commit/5d95bfee2130048fa59048f0aec2fbb9779451bc))
+* list yourself in the widget so its rows match the count above them ([c4029bf](https://github.com/WordPress/presence-api/commit/c4029bfba7eeeeffa95c2a7babc90a913ae514f7))
+* preserve accessible names across heartbeat re-renders in the network Who's Online widget ([fbf44d0](https://github.com/WordPress/presence-api/commit/fbf44d0b66ae38efcf3a1578d3c735b614d78d92))
+* report a switched-off site rather than a failed write ([c101b8c](https://github.com/WordPress/presence-api/commit/c101b8c6ea07612bf60d45b9eda7de9f80d34d28))
+* report network aggregation state from the REST and CLI network reads ([b567c16](https://github.com/WordPress/presence-api/commit/b567c16c21eb2c197fd3adad82e739f3c3ac236d))
+* restore the named stack limit on the admin bar avatar cap ([59c53fe](https://github.com/WordPress/presence-api/commit/59c53fed2ef8dd36f6bf01026fef7c3a547f6918))
+* run workflows on the release pull request's final commit ([1a1aadf](https://github.com/WordPress/presence-api/commit/1a1aadf5c7f5e775465a1de134a55f3d768546d2))
+* say so on the network dashboard widget when the network does not aggregate ([023bfdb](https://github.com/WordPress/presence-api/commit/023bfdb2b6d0a6d1f671bd4945e8d0aa36b8c654))
+* say the network does not aggregate on the Users list too ([0f1cf2a](https://github.com/WordPress/presence-api/commit/0f1cf2aac2bfbef64819ebff29e544571d9c062a))
+* skip the Playground preview publish when the built SHA is superseded ([6b0a5b2](https://github.com/WordPress/presence-api/commit/6b0a5b2cf3a4aa4fae00016e9f7af5f00926c624))
+* warn on the Network Sites list when the network does not aggregate presence ([0ee175d](https://github.com/WordPress/presence-api/commit/0ee175daa6d6d9d557d886a6b642cc452f2d348e))
+
+
+### Performance Improvements
+
+* store network summary rows compact ([22c00a0](https://github.com/WordPress/presence-api/commit/22c00a01e86cf0a4fd920bf2c2a4484585f3bfe4))
+
 ## [0.2.1](https://github.com/WordPress/presence-api/compare/v0.2.0...v0.2.1) (2026-08-29)
 
 

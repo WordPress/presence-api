@@ -1,6 +1,7 @@
 <?php
 /**
- * Network Sites list: "Online" column.
+ * Network Sites list: "Online" column, plus the aggregation notice both
+ * network list tables share.
  *
  * @package Presence_API
  */
@@ -45,15 +46,18 @@ function wp_presence_enqueue_network_sites_assets( $hook_suffix ) {
 }
 
 /**
- * Warns above the Sites list when the network does not aggregate presence.
+ * Warns above either network list table when the network does not aggregate
+ * presence.
  *
  * The column reads the same em dash either way, so the reason is said once
- * above the table rather than repeated down every row of it.
+ * above the table rather than repeated down every row of it. Both tables carry
+ * that column and both are wrong in the same way without this, so they share
+ * one notice rather than each wording the same thing.
  */
-function wp_presence_network_sites_aggregation_notice() {
+function wp_presence_network_aggregation_notice() {
 	$screen = get_current_screen();
 
-	if ( ! $screen || 'sites-network' !== $screen->id ) {
+	if ( ! $screen || ! in_array( $screen->id, array( 'sites-network', 'users-network' ), true ) ) {
 		return;
 	}
 
@@ -82,11 +86,19 @@ function wp_presence_network_sites_aggregation_notice() {
  * snapshot is read once for the request; what each row adds is resolving the
  * handful of people whose avatars it is about to draw.
  *
+ * Gates on the capability again rather than trusting the registration above:
+ * core calls this for whatever columns the screen ended up with, and ours is
+ * not the only thing that can put a name in that list.
+ *
  * @param string $column_name Column being rendered.
  * @param int    $blog_id     The site ID for the current row.
  */
 function wp_presence_render_network_sites_column( $column_name, $blog_id ) {
 	if ( 'presence_online' !== $column_name ) {
+		return;
+	}
+
+	if ( ! current_user_can( wp_presence_network_capability() ) ) {
 		return;
 	}
 
