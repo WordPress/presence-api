@@ -67,8 +67,16 @@ rm -f presence-api.php.bak readme.txt.bak "${BLUEPRINT}.bak"
 
 # Rewrite the == Changelog == section in readme.txt from CHANGELOG.md.
 # Skips the Dependencies subsection, strips GitHub commit links, deduplicates bullets.
+#
+# WordPress.org truncates long readmes and readers only ever care about recent
+# releases (the same reasoning sync-storage's sync-versions.sh uses), so only
+# the newest README_CHANGELOG_RELEASES versions are kept here; CHANGELOG.md
+# remains the complete history.
 python3 - <<'PYTHON'
 import re, sys
+
+README_CHANGELOG_RELEASES = 5
+CHANGELOG_URL = 'https://github.com/WordPress/presence-api/blob/main/CHANGELOG.md'
 
 with open('CHANGELOG.md') as f:
     changelog_md = f.read()
@@ -145,7 +153,11 @@ for block in blocks:
     entry = f'= {version} =\n' + '\n'.join(bullets)
     entries.append(entry)
 
-new_section = '== Changelog ==\n\n' + '\n\n'.join(entries) + '\n'
+    if len(entries) >= README_CHANGELOG_RELEASES:
+        break
+
+note = f'Only the most recent releases are listed here. For the full history, see {CHANGELOG_URL}'
+new_section = '== Changelog ==\n\n' + note + '\n\n' + '\n\n'.join(entries) + '\n'
 new_readme = re.sub(r'== Changelog ==.*', new_section, readme, flags=re.DOTALL)
 
 with open('readme.txt', 'w') as f:
