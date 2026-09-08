@@ -72,8 +72,11 @@ $entries = wp_get_presence( $room, $timeout = WP_PRESENCE_DEFAULT_TTL );
 // Upsert a client's presence state. Atomic via INSERT … ON DUPLICATE KEY UPDATE.
 // $date_gmt ('Y-m-d H:i:s') lets a caller relaying awareness on behalf of
 // other clients preserve their timestamps instead of stamping every relayed
-// row with its own clock; a value in the future is clamped to now. Defaults
-// to now.
+// row with its own clock; a value in the future is clamped to now, and a
+// value that isn't a real calendar date is rejected (returns false). Passing
+// it also skips the internal check that otherwise leaves an unchanged row
+// untouched, since a relay backdating a departed collaborator needs that
+// write to land. Defaults to now.
 wp_set_presence( $room, $client_id, $state, $user_id = 0, $date_gmt = null );
 
 // Remove a single client from a room.

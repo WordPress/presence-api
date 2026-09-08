@@ -147,6 +147,34 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * A string that isn't even shaped like 'Y-m-d H:i:s' must not reach the
+	 * database.
+	 *
+	 * @covers ::wp_set_presence
+	 * @covers ::wp_presence_is_valid_date_gmt
+	 */
+	public function test_set_presence_rejects_a_malformed_date_gmt() {
+		$result = wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id, 'not-a-date' );
+
+		$this->assertFalse( $result );
+		$this->assertCount( 0, wp_get_presence( 'test/room' ) );
+	}
+
+	/**
+	 * Well-formed but impossible (there is no February 30) is what
+	 * wp_checkdate() catches that the shape check alone cannot.
+	 *
+	 * @covers ::wp_set_presence
+	 * @covers ::wp_presence_is_valid_date_gmt
+	 */
+	public function test_set_presence_rejects_an_impossible_calendar_date() {
+		$result = wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id, '2026-02-30 00:00:00' );
+
+		$this->assertFalse( $result );
+		$this->assertCount( 0, wp_get_presence( 'test/room' ) );
+	}
+
+	/**
 	 * @covers ::wp_remove_presence
 	 */
 	public function test_remove_presence() {
@@ -1060,6 +1088,28 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 		$entries = wp_get_presence( 'test/room' );
 		$this->assertSame( 'idle', $entries[0]->data['action'] );
+	}
+
+	/**
+	 * An explicit timestamp is how a relay backdates a collaborator who has
+	 * since left; the redundant-write guard has no way to know that, so an
+	 * explicit $date_gmt must bypass it rather than be silently swallowed.
+	 *
+	 * @covers ::wp_set_presence
+	 * @covers ::wp_presence_write_is_redundant
+	 */
+	public function test_explicit_timestamp_bypasses_the_redundant_write_guard() {
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+		$this->backdate( 'test/room', 'client-1', 5 );
+
+		$past = gmdate( 'Y-m-d H:i:s', time() - 60 );
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id, $past );
+
+		$this->assertSame(
+			$past,
+			$this->stored_date_gmt( 'test/room', 'client-1' ),
+			'An explicit timestamp must land even when the guard would otherwise skip an unchanged state.'
+		);
 	}
 
 	/**
