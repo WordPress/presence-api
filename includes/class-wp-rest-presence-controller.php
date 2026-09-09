@@ -706,7 +706,7 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 		}
 
 		if ( rest_is_field_included( 'avatar_url', $fields ) ) {
-			$data['avatar_url'] = $user ? get_avatar_url( $item->user_id, array( 'size' => 32 ) ) : '';
+			$data['avatar_url'] = $user ? get_avatar_url( $item->user_id, array( 'size' => 48 ) ) : '';
 		}
 
 		if ( rest_is_field_included( 'data', $fields ) ) {

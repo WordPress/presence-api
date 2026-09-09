@@ -994,7 +994,7 @@ function wp_get_active_rooms( $timeout = WP_PRESENCE_DEFAULT_TTL, $hydrate_users
 				$users[] = array(
 					'user_id'      => (int) $uid,
 					'display_name' => $user->display_name,
-					'avatar_url'   => get_avatar_url( $uid, array( 'size' => 32 ) ),
+					'avatar_url'   => get_avatar_url( $uid, array( 'size' => 48 ) ),
 				);
 			}
 
@@ -1071,7 +1071,7 @@ function wp_presence_hydrate_room_users( $rooms, $timeout = WP_PRESENCE_DEFAULT_
 				$users[] = array(
 					'user_id'      => $uid,
 					'display_name' => $user->display_name,
-					'avatar_url'   => get_avatar_url( $uid, array( 'size' => 32 ) ),
+					'avatar_url'   => get_avatar_url( $uid, array( 'size' => 48 ) ),
 				);
 			}
 		}

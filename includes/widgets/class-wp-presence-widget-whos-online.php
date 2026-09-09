@@ -410,7 +410,7 @@ class WP_Presence_Widget_Whos_Online {
 
 				$stack_users[] = array(
 					'display_name' => $ouser->display_name,
-					'avatar_url'   => get_avatar_url( $ouser->ID, array( 'size' => 24 ) ),
+					'avatar_url'   => get_avatar_url( $ouser->ID, array( 'size' => 48 ) ),
 				);
 			}
 
@@ -579,7 +579,7 @@ class WP_Presence_Widget_Whos_Online {
 			$online[] = array(
 				'user_id'      => (int) $entry->user_id,
 				'display_name' => $user->display_name,
-				'avatar_url'   => get_avatar_url( $user->ID, array( 'size' => 32 ) ),
+				'avatar_url'   => get_avatar_url( $user->ID, array( 'size' => 48 ) ),
 				'screen'       => $screen,
 				'screen_label' => $rich_label,
 				'date_gmt'     => $entry->date_gmt,
