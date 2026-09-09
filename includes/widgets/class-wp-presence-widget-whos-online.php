@@ -332,7 +332,7 @@ class WP_Presence_Widget_Whos_Online {
 		$idle_class = $elapsed >= self::IDLE_THRESHOLD ? ' is-idle' : '';
 
 		echo '<li class="presence-user-item" data-user-id="' . (int) $entry->user_id . '">';
-		echo wp_kses_post( get_avatar( $user->ID, 24, '', $user->display_name ) );
+		echo wp_kses_post( get_avatar( $user->ID, 34, '', $user->display_name ) );
 		echo '<div class="presence-user-info">';
 		echo '<span class="presence-name">' . esc_html( $user->display_name ) . '</span>';
 
@@ -579,7 +579,7 @@ class WP_Presence_Widget_Whos_Online {
 			$online[] = array(
 				'user_id'      => (int) $entry->user_id,
 				'display_name' => $user->display_name,
-				'avatar_url'   => get_avatar_url( $user->ID, array( 'size' => 32 ) ),
+				'avatar_url'   => get_avatar_url( $user->ID, array( 'size' => 68 ) ),
 				'screen'       => $screen,
 				'screen_label' => $rich_label,
 				'date_gmt'     => $entry->date_gmt,
