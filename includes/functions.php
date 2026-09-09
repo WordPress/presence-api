@@ -236,6 +236,20 @@ function wp_presence_refresh_threshold() {
 }
 
 /**
+ * Returns the Gravatar size to request for an avatar displayed at a given size.
+ *
+ * @access private
+ *
+ * @since 0.5.0
+ *
+ * @param int $display_size The avatar's displayed size in pixels.
+ * @return int The size to request, for a sharp image on a 2x display.
+ */
+function wp_presence_get_avatar_fetch_size( $display_size ) {
+	return (int) $display_size * 2;
+}
+
+/**
  * Reports whether a write would leave the stored row exactly as it already is.
  *
  * @access private
@@ -994,7 +1008,7 @@ function wp_get_active_rooms( $timeout = WP_PRESENCE_DEFAULT_TTL, $hydrate_users
 				$users[] = array(
 					'user_id'      => (int) $uid,
 					'display_name' => $user->display_name,
-					'avatar_url'   => get_avatar_url( $uid, array( 'size' => 32 ) ),
+					'avatar_url'   => get_avatar_url( $uid, array( 'size' => 48 ) ),
 				);
 			}
 
@@ -1071,7 +1085,7 @@ function wp_presence_hydrate_room_users( $rooms, $timeout = WP_PRESENCE_DEFAULT_
 				$users[] = array(
 					'user_id'      => $uid,
 					'display_name' => $user->display_name,
-					'avatar_url'   => get_avatar_url( $uid, array( 'size' => 32 ) ),
+					'avatar_url'   => get_avatar_url( $uid, array( 'size' => 48 ) ),
 				);
 			}
 		}

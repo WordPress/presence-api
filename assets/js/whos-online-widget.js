@@ -108,7 +108,7 @@
 			html +=
 				'<img src="' +
 				esc( entry.avatar_url ) +
-				'" width="24" height="24" alt="' +
+				'" width="34" height="34" alt="' +
 				esc( entry.display_name ) +
 				'" />';
 		}

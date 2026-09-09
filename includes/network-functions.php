@@ -1053,7 +1053,7 @@ function wp_presence_hydrate_network_snapshot( array $snapshot, $max_sites, $use
 			$hydrated[] = array(
 				'user_id'      => $user_id,
 				'display_name' => $user->display_name,
-				'avatar_url'   => get_avatar_url( $user->ID, array( 'size' => 32 ) ),
+				'avatar_url'   => get_avatar_url( $user->ID, array( 'size' => wp_presence_get_avatar_fetch_size( 20 ) ) ),
 			);
 		}
 
