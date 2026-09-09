@@ -22,10 +22,10 @@ class WP_Test_Presence_Plugin_Action_Links extends WP_UnitTestCase {
 	/**
 	 * @covers ::wp_presence_plugin_action_links
 	 */
-	public function test_prepends_a_single_link() {
+	public function test_prepends_both_of_our_links() {
 		$links = wp_presence_plugin_action_links( $this->core_links() );
 
-		$this->assertCount( 2, $links );
+		$this->assertCount( 3, $links );
 		$this->assertSame( 'Deactivate', wp_strip_all_tags( end( $links ) ) );
 	}
 
@@ -44,10 +44,10 @@ class WP_Test_Presence_Plugin_Action_Links extends WP_UnitTestCase {
 	/**
 	 * @covers ::wp_presence_plugin_action_links
 	 */
-	public function test_returns_only_our_link_when_no_links_exist() {
+	public function test_returns_only_our_links_when_no_links_exist() {
 		$links = wp_presence_plugin_action_links( array() );
 
-		$this->assertCount( 1, $links );
+		$this->assertCount( 2, $links );
 	}
 
 	/**
@@ -62,6 +62,17 @@ class WP_Test_Presence_Plugin_Action_Links extends WP_UnitTestCase {
 
 		$this->assertStringStartsWith( admin_url( 'users.php' ), $href );
 		$this->assertStringContainsString( 'presence_status=online', $href );
+	}
+
+	/**
+	 * @covers ::wp_presence_plugin_action_links
+	 */
+	public function test_settings_link_points_at_the_general_settings_screen() {
+		$links = wp_presence_plugin_action_links( array() );
+
+		$this->assertSame( 1, preg_match( '#href="([^"]+)"#', $links[1], $matches ) );
+		$this->assertSame( admin_url( 'options-general.php' ), html_entity_decode( $matches[1] ) );
+		$this->assertSame( 'Settings', wp_strip_all_tags( $links[1] ) );
 	}
 
 	/**
