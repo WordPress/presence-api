@@ -27,6 +27,7 @@ package.json
 package-lock.json
 phpcs.xml.dist
 phpstan.neon.dist
+phpstan-bootstrap.php
 phpunit.xml.dist
 release-please-config.json
 scripts/
