@@ -1,7 +1,7 @@
 parameters:
 	level: 3
 	bootstrapFiles:
-		- presence-api.php
+		- phpstan-bootstrap.php
 	paths:
 		- presence-api.php
 		- includes/
