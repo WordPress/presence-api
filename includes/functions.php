@@ -236,6 +236,20 @@ function wp_presence_refresh_threshold() {
 }
 
 /**
+ * Returns the Gravatar size to request for an avatar displayed at a given size.
+ *
+ * @access private
+ *
+ * @since 0.5.0
+ *
+ * @param int $display_size The avatar's displayed size in pixels.
+ * @return int The size to request, for a sharp image on a 2x display.
+ */
+function wp_presence_get_avatar_fetch_size( $display_size ) {
+	return (int) $display_size * 2;
+}
+
+/**
  * Reports whether a write would leave the stored row exactly as it already is.
  *
  * @access private

@@ -287,7 +287,7 @@ class WP_Presence_Widget_Active_Posts {
 			$by_post[ $post_id ]['editors'][ $editor_id ] = array(
 				'user_id'      => $editor_id,
 				'display_name' => $user->display_name,
-				'avatar_url'   => get_avatar_url( $user->ID, array( 'size' => 48 ) ),
+				'avatar_url'   => get_avatar_url( $user->ID, array( 'size' => wp_presence_get_avatar_fetch_size( 24 ) ) ),
 				'status'       => $status,
 			);
 		}

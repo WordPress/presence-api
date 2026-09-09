@@ -147,7 +147,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 		if ( ! $user ) {
 			continue;
 		}
-		$stack_html .= '<img src="' . esc_url( get_avatar_url( $user->ID, array( 'size' => 48 ) ) ) . '" width="16" height="16" style="z-index:' . (int) $z . '" alt="' . esc_attr( $user->display_name ) . '" title="' . esc_attr( $user->display_name ) . '" />';
+		$stack_html .= '<img src="' . esc_url( get_avatar_url( $user->ID, array( 'size' => wp_presence_get_avatar_fetch_size( 16 ) ) ) ) . '" width="16" height="16" style="z-index:' . (int) $z . '" alt="' . esc_attr( $user->display_name ) . '" title="' . esc_attr( $user->display_name ) . '" />';
 		--$z;
 	}
 
