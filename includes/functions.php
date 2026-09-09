@@ -283,18 +283,62 @@ function wp_presence_write_is_redundant( $room, $client_id, $data_json ) {
 }
 
 /**
+ * Whether a string is a real calendar date in 'Y-m-d H:i:s' format.
+ *
+ * Same approach as wp_resolve_post_date(): a preg_match on the literal shape
+ * plus wp_checkdate() to catch a well-formed but impossible date (2026-02-30).
+ *
+ * @access private
+ *
+ * @since 0.4.0
+ *
+ * @param string $date_gmt The timestamp to validate.
+ * @return bool Whether the timestamp is well-formed and real.
+ */
+function wp_presence_is_valid_date_gmt( $date_gmt ) {
+	if ( ! is_string( $date_gmt )
+		|| ! preg_match( '/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/', $date_gmt, $matches )
+	) {
+		return false;
+	}
+
+	list( , $year, $month, $day, $hour, $minute, $second ) = $matches;
+
+	if ( (int) $hour > 23 || (int) $minute > 59 || (int) $second > 59 ) {
+		return false;
+	}
+
+	return wp_checkdate( (int) $month, (int) $day, (int) $year, $date_gmt );
+}
+
+/**
  * Upserts a client's presence state in a room.
  *
  * Uses INSERT ... ON DUPLICATE KEY UPDATE for atomic upserts
  * via the UNIQUE KEY (room, client_id).
  *
- * @param string $room      The room identifier.
- * @param string $client_id The client identifier.
- * @param array  $state     The presence state data.
- * @param int    $user_id   Optional. The user ID. Default 0.
- * @return bool True on success, false on failure.
+ * @since 0.4.0 Added the $date_gmt parameter.
+ *
+ * @param string      $room      The room identifier.
+ * @param string      $client_id The client identifier.
+ * @param array       $state     The presence state data.
+ * @param int         $user_id   Optional. The user ID. Default 0.
+ * @param string|null $date_gmt  Optional. The GMT timestamp to stamp the row
+ *                                with, as 'Y-m-d H:i:s' (the same shape
+ *                                `wp_get_presence()` returns as `date_gmt`).
+ *                                For a caller relaying awareness on behalf of
+ *                                other clients, so it can preserve their
+ *                                timestamps instead of stamping every
+ *                                relayed row with its own clock. A value in
+ *                                the future is clamped to now, since
+ *                                otherwise a caller could pin a row past the
+ *                                TTL indefinitely. Must be a real calendar
+ *                                date or the write is rejected. Default null
+ *                                (now).
+ * @return bool True on success, false on failure (including a malformed
+ *              $date_gmt).
  */
-function wp_set_presence( $room, $client_id, $state, $user_id = 0 ) {
+function wp_set_presence( $room, $client_id, $state, $user_id = 0, $date_gmt = null ) {
 	global $wpdb;
 
 	if ( ! wp_presence_recording_enabled() ) {
@@ -305,10 +349,17 @@ function wp_set_presence( $room, $client_id, $state, $user_id = 0 ) {
 		return false;
 	}
 
-	$data_json = wp_json_encode( $state );
-	$now       = gmdate( 'Y-m-d H:i:s' );
+	if ( null !== $date_gmt && ! wp_presence_is_valid_date_gmt( $date_gmt ) ) {
+		return false;
+	}
 
-	if ( wp_presence_write_is_redundant( $room, $client_id, $data_json ) ) {
+	$data_json = wp_json_encode( $state );
+	$current   = gmdate( 'Y-m-d H:i:s' );
+	$now       = null === $date_gmt ? $current : min( $date_gmt, $current );
+
+	// An explicit timestamp is how a relay backdates a collaborator who has
+	// since left; skipping it here would leave them looking present.
+	if ( null === $date_gmt && wp_presence_write_is_redundant( $room, $client_id, $data_json ) ) {
 		return true;
 	}
 
