@@ -2,12 +2,17 @@ name: E2E
 
 on:
   workflow_call:
+    inputs:
+      should-run:
+        type: boolean
+        default: true
 
 permissions:
   contents: read
 
 jobs:
   e2e:
+    if: ${{ inputs.should-run }}
     name: Playwright
     runs-on: ubuntu-24.04
     timeout-minutes: 30

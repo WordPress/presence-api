@@ -2,6 +2,10 @@ name: PHPUnit
 
 on:
   workflow_call:
+    inputs:
+      should-run:
+        type: boolean
+        default: true
     secrets:
       CODECOV_TOKEN:
         required: true
@@ -11,6 +15,7 @@ permissions:
 
 jobs:
   phpunit:
+    if: ${{ inputs.should-run }}
     name: PHP ${{ matrix.php }}
     runs-on: ubuntu-24.04
     strategy:

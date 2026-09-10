@@ -16,13 +16,18 @@ concurrency:
 jobs:
   gate:
     runs-on: ubuntu-24.04
-    if: ${{ !startsWith(github.head_ref, 'release-please--') && !startsWith(github.ref, 'refs/heads/release-please--') }}
     steps:
       - run: true
 
-  # Docs-only PRs (README, CHANGELOG, etc.) don't need the wp-env/Playwright
-  # jobs below — `workflow_call` jobs can't use `paths:` themselves, so the
-  # filter has to run as its own job and gate the rest with `if:`.
+  # Docs-only PRs (README, CHANGELOG, etc.) and release-please PRs don't need
+  # the wp-env/Playwright jobs below. `workflow_call` jobs can't use `paths:`
+  # themselves, so the filter runs as its own job here.
+  #
+  # The decision is passed into each reusable workflow as a `should-run`
+  # input rather than skipping the caller job with `if:`. A skipped caller
+  # reports under its own bare job id, not the composite name required
+  # checks expect (e.g. `phpcs / phpcs`), which leaves those checks
+  # permanently pending and blocks every release-please PR from merging.
   changes:
     needs: gate
     runs-on: ubuntu-24.04
@@ -30,6 +35,7 @@ jobs:
       pull-requests: read
     outputs:
       code: ${{ steps.filter.outputs.code }}
+      release-please: ${{ startsWith(github.head_ref, 'release-please--') || startsWith(github.ref, 'refs/heads/release-please--') }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
@@ -48,41 +54,51 @@ jobs:
 
   phpcs:
     needs: changes
-    if: needs.changes.outputs.code == 'true'
     uses: ./.github/workflows/phpcs.yml
+    with:
+      should-run: ${{ needs.changes.outputs.release-please != 'true' && needs.changes.outputs.code == 'true' }}
 
   phpstan:
     needs: changes
-    if: needs.changes.outputs.code == 'true'
     uses: ./.github/workflows/phpstan.yml
+    with:
+      should-run: ${{ needs.changes.outputs.release-please != 'true' && needs.changes.outputs.code == 'true' }}
 
   phpunit:
     needs: changes
-    if: needs.changes.outputs.code == 'true'
     uses: ./.github/workflows/phpunit.yml
+    with:
+      should-run: ${{ needs.changes.outputs.release-please != 'true' && needs.changes.outputs.code == 'true' }}
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   e2e:
     needs: changes
-    if: needs.changes.outputs.code == 'true'
     uses: ./.github/workflows/e2e.yml
+    with:
+      should-run: ${{ needs.changes.outputs.release-please != 'true' && needs.changes.outputs.code == 'true' }}
 
   unit:
     needs: changes
-    if: needs.changes.outputs.code == 'true'
     uses: ./.github/workflows/unit.yml
+    with:
+      should-run: ${{ needs.changes.outputs.release-please != 'true' && needs.changes.outputs.code == 'true' }}
 
   lint-js:
-    needs: gate
+    needs: changes
     uses: ./.github/workflows/lint-js.yml
+    with:
+      should-run: ${{ needs.changes.outputs.release-please != 'true' }}
 
   plugin-check:
     needs: changes
-    if: needs.changes.outputs.code == 'true'
     uses: ./.github/workflows/plugin-check.yml
+    with:
+      should-run: ${{ needs.changes.outputs.release-please != 'true' && needs.changes.outputs.code == 'true' }}
 
   # Spell-checks docs too, so it stays outside the code gate.
   typos:
-    needs: gate
+    needs: changes
     uses: ./.github/workflows/typos.yml
+    with:
+      should-run: ${{ needs.changes.outputs.release-please != 'true' }}

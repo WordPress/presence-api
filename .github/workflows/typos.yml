@@ -2,6 +2,10 @@ name: Spell Check
 
 on:
   workflow_call:
+    inputs:
+      should-run:
+        type: boolean
+        default: true
 
 # Disable permissions for all available scopes by default.
 # Any needed permissions should be configured at the job level.
@@ -9,6 +13,7 @@ permissions: {}
 
 jobs:
   typos:
+    if: ${{ inputs.should-run }}
     name: Spell Check with Typos
     runs-on: ubuntu-24.04
     permissions:
