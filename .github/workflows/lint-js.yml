@@ -2,12 +2,17 @@ name: JavaScript Lint
 
 on:
   workflow_call:
+    inputs:
+      should-run:
+        type: boolean
+        default: true
 
 permissions:
   contents: read
 
 jobs:
   lint-js:
+    if: ${{ inputs.should-run }}
     name: ESLint
     runs-on: ubuntu-24.04
     steps:
