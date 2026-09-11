@@ -16,6 +16,10 @@ jobs:
     name: Playwright
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    env:
+      # Pinned so the cache path below doesn't depend on wp-env's runner-specific
+      # snap detection (~/.wp-env vs ~/wp-env).
+      WP_ENV_HOME: ${{ github.workspace }}/.wp-env-cache
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -48,7 +52,7 @@ jobs:
       - name: Cache wp-env WordPress core
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ~/.wp-env
+          path: ${{ env.WP_ENV_HOME }}
           key: ${{ runner.os }}-wp-env-${{ steps.wp-env-date.outputs.date }}
 
       # The Playwright config declares a `webServer` that would start wp-env on
