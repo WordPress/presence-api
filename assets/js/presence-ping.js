@@ -1,5 +1,9 @@
 ( function ( $ ) {
-	if ( typeof wp === 'undefined' || typeof wp.heartbeat === 'undefined' ) {
+	if (
+		typeof wp === 'undefined' ||
+		typeof wp.heartbeat === 'undefined' ||
+		typeof wp.hooks === 'undefined'
+	) {
 		return;
 	}
 
@@ -7,6 +11,7 @@
 	const entries = Array.isArray( config.entries ) ? config.entries : [];
 	const frontContext = config.frontContext || null;
 	const editorPostId = parseInt( config.editorPostId, 10 ) || 0;
+	const editorRoom = config.editorRoom || '';
 	const restUrl = config.restUrl || '';
 	const nonce = config.nonce || '';
 	const idleTicks = parseInt( config.idleTicks, 10 ) || 0;
@@ -15,12 +20,22 @@
 	const backoffEnabled = idleTicks > 0 && idleInterval > 0;
 	const TTL_SAFETY_MARGIN = 15;
 
+	// Fired synchronously, ahead of Heartbeat's first tick, so a listener can
+	// tell "presence-api isn't here" apart from "here, no tick yet."
+	if ( editorRoom ) {
+		wp.hooks.doAction( 'presence-api.watchingRoom', editorRoom );
+	}
+
 	// Guards against duplicate leave() invocations.
 	let hasLeft = false;
 
 	let unchangedTicks = 0;
 	let lastOnlineHash = '';
 	let normalInterval = null;
+	// Matches wp_presence_check_collaboration_threshold()'s own default: with
+	// nothing observed yet, assume solo, so a fresh room's first tick at count
+	// 1 isn't mistaken for a 2+-to-1 edge.
+	let hasCollaborators = false;
 
 	// Reads the interval lazily (not at page load) so it reflects whatever
 	// another script, e.g. post.js's lock-refresh interval, already set.
@@ -113,6 +128,33 @@
 				data[ 'presence-editor-ping' ] = { post_id: editorPostId };
 			}
 		} );
+
+		if ( editorRoom ) {
+			$( document ).on( 'heartbeat-tick', function ( event, data ) {
+				if (
+					! Object.prototype.hasOwnProperty.call(
+						data,
+						'presence-heartbeat-collaborators'
+					)
+				) {
+					return;
+				}
+
+				const count = data[ 'presence-heartbeat-collaborators' ];
+				const nowHasCollaborators = count > 1;
+
+				if ( nowHasCollaborators === hasCollaborators ) {
+					return;
+				}
+
+				hasCollaborators = nowHasCollaborators;
+				wp.hooks.doAction(
+					'presence-api.collaboratorsChanged',
+					editorRoom,
+					count
+				);
+			} );
+		}
 
 		if ( backoffEnabled ) {
 			// Reuses the Who's Online widget's hash exchange on every screen,

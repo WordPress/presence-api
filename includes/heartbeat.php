@@ -126,6 +126,7 @@ function wp_presence_enqueue_heartbeat_ping() {
 
 	// On the post-edit screen, also occupy the per-post room.
 	$editor_post_id = 0;
+	$editor_room    = '';
 	if ( is_admin() && function_exists( 'get_current_screen' ) ) {
 		$screen = get_current_screen();
 		if ( $screen && 'post' === $screen->base ) {
@@ -134,6 +135,7 @@ function wp_presence_enqueue_heartbeat_ping() {
 				$room = wp_presence_post_room( $post->ID );
 				if ( $room ) {
 					$editor_post_id = $post->ID;
+					$editor_room    = $room;
 					$entries[]      = array(
 						'room'      => $room,
 						'client_id' => 'editor-' . $user_id,
@@ -160,24 +162,24 @@ function wp_presence_enqueue_heartbeat_ping() {
 	}
 	wp_set_presence( wp_presence_admin_room(), 'user-' . $user_id, $admin_state, $user_id );
 
-	if ( $editor_post_id ) {
-		$editor_room = wp_presence_post_room( $editor_post_id );
-		if ( $editor_room ) {
-			// No tick has carried a lock refresh yet. connectNow() on load makes
-			// that a single request, not a visible state.
-			wp_set_presence(
-				$editor_room,
-				'editor-' . $user_id,
-				wp_presence_editor_state( $screen_id, false ),
-				$user_id
-			);
-		}
+	if ( $editor_room ) {
+		// No tick has carried a lock refresh yet. connectNow() on load makes
+		// that a single request, not a visible state.
+		wp_set_presence(
+			$editor_room,
+			'editor-' . $user_id,
+			wp_presence_editor_state( $screen_id, false ),
+			$user_id
+		);
 	}
 
 	$config = array(
 		'entries'      => $entries,
 		'frontContext' => $front_context,
 		'editorPostId' => $editor_post_id,
+		// Lets presence-ping.js fire `presence-api.watchingRoom` without
+		// duplicating the postType/{type}:{id} grammar client-side.
+		'editorRoom'   => $editor_room,
 		'restUrl'      => esc_url_raw( rest_url( 'wp-presence/v1/presence' ) ),
 		'nonce'        => wp_create_nonce( 'wp_rest' ),
 		'idleTicks'    => wp_presence_get_heartbeat_idle_ticks(),
@@ -196,7 +198,7 @@ function wp_presence_enqueue_heartbeat_ping() {
 	wp_enqueue_script(
 		'wp-presence-ping',
 		WP_PRESENCE_PLUGIN_URL . 'assets/js/presence-ping.js',
-		array( 'jquery', 'heartbeat', 'wp-presence-tab-coordinator' ),
+		array( 'jquery', 'heartbeat', 'wp-hooks', 'wp-presence-tab-coordinator' ),
 		WP_PRESENCE_VERSION,
 		true
 	);

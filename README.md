@@ -206,6 +206,25 @@ add_action( 'wp_presence_collaboration_ended', function( $room, $entries ) {
 }, 10, 2 );
 ```
 
+### JS Actions
+Fired through `wp.hooks`, not PHP. `presence-ping.js` is the only thing that computes these, so a consumer has to listen rather than poll for them.
+
+#### `presence-api.watchingRoom`
+Fires once, synchronously, before Heartbeat's first tick. Only on a post-edit screen for a post type with `presence` support — lets a listener tell "presence-api isn't here" apart from "here, no tick yet."
+```js
+wp.hooks.addAction( 'presence-api.watchingRoom', 'my-plugin', ( room ) => {
+    // room is 'postType/{type}:{id}'
+} );
+```
+
+#### `presence-api.collaboratorsChanged`
+Fires on the same 1-to-2+ and 2+-to-1 edges as `wp_presence_collaboration_started`/`_ended`, not on every tick.
+```js
+wp.hooks.addAction( 'presence-api.collaboratorsChanged', 'my-plugin', ( room, count ) => {
+    // count > 1 means someone besides you is in the room.
+} );
+```
+
 </details>
 
 ## REST API
@@ -264,6 +283,8 @@ Real-time awareness inside the editor — cursors, selections, who's editing whi
 No room mapping sits between the two: both use `postType/{type}:{id}`, the grammar Gutenberg's `WP_Sync_Config::parse_room()` defines and [`wp_presence_post_room()`](#php-api) already returns. What keeps the two sets of rows apart inside that shared room is the `client_id` prefix: sync-storage writes `sync-{id}` and reads nothing else back, leaving this plugin's `editor-{user_id}` rows untouched.
 
 That leaves the split: awareness and cursors inside the editor go through sync-storage; room membership everywhere else in wp-admin — plus the post-lock bridge below — stays this plugin's.
+
+The JS actions above exist for that same relationship. A consumer like Gutenberg's sync poll loop ([presence-api#444](https://github.com/WordPress/presence-api/issues/444)) can wait for `presence-api.collaboratorsChanged` instead of polling to find out whether anyone else is in the room.
 
 ## Post-lock bridge
 
