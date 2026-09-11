@@ -66,6 +66,7 @@
 	const pingContextKey =
 		'wp-presence-ping:' +
 		JSON.stringify( {
+			restUrl,
 			screen: window.pagenow || 'front',
 			editorPostId,
 			frontTitle: ( frontContext && frontContext.title ) || '',
