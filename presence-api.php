@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Presence API
  * Description: System-wide presence and awareness for WordPress.
- * Version: 0.4.0
+ * Version: 0.5.0
  * Requires at least: 7.0
  * Requires PHP: 7.4
  * Author: WordPress Core Team
@@ -45,7 +45,7 @@ if ( isset( $wpdb->presence ) ) {
 	return;
 }
 
-define( 'WP_PRESENCE_VERSION', '0.4.0' );
+define( 'WP_PRESENCE_VERSION', '0.5.0' );
 define( 'WP_PRESENCE_DB_VERSION', 2 );
 define( 'WP_PRESENCE_NETWORK_SUMMARY_DB_VERSION', 1 );
 define( 'WP_PRESENCE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -283,11 +283,12 @@ function wp_presence_deactivate( $network_wide = false ) {
 /**
  * Adds action links to the plugin list table.
  *
- * The plugin has no settings screen, so the link points at the Users list
- * filtered to the users who are currently online.
+ * The online users link points at the Users list filtered to the users who are
+ * currently online. The plugin has no settings screen of its own, so the
+ * settings link points at Settings > General, where the recording switch lives.
  *
  * @param string[] $links Existing plugin action links.
- * @return string[] Action links with the online users link prepended.
+ * @return string[] Action links with the plugin's own links prepended.
  */
 function wp_presence_plugin_action_links( $links ) {
 	$online_users_link = sprintf(
@@ -296,7 +297,13 @@ function wp_presence_plugin_action_links( $links ) {
 		esc_html__( 'View Online Users', 'presence-api' )
 	);
 
-	array_unshift( $links, $online_users_link );
+	$settings_link = sprintf(
+		'<a href="%1$s">%2$s</a>',
+		esc_url( admin_url( 'options-general.php' ) ),
+		esc_html__( 'Settings', 'presence-api' )
+	);
+
+	array_unshift( $links, $online_users_link, $settings_link );
 
 	return $links;
 }

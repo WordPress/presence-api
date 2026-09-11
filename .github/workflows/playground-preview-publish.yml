@@ -7,8 +7,8 @@ name: Playground Preview Publish
 # posts (or updates) the sticky Playground comment on the PR.
 #
 # Security model: every PR-derived input is untrusted.
-#   - `pr-meta.json` is parsed with jq and regex-validated; we never
-#     `source` it as shell.
+#   - The PR is resolved from the `workflow_run` payload, and only the three
+#     expected release assets are copied out of the artifact by name.
 #   - The blueprint templates we encode into Playground URLs come from
 #     the base ref (this checkout), not from the PR. Only the asset URLs
 #     are rewritten in, and every one points at ${{ github.repository }},
@@ -40,7 +40,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Download artifacts from the triggering run
+      - name: Download release assets from the triggering run
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
@@ -50,55 +50,33 @@ jobs:
               repo: context.repo.repo,
               run_id: context.payload.workflow_run.id,
             });
-            for (const name of ['release-assets', 'pr-meta']) {
-              const found = list.data.artifacts.find(a => a.name === name);
-              if (!found) {
-                core.setFailed(`Required artifact "${name}" not found on workflow run.`);
-                return;
-              }
-              const dl = await github.rest.actions.downloadArtifact({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                artifact_id: found.id,
-                archive_format: 'zip',
-              });
-              fs.writeFileSync(`${name}.zip`, Buffer.from(dl.data));
+            const found = list.data.artifacts.find(a => a.name === 'release-assets');
+            if (!found) {
+              core.setFailed('Required artifact "release-assets" not found on workflow run.');
+              return;
             }
+            const dl = await github.rest.actions.downloadArtifact({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              artifact_id: found.id,
+              archive_format: 'zip',
+            });
+            fs.writeFileSync(`${process.env.RUNNER_TEMP}/release-assets.zip`, Buffer.from(dl.data));
 
-      - name: Unpack and validate artifacts
+      - name: Resolve pull request from the triggering run
         id: meta
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-          # The build runs untrusted PR code; the run's head SHA is the only
-          # trusted value.
           TRUSTED_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          TRUSTED_HEAD_REPO: ${{ github.event.workflow_run.head_repository.full_name }}
+          TRUSTED_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
         run: |
           set -euo pipefail
-          mkdir -p artifacts/release-assets artifacts/pr-meta
-          unzip -q -o -d artifacts/release-assets release-assets.zip
-          unzip -q -o -d artifacts/pr-meta pr-meta.zip
-          test -f artifacts/release-assets/presence-api.zip
-          test -f artifacts/release-assets/demo-seeder.php
-          test -f artifacts/release-assets/screen-stale-demo-helper.php
-          test -f artifacts/pr-meta/pr-meta.json
-
-          # Parse with jq and validate types. Never `source` the artifact.
-          META_HEAD_SHA=$(jq -r '.head_sha' artifacts/pr-meta/pr-meta.json)
-          [[ "$META_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] \
-            || { echo "Invalid SHA in pr-meta: $META_HEAD_SHA"; exit 1; }
-
-          # Require pr-meta's SHA to match the triggering run.
-          if [[ "$META_HEAD_SHA" != "$TRUSTED_HEAD_SHA" ]]; then
-            echo "Refusing to publish: pr-meta head SHA ($META_HEAD_SHA) does not match the triggering run ($TRUSTED_HEAD_SHA)."
-            exit 1
-          fi
-
-          # Resolve the PR number from the trusted head SHA rather than the
-          # artifact-supplied value.
+          # pull_requests is empty for fork PRs; matching repo, branch and SHA keeps another PR at this commit from claiming the run.
           readarray -t _prs < <(
             gh api "repos/${GH_REPO}/pulls?state=open&per_page=100" --paginate \
-              --jq '.[] | select(.head.sha == env.TRUSTED_HEAD_SHA) | .number'
+              --jq '.[] | select(.head.sha == env.TRUSTED_HEAD_SHA and .head.repo.full_name == env.TRUSTED_HEAD_REPO and .head.ref == env.TRUSTED_HEAD_BRANCH) | .number'
           )
           PR_NUMBER="${_prs[0]:-}"
 
@@ -115,6 +93,23 @@ jobs:
             echo "HEAD_SHA=$TRUSTED_HEAD_SHA"
           } >> "$GITHUB_ENV"
 
+      - name: Extract release assets
+        if: ${{ steps.meta.outputs.skipped != 'true' }}
+        run: |
+          set -euo pipefail
+          # PR-built archive: copy exactly the expected entries out by name; never let unzip create files or symlinks.
+          archive="$RUNNER_TEMP/release-assets.zip"
+          expected=$'demo-seeder.php\npresence-api.zip\nscreen-stale-demo-helper.php'
+          if [[ "$(unzip -Z1 "$archive" | sort)" != "$expected" ]]; then
+            echo "Refusing to publish: release-assets does not contain exactly the expected files."
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/release-assets"
+          for asset in presence-api.zip demo-seeder.php screen-stale-demo-helper.php; do
+            unzip -p "$archive" "$asset" > "$RUNNER_TEMP/release-assets/$asset"
+          done
+          unzip -tq "$RUNNER_TEMP/release-assets/presence-api.zip"
+
       # Playground fetches these from the browser. Release assets send no
       # `Access-Control-Allow-Origin`; raw.githubusercontent.com does.
       - name: Publish preview assets
@@ -130,7 +125,7 @@ jobs:
           # history everyone clones. The SHA is a path component because raw
           # caches by path.
           mkdir -p "preview/${HEAD_SHA}"
-          cp artifacts/release-assets/* "preview/${HEAD_SHA}/"
+          cp "$RUNNER_TEMP"/release-assets/* "preview/${HEAD_SHA}/"
 
           cd preview
           git init -q -b "$BRANCH"

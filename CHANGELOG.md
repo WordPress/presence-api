@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.5.0](https://github.com/WordPress/presence-api/compare/v0.4.0...v0.5.0) (2026-09-10)
+
+
+### Features
+
+* add a Settings link to the plugin row actions ([ba04159](https://github.com/WordPress/presence-api/commit/ba04159d8e780936ee8e25100d7b23e239fd8cab)), closes [#484](https://github.com/WordPress/presence-api/issues/484)
+* let wp_set_presence() accept an explicit GMT timestamp ([39459f8](https://github.com/WordPress/presence-api/commit/39459f8d442e2a401c7fd21b8cedb54b7bbbf75a))
+
+
+### Bug Fixes
+
+* bypass the redundant-write guard and validate $date_gmt on wp_set_presence() ([ea9703e](https://github.com/WordPress/presence-api/commit/ea9703eda2f070cf443c12b034696bac3e999cfe))
+* request a retina-sharp avatar resolution across the presence surfaces ([73462f9](https://github.com/WordPress/presence-api/commit/73462f9c033b932ea7a2e0e6ae30f179f8c8bb26))
+* request a retina-sharp avatar resolution and bookend the Who's Online row ([a1c3c28](https://github.com/WordPress/presence-api/commit/a1c3c28a5d4b88009932ea49c57f8b4c307de850))
+* stop PHPStan's bootstrap from silently exiting before analysis ([b3a6489](https://github.com/WordPress/presence-api/commit/b3a6489a02cddf9a5b57564ac2bfabb1806df85e))
+
+
+### Dependencies
+
+* **deps-dev:** bump @testing-library/react from 16.3.2 to 16.3.3 ([18aa524](https://github.com/WordPress/presence-api/commit/18aa52440bd8c71d1496701ba954a44739acceac))
+* **deps-dev:** bump globals from 16.5.0 to 17.12.0 ([e9edb3a](https://github.com/WordPress/presence-api/commit/e9edb3a794b17fce16a37852d7a4d0236796da62))
+* **deps-dev:** update phpstan/phpstan requirement from 2.2.9 to 2.2.12 ([0043cf8](https://github.com/WordPress/presence-api/commit/0043cf8e9d32fc41084b297dcf21e6f792be5783))
+* **deps:** bump crate-ci/typos from 1.49.0 to 1.50.1 ([ce41ad0](https://github.com/WordPress/presence-api/commit/ce41ad0b1f06a4ac1a4a1c5c67fd20ed9cb78511))
+* exclude phpstan-bootstrap.php from the distributed plugin ([4bb4252](https://github.com/WordPress/presence-api/commit/4bb42526b47465451b4e5f1615f4dfdf330e645f))
+
 ## [0.4.0](https://github.com/WordPress/presence-api/compare/v0.3.0...v0.4.0) (2026-09-05)
 
 

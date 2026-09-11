@@ -496,7 +496,7 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 
 		$user = get_userdata( self::$editor_id );
 		$this->assertSame( $user->display_name, $data[0]['display_name'] );
-		$this->assertSame( get_avatar_url( self::$editor_id, array( 'size' => 32 ) ), $data[0]['avatar_url'] );
+		$this->assertSame( get_avatar_url( self::$editor_id, array( 'size' => 48 ) ), $data[0]['avatar_url'] );
 	}
 
 	/**
