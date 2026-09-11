@@ -40,14 +40,8 @@ jobs:
       - run: npx playwright install chromium
         if: ${{ steps.playwright-cache.outputs.cache-hit != 'true' }}
 
-      # `core: null` in both .wp-env.json files means a cold run clones
-      # WordPress/WordPress.git from scratch, which is most of the ~2min
-      # boot cost (see #498). wp-env records a hash of the resolved config
-      # under this directory and skips re-downloading/reconfiguring entirely
-      # when a start sees the same hash again, so restoring it is what makes
-      # a cache hit skip the network work rather than just the disk I/O. The
-      # date in the key bounds staleness to a day rather than caching
-      # "latest" indefinitely.
+      # core: null reclones WordPress/WordPress.git from scratch each cold
+      # run (#498's boot cost). The date key bounds how stale a hit can be.
       - name: Determine wp-env cache date
         id: wp-env-date
         run: echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"

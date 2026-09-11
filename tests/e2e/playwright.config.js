@@ -43,10 +43,8 @@ export default defineConfig( {
 	globalSetup: path.resolve( __dirname, 'global-setup.js' ),
 	reporter: process.env.CI ? [ [ 'github' ] ] : [ [ 'list' ] ],
 	retries: process.env.CI ? 2 : 0,
-	// Every spec shares one live wp-env instance and database rather than
-	// getting its own — presence-screenshots.test.js truncates wp_presence
-	// directly, and several specs call deleteAllPosts()/deleteAllUsers().
-	// Parallel workers would race those against each other's fixtures.
+	// Specs share one live wp-env db; some truncate wp_presence or delete
+	// all posts/users, which parallel workers would race against.
 	workers: 1,
 	timeout: 100_000,
 	reportSlowTests: null,
