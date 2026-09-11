@@ -50,7 +50,6 @@ jobs:
         with:
           path: ~/.wp-env
           key: ${{ runner.os }}-wp-env-${{ steps.wp-env-date.outputs.date }}
-          restore-keys: ${{ runner.os }}-wp-env-
 
       # The Playwright config declares a `webServer` that would start wp-env on
       # demand, but starting it here keeps a boot failure in its own step
