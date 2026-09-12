@@ -52,8 +52,19 @@ jobs:
       - name: Install Composer dependencies
         if: ${{ inputs.should-run }}
         run: composer install --no-interaction
-      - run: npx wp-env start ${{ matrix.coverage && '--xdebug=coverage' || '' }}
+      - name: Start wp-env (retry on transient PECL download failures)
         if: ${{ inputs.should-run }}
+        run: |
+          for attempt in 1 2 3; do
+            if npx wp-env start ${{ matrix.coverage && '--xdebug=coverage' || '' }}; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              exit 1
+            fi
+            npx wp-env destroy || true
+            echo "wp-env start failed on attempt $attempt, retrying..."
+          done
         env:
           WP_ENV_PHP_VERSION: ${{ matrix.php }}
       - run: npx wp-env run tests-cli --env-cwd='wp-content/plugins/presence-api' -- ./vendor/bin/phpunit ${{ matrix.coverage && '--coverage-clover coverage.xml' || '' }}

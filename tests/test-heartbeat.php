@@ -191,6 +191,11 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 
 		$wp_scripts = wp_scripts();
 		$this->assertArrayHasKey( 'wp-presence-ping', $wp_scripts->registered );
+
+		// `presence-api.watchingRoom` and `presence-api.collaboratorsChanged`
+		// go out through wp.hooks, so it has to be loaded first.
+		$this->assertContains( 'wp-hooks', $wp_scripts->registered['wp-presence-ping']->deps );
+
 		$extra = $wp_scripts->registered['wp-presence-ping']->extra;
 		$this->assertArrayHasKey( 'before', $extra );
 
@@ -513,6 +518,55 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 
 		$this->assertContains( 'editor-' . self::$editor_id, $client_ids );
 		$this->assertNotContains( 'lock-' . self::$editor_id, $client_ids );
+	}
+
+	/**
+	 * presence-ping.js builds `presence-api.watchingRoom` from this rather than
+	 * re-deriving postType/{type}:{id} client-side.
+	 *
+	 * @covers ::wp_presence_enqueue_heartbeat_ping
+	 */
+	public function test_ping_config_carries_editor_room() {
+		global $post;
+
+		$post_id = self::factory()->post->create();
+
+		wp_set_current_user( self::$editor_id );
+
+		$post = get_post( $post_id );
+		set_current_screen( 'post' );
+
+		wp_deregister_script( 'wp-presence-ping' );
+
+		$wp_scripts        = wp_scripts();
+		$wp_scripts->queue = array();
+		$wp_scripts->done  = array();
+
+		wp_presence_enqueue_heartbeat_ping();
+
+		$config = $this->get_ping_config();
+
+		$this->assertSame( wp_presence_post_room( $post_id ), $config['editorRoom'] );
+	}
+
+	/**
+	 * @covers ::wp_presence_enqueue_heartbeat_ping
+	 */
+	public function test_ping_config_editor_room_empty_outside_editor() {
+		wp_set_current_user( self::$editor_id );
+		set_current_screen( 'dashboard' );
+
+		wp_deregister_script( 'wp-presence-ping' );
+
+		$wp_scripts        = wp_scripts();
+		$wp_scripts->queue = array();
+		$wp_scripts->done  = array();
+
+		wp_presence_enqueue_heartbeat_ping();
+
+		$config = $this->get_ping_config();
+
+		$this->assertSame( '', $config['editorRoom'] );
 	}
 
 	/**
