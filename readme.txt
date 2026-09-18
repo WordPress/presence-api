@@ -3,7 +3,7 @@ Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas,
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.1
-Stable tag: 0.5.0
+Stable tag: 0.6.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -66,8 +66,12 @@ For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/presence-api/blob/main/CHANGELOG.md
 
+= 0.6.0 =
+* Expose the room's collaborator count as JS hooks ([#503](https://github.com/WordPress/presence-api/issues/503)).
+* Centralize network site status filtering ([#453](https://github.com/WordPress/presence-api/issues/453)).
+
 = 0.5.0 =
-* Add a Settings link to the plugin row actions.
+* Add a Settings link to the plugin row actions ([ba04159](https://github.com/WordPress/presence-api/commit/ba04159d8e780936ee8e25100d7b23e239fd8cab)), closes [#484](https://github.com/WordPress/presence-api/issues/484).
 * Let wp_set_presence() accept an explicit GMT timestamp.
 * Bypass the redundant-write guard and validate $date_gmt on wp_set_presence().
 * Request a retina-sharp avatar resolution across the presence surfaces.
@@ -108,37 +112,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 * Gate cross-tab relay on Web Locks availability.
 * Prune network summary rows past the read cutoff.
 * Stop tab coordinator rebroadcast loop when Web Locks is unavailable.
-
-= 0.2.0 =
-* Add a network-wide presence summary table.
-* Add a Who's Online widget to the Network Admin dashboard.
-* Add a wp presence network CLI subcommand for the network-wide summary.
-* Add an Online column to the Network Sites list.
-* Add an Online view and column to the Network Users list.
-* Add network-scoped REST routes for reading presence across a network.
-* Add Playground blueprint for multisite network demo.
-* Announce admin room changes with an action.
-* Expose network presence via REST and WP-CLI.
-* Let the network summary skip sites so callers can paginate.
-* Push each site's online set into the network summary.
-* Read the network summary as a capped snapshot.
-* Boot the multisite Playground preview through wp-cli steps.
-* Bring the stale-screen banner back after a dismissal.
-* Carry each site's own scheme in the network summary row.
-* Clear a user's presence when their account or site membership ends.
-* Detect the collaboration edge across requests.
-* Exclude Codecov config and Jest test from release zip.
-* Outlast core's unfocused heartbeat interval in the presence TTL.
-* Preserve focus across heartbeat re-renders in the network Who's Online widget.
-* Refresh the network summary timestamp unconditionally.
-* Register the network summary table name idempotently.
-* Register the presence table name idempotently.
-* Require manage_options to reach the debugger widget.
-* Serve Playground preview assets over an origin that allows CORS.
-* Skip an avatar-less user in the stack instead of drawing an empty img.
-* Skip notifications for no-op presence changes.
-* Store collaboration state only while two editors are present.
-* Style the avatar stack on the Network Admin Sites list.
-* Gate network presence aggregation on wp_is_large_network().
-* Gate network summary reads on wp_is_large_network().
-* Gate the network summary push on wp_is_large_network().

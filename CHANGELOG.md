@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.6.0](https://github.com/WordPress/presence-api/compare/v0.5.0...v0.6.0) (2026-09-18)
+
+
+### Features
+
+* expose the room's collaborator count as JS hooks ([#503](https://github.com/WordPress/presence-api/issues/503)) ([4129ccf](https://github.com/WordPress/presence-api/commit/4129ccf89124962f68ff9750c4a5c07ffdb78c4c))
+
+
+### Bug Fixes
+
+* centralize network site status filtering ([#453](https://github.com/WordPress/presence-api/issues/453)) ([bbb5e08](https://github.com/WordPress/presence-api/commit/bbb5e08606c0b7cca7c0c08568588673b3631f4b))
+
+
+### Dependencies
+
+* **deps-dev:** bump @playwright/test from 1.62.1 to 1.63.0 ([#505](https://github.com/WordPress/presence-api/issues/505)) ([d4bfe99](https://github.com/WordPress/presence-api/commit/d4bfe99da29b299f230f0b3f3010db4708e20fae))
+* **deps-dev:** update phpstan/phpstan requirement ([#504](https://github.com/WordPress/presence-api/issues/504)) ([87c323e](https://github.com/WordPress/presence-api/commit/87c323e2520d48cf22329a0010ed6ae627e65744))
+* **deps:** bump the codeql-action group with 3 updates ([#506](https://github.com/WordPress/presence-api/issues/506)) ([4f08b7f](https://github.com/WordPress/presence-api/commit/4f08b7f1dada116989661ea9da754e786ff46e87))
+
 ## [0.5.0](https://github.com/WordPress/presence-api/compare/v0.4.0...v0.5.0) (2026-09-10)
 
 
