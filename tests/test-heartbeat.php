@@ -550,6 +550,41 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * presence-ping.js seeds `hasCollaborators` from this, so a reload into
+	 * an already 2+ room doesn't re-fire `collaboratorsChanged` for an edge
+	 * the PHP side already crossed.
+	 *
+	 * @covers ::wp_presence_enqueue_heartbeat_ping
+	 */
+	public function test_ping_config_carries_initial_collaborator_count() {
+		global $post;
+
+		$post_id  = self::factory()->post->create();
+		$editor_2 = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$room     = wp_presence_post_room( $post_id );
+
+		wp_set_presence( $room, 'editor-' . $editor_2, array( 'screen' => 'post' ), $editor_2 );
+
+		wp_set_current_user( self::$editor_id );
+
+		$post = get_post( $post_id );
+		set_current_screen( 'post' );
+
+		wp_deregister_script( 'wp-presence-ping' );
+
+		$wp_scripts        = wp_scripts();
+		$wp_scripts->queue = array();
+		$wp_scripts->done  = array();
+
+		wp_presence_enqueue_heartbeat_ping();
+
+		$config = $this->get_ping_config();
+
+		// $editor_2 was already there; this request's own entry makes two.
+		$this->assertSame( 2, $config['initialCollaboratorCount'] );
+	}
+
+	/**
 	 * @covers ::wp_presence_enqueue_heartbeat_ping
 	 */
 	public function test_ping_config_editor_room_empty_outside_editor() {

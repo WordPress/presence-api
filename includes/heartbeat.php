@@ -162,6 +162,7 @@ function wp_presence_enqueue_heartbeat_ping() {
 	}
 	wp_set_presence( wp_presence_admin_room(), 'user-' . $user_id, $admin_state, $user_id );
 
+	$initial_collaborator_count = 0;
 	if ( $editor_room ) {
 		// No tick has carried a lock refresh yet. connectNow() on load makes
 		// that a single request, not a visible state.
@@ -171,20 +172,25 @@ function wp_presence_enqueue_heartbeat_ping() {
 			wp_presence_editor_state( $screen_id, false ),
 			$user_id
 		);
+
+		// Reads the room back, so a reload or late join into an already 2+
+		// room seeds the same count the next tick would report.
+		$initial_collaborator_count = wp_presence_count_editors( wp_get_presence( $editor_room ) );
 	}
 
 	$config = array(
-		'entries'      => $entries,
-		'frontContext' => $front_context,
-		'editorPostId' => $editor_post_id,
+		'entries'                  => $entries,
+		'frontContext'             => $front_context,
+		'editorPostId'             => $editor_post_id,
 		// Lets presence-ping.js fire `presence-api.watchingRoom` without
 		// duplicating the postType/{type}:{id} grammar client-side.
-		'editorRoom'   => $editor_room,
-		'restUrl'      => esc_url_raw( rest_url( 'wp-presence/v1/presence' ) ),
-		'nonce'        => wp_create_nonce( 'wp_rest' ),
-		'idleTicks'    => wp_presence_get_heartbeat_idle_ticks(),
-		'idleInterval' => wp_presence_get_heartbeat_idle_interval(),
-		'ttl'          => wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL ),
+		'editorRoom'               => $editor_room,
+		'initialCollaboratorCount' => $initial_collaborator_count,
+		'restUrl'                  => esc_url_raw( rest_url( 'wp-presence/v1/presence' ) ),
+		'nonce'                    => wp_create_nonce( 'wp_rest' ),
+		'idleTicks'                => wp_presence_get_heartbeat_idle_ticks(),
+		'idleInterval'             => wp_presence_get_heartbeat_idle_interval(),
+		'ttl'                      => wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL ),
 	);
 
 	wp_enqueue_script(
@@ -358,6 +364,25 @@ function wp_presence_collaboration_state_key( $room ) {
 }
 
 /**
+ * Counts the editor entries in a set of presence entries.
+ *
+ * @since 0.6.0
+ *
+ * @param array $entries Presence entries, as returned by wp_get_presence().
+ * @return int The number of editor entries.
+ */
+function wp_presence_count_editors( $entries ) {
+	return count(
+		array_filter(
+			$entries,
+			static function ( $entry ) {
+				return str_starts_with( $entry->client_id, 'editor-' );
+			}
+		)
+	);
+}
+
+/**
  * Checks if the collaboration threshold has been crossed and fires appropriate actions.
  *
  * Fires 'wp_presence_collaboration_started' when editor count goes from 1 to 2+.
@@ -370,16 +395,8 @@ function wp_presence_collaboration_state_key( $room ) {
  * @return int The number of editors currently present in the room.
  */
 function wp_presence_check_collaboration_threshold( $room ) {
-	$entries = wp_get_presence( $room );
-
-	$editor_count = count(
-		array_filter(
-			$entries,
-			static function ( $entry ) {
-				return str_starts_with( $entry->client_id, 'editor-' );
-			}
-		)
-	);
+	$entries      = wp_get_presence( $room );
+	$editor_count = wp_presence_count_editors( $entries );
 
 	// Every tick is its own request, so this cannot be held in memory. The
 	// transient expires on the presence TTL: once the entries it describes

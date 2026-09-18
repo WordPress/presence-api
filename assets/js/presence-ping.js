@@ -12,6 +12,8 @@
 	const frontContext = config.frontContext || null;
 	const editorPostId = parseInt( config.editorPostId, 10 ) || 0;
 	const editorRoom = config.editorRoom || '';
+	const initialCollaboratorCount =
+		parseInt( config.initialCollaboratorCount, 10 ) || 0;
 	const restUrl = config.restUrl || '';
 	const nonce = config.nonce || '';
 	const idleTicks = parseInt( config.idleTicks, 10 ) || 0;
@@ -32,10 +34,10 @@
 	let unchangedTicks = 0;
 	let lastOnlineHash = '';
 	let normalInterval = null;
-	// Matches wp_presence_check_collaboration_threshold()'s own default: with
-	// nothing observed yet, assume solo, so a fresh room's first tick at count
-	// 1 isn't mistaken for a 2+-to-1 edge.
-	let hasCollaborators = false;
+	// Seeded from the room's actual state at page load, so a reload or late
+	// join into an already 2+ room doesn't re-fire an edge the PHP side
+	// already crossed.
+	let hasCollaborators = initialCollaboratorCount > 1;
 
 	// Reads the interval lazily (not at page load) so it reflects whatever
 	// another script, e.g. post.js's lock-refresh interval, already set.
