@@ -52,7 +52,7 @@ jobs:
       - name: Install Composer dependencies
         if: ${{ inputs.should-run }}
         run: composer install --no-interaction
-      - name: Start wp-env (retry on transient PECL download failures)
+      - name: Start wp-env (retry on transient failures)
         if: ${{ inputs.should-run }}
         run: |
           for attempt in 1 2 3; do
