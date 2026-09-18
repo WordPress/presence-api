@@ -117,7 +117,7 @@ function wp_presence_render_editors_column( $column_name, $post_id ) {
 		}
 
 		$z      = $count - $index;
-		$avatar = get_avatar( $user->ID, 24, '', $user->display_name );
+		$avatar = get_avatar( $user->ID, 24, wp_presence_avatar_default(), $user->display_name );
 		$avatar = str_replace( '<img ', '<img style="z-index:' . $z . '" title="' . esc_attr( $user->display_name ) . '" ', $avatar );
 		echo wp_kses_post( $avatar );
 		++$index;

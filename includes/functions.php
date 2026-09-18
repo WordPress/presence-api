@@ -250,6 +250,29 @@ function wp_presence_get_avatar_fetch_size( $display_size ) {
 }
 
 /**
+ * Returns the avatar 'default' to request on presence-api's own surfaces.
+ *
+ * These surfaces show many avatars at once, so a site's own default only
+ * needs a nudge where it renders identically for every user without one.
+ * Anywhere else the site already picked a default that varies per user, so
+ * this defers to it instead of overriding a choice made in Settings >
+ * Discussion.
+ *
+ * @access private
+ *
+ * @since 0.7.0
+ *
+ * @return string 'identicon' to override the site's default, or '' to defer to it.
+ */
+function wp_presence_avatar_default() {
+	$site_default = get_option( 'avatar_default', 'mystery' );
+
+	$identical_for_everyone = array( 'mystery', 'mm', 'mysteryman', 'blank', 'gravatar_default' );
+
+	return in_array( $site_default, $identical_for_everyone, true ) ? 'identicon' : '';
+}
+
+/**
  * Reports whether a write would leave the stored row exactly as it already is.
  *
  * @access private
@@ -1008,7 +1031,13 @@ function wp_get_active_rooms( $timeout = WP_PRESENCE_DEFAULT_TTL, $hydrate_users
 				$users[] = array(
 					'user_id'      => (int) $uid,
 					'display_name' => $user->display_name,
-					'avatar_url'   => get_avatar_url( $uid, array( 'size' => 48 ) ),
+					'avatar_url'   => get_avatar_url(
+						$uid,
+						array(
+							'size'    => 48,
+							'default' => wp_presence_avatar_default(),
+						)
+					),
 				);
 			}
 
@@ -1085,7 +1114,13 @@ function wp_presence_hydrate_room_users( $rooms, $timeout = WP_PRESENCE_DEFAULT_
 				$users[] = array(
 					'user_id'      => $uid,
 					'display_name' => $user->display_name,
-					'avatar_url'   => get_avatar_url( $uid, array( 'size' => 48 ) ),
+					'avatar_url'   => get_avatar_url(
+						$uid,
+						array(
+							'size'    => 48,
+							'default' => wp_presence_avatar_default(),
+						)
+					),
 				);
 			}
 		}

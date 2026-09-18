@@ -579,7 +579,13 @@ function wp_presence_screen_heartbeat_received( $response, $data, $screen_id ) {
 	// the moment of the bump.
 	$user       = $actor_id ? get_userdata( $actor_id ) : null;
 	$actor_name = $user ? (string) $user->display_name : '';
-	$avatar_url = $user ? (string) get_avatar_url( $actor_id, array( 'size' => 48 ) ) : '';
+	$avatar_url = $user ? (string) get_avatar_url(
+		$actor_id,
+		array(
+			'size'    => 48,
+			'default' => wp_presence_avatar_default(),
+		)
+	) : '';
 	$time_ago   = $actor_time
 		? sprintf(
 			/* translators: %s: human-readable time difference like "2 minutes". */

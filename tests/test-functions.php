@@ -906,6 +906,32 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * @covers ::wp_presence_avatar_default
+	 */
+	public function test_avatar_default_overrides_the_types_that_render_identically() {
+		foreach ( array( 'mystery', 'mm', 'mysteryman', 'blank', 'gravatar_default' ) as $site_default ) {
+			update_option( 'avatar_default', $site_default );
+
+			$this->assertSame( 'identicon', wp_presence_avatar_default(), "Expected an override for '$site_default'." );
+		}
+	}
+
+	/**
+	 * A site that already picked a default that varies per user has nothing
+	 * for presence-api to fix, so its choice from Settings > Discussion
+	 * should reach these surfaces untouched.
+	 *
+	 * @covers ::wp_presence_avatar_default
+	 */
+	public function test_avatar_default_defers_to_a_default_that_already_varies() {
+		foreach ( array( 'identicon', 'wavatar', 'monsterid', 'retro' ) as $site_default ) {
+			update_option( 'avatar_default', $site_default );
+
+			$this->assertSame( '', wp_presence_avatar_default(), "Expected no override for '$site_default'." );
+		}
+	}
+
+	/**
 	 * The documented default, and the one the privacy note in the readme states.
 	 *
 	 * @covers ::wp_presence_recording_enabled
