@@ -1,5 +1,9 @@
 ( function ( $ ) {
-	if ( typeof wp === 'undefined' || typeof wp.heartbeat === 'undefined' ) {
+	if (
+		typeof wp === 'undefined' ||
+		typeof wp.heartbeat === 'undefined' ||
+		typeof wp.hooks === 'undefined'
+	) {
 		return;
 	}
 
@@ -7,6 +11,9 @@
 	const entries = Array.isArray( config.entries ) ? config.entries : [];
 	const frontContext = config.frontContext || null;
 	const editorPostId = parseInt( config.editorPostId, 10 ) || 0;
+	const editorRoom = config.editorRoom || '';
+	const initialCollaboratorCount =
+		parseInt( config.initialCollaboratorCount, 10 ) || 0;
 	const restUrl = config.restUrl || '';
 	const nonce = config.nonce || '';
 	const idleTicks = parseInt( config.idleTicks, 10 ) || 0;
@@ -15,12 +22,22 @@
 	const backoffEnabled = idleTicks > 0 && idleInterval > 0;
 	const TTL_SAFETY_MARGIN = 15;
 
+	// Fired synchronously, ahead of Heartbeat's first tick, so a listener can
+	// tell "presence-api isn't here" apart from "here, no tick yet."
+	if ( editorRoom ) {
+		wp.hooks.doAction( 'presence-api.watchingRoom', editorRoom );
+	}
+
 	// Guards against duplicate leave() invocations.
 	let hasLeft = false;
 
 	let unchangedTicks = 0;
 	let lastOnlineHash = '';
 	let normalInterval = null;
+	// Seeded from the room's actual state at page load, so a reload or late
+	// join into an already 2+ room doesn't re-fire an edge the PHP side
+	// already crossed.
+	let hasCollaborators = initialCollaboratorCount > 1;
 
 	// Reads the interval lazily (not at page load) so it reflects whatever
 	// another script, e.g. post.js's lock-refresh interval, already set.
@@ -51,6 +68,7 @@
 	const pingContextKey =
 		'wp-presence-ping:' +
 		JSON.stringify( {
+			restUrl,
 			screen: window.pagenow || 'front',
 			editorPostId,
 			frontTitle: ( frontContext && frontContext.title ) || '',
@@ -113,6 +131,33 @@
 				data[ 'presence-editor-ping' ] = { post_id: editorPostId };
 			}
 		} );
+
+		if ( editorRoom ) {
+			$( document ).on( 'heartbeat-tick', function ( event, data ) {
+				if (
+					! Object.prototype.hasOwnProperty.call(
+						data,
+						'presence-heartbeat-collaborators'
+					)
+				) {
+					return;
+				}
+
+				const count = data[ 'presence-heartbeat-collaborators' ];
+				const nowHasCollaborators = count > 1;
+
+				if ( nowHasCollaborators === hasCollaborators ) {
+					return;
+				}
+
+				hasCollaborators = nowHasCollaborators;
+				wp.hooks.doAction(
+					'presence-api.collaboratorsChanged',
+					editorRoom,
+					count
+				);
+			} );
+		}
 
 		if ( backoffEnabled ) {
 			// Reuses the Who's Online widget's hash exchange on every screen,
