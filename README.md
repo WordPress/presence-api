@@ -314,6 +314,7 @@ For a screen to be *watched* in the first place, it needs a screen key — core 
 ## Maintainers
 
 - [@josephfusco](https://github.com/josephfusco)
+- [@i-am-chitti](https://github.com/i-am-chitti)
 
 Sponsored by the [Core team](https://make.wordpress.org/core/). Updates posted on [make.wordpress.org/core](https://make.wordpress.org/core/) with the tag `#presence-api`.
 
