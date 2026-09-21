@@ -20,6 +20,11 @@ class WP_Test_Presence_Network_Plugin_Action_Links extends WP_UnitTestCase {
 		if ( ! is_multisite() ) {
 			$this->markTestSkipped( 'Requires multisite.' );
 		}
+
+		// The Network Admin Plugins screen is a super admin's screen.
+		$admin_id = self::factory()->user->create();
+		grant_super_admin( $admin_id );
+		wp_set_current_user( $admin_id );
 	}
 
 	/**
@@ -138,6 +143,39 @@ class WP_Test_Presence_Network_Plugin_Action_Links extends WP_UnitTestCase {
 		$this->assertSame( 1, preg_match( '#href="([^"]+)"#', $links[0], $matches ) );
 		$this->assertStringNotContainsString( ' ', $matches[1] );
 		$this->assertDoesNotMatchRegularExpression( '/&(?!amp;|#\d+;)/', $matches[1] );
+	}
+
+	/**
+	 * Without the network capability the Online view on the network Users
+	 * screen is not shown, so the link to it is withheld too.
+	 *
+	 * @covers ::wp_presence_network_plugin_action_links
+	 */
+	public function test_online_users_link_is_withheld_without_the_network_capability() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+
+		$links = wp_presence_network_plugin_action_links( $this->core_links() );
+
+		$this->assertCount( 2, $links );
+		$this->assertSame( 'Settings', wp_strip_all_tags( $links[0] ) );
+		$this->assertArrayHasKey( 'deactivate', $links );
+	}
+
+	/**
+	 * @covers ::wp_presence_network_plugin_action_links
+	 */
+	public function test_online_users_link_follows_the_network_capability_filter() {
+		add_filter(
+			'wp_presence_network_capability',
+			static function () {
+				return 'do_not_allow';
+			}
+		);
+
+		$links = wp_presence_network_plugin_action_links( array() );
+
+		$this->assertCount( 1, $links );
+		$this->assertSame( 'Settings', wp_strip_all_tags( $links[0] ) );
 	}
 
 	/**

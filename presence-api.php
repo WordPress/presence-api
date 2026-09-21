@@ -323,19 +323,25 @@ function wp_presence_plugin_action_links( $links ) {
  * @return string[] Action links with the plugin's own links prepended.
  */
 function wp_presence_network_plugin_action_links( $links ) {
-	$online_users_link = sprintf(
-		'<a href="%1$s">%2$s</a>',
-		esc_url( wp_nonce_url( network_admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' ) ),
-		esc_html__( 'View Online Users', 'presence-api' )
-	);
+	$our_links = array();
 
-	$settings_link = sprintf(
+	// Same gate as the Online view on the network Users screen this link
+	// opens; without the capability that view is not there to land on.
+	if ( current_user_can( wp_presence_network_capability() ) ) {
+		$our_links[] = sprintf(
+			'<a href="%1$s">%2$s</a>',
+			esc_url( wp_nonce_url( network_admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' ) ),
+			esc_html__( 'View Online Users', 'presence-api' )
+		);
+	}
+
+	$our_links[] = sprintf(
 		'<a href="%1$s">%2$s</a>',
 		esc_url( network_admin_url( 'settings.php' ) ),
 		esc_html__( 'Settings', 'presence-api' )
 	);
 
-	array_unshift( $links, $online_users_link, $settings_link );
+	array_unshift( $links, ...$our_links );
 
 	return $links;
 }
