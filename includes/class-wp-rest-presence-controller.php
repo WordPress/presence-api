@@ -218,7 +218,10 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 			return $valid;
 		}
 
-		if ( wp_presence_is_reserved_client_id( $value ) ) {
+		// Core validates before it sanitizes, so the raw value is not what gets
+		// stored: `<b>_collab</b>` and ` _collab` both reach the table as
+		// `_collab`. Check the string the route's sanitizer will actually write.
+		if ( wp_presence_is_reserved_client_id( sanitize_text_field( $value ) ) ) {
 			return new WP_Error(
 				'rest_presence_reserved_client_id',
 				/* translators: %s: The reserved client_id prefix. */

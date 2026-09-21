@@ -193,7 +193,7 @@ add_action( 'wp_presence_screen_revision_bumped', function( $screen_key, $revisi
 ```
 
 #### `wp_presence_collaboration_started`
-Fires when collaboration starts in a room (transition from 1 to 2+ editors). Only entries whose `client_id` begins with `editor-` count toward the transition, while `$entries` is every entry in the room. The previous count is held in the room's `_collab` row, which ages out on the presence TTL, so once those entries have gone the next pair reads as a fresh start.
+Fires when collaboration starts in a room (transition from 1 to 2+ editors). Only entries whose `client_id` begins with `editor-` count toward the transition, while `$entries` is every client entry in the room, reserved bookkeeping rows excluded. The previous count is held in the room's `_collab` row, which ages out on the presence TTL, so once those entries have gone the next pair reads as a fresh start.
 ```php
 add_action( 'wp_presence_collaboration_started', function( $room, $entries ) {
     // Announce room active or update integration state

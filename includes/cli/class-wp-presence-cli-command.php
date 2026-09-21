@@ -108,8 +108,11 @@ class WP_Presence_CLI_Command extends WP_CLI_Command {
 			WP_CLI::error( __( 'Please specify a room. Usage: wp presence list <room>', 'presence-api' ) );
 		}
 
-		$room    = $args[0];
-		$entries = wp_get_presence( $room );
+		$room = $args[0];
+
+		// Every row, reserved ones included. This is a debugging view of the
+		// table, so hiding the plugin's own bookkeeping would defeat it.
+		$entries = wp_presence_room_rows( $room );
 		$format  = WP_CLI\Utils\get_flag_value( $assoc_args, 'format', 'table' );
 
 		if ( empty( $entries ) ) {

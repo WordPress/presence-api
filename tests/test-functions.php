@@ -414,6 +414,23 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * The post list, the admin bar and the Active Posts widget all draw their
+	 * avatar stacks from this one read, so a reserved row surfacing here is a
+	 * phantom participant on three screens at once.
+	 *
+	 * @covers ::wp_get_presence_by_room_prefix
+	 */
+	public function test_get_presence_by_room_prefix_leaves_out_reserved_rows() {
+		wp_set_presence( 'postType/post:1', 'editor-1', array(), self::$editor_id );
+		wp_set_presence( 'postType/post:1', wp_presence_collaboration_state_client_id(), array( 'count' => 2 ) );
+
+		$entries = wp_get_presence_by_room_prefix( 'postType/' );
+
+		$this->assertCount( 1, $entries );
+		$this->assertSame( 'editor-1', $entries[0]->client_id );
+	}
+
+	/**
 	 * @covers ::wp_get_presence_by_room_prefix
 	 */
 	public function test_get_presence_by_room_prefix_empty() {
