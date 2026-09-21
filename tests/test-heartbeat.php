@@ -783,7 +783,7 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 		$post_id = self::factory()->post->create();
 		$room    = wp_presence_post_room( $post_id );
 
-		set_transient( wp_presence_collaboration_state_key( $room ), 2, HOUR_IN_SECONDS );
+		wp_set_presence( $room, wp_presence_collaboration_state_client_id(), array( 'count' => 2 ) );
 
 		$action_ran = false;
 		add_action(
@@ -813,7 +813,7 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 		$room     = wp_presence_post_room( $post_id );
 
 		wp_set_presence( $room, 'editor-' . $editor_2, array( 'screen' => 'post' ), $editor_2 );
-		set_transient( wp_presence_collaboration_state_key( $room ), 2, HOUR_IN_SECONDS );
+		wp_set_presence( $room, wp_presence_collaboration_state_client_id(), array( 'count' => 2 ) );
 
 		$times_fired = 0;
 		add_action(
@@ -844,7 +844,7 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 		$room    = wp_presence_post_room( $post_id );
 
 		// Two editors already recorded, one of whom has since gone.
-		set_transient( wp_presence_collaboration_state_key( $room ), 2, HOUR_IN_SECONDS );
+		wp_set_presence( $room, wp_presence_collaboration_state_client_id(), array( 'count' => 2 ) );
 
 		$times_fired = 0;
 		add_action(
@@ -880,10 +880,10 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 			'post'
 		);
 
-		// Absent already reads back as 1, so storing it is two option rows a tick
-		// that change no later decision.
-		$this->assertFalse(
-			get_transient( wp_presence_collaboration_state_key( $room ) ),
+		// Absent already reads back as 1, so storing it is a row a tick that
+		// changes no later decision.
+		$this->assertNull(
+			wp_presence_collaboration_state_row( wp_presence_room_rows( $room ) ),
 			'A solo editing session should leave nothing behind'
 		);
 	}
@@ -905,11 +905,41 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 			'post'
 		);
 
+		$state = wp_presence_collaboration_state_row( wp_presence_room_rows( $room ) );
+
 		$this->assertSame(
 			2,
-			get_transient( wp_presence_collaboration_state_key( $room ) ),
+			$state ? (int) $state->data['count'] : null,
 			'The count a request observed has to outlive it'
 		);
+	}
+
+	/**
+	 * The state row shares the room with the people in it, so anything reading
+	 * the room would otherwise count the bookkeeping as a participant.
+	 *
+	 * @covers ::wp_get_presence
+	 * @covers ::wp_presence_check_collaboration_threshold
+	 */
+	public function test_the_collaboration_state_row_is_not_a_participant() {
+		$post_id  = self::factory()->post->create();
+		$editor_2 = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$room     = wp_presence_post_room( $post_id );
+
+		wp_set_presence( $room, 'editor-' . $editor_2, array( 'screen' => 'post' ), $editor_2 );
+
+		wp_set_current_user( self::$editor_id );
+		wp_presence_editor_heartbeat_received(
+			array(),
+			array( 'presence-editor-ping' => array( 'post_id' => $post_id ) ),
+			'post'
+		);
+
+		$this->assertNotNull(
+			wp_presence_collaboration_state_row( wp_presence_room_rows( $room ) ),
+			'The state row has to be there for the rest of this to mean anything'
+		);
+		$this->assertCount( 2, wp_get_presence( $room ), 'Two editors, and only the two' );
 	}
 
 	/**
@@ -919,12 +949,12 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 		$post_id  = self::factory()->post->create();
 		$editor_2 = self::factory()->user->create( array( 'role' => 'editor' ) );
 		$room     = wp_presence_post_room( $post_id );
-		$key      = wp_presence_collaboration_state_key( $room );
+		$aged     = gmdate( 'Y-m-d H:i:s', time() - ( wp_presence_refresh_threshold() + 5 ) );
 
 		wp_set_presence( $room, 'editor-' . $editor_2, array( 'screen' => 'post' ), $editor_2 );
 
 		// Two editors already recorded, but about to lapse.
-		set_transient( $key, 2, 5 );
+		wp_set_presence( $room, wp_presence_collaboration_state_client_id(), array( 'count' => 2 ), 0, $aged );
 
 		wp_set_current_user( self::$editor_id );
 		wp_presence_editor_heartbeat_received(
@@ -933,14 +963,14 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 			'post'
 		);
 
-		// Writing only when the count moves would leave the old 5s expiry in
-		// place, and the pair would re-announce itself once it ran out. Derived
-		// from the TTL rather than a literal so a change to it cannot quietly
-		// make this assertion meaningless.
+		// Writing only when the count moves would leave the old timestamp in
+		// place, and the pair would re-announce itself once the row aged out.
+		$state = wp_presence_collaboration_state_row( wp_presence_room_rows( $room ) );
+
 		$this->assertGreaterThan(
-			time() + (int) floor( wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL ) / 2 ),
-			(int) get_option( '_transient_timeout_' . $key ),
-			'An unchanged count still has to push the expiry forward'
+			$aged,
+			$state ? $state->date_gmt : '',
+			'An unchanged count still has to push the row forward'
 		);
 	}
 

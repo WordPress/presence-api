@@ -663,6 +663,22 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Hydration drops the reserved row on its own, since user 0 resolves to
+	 * nobody, so the unhydrated count is the one that has to be filtered.
+	 *
+	 * @covers ::wp_get_active_rooms
+	 */
+	public function test_get_active_rooms_does_not_count_a_reserved_row() {
+		wp_set_presence( 'postType/post:1', 'editor-1', array(), self::$editor_id );
+		wp_set_presence( 'postType/post:1', wp_presence_collaboration_state_client_id(), array( 'count' => 2 ) );
+
+		$rooms = wp_get_active_rooms( WP_PRESENCE_DEFAULT_TTL, false );
+
+		$this->assertCount( 1, $rooms );
+		$this->assertSame( 1, $rooms[0]['user_count'] );
+	}
+
+	/**
 	 * @covers ::wp_presence_get_timeout
 	 */
 	public function test_ttl_filter() {

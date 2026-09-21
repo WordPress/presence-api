@@ -100,12 +100,12 @@ In PHP use `@access private`, the marker [core's documentation standards](https:
 
 ```php
 /**
- * Returns the transient key a room's collaboration state is stored under.
+ * Returns the reserved client_id a room's collaboration state is stored under.
  *
  * @since 0.1.0
  * @access private
  */
-function wp_presence_collaboration_state_key( $room ) {}
+function wp_presence_collaboration_state_client_id() {}
 ```
 
 JavaScript has no `@since` line to sit under, so `@private` on its own is enough there:

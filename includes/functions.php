@@ -50,6 +50,82 @@ function wp_presence_has_table() {
  * @return array Array of presence entry objects.
  */
 function wp_get_presence( $room, $timeout = WP_PRESENCE_DEFAULT_TTL ) {
+	return wp_presence_client_rows( wp_presence_room_rows( $room, $timeout ) );
+}
+
+/**
+ * Whether a client_id is the plugin's own bookkeeping rather than a client.
+ *
+ * @access private
+ *
+ * @since 0.6.0
+ *
+ * @param string $client_id The client identifier.
+ * @return bool Whether the id is reserved.
+ */
+function wp_presence_is_reserved_client_id( $client_id ) {
+	return str_starts_with( (string) $client_id, WP_PRESENCE_RESERVED_PREFIX );
+}
+
+/**
+ * Returns the LIKE pattern matching every reserved client_id.
+ *
+ * For the queries that read rows by room in SQL rather than through
+ * wp_get_presence(), which filters them out in PHP.
+ *
+ * @access private
+ *
+ * @since 0.6.0
+ *
+ * @global wpdb $wpdb WordPress database abstraction object.
+ *
+ * @return string An escaped LIKE pattern.
+ */
+function wp_presence_reserved_client_id_pattern() {
+	global $wpdb;
+
+	return $wpdb->esc_like( WP_PRESENCE_RESERVED_PREFIX ) . '%';
+}
+
+/**
+ * Drops the reserved rows from a set of rows.
+ *
+ * @access private
+ *
+ * @since 0.6.0
+ *
+ * @param array $rows Rows as returned by wp_presence_room_rows().
+ * @return array The rows that belong to clients.
+ */
+function wp_presence_client_rows( $rows ) {
+	return array_values(
+		array_filter(
+			$rows,
+			static function ( $row ) {
+				return ! wp_presence_is_reserved_client_id( $row->client_id );
+			}
+		)
+	);
+}
+
+/**
+ * Gets every live row in a room, the reserved rows included.
+ *
+ * One query serves both the participants and the plugin's own state for the
+ * room, so reading that state costs nothing on top of the read the caller
+ * was already making.
+ *
+ * @access private
+ *
+ * @since 0.6.0
+ *
+ * @global wpdb $wpdb WordPress database abstraction object.
+ *
+ * @param string $room    The room identifier.
+ * @param int    $timeout Optional. Timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL.
+ * @return array Array of presence row objects.
+ */
+function wp_presence_room_rows( $room, $timeout = WP_PRESENCE_DEFAULT_TTL ) {
 	global $wpdb;
 
 	if ( ! wp_presence_has_table() ) {
@@ -597,9 +673,10 @@ function wp_get_presence_by_room_prefix( $prefix, $timeout = WP_PRESENCE_DEFAULT
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	$results = $wpdb->get_results(
 		$wpdb->prepare(
-			"SELECT room, client_id, user_id, data, date_gmt FROM {$wpdb->presence} WHERE room LIKE %s AND date_gmt > %s ORDER BY date_gmt DESC",
+			"SELECT room, client_id, user_id, data, date_gmt FROM {$wpdb->presence} WHERE room LIKE %s AND date_gmt > %s AND client_id NOT LIKE %s ORDER BY date_gmt DESC",
 			$wpdb->esc_like( $prefix ) . '%',
-			$cutoff
+			$cutoff,
+			wp_presence_reserved_client_id_pattern()
 		)
 	);
 
@@ -645,8 +722,9 @@ function wp_get_presence_summary( $timeout = WP_PRESENCE_DEFAULT_TTL ) {
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	$room_rows = $wpdb->get_results(
 		$wpdb->prepare(
-			"SELECT room, COUNT(*) AS entries FROM {$wpdb->presence} WHERE date_gmt > %s GROUP BY room",
-			$cutoff
+			"SELECT room, COUNT(*) AS entries FROM {$wpdb->presence} WHERE date_gmt > %s AND client_id NOT LIKE %s GROUP BY room",
+			$cutoff,
+			wp_presence_reserved_client_id_pattern()
 		)
 	);
 
@@ -679,8 +757,9 @@ function wp_get_presence_summary( $timeout = WP_PRESENCE_DEFAULT_TTL ) {
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	$summary['total_users'] = (int) $wpdb->get_var(
 		$wpdb->prepare(
-			"SELECT COUNT(DISTINCT user_id) FROM {$wpdb->presence} WHERE date_gmt > %s",
-			$cutoff
+			"SELECT COUNT(DISTINCT user_id) FROM {$wpdb->presence} WHERE date_gmt > %s AND client_id NOT LIKE %s",
+			$cutoff,
+			wp_presence_reserved_client_id_pattern()
 		)
 	);
 
@@ -688,8 +767,8 @@ function wp_get_presence_summary( $timeout = WP_PRESENCE_DEFAULT_TTL ) {
 		$placeholders = implode( ', ', array_fill( 0, count( $rooms ), '%s' ) );
 
 		// $placeholders holds only %s tokens generated above, so the interpolation is safe.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
-		$summary['by_prefix'][ $prefix ]['users'] = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(DISTINCT user_id) FROM {$wpdb->presence} WHERE date_gmt > %s AND room IN ( $placeholders )", array_merge( array( $cutoff ), $rooms ) ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+		$summary['by_prefix'][ $prefix ]['users'] = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(DISTINCT user_id) FROM {$wpdb->presence} WHERE date_gmt > %s AND client_id NOT LIKE %s AND room IN ( $placeholders )", array_merge( array( $cutoff, wp_presence_reserved_client_id_pattern() ), $rooms ) ) );
 	}
 
 	return $summary;
@@ -955,9 +1034,10 @@ function wp_get_active_rooms( $timeout = WP_PRESENCE_DEFAULT_TTL, $hydrate_users
 		$wpdb->prepare(
 			"SELECT room, COUNT(DISTINCT user_id) as user_count
 			FROM {$wpdb->presence}
-			WHERE date_gmt > %s
+			WHERE date_gmt > %s AND client_id NOT LIKE %s
 			GROUP BY room",
-			$cutoff
+			$cutoff,
+			wp_presence_reserved_client_id_pattern()
 		)
 	);
 
@@ -991,9 +1071,10 @@ function wp_get_active_rooms( $timeout = WP_PRESENCE_DEFAULT_TTL, $hydrate_users
 				$wpdb->prepare(
 					"SELECT DISTINCT user_id
 					FROM {$wpdb->presence}
-					WHERE room = %s AND date_gmt > %s",
+					WHERE room = %s AND date_gmt > %s AND client_id NOT LIKE %s",
 					$stat->room,
-					$cutoff
+					$cutoff,
+					wp_presence_reserved_client_id_pattern()
 				)
 			);
 
@@ -1048,11 +1129,11 @@ function wp_presence_hydrate_room_users( $rooms, $timeout = WP_PRESENCE_DEFAULT_
 	// Dynamic IN clause: $placeholders is "%s, %s, ..." built from count, not user data.
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	$rows = $wpdb->get_results(
-		$wpdb->prepare(
+		$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 			"SELECT room, user_id
 			FROM {$wpdb->presence}
-			WHERE room IN ($placeholders) AND date_gmt > %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
-			array_merge( $room_names, array( $cutoff ) )
+			WHERE room IN ($placeholders) AND date_gmt > %s AND client_id NOT LIKE %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+			array_merge( $room_names, array( $cutoff, wp_presence_reserved_client_id_pattern() ) )
 		)
 	);
 
