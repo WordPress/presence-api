@@ -13,6 +13,15 @@
  */
 class WP_Test_Presence_Network_Plugin_Action_Links extends WP_UnitTestCase {
 
+	public function set_up() {
+		parent::set_up();
+
+		// @group ms-required is documentation in this suite, nothing acts on it.
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+	}
+
 	/**
 	 * A representative set of the links WordPress passes to the filter.
 	 *
