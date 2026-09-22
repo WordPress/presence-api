@@ -219,11 +219,19 @@ wp.hooks.addAction( 'presence-api.watchingRoom', 'my-plugin', ( room ) => {
 } );
 ```
 
-#### `presence-api.collaboratorsChanged`
-Fires on the same 1-to-2+ and 2+-to-1 edges as `wp_presence_collaboration_started`/`_ended`, not on every tick.
+#### `presence-api.collaborationStarted`
+Fires on the same 1-to-2+ edge as `wp_presence_collaboration_started`, not on every tick. `count` is the room's editor count at that moment and includes you, so it is 2 or more. A third editor joining later does not fire anything, and does not update a `count` a listener kept, since the edge has already been crossed. Anything that needs a live number should read the room instead.
 ```js
-wp.hooks.addAction( 'presence-api.collaboratorsChanged', 'my-plugin', ( room, count ) => {
-    // count > 1 means someone besides you is in the room.
+wp.hooks.addAction( 'presence-api.collaborationStarted', 'my-plugin', ( room, count ) => {
+    // Someone besides you is now in the room.
+} );
+```
+
+#### `presence-api.collaborationEnded`
+Fires on the 2+-to-1 edge, mirroring `wp_presence_collaboration_ended`. `count` is 1: you. If every editor leaves at once, nobody is left to tick, so this does not fire and the room resets on the TTL.
+```js
+wp.hooks.addAction( 'presence-api.collaborationEnded', 'my-plugin', ( room, count ) => {
+    // You are alone in the room again.
 } );
 ```
 
@@ -288,7 +296,7 @@ No room mapping sits between the two sides: both use `postType/{type}:{id}`, the
 
 That leaves the split: awareness and cursors inside the editor go through that plugin; room membership everywhere else in wp-admin — plus the post-lock bridge below — stays this plugin's. Where an editor plugin uses this table, someone editing a post also shows up in Who's Online and the post list.
 
-The JS actions above exist for that same relationship. A consumer like Gutenberg's sync poll loop ([presence-api#444](https://github.com/WordPress/presence-api/issues/444)) can wait for `presence-api.collaboratorsChanged` instead of polling to find out whether anyone else is in the room.
+The JS actions above exist for that same relationship. A consumer like Gutenberg's sync poll loop ([presence-api#444](https://github.com/WordPress/presence-api/issues/444)) can wait for `presence-api.collaborationStarted` instead of polling to find out whether anyone else is in the room.
 
 ## Post-lock bridge
 

@@ -152,7 +152,9 @@
 
 				hasCollaborators = nowHasCollaborators;
 				wp.hooks.doAction(
-					'presence-api.collaboratorsChanged',
+					nowHasCollaborators
+						? 'presence-api.collaborationStarted'
+						: 'presence-api.collaborationEnded',
 					editorRoom,
 					count
 				);
