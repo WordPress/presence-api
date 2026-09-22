@@ -1000,6 +1000,35 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * @covers ::wp_presence_is_available
+	 */
+	public function test_presence_is_available_with_a_table_and_recording_on() {
+		$this->assertTrue( wp_presence_is_available() );
+	}
+
+	/**
+	 * @covers ::wp_presence_is_available
+	 */
+	public function test_presence_is_unavailable_with_recording_off() {
+		add_filter( 'wp_presence_recording_enabled', '__return_false' );
+
+		$this->assertFalse( wp_presence_is_available() );
+	}
+
+	/**
+	 * The case a function_exists() sniff misses: the plugin is loaded, but the
+	 * site was never provisioned. Filtered rather than deleted, because the
+	 * base class truncates in tear_down() and TRUNCATE implicitly commits.
+	 *
+	 * @covers ::wp_presence_is_available
+	 */
+	public function test_presence_is_unavailable_without_a_table() {
+		add_filter( 'option_wp_presence_db_version', '__return_zero' );
+
+		$this->assertFalse( wp_presence_is_available() );
+	}
+
+	/**
 	 * Reads the stored timestamp for a row, as the raw string the column holds.
 	 */
 	private function stored_date_gmt( $room, $client_id ) {
