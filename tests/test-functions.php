@@ -23,6 +23,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers ::wp_set_presence
+	 * @covers ::wp_presence_write_row
 	 */
 	public function test_set_presence() {
 		$result = wp_set_presence( 'test/room', 'client-1', array( 'action' => 'typing' ), self::$editor_id );
@@ -32,6 +33,9 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers ::wp_get_presence
+	 * @covers ::wp_presence_room_rows
+	 * @covers ::wp_presence_client_rows
+	 * @covers ::wp_presence_is_reserved_client_id
 	 */
 	public function test_get_presence_returns_entries() {
 		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'typing' ), self::$editor_id );
@@ -58,6 +62,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers ::wp_get_presence
+	 * @covers ::wp_presence_room_rows
 	 */
 	public function test_get_presence_filters_expired_entries() {
 		global $wpdb;
@@ -419,6 +424,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * phantom participant on three screens at once.
 	 *
 	 * @covers ::wp_get_presence_by_room_prefix
+	 * @covers ::wp_presence_reserved_client_id_pattern
 	 */
 	public function test_get_presence_by_room_prefix_leaves_out_reserved_rows() {
 		wp_set_presence( 'postType/post:1', 'editor-1', array(), self::$editor_id );
@@ -684,6 +690,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * nobody, so the unhydrated count is the one that has to be filtered.
 	 *
 	 * @covers ::wp_get_active_rooms
+	 * @covers ::wp_presence_reserved_client_id_pattern
 	 */
 	public function test_get_active_rooms_does_not_count_a_reserved_row() {
 		wp_set_presence( 'postType/post:1', 'editor-1', array(), self::$editor_id );
@@ -813,6 +820,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * confined to the one room that matters.
 	 *
 	 * @covers ::wp_set_presence
+	 * @covers ::wp_presence_write_row
 	 * @covers ::wp_presence_admin_room_changed
 	 */
 	public function test_only_an_admin_room_write_announces_a_change() {

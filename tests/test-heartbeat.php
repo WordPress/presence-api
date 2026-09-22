@@ -646,6 +646,10 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers ::wp_presence_check_collaboration_threshold
+	 * @covers ::wp_presence_count_editors
+	 * @covers ::wp_presence_collaboration_state_row
+	 * @covers ::wp_presence_collaboration_state_client_id
+	 * @covers ::wp_presence_store_collaboration_state
 	 */
 	public function test_collaboration_started_action() {
 		$post_id  = self::factory()->post->create();
@@ -806,6 +810,8 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers ::wp_presence_check_collaboration_threshold
+	 * @covers ::wp_presence_collaboration_state_row
+	 * @covers ::wp_presence_store_collaboration_state
 	 */
 	public function test_collaboration_started_does_not_refire_while_two_editors_stay() {
 		$post_id  = self::factory()->post->create();
@@ -868,6 +874,8 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers ::wp_presence_check_collaboration_threshold
+	 * @covers ::wp_presence_count_editors
+	 * @covers ::wp_presence_collaboration_state_row
 	 */
 	public function test_a_lone_editor_stores_no_collaboration_state() {
 		$post_id = self::factory()->post->create();
@@ -975,11 +983,37 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * The switch gates the client rows, so leaving the plugin's own row outside
+	 * it would put the per-tick write back on a site that turned presence off.
+	 *
+	 * @covers ::wp_presence_store_collaboration_state
+	 * @covers ::wp_presence_write_row
+	 */
+	public function test_recording_off_writes_no_collaboration_state() {
+		$post_id  = self::factory()->post->create();
+		$editor_2 = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$room     = wp_presence_post_room( $post_id );
+
+		wp_set_presence( $room, 'editor-' . self::$editor_id, array( 'screen' => 'post' ), self::$editor_id );
+		wp_set_presence( $room, 'editor-' . $editor_2, array( 'screen' => 'post' ), $editor_2 );
+
+		add_filter( 'wp_presence_recording_enabled', '__return_false' );
+		wp_presence_check_collaboration_threshold( $room );
+		remove_filter( 'wp_presence_recording_enabled', '__return_false' );
+
+		$this->assertNull(
+			wp_presence_collaboration_state_row( wp_presence_room_rows( $room ) ),
+			'Recording off has to hold back the plugin\'s own row too'
+		);
+	}
+
+	/**
 	 * The row came back with the room, so re-reading it to decide the write
 	 * would put back the query this whole change exists to remove.
 	 *
 	 * @covers ::wp_presence_check_collaboration_threshold
 	 * @covers ::wp_presence_store_collaboration_state
+	 * @covers ::wp_presence_write_row
 	 */
 	public function test_storing_collaboration_state_does_not_re_read_the_row() {
 		$post_id  = self::factory()->post->create();
