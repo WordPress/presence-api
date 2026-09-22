@@ -476,5 +476,13 @@ function wp_presence_store_collaboration_state( $room, $count, $stored ) {
 		return;
 	}
 
-	wp_set_presence( $room, wp_presence_collaboration_state_client_id(), array( 'count' => $count ) );
+	// wp_set_presence() would run that same rule again over its own SELECT, so
+	// the write goes straight to the row.
+	wp_presence_write_row(
+		$room,
+		wp_presence_collaboration_state_client_id(),
+		0,
+		wp_json_encode( array( 'count' => $count ) ),
+		gmdate( 'Y-m-d H:i:s' )
+	);
 }

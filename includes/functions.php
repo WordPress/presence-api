@@ -429,8 +429,6 @@ function wp_presence_is_valid_date_gmt( $date_gmt ) {
  *              $date_gmt).
  */
 function wp_set_presence( $room, $client_id, $state, $user_id = 0, $date_gmt = null ) {
-	global $wpdb;
-
 	if ( ! wp_presence_recording_enabled() ) {
 		return false;
 	}
@@ -453,6 +451,38 @@ function wp_set_presence( $room, $client_id, $state, $user_id = 0, $date_gmt = n
 		return true;
 	}
 
+	return wp_presence_write_row( $room, $client_id, $user_id, $data_json, $now );
+}
+
+/**
+ * Upserts a presence row, skipping the redundant-write check.
+ *
+ * For a caller that has already decided the write is needed from a row it read
+ * earlier, so it does not pay for wp_presence_write_is_redundant()'s SELECT to
+ * be told what it knows.
+ *
+ * @access private
+ *
+ * @since 0.6.0
+ *
+ * @global wpdb $wpdb WordPress database abstraction object.
+ *
+ * @param string $room      The room identifier.
+ * @param string $client_id The client identifier.
+ * @param int    $user_id   The user ID.
+ * @param string $data_json The presence state, JSON encoded.
+ * @param string $date_gmt  The GMT timestamp to stamp the row with.
+ * @return bool True on success, false on failure.
+ */
+function wp_presence_write_row( $room, $client_id, $user_id, $data_json, $date_gmt ) {
+	global $wpdb;
+
+	// Repeated from wp_set_presence(), which checks them before its SELECT so a
+	// site with recording off runs no query at all.
+	if ( ! wp_presence_recording_enabled() || ! wp_presence_has_table() ) {
+		return false;
+	}
+
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	$result = $wpdb->query(
 		$wpdb->prepare(
@@ -463,7 +493,7 @@ function wp_set_presence( $room, $client_id, $state, $user_id = 0, $date_gmt = n
 			$client_id,
 			$user_id,
 			$data_json,
-			$now
+			$date_gmt
 		)
 	);
 

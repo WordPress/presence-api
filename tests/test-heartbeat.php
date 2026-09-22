@@ -975,6 +975,43 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * The row came back with the room, so re-reading it to decide the write
+	 * would put back the query this whole change exists to remove.
+	 *
+	 * @covers ::wp_presence_check_collaboration_threshold
+	 * @covers ::wp_presence_store_collaboration_state
+	 */
+	public function test_storing_collaboration_state_does_not_re_read_the_row() {
+		$post_id  = self::factory()->post->create();
+		$editor_2 = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$room     = wp_presence_post_room( $post_id );
+
+		wp_set_presence( $room, 'editor-' . self::$editor_id, array( 'screen' => 'post' ), self::$editor_id );
+		wp_set_presence( $room, 'editor-' . $editor_2, array( 'screen' => 'post' ), $editor_2 );
+
+		$selects = array();
+		$capture = static function ( $query ) use ( &$selects ) {
+			if ( 0 === stripos( ltrim( $query ), 'SELECT' )
+				&& false !== strpos( $query, wp_presence_collaboration_state_client_id() )
+			) {
+				$selects[] = $query;
+			}
+
+			return $query;
+		};
+
+		add_filter( 'query', $capture );
+		wp_presence_check_collaboration_threshold( $room );
+		remove_filter( 'query', $capture );
+
+		$this->assertNotNull(
+			wp_presence_collaboration_state_row( wp_presence_room_rows( $room ) ),
+			'The state row has to have been written for the rest of this to mean anything'
+		);
+		$this->assertSame( array(), $selects, 'Writing the state row must not SELECT it back first' );
+	}
+
+	/**
 	 * Decodes the wpPresenceConfig object handed to presence-ping.js.
 	 *
 	 * @return array The decoded config.
