@@ -1,9 +1,9 @@
 /**
  * Presence API — Collaborator JS Hooks E2E Tests
  *
- * Asserts presence-ping.js fires `presence-api.watchingRoom` and
- * `presence-api.collaboratorsChanged` through wp.hooks, so external code
- * (e.g. Gutenberg's sync poll loop) can react to a room's editor count
+ * Asserts presence-ping.js fires `presence-api.watchingRoom`,
+ * `presence-api.collaborationStarted` and `presence-api.collaborationEnded`
+ * through wp.hooks, so external code (e.g. Gutenberg's sync poll loop) can react to a room's editor count
  * instead of polling for it separately.
  *
  * Run from plugin root:
@@ -104,7 +104,8 @@ function tickAndWait( page ) {
 function captureCollaboratorActions( page ) {
 	return page.addInitScript( () => {
 		window.__watchingRoomCalls = [];
-		window.__collaboratorsChangedCalls = [];
+		window.__collaborationStartedCalls = [];
+		window.__collaborationEndedCalls = [];
 		window.wp = window.wp || {};
 
 		let hooks;
@@ -123,10 +124,20 @@ function captureCollaboratorActions( page ) {
 					}
 				);
 				value.addAction(
-					'presence-api.collaboratorsChanged',
+					'presence-api.collaborationStarted',
 					'e2e-test',
 					( room, count ) => {
-						window.__collaboratorsChangedCalls.push( {
+						window.__collaborationStartedCalls.push( {
+							room,
+							count,
+						} );
+					}
+				);
+				value.addAction(
+					'presence-api.collaborationEnded',
+					'e2e-test',
+					( room, count ) => {
+						window.__collaborationEndedCalls.push( {
 							room,
 							count,
 						} );
@@ -179,7 +190,7 @@ test.describe( 'Presence Collaborator JS Hooks', () => {
 		expect( calls ).toEqual( [] );
 	} );
 
-	test( 'fires collaboratorsChanged on the 1-to-2+ edge when a second editor joins, not again on the next unchanged tick', async ( {
+	test( 'fires collaborationStarted on the 1-to-2+ edge when a second editor joins, not again on the next unchanged tick', async ( {
 		admin,
 		page,
 		requestUtils,
@@ -201,7 +212,7 @@ test.describe( 'Presence Collaborator JS Hooks', () => {
 		// Solo baseline: establishes the room, not an edge.
 		await tickAndWait( page );
 		expect(
-			await page.evaluate( () => window.__collaboratorsChangedCalls )
+			await page.evaluate( () => window.__collaborationStartedCalls )
 		).toEqual( [] );
 
 		const headlessBrowser = await chromium.launch( { headless: true } );
@@ -218,13 +229,13 @@ test.describe( 'Presence Collaborator JS Hooks', () => {
 			// User A's next tick observes User B and crosses the edge.
 			await tickAndWait( page );
 			expect(
-				await page.evaluate( () => window.__collaboratorsChangedCalls )
+				await page.evaluate( () => window.__collaborationStartedCalls )
 			).toEqual( [ { room: `postType/post:${ post.id }`, count: 2 } ] );
 
 			// Both still present: must not refire.
 			await tickAndWait( page );
 			expect(
-				await page.evaluate( () => window.__collaboratorsChangedCalls )
+				await page.evaluate( () => window.__collaborationStartedCalls )
 			).toHaveLength( 1 );
 
 			await userB.context.close();
@@ -233,7 +244,7 @@ test.describe( 'Presence Collaborator JS Hooks', () => {
 		}
 	} );
 
-	test( 'fires collaboratorsChanged on the 2+-to-1 edge from a relayed tick, not again while unchanged', async ( {
+	test( 'fires collaborationEnded on the 2+-to-1 edge from a relayed tick, not again while unchanged', async ( {
 		admin,
 		page,
 		requestUtils,
@@ -272,13 +283,50 @@ test.describe( 'Presence Collaborator JS Hooks', () => {
 			] );
 		} );
 
-		const calls = await page.evaluate(
-			() => window.__collaboratorsChangedCalls
-		);
+		const room = `postType/post:${ post.id }`;
 
-		expect( calls ).toEqual( [
-			{ room: `postType/post:${ post.id }`, count: 2 },
-			{ room: `postType/post:${ post.id }`, count: 1 },
-		] );
+		expect(
+			await page.evaluate( () => window.__collaborationStartedCalls )
+		).toEqual( [ { room, count: 2 } ] );
+		expect(
+			await page.evaluate( () => window.__collaborationEndedCalls )
+		).toEqual( [ { room, count: 1 } ] );
+	} );
+
+	test( 'stays quiet when a third editor joins an already collaborative room', async ( {
+		admin,
+		page,
+		requestUtils,
+	} ) => {
+		// A count held from `collaborationStarted` goes stale here, which is
+		// why the action is named for the edge and not for the number.
+		const post = await requestUtils.createPost( {
+			title: 'E2E Collaborator Hooks — third joiner',
+			status: 'publish',
+		} );
+
+		await captureCollaboratorActions( page );
+
+		await admin.visitAdminPage(
+			'post.php',
+			`post=${ post.id }&action=edit`
+		);
+		await waitForHeartbeat( page );
+		await tickAndWait( page );
+
+		for ( const collaborators of [ 2, 3, 4 ] ) {
+			await page.evaluate( ( count ) => {
+				jQuery( document ).trigger( 'heartbeat-tick', [
+					{ 'presence-heartbeat-collaborators': count },
+				] );
+			}, collaborators );
+		}
+
+		expect(
+			await page.evaluate( () => window.__collaborationStartedCalls )
+		).toEqual( [ { room: `postType/post:${ post.id }`, count: 2 } ] );
+		expect(
+			await page.evaluate( () => window.__collaborationEndedCalls )
+		).toEqual( [] );
 	} );
 } );
