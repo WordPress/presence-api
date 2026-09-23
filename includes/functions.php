@@ -48,15 +48,19 @@ function wp_presence_has_table() {
  *
  * Reserved rows are left out whatever the prefix, so `_` returns nothing.
  *
+ * A `$timeout` given here is the window used, on every site. Omit it to take
+ * the site's own TTL, which is what `wp_presence_default_ttl` filters.
+ *
  * @since 0.7.0 Added the `$client_prefix` parameter.
+ * @since 0.7.0 An explicit `$timeout` is no longer overridden by `wp_presence_default_ttl`.
  *
  * @param string $room          The room identifier.
- * @param int    $timeout       Optional. Timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL.
+ * @param int    $timeout       Optional. Timeout in seconds. Default null, the site's filtered TTL.
  * @param string $client_prefix Optional. Only return clients whose client_id starts with this.
  *                              Default empty.
  * @return array Array of presence entry objects.
  */
-function wp_get_presence( $room, $timeout = WP_PRESENCE_DEFAULT_TTL, $client_prefix = '' ) {
+function wp_get_presence( $room, $timeout = null, $client_prefix = '' ) {
 	return wp_presence_client_rows( wp_presence_room_rows( $room, $timeout, $client_prefix ) );
 }
 
@@ -130,12 +134,12 @@ function wp_presence_client_rows( $rows ) {
  * @global wpdb $wpdb WordPress database abstraction object.
  *
  * @param string $room          The room identifier.
- * @param int    $timeout       Optional. Timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL.
+ * @param int    $timeout       Optional. Timeout in seconds. Default null, the site's filtered TTL.
  * @param string $client_prefix Optional. Only return rows whose client_id starts with this.
  *                              Default empty.
  * @return array Array of presence row objects.
  */
-function wp_presence_room_rows( $room, $timeout = WP_PRESENCE_DEFAULT_TTL, $client_prefix = '' ) {
+function wp_presence_room_rows( $room, $timeout = null, $client_prefix = '' ) {
 	global $wpdb;
 
 	if ( ! wp_presence_has_table() ) {
@@ -380,7 +384,7 @@ function wp_presence_idle_threshold() {
  * @return int Age in seconds. 0 means never skip.
  */
 function wp_presence_refresh_threshold() {
-	$timeout = wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL );
+	$timeout = wp_presence_get_timeout();
 
 	return max( 0, min( $timeout - wp_presence_ttl_margin() - wp_presence_next_tick_gap(), wp_presence_max_staleness() ) );
 }
@@ -759,19 +763,26 @@ function wp_presence_admin_room() {
  */
 
 /**
- * Filters and returns the presence timeout value.
+ * Resolves a timeout, falling back to the site's filtered TTL.
+ *
+ * A caller that named a window gets that window on every site. Only the
+ * fallback is filtered, so a site cannot widen someone else's liveness check.
  *
  * @access private
- * @param int $timeout The timeout in seconds.
- * @return int The filtered timeout in seconds.
+ * @param int|null $timeout Timeout in seconds, or null for the site's TTL.
+ * @return int The timeout in seconds.
  */
-function wp_presence_get_timeout( $timeout ) {
+function wp_presence_get_timeout( $timeout = null ) {
+	if ( null !== $timeout ) {
+		return max( 0, (int) $timeout );
+	}
+
 	/**
-	 * Filters the presence TTL (time-to-live) used for queries and cleanup.
+	 * Filters the presence TTL (time-to-live) used when a caller names no window.
 	 *
 	 * @param int $timeout The timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL (150).
 	 */
-	return (int) apply_filters( 'wp_presence_default_ttl', $timeout );
+	return max( 0, (int) apply_filters( 'wp_presence_default_ttl', WP_PRESENCE_DEFAULT_TTL ) );
 }
 
 /**
@@ -779,10 +790,10 @@ function wp_presence_get_timeout( $timeout ) {
  *
  * @access private
  * @param string $prefix  The room prefix to match (e.g., 'postType/').
- * @param int    $timeout Optional. Timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL.
+ * @param int    $timeout Optional. Timeout in seconds. Default null, the site's filtered TTL.
  * @return array Array of presence entry objects.
  */
-function wp_get_presence_by_room_prefix( $prefix, $timeout = WP_PRESENCE_DEFAULT_TTL ) {
+function wp_get_presence_by_room_prefix( $prefix, $timeout = null ) {
 	global $wpdb;
 
 	if ( ! wp_presence_has_table() ) {
@@ -818,14 +829,14 @@ function wp_get_presence_by_room_prefix( $prefix, $timeout = WP_PRESENCE_DEFAULT
  * Returns a site-wide presence summary grouped by room prefix.
  *
  * @access private
- * @param int $timeout Optional. Timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL.
+ * @param int $timeout Optional. Timeout in seconds. Default null, the site's filtered TTL.
  * @return array {
  *     @type int   $total_entries Total presence entries.
  *     @type int   $total_users   Distinct user count.
  *     @type array $by_prefix     Associative array keyed by prefix, each with 'entries' and 'users'.
  * }
  */
-function wp_get_presence_summary( $timeout = WP_PRESENCE_DEFAULT_TTL ) {
+function wp_get_presence_summary( $timeout = null ) {
 	global $wpdb;
 
 	$summary = array(
@@ -917,7 +928,7 @@ function wp_delete_expired_presence_data() {
 		return;
 	}
 
-	$timeout = wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL );
+	$timeout = wp_presence_get_timeout();
 	$cutoff  = gmdate( 'Y-m-d H:i:s', time() - $timeout );
 
 	/**
@@ -1136,11 +1147,11 @@ function wp_maybe_create_presence_table() {
  *
  * @access private
  *
- * @param int  $timeout        Optional. Timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL.
+ * @param int  $timeout        Optional. Timeout in seconds. Default null, the site's filtered TTL.
  * @param bool $hydrate_users  Optional. Whether to hydrate user data. Default true.
  * @return array Array of room objects, each with 'room', 'user_count', and optionally 'users'.
  */
-function wp_get_active_rooms( $timeout = WP_PRESENCE_DEFAULT_TTL, $hydrate_users = true ) {
+function wp_get_active_rooms( $timeout = null, $hydrate_users = true ) {
 	global $wpdb;
 
 	if ( ! wp_presence_has_table() ) {
@@ -1231,10 +1242,10 @@ function wp_get_active_rooms( $timeout = WP_PRESENCE_DEFAULT_TTL, $hydrate_users
  * @access private
  *
  * @param array $rooms   Array of room data (each with a 'room' key).
- * @param int   $timeout Optional. Timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL.
+ * @param int   $timeout Optional. Timeout in seconds. Default null, the site's filtered TTL.
  * @return array Rooms with hydrated user arrays.
  */
-function wp_presence_hydrate_room_users( $rooms, $timeout = WP_PRESENCE_DEFAULT_TTL ) {
+function wp_presence_hydrate_room_users( $rooms, $timeout = null ) {
 	global $wpdb;
 
 	if ( empty( $rooms ) ) {

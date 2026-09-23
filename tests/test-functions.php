@@ -784,6 +784,23 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * @covers ::wp_presence_get_timeout
+	 */
+	public function test_an_explicit_timeout_ignores_the_ttl_filter() {
+		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
+		$this->backdate( 'test/room', 'client-1', 60 );
+
+		add_filter( 'wp_presence_default_ttl', fn() => 600 );
+		$this->assertCount( 0, wp_get_presence( 'test/room', 30 ), 'A wider site TTL should not widen a 30 second window.' );
+
+		remove_all_filters( 'wp_presence_default_ttl' );
+		add_filter( 'wp_presence_default_ttl', fn() => 10 );
+		$this->assertCount( 1, wp_get_presence( 'test/room', 120 ), 'A narrower site TTL should not narrow a 120 second window.' );
+
+		remove_all_filters( 'wp_presence_default_ttl' );
+	}
+
+	/**
 	 * @covers ::wp_maybe_create_presence_table
 	 */
 	public function test_schema_migration_on_version_bump() {

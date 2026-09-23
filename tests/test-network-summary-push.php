@@ -193,7 +193,7 @@ class WP_Test_Network_Summary_Push extends WP_Presence_Network_UnitTestCase {
 	 * @covers ::wp_presence_network_summary_refresh_interval
 	 */
 	public function test_refresh_interval_leaves_room_for_the_slowest_heartbeat() {
-		$slack = wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL ) - wp_presence_get_heartbeat_idle_interval();
+		$slack = wp_presence_get_timeout() - wp_presence_get_heartbeat_idle_interval();
 
 		$this->assertLessThanOrEqual( $slack, wp_presence_network_summary_refresh_interval() );
 

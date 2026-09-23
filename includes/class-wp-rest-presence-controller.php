@@ -354,7 +354,7 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 		$page     = $request->get_param( 'page' );
 		$offset   = ( $page - 1 ) * $per_page;
 
-		$timeout = wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL );
+		$timeout = wp_presence_get_timeout();
 		$cutoff  = gmdate( 'Y-m-d H:i:s', time() - $timeout );
 
 		// Get total count for pagination headers.
@@ -482,7 +482,7 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 		}
 
 		$current_user_id = get_current_user_id();
-		$cutoff          = gmdate( 'Y-m-d H:i:s', time() - wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL ) );
+		$cutoff          = gmdate( 'Y-m-d H:i:s', time() - wp_presence_get_timeout() );
 
 		// Prevent overwriting another user's presence entry, and determine whether
 		// this request is an update to an existing active entry or a new insertion.
@@ -665,7 +665,7 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 		$page     = $request->get_param( 'page' );
 
 		// Fetch rooms without hydrating users yet.
-		$rooms           = wp_get_active_rooms( WP_PRESENCE_DEFAULT_TTL, false );
+		$rooms           = wp_get_active_rooms( null, false );
 		$current_user_id = get_current_user_id();
 
 		// Prime post caches to avoid N+1 queries during the wp_can_access_presence_room
