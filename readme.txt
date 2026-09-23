@@ -75,7 +75,7 @@ Only the most recent releases are listed here. For the full history, see https:/
 * Keep the collaboration edge state in the presence table ([#514](https://github.com/WordPress/presence-api/issues/514)).
 
 = 0.5.0 =
-* Add a Settings link to the plugin row actions ([ba04159](https://github.com/WordPress/presence-api/commit/ba04159d8e780936ee8e25100d7b23e239fd8cab)), closes [#484](https://github.com/WordPress/presence-api/issues/484).
+* Add a Settings link to the plugin row actions ([commit](https://github.com/WordPress/presence-api/commit/ba04159d8e780936ee8e25100d7b23e239fd8cab)), closes [#484](https://github.com/WordPress/presence-api/issues/484).
 * Let wp_set_presence() accept an explicit GMT timestamp.
 * Bypass the redundant-write guard and validate $date_gmt on wp_set_presence().
 * Request a retina-sharp avatar resolution across the presence surfaces.
