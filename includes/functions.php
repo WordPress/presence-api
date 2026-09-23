@@ -305,6 +305,43 @@ function wp_presence_next_tick_gap() {
 }
 
 /**
+ * Returns how stale a presence row is allowed to get while its client is still
+ * pinging.
+ *
+ * A row's date_gmt is the only evidence a reader has that its client is still
+ * there, so a write skipped to save a query is indistinguishable from a client
+ * that left. This bounds how long that ambiguity lasts.
+ *
+ * @access private
+ *
+ * @since 0.6.0
+ *
+ * @return int Age in seconds.
+ */
+function wp_presence_max_staleness() {
+	return 30;
+}
+
+/**
+ * Returns the age past which a presence row means its client has gone quiet.
+ *
+ * A row this old cannot be explained by a skipped write followed by the widest
+ * gap a pinging client leaves, so the client really has stopped. Anything
+ * reading date_gmt to tell active from idle has to use this rather than a
+ * figure of its own, or a client that is merely economising on writes reads as
+ * one that walked away.
+ *
+ * @access private
+ *
+ * @since 0.6.0
+ *
+ * @return int Age in seconds.
+ */
+function wp_presence_idle_threshold() {
+	return wp_presence_max_staleness() + wp_presence_get_heartbeat_idle_interval();
+}
+
+/**
  * Returns the age at which an unchanged presence row still has to be rewritten.
  *
  * Skipping a write leaves the row's existing date_gmt in place, so it is only
@@ -313,6 +350,10 @@ function wp_presence_next_tick_gap() {
  * WP_PRESENCE_DEFAULT_TTL matters: a site filtering the TTL below the tick
  * interval would otherwise make its users blink offline.
  *
+ * Staying inside the cutoff is not enough on its own, since a row can sit
+ * unwritten well inside the TTL and still read as long gone, so
+ * wp_presence_max_staleness() caps it as well.
+ *
  * @access private
  *
  * @since 0.4.0
@@ -320,13 +361,27 @@ function wp_presence_next_tick_gap() {
  * @return int Age in seconds. 0 means never skip.
  */
 function wp_presence_refresh_threshold() {
-	// Mirrors TTL_SAFETY_MARGIN in assets/js/presence-ping.js, which caps the
-	// client's own idle backoff against the same TTL. The two have to agree.
-	$margin = 15;
-
 	$timeout = wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL );
 
-	return max( 0, $timeout - $margin - wp_presence_next_tick_gap() );
+	return max( 0, min( $timeout - wp_presence_ttl_margin() - wp_presence_next_tick_gap(), wp_presence_max_staleness() ) );
+}
+
+/**
+ * Returns the slice of the TTL kept in reserve rather than spent on waiting.
+ *
+ * Both sides of the plugin push their timing as close to the TTL as they dare,
+ * the server when it skips a write and the client when it widens its interval.
+ * Either one landing late drops a present user out of the room, so they hold
+ * back by the same amount, and presence-ping.js is passed this figure.
+ *
+ * @access private
+ *
+ * @since 0.6.0
+ *
+ * @return int Seconds.
+ */
+function wp_presence_ttl_margin() {
+	return 15;
 }
 
 /**

@@ -191,6 +191,7 @@ function wp_presence_enqueue_heartbeat_ping() {
 		'idleTicks'                => wp_presence_get_heartbeat_idle_ticks(),
 		'idleInterval'             => wp_presence_get_heartbeat_idle_interval(),
 		'ttl'                      => wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL ),
+		'ttlMargin'                => wp_presence_ttl_margin(),
 	);
 
 	wp_enqueue_script(

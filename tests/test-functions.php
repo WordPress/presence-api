@@ -1307,4 +1307,34 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 		unset( $_POST['interval'], $_POST['has_focus'] );
 	}
+
+	/**
+	 * A focused tab has TTL to spare, which is exactly when a row can sit
+	 * unwritten long enough to read as an absent user.
+	 *
+	 * @covers ::wp_presence_refresh_threshold
+	 * @covers ::wp_presence_max_staleness
+	 */
+	public function test_the_refresh_threshold_stops_at_the_staleness_cap() {
+		$_POST['interval']  = '15';
+		$_POST['has_focus'] = 'true';
+
+		$this->assertSame( wp_presence_max_staleness(), wp_presence_refresh_threshold(), 'The TTL leaves room to skip for longer than a reader can tell a skipped write from an absent client.' );
+
+		unset( $_POST['interval'], $_POST['has_focus'] );
+	}
+
+	/**
+	 * @covers ::wp_presence_idle_threshold
+	 */
+	public function test_the_idle_threshold_follows_the_heartbeat_backoff() {
+		add_filter(
+			'wp_presence_heartbeat_idle_interval',
+			static function () {
+				return 90;
+			}
+		);
+
+		$this->assertSame( wp_presence_max_staleness() + 90, wp_presence_idle_threshold(), 'A client told to back off further has to stay active for longer before it counts as idle.' );
+	}
 }

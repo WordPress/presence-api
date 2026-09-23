@@ -19,8 +19,8 @@
 	const idleTicks = parseInt( config.idleTicks, 10 ) || 0;
 	const idleInterval = parseInt( config.idleInterval, 10 ) || 0;
 	const ttl = parseInt( config.ttl, 10 ) || 150;
+	const ttlMargin = parseInt( config.ttlMargin, 10 ) || 15;
 	const backoffEnabled = idleTicks > 0 && idleInterval > 0;
-	const TTL_SAFETY_MARGIN = 15;
 
 	// Fired synchronously, ahead of Heartbeat's first tick, so a listener can
 	// tell "presence-api isn't here" apart from "here, no tick yet."
@@ -47,7 +47,7 @@
 		}
 		const current = wp.heartbeat.interval();
 		// Stay under the TTL, or an idle-but-open tab would drop out of its own room between ticks.
-		const target = Math.min( idleInterval, ttl - TTL_SAFETY_MARGIN );
+		const target = Math.min( idleInterval, ttl - ttlMargin );
 		if ( target <= current ) {
 			return;
 		}
