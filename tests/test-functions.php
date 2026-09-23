@@ -23,6 +23,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers ::wp_set_presence
+	 * @covers ::wp_presence_write_row
 	 */
 	public function test_set_presence() {
 		$result = wp_set_presence( 'test/room', 'client-1', array( 'action' => 'typing' ), self::$editor_id );
@@ -32,6 +33,9 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers ::wp_get_presence
+	 * @covers ::wp_presence_room_rows
+	 * @covers ::wp_presence_client_rows
+	 * @covers ::wp_presence_is_reserved_client_id
 	 */
 	public function test_get_presence_returns_entries() {
 		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'typing' ), self::$editor_id );
@@ -58,6 +62,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers ::wp_get_presence
+	 * @covers ::wp_presence_room_rows
 	 */
 	public function test_get_presence_filters_expired_entries() {
 		global $wpdb;
@@ -414,6 +419,24 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * The post list, the admin bar and the Active Posts widget all draw their
+	 * avatar stacks from this one read, so a reserved row surfacing here is a
+	 * phantom participant on three screens at once.
+	 *
+	 * @covers ::wp_get_presence_by_room_prefix
+	 * @covers ::wp_presence_reserved_client_id_pattern
+	 */
+	public function test_get_presence_by_room_prefix_leaves_out_reserved_rows() {
+		wp_set_presence( 'postType/post:1', 'editor-1', array(), self::$editor_id );
+		wp_set_presence( 'postType/post:1', wp_presence_collaboration_state_client_id(), array( 'count' => 2 ) );
+
+		$entries = wp_get_presence_by_room_prefix( 'postType/' );
+
+		$this->assertCount( 1, $entries );
+		$this->assertSame( 'editor-1', $entries[0]->client_id );
+	}
+
+	/**
 	 * @covers ::wp_get_presence_by_room_prefix
 	 */
 	public function test_get_presence_by_room_prefix_empty() {
@@ -663,6 +686,23 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Hydration drops the reserved row on its own, since user 0 resolves to
+	 * nobody, so the unhydrated count is the one that has to be filtered.
+	 *
+	 * @covers ::wp_get_active_rooms
+	 * @covers ::wp_presence_reserved_client_id_pattern
+	 */
+	public function test_get_active_rooms_does_not_count_a_reserved_row() {
+		wp_set_presence( 'postType/post:1', 'editor-1', array(), self::$editor_id );
+		wp_set_presence( 'postType/post:1', wp_presence_collaboration_state_client_id(), array( 'count' => 2 ) );
+
+		$rooms = wp_get_active_rooms( WP_PRESENCE_DEFAULT_TTL, false );
+
+		$this->assertCount( 1, $rooms );
+		$this->assertSame( 1, $rooms[0]['user_count'] );
+	}
+
+	/**
 	 * @covers ::wp_presence_get_timeout
 	 */
 	public function test_ttl_filter() {
@@ -780,6 +820,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * confined to the one room that matters.
 	 *
 	 * @covers ::wp_set_presence
+	 * @covers ::wp_presence_write_row
 	 * @covers ::wp_presence_admin_room_changed
 	 */
 	public function test_only_an_admin_room_write_announces_a_change() {

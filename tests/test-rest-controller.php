@@ -238,6 +238,85 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * @covers WP_REST_Presence_Controller::validate_client_id_param
+	 */
+	public function test_rest_create_rejects_a_reserved_client_id() {
+		wp_set_current_user( self::$editor_id );
+
+		$request = new WP_REST_Request( 'POST', '/wp-presence/v1/presence' );
+		$request->set_param( 'room', 'admin/online' );
+		$request->set_param( 'client_id', wp_presence_collaboration_state_client_id() );
+
+		$response = rest_get_server()->dispatch( $request );
+
+		$this->assertSame( 400, $response->get_status() );
+		$this->assertSame(
+			'rest_presence_reserved_client_id',
+			$response->get_data()['data']['details']['client_id']['code'],
+			'The rejection has to be the reserved-prefix one, not any 400 the schema happens to raise'
+		);
+		$this->assertCount( 0, wp_presence_room_rows( 'admin/online' ), 'A client must not be able to forge the plugin\'s own state.' );
+	}
+
+	/**
+	 * @covers WP_REST_Presence_Controller::validate_client_id_param
+	 */
+	public function test_rest_delete_rejects_a_reserved_client_id() {
+		wp_set_current_user( self::$editor_id );
+
+		wp_set_presence( 'admin/online', wp_presence_collaboration_state_client_id(), array( 'count' => 2 ) );
+
+		$request = new WP_REST_Request( 'DELETE', '/wp-presence/v1/presence' );
+		$request->set_param( 'room', 'admin/online' );
+		$request->set_param( 'client_id', wp_presence_collaboration_state_client_id() );
+
+		$response = rest_get_server()->dispatch( $request );
+
+		$this->assertSame( 400, $response->get_status() );
+		$this->assertCount( 1, wp_presence_room_rows( 'admin/online' ), 'A client must not be able to evict the plugin\'s own state.' );
+	}
+
+	/**
+	 * Core validates before it sanitizes, so a value that is not reserved as
+	 * sent can still be reserved by the time it is stored.
+	 *
+	 * @covers WP_REST_Presence_Controller::validate_client_id_param
+	 */
+	public function test_rest_create_rejects_a_client_id_that_sanitizes_into_the_reserved_namespace() {
+		wp_set_current_user( self::$editor_id );
+
+		foreach ( array( '<b>_collab</b>', ' _collab' ) as $client_id ) {
+			$request = new WP_REST_Request( 'POST', '/wp-presence/v1/presence' );
+			$request->set_param( 'room', 'admin/online' );
+			$request->set_param( 'client_id', $client_id );
+
+			$response = rest_get_server()->dispatch( $request );
+
+			$this->assertSame( 400, $response->get_status(), "'{$client_id}' sanitizes to a reserved id and must be refused." );
+		}
+
+		$this->assertCount( 0, wp_presence_room_rows( 'admin/online' ), 'A client must not be able to forge the plugin\'s own state.' );
+	}
+
+	/**
+	 * @covers WP_REST_Presence_Controller::get_items
+	 */
+	public function test_get_items_leaves_out_reserved_rows() {
+		wp_set_current_user( self::$editor_id );
+
+		wp_set_presence( 'admin/online', 'client-1', array(), self::$editor_id );
+		wp_set_presence( 'admin/online', wp_presence_collaboration_state_client_id(), array( 'count' => 2 ) );
+
+		$request = new WP_REST_Request( 'GET', '/wp-presence/v1/presence' );
+		$request->set_param( 'room', 'admin/online' );
+
+		$response = rest_get_server()->dispatch( $request );
+
+		$this->assertCount( 1, $response->get_data() );
+		$this->assertSame( 1, (int) $response->get_headers()['X-WP-Total'] );
+	}
+
+	/**
 	 * The custom validate_callback on screen_key replaces the default one, so the
 	 * schema's maxLength only applies if that callback delegates to it.
 	 *

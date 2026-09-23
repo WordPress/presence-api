@@ -349,18 +349,34 @@ function wp_presence_editor_heartbeat_received( $response, $data, $screen_id ) {
 }
 
 /**
- * Builds the transient key holding a room's last observed editor count.
+ * The reserved client_id holding a room's last observed editor count.
  *
- * @since 0.2.0
+ * @since 0.6.0
  *
  * @access private
- * @param string $room The presence room identifier.
- * @return string The transient key.
+ * @return string The reserved client_id.
  */
-function wp_presence_collaboration_state_key( $room ) {
-	// A room runs to `WP_PRESENCE_MAX_KEY_LENGTH`, past the 172 a transient key
-	// holds once `_transient_timeout_` is prefixed.
-	return 'wp_presence_collab_' . md5( $room );
+function wp_presence_collaboration_state_client_id() {
+	return WP_PRESENCE_RESERVED_PREFIX . 'collab';
+}
+
+/**
+ * Reads a room's last observed editor count out of its rows.
+ *
+ * @since 0.6.0
+ *
+ * @access private
+ * @param array $rows Rows as returned by wp_presence_room_rows().
+ * @return object|null The state row, or null when the room has none.
+ */
+function wp_presence_collaboration_state_row( $rows ) {
+	foreach ( $rows as $row ) {
+		if ( wp_presence_collaboration_state_client_id() === $row->client_id ) {
+			return $row;
+		}
+	}
+
+	return null;
 }
 
 /**
@@ -395,15 +411,15 @@ function wp_presence_count_editors( $entries ) {
  * @return int The number of editors currently present in the room.
  */
 function wp_presence_check_collaboration_threshold( $room ) {
-	$entries      = wp_get_presence( $room );
+	$rows         = wp_presence_room_rows( $room );
+	$entries      = wp_presence_client_rows( $rows );
 	$editor_count = wp_presence_count_editors( $entries );
 
 	// Every tick is its own request, so this cannot be held in memory. The
-	// transient expires on the presence TTL: once the entries it describes
-	// have aged out there is no earlier count left to be the edge from.
-	$key        = wp_presence_collaboration_state_key( $room );
-	$stored     = get_transient( $key );
-	$prev_count = false === $stored ? 1 : (int) $stored;
+	// state row came back with the entries above and ages out on the same TTL:
+	// once they have gone there is no earlier count left to be the edge from.
+	$stored     = wp_presence_collaboration_state_row( $rows );
+	$prev_count = $stored && isset( $stored->data['count'] ) ? (int) $stored->data['count'] : 1;
 
 	if ( 1 === $prev_count && $editor_count >= 2 ) {
 		/**
@@ -427,14 +443,46 @@ function wp_presence_check_collaboration_threshold( $room ) {
 		do_action( 'wp_presence_collaboration_ended', $room, $entries );
 	}
 
-	// Rewritten every tick, not only when the count moves: a steady pair that
+	// Kept alive as it ages, not only when the count moves: a steady pair that
 	// let this lapse would read back as a fresh start and re-announce itself.
 	// Below two there is nothing to hold, since absent already reads as 1.
 	if ( $editor_count >= 2 ) {
-		set_transient( $key, $editor_count, wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL ) );
-	} elseif ( false !== $stored ) {
-		delete_transient( $key );
+		wp_presence_store_collaboration_state( $room, $editor_count, $stored );
+	} elseif ( $stored ) {
+		wp_remove_presence( $room, wp_presence_collaboration_state_client_id() );
 	}
 
 	return $editor_count;
+}
+
+/**
+ * Writes a room's editor count to its state row.
+ *
+ * @since 0.6.0
+ *
+ * @access private
+ * @param string      $room   The presence room identifier.
+ * @param int         $count  The current editor count.
+ * @param object|null $stored The room's existing state row, if any.
+ */
+function wp_presence_store_collaboration_state( $room, $count, $stored ) {
+	$threshold = wp_presence_refresh_threshold();
+	$unchanged = $stored && isset( $stored->data['count'] ) && (int) $stored->data['count'] === $count;
+	$age       = $stored ? time() - (int) strtotime( $stored->date_gmt . ' UTC' ) : 0;
+
+	// Same rule as wp_presence_write_is_redundant(), decided from the row this
+	// request has already read rather than from a second SELECT.
+	if ( $unchanged && $threshold > 0 && $age <= $threshold ) {
+		return;
+	}
+
+	// wp_set_presence() would run that same rule again over its own SELECT, so
+	// the write goes straight to the row.
+	wp_presence_write_row(
+		$room,
+		wp_presence_collaboration_state_client_id(),
+		0,
+		wp_json_encode( array( 'count' => $count ) ),
+		gmdate( 'Y-m-d H:i:s' )
+	);
 }

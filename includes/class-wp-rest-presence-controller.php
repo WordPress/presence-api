@@ -103,7 +103,7 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 							'type'              => 'string',
 							'minLength'         => 1,
 							'maxLength'         => WP_PRESENCE_MAX_KEY_LENGTH,
-							'validate_callback' => 'rest_validate_request_arg',
+							'validate_callback' => array( $this, 'validate_client_id_param' ),
 							'sanitize_callback' => 'sanitize_text_field',
 						),
 						'data'      => array(
@@ -132,7 +132,7 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 							'type'              => 'string',
 							'minLength'         => 1,
 							'maxLength'         => WP_PRESENCE_MAX_KEY_LENGTH,
-							'validate_callback' => 'rest_validate_request_arg',
+							'validate_callback' => array( $this, 'validate_client_id_param' ),
 							'sanitize_callback' => 'sanitize_text_field',
 						),
 					),
@@ -199,6 +199,38 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 				),
 			)
 		);
+	}
+
+	/**
+	 * Validates a client_id parameter, rejecting the reserved namespace.
+	 *
+	 * @since 0.6.0
+	 *
+	 * @param mixed           $value   The client_id parameter value.
+	 * @param WP_REST_Request $request Full details about the request.
+	 * @param string          $param   The parameter name.
+	 * @return true|WP_Error True if valid, WP_Error otherwise.
+	 */
+	public function validate_client_id_param( $value, $request, $param ) {
+		$valid = rest_validate_request_arg( $value, $request, $param );
+
+		if ( is_wp_error( $valid ) ) {
+			return $valid;
+		}
+
+		// Core validates before it sanitizes, so the raw value is not what gets
+		// stored: `<b>_collab</b>` and ` _collab` both reach the table as
+		// `_collab`. Check the string the route's sanitizer will actually write.
+		if ( wp_presence_is_reserved_client_id( sanitize_text_field( $value ) ) ) {
+			return new WP_Error(
+				'rest_presence_reserved_client_id',
+				/* translators: %s: The reserved client_id prefix. */
+				sprintf( __( 'Client IDs beginning with %s are reserved.', 'presence-api' ), WP_PRESENCE_RESERVED_PREFIX ),
+				array( 'status' => 400 )
+			);
+		}
+
+		return true;
 	}
 
 	/**
@@ -329,9 +361,10 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$total = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$wpdb->presence} WHERE room = %s AND date_gmt > %s",
+				"SELECT COUNT(*) FROM {$wpdb->presence} WHERE room = %s AND date_gmt > %s AND client_id NOT LIKE %s",
 				$room,
-				$cutoff
+				$cutoff,
+				wp_presence_reserved_client_id_pattern()
 			)
 		);
 
@@ -339,9 +372,10 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT room, client_id, user_id, data, date_gmt FROM {$wpdb->presence} WHERE room = %s AND date_gmt > %s ORDER BY date_gmt DESC LIMIT %d OFFSET %d",
+				"SELECT room, client_id, user_id, data, date_gmt FROM {$wpdb->presence} WHERE room = %s AND date_gmt > %s AND client_id NOT LIKE %s ORDER BY date_gmt DESC LIMIT %d OFFSET %d",
 				$room,
 				$cutoff,
+				wp_presence_reserved_client_id_pattern(),
 				$per_page,
 				$offset
 			)

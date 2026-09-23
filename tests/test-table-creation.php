@@ -429,6 +429,8 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_remove_presence
 	 * @covers ::wp_remove_user_presence
 	 * @covers ::wp_get_presence
+	 * @covers ::wp_presence_room_rows
+	 * @covers ::wp_presence_client_rows
 	 * @covers ::wp_get_presence_by_room_prefix
 	 * @covers ::wp_get_active_rooms
 	 * @covers ::wp_get_presence_summary

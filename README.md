@@ -56,6 +56,8 @@ Rooms carry no producer namespace of their own — this plugin's own writers are
 
 Anything else sharing a room — another plugin relaying awareness from an external source, a REST client — must prefix its own `client_id` so it can't collide with those rows or be mistaken for one. A plugin that backs the block editor's awareness with this table takes a prefix of its own, so `sync-` ([sync-storage](https://github.com/WordPress/sync-storage)) and `gse-` ([gutenberg-sync-engines](https://github.com/Automattic/gutenberg-sync-engines)) are both spoken for.
 
+A leading `_` is reserved for this plugin's own bookkeeping rows, which are not participants. `_collab` holds a post room's last observed editor count, the state the collaboration actions below fire their edges from. `wp_get_presence()` and the REST collection leave those rows out, and the REST write and delete routes reject a reserved `client_id`.
+
 The `editor-` prefix is load-bearing rather than cosmetic: `includes/heartbeat.php` counts the editors in a post room with `str_starts_with( $entry->client_id, 'editor-' )`, so a colliding prefix inflates that count.
 
 ## PHP API
@@ -191,7 +193,7 @@ add_action( 'wp_presence_screen_revision_bumped', function( $screen_key, $revisi
 ```
 
 #### `wp_presence_collaboration_started`
-Fires when collaboration starts in a room (transition from 1 to 2+ editors). Only entries whose `client_id` begins with `editor-` count toward the transition, while `$entries` is every entry in the room. The previous count is held in a transient that expires on the presence TTL, so once those entries have aged out the next pair reads as a fresh start.
+Fires when collaboration starts in a room (transition from 1 to 2+ editors). Only entries whose `client_id` begins with `editor-` count toward the transition, while `$entries` is every client entry in the room, reserved bookkeeping rows excluded. The previous count is held in the room's `_collab` row, which ages out on the presence TTL, so once those entries have gone the next pair reads as a fresh start.
 ```php
 add_action( 'wp_presence_collaboration_started', function( $room, $entries ) {
     // Announce room active or update integration state
@@ -199,7 +201,7 @@ add_action( 'wp_presence_collaboration_started', function( $room, $entries ) {
 ```
 
 #### `wp_presence_collaboration_ended`
-Fires when collaboration ends in a room (transition from 2+ to exactly 1 editor). The check runs on an editor heartbeat tick, so if every editor leaves at once there is nobody left to tick and the hook does not fire; the transient expires on the presence TTL and the room resets quietly.
+Fires when collaboration ends in a room (transition from 2+ to exactly 1 editor). The check runs on an editor heartbeat tick, so if every editor leaves at once there is nobody left to tick and the hook does not fire; the `_collab` row ages out on the presence TTL and the room resets quietly.
 ```php
 add_action( 'wp_presence_collaboration_ended', function( $room, $entries ) {
     // Announce room inactive or update integration state

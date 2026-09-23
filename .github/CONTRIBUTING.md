@@ -34,6 +34,8 @@ npm run test:e2e
 
 The Network Admin specs need a network, which is a second wp-env instance on [localhost:8890](http://localhost:8890/wp-admin/network/) with its own database. `npm run test:e2e` starts and seeds it on demand, so the first run after a fresh checkout takes a few minutes longer. `npm run env:stop:multisite` shuts it down.
 
+Tests here carry `@covers`, and PHPUnit records coverage only for the functions a test names. A new helper called by a function that is already covered still reports as unexecuted until some test names it, which shows up as a Codecov drop with every test passing. Add the helper to the `@covers` list of whichever tests exercise it.
+
 ## Claiming an issue
 
 [Open and unassigned](https://github.com/WordPress/presence-api/issues?q=is%3Aissue+is%3Aopen+no%3Aassignee+-label%3A%22Needs+Discussion%22) issues are available. `Good First Issue` marks the ones suited to new contributors.
@@ -100,12 +102,12 @@ In PHP use `@access private`, the marker [core's documentation standards](https:
 
 ```php
 /**
- * Returns the transient key a room's collaboration state is stored under.
+ * Returns the reserved client_id a room's collaboration state is stored under.
  *
  * @since 0.1.0
  * @access private
  */
-function wp_presence_collaboration_state_key( $room ) {}
+function wp_presence_collaboration_state_client_id() {}
 ```
 
 JavaScript has no `@since` line to sit under, so `@private` on its own is enough there:

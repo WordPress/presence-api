@@ -187,6 +187,7 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers WP_Presence_CLI_Command::list_
+	 * @covers ::wp_presence_room_rows
 	 */
 	public function test_list_reports_an_empty_room() {
 		$this->command->list_( array( 'admin/online' ), array() );
