@@ -312,6 +312,44 @@ function wp_presence_plugin_action_links( $links ) {
 	return $links;
 }
 
+/**
+ * Adds action links to the Network Admin plugin list table.
+ *
+ * A network-activated install lists the plugin on the Network Admin Plugins
+ * screen, which fires its own filter, so the single-site links never reach it.
+ * The online users link points at the network Users list filtered to the users
+ * who are currently online. That filter only applies when the request carries
+ * the presence_online_filter nonce, the same way the network Users view builds
+ * its link, so the URL is nonced here too. The settings link points at Network
+ * Settings.
+ *
+ * @param string[] $links Existing network plugin action links.
+ * @return string[] Action links with the plugin's own links prepended.
+ */
+function wp_presence_network_plugin_action_links( $links ) {
+	$our_links = array();
+
+	// Same gate as the Online view on the network Users screen this link
+	// opens; without the capability that view is not there to land on.
+	if ( current_user_can( wp_presence_network_capability() ) ) {
+		$our_links[] = sprintf(
+			'<a href="%1$s">%2$s</a>',
+			esc_url( wp_nonce_url( network_admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' ) ),
+			esc_html__( 'View Online Users', 'presence-api' )
+		);
+	}
+
+	$our_links[] = sprintf(
+		'<a href="%1$s">%2$s</a>',
+		esc_url( network_admin_url( 'settings.php' ) ),
+		esc_html__( 'Settings', 'presence-api' )
+	);
+
+	array_unshift( $links, ...$our_links );
+
+	return $links;
+}
+
 add_action( 'init', 'wp_presence_register_table', 0 );
 add_action( 'init', 'wp_presence_register_network_summary_table', 0 );
 add_action( 'init', 'wp_presence_register_post_type_support' );
@@ -415,5 +453,8 @@ if ( ( defined( 'WP_DEBUG' ) && WP_DEBUG )
 }
 
 add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'wp_presence_plugin_action_links' );
+if ( is_multisite() ) {
+	add_filter( 'network_admin_plugin_action_links_' . plugin_basename( __FILE__ ), 'wp_presence_network_plugin_action_links' );
+}
 register_activation_hook( __FILE__, 'wp_presence_activate' );
 register_deactivation_hook( __FILE__, 'wp_presence_deactivate' );
