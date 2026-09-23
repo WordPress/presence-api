@@ -107,7 +107,7 @@ if ( function_exists( 'wp_presence_is_available' ) && wp_presence_is_available()
 }
 ```
 
-Without that check, a site with no table or with recording off still accepts your calls: `wp_set_presence()` returns `false` and `wp_get_presence()` returns an empty array. You can't tell that apart from an empty room.
+Without that check, a site with no table or with recording off still accepts your calls: `wp_set_presence()` returns `false`, and `wp_get_presence()` returns an empty array that reads the same as an empty room.
 
 Each entry object returned by `wp_get_presence()` has:
 
