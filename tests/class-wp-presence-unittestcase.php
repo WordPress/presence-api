@@ -47,9 +47,9 @@ abstract class WP_Presence_UnitTestCase extends WP_UnitTestCase {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT room, client_id, user_id, data, date_gmt FROM {$wpdb->presence} WHERE user_id = %d AND date_gmt > %s ORDER BY date_gmt DESC",
+				"SELECT room, client_id, user_id, data, date_gmt FROM {$wpdb->presence} WHERE user_id = %d AND expires_gmt > %s ORDER BY date_gmt DESC",
 				$user_id,
-				gmdate( 'Y-m-d H:i:s', time() - wp_presence_get_timeout( $timeout ) )
+				gmdate( 'Y-m-d H:i:s' )
 			)
 		);
 

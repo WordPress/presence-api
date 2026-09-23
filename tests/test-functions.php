@@ -129,9 +129,12 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		// Manually backdate one entry to simulate expiration.
 		$wpdb->update(
 			$wpdb->presence,
-			array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - 120 ) ),
+			array(
+				'date_gmt'    => gmdate( 'Y-m-d H:i:s', time() - 120 ),
+				'expires_gmt' => gmdate( 'Y-m-d H:i:s', time() - 120 + 60 ),
+			),
 			array( 'client_id' => 'client-1' ),
-			array( '%s' ),
+			array( '%s', '%s' ),
 			array( '%s' )
 		);
 
@@ -364,9 +367,12 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		// Backdate one entry past the cutoff the cleanup reads.
 		$wpdb->update(
 			$wpdb->presence,
-			array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - WP_PRESENCE_DEFAULT_TTL - MINUTE_IN_SECONDS ) ),
+			array(
+				'date_gmt'    => gmdate( 'Y-m-d H:i:s', time() - WP_PRESENCE_DEFAULT_TTL - MINUTE_IN_SECONDS ),
+				'expires_gmt' => gmdate( 'Y-m-d H:i:s', time() - MINUTE_IN_SECONDS ),
+			),
 			array( 'client_id' => 'old-client' ),
-			array( '%s' ),
+			array( '%s', '%s' ),
 			array( '%s' )
 		);
 
@@ -393,8 +399,9 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		}
 		$wpdb->query(
 			$wpdb->prepare(
-				"UPDATE {$wpdb->presence} SET date_gmt = %s",
-				gmdate( 'Y-m-d H:i:s', time() - WP_PRESENCE_DEFAULT_TTL - MINUTE_IN_SECONDS )
+				"UPDATE {$wpdb->presence} SET date_gmt = %s, expires_gmt = %s",
+				gmdate( 'Y-m-d H:i:s', time() - WP_PRESENCE_DEFAULT_TTL - MINUTE_IN_SECONDS ),
+				gmdate( 'Y-m-d H:i:s', time() - MINUTE_IN_SECONDS )
 			)
 		);
 
@@ -514,9 +521,12 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 		$wpdb->update(
 			$wpdb->presence,
-			array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - 120 ) ),
+			array(
+				'date_gmt'    => gmdate( 'Y-m-d H:i:s', time() - 120 ),
+				'expires_gmt' => gmdate( 'Y-m-d H:i:s', time() - 120 + 60 ),
+			),
 			array( 'client_id' => 'client-1' ),
-			array( '%s' ),
+			array( '%s', '%s' ),
 			array( '%s' )
 		);
 
@@ -762,25 +772,33 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_get_timeout
 	 */
 	public function test_ttl_filter() {
+		global $wpdb;
+
 		add_filter( 'wp_presence_default_ttl', fn() => WP_PRESENCE_DEFAULT_TTL * 2 );
 
 		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
 
-		// Beyond the default cutoff, within the filtered one.
-		global $wpdb;
-		$wpdb->update(
-			$wpdb->presence,
-			array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - WP_PRESENCE_DEFAULT_TTL - 30 ) ),
-			array( 'room' => 'test/room', 'client_id' => 'client-1' )
+		$expiry = $wpdb->get_var( "SELECT expires_gmt FROM {$wpdb->presence} WHERE client_id = 'client-1'" );
+
+		$this->assertSame(
+			WP_PRESENCE_DEFAULT_TTL * 2,
+			strtotime( $expiry . ' UTC' ) - time(),
+			'The filter sets the window a row is written with.'
 		);
 
-		$entries = wp_get_presence( 'test/room' );
-		$this->assertCount( 1, $entries, 'Entry should be visible with the filtered TTL.' );
-
+		// The window belongs to the row: removing the filter leaves it alone.
 		remove_all_filters( 'wp_presence_default_ttl' );
 
-		$entries = wp_get_presence( 'test/room' );
-		$this->assertCount( 0, $entries, 'Entry should be expired with the default TTL.' );
+		$this->assertCount(
+			1,
+			wp_get_presence( 'test/room' ),
+			'A row already written keeps the window it was written under.'
+		);
+		$this->assertSame(
+			$expiry,
+			$wpdb->get_var( "SELECT expires_gmt FROM {$wpdb->presence} WHERE client_id = 'client-1'" ),
+			'Reads do not re-age a row against the current filter.'
+		);
 	}
 
 	/**
@@ -1143,6 +1161,177 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * A writer that knows when its clients leave, such as one relaying a
+	 * socket's lifetime, keeps a row present without re-stamping it.
+	 *
+	 * @covers ::wp_set_presence
+	 * @covers ::wp_get_presence
+	 */
+	public function test_a_row_written_with_its_own_window_outlives_the_site_ttl() {
+		$this->assertTrue(
+			wp_set_presence( 'test/room', 'relay-1', array(), self::$editor_id, null, HOUR_IN_SECONDS )
+		);
+
+		// Last heard from well over an ordinary TTL ago, and never re-stamped.
+		global $wpdb;
+		$wpdb->update(
+			$wpdb->presence,
+			array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - ( WP_PRESENCE_DEFAULT_TTL * 4 ) ) ),
+			array( 'client_id' => 'relay-1' ),
+			array( '%s' ),
+			array( '%s' )
+		);
+
+		$this->assertCount(
+			1,
+			wp_get_presence( 'test/room' ),
+			'The row is present until its own expiry, with no writes in between.'
+		);
+
+		wp_delete_expired_presence_data();
+
+		$this->assertCount( 1, wp_get_presence( 'test/room' ), 'Cleanup leaves a row that has not expired.' );
+	}
+
+	/**
+	 * The departure is still the signal: removal takes effect at once.
+	 *
+	 * @covers ::wp_remove_presence
+	 */
+	public function test_removal_is_immediate_whatever_the_window() {
+		wp_set_presence( 'test/room', 'relay-1', array(), self::$editor_id, null, HOUR_IN_SECONDS );
+		wp_remove_presence( 'test/room', 'relay-1' );
+
+		$this->assertCount( 0, wp_get_presence( 'test/room' ) );
+	}
+
+	/**
+	 * A window that passes is the backstop for a departure that never arrived.
+	 *
+	 * @covers ::wp_get_presence
+	 * @covers ::wp_delete_expired_presence_data
+	 */
+	public function test_a_row_expires_on_its_own_window_even_when_recently_stamped() {
+		global $wpdb;
+
+		wp_set_presence( 'test/room', 'relay-1', array(), self::$editor_id, null, HOUR_IN_SECONDS );
+
+		// The expiry passes while the timestamp stays recent: the guarantee is
+		// the window, not how lately the writer was heard from.
+		$wpdb->update(
+			$wpdb->presence,
+			array( 'expires_gmt' => gmdate( 'Y-m-d H:i:s', time() - 1 ) ),
+			array( 'client_id' => 'relay-1' ),
+			array( '%s' ),
+			array( '%s' )
+		);
+
+		$this->assertCount( 0, wp_get_presence( 'test/room' ), 'A passed expiry ends the row.' );
+
+		wp_delete_expired_presence_data();
+
+		$this->assertSame(
+			'0',
+			$wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->presence} WHERE client_id = 'relay-1'" ),
+			'Cleanup collects it.'
+		);
+	}
+
+	/**
+	 * @covers ::wp_presence_expiry_for
+	 */
+	public function test_the_window_is_capped() {
+		add_filter( 'wp_presence_max_expires_in', fn() => MINUTE_IN_SECONDS );
+
+		wp_set_presence( 'test/room', 'relay-1', array(), self::$editor_id, null, WEEK_IN_SECONDS );
+
+		$this->assertSame(
+			MINUTE_IN_SECONDS,
+			strtotime( $this->stored_expires_gmt( 'test/room', 'relay-1' ) . ' UTC' ) - time(),
+			'A window beyond the ceiling is trimmed to it.'
+		);
+	}
+
+	/**
+	 * @covers ::wp_set_presence
+	 */
+	public function test_an_unusable_window_is_refused() {
+		$this->assertFalse( wp_set_presence( 'test/room', 'relay-1', array(), self::$editor_id, null, 0 ) );
+		$this->assertFalse( wp_set_presence( 'test/room', 'relay-1', array(), self::$editor_id, null, -5 ) );
+		$this->assertFalse( wp_set_presence( 'test/room', 'relay-1', array(), self::$editor_id, null, 'soon' ) );
+		$this->assertCount( 0, wp_get_presence( 'test/room' ) );
+	}
+
+	/**
+	 * The guard skips unchanged writes, which would now also skip the extension.
+	 *
+	 * @covers ::wp_presence_write_is_redundant
+	 */
+	public function test_an_explicit_window_is_never_swallowed_by_the_redundant_write_guard() {
+		wp_set_presence( 'test/room', 'relay-1', array( 'a' => 1 ), self::$editor_id );
+
+		$before = $this->stored_expires_gmt( 'test/room', 'relay-1' );
+
+		// Same state, inside the refresh window: an ordinary write is skipped.
+		wp_set_presence( 'test/room', 'relay-1', array( 'a' => 1 ), self::$editor_id );
+		$this->assertSame( $before, $this->stored_expires_gmt( 'test/room', 'relay-1' ) );
+
+		// The same state with a window is the caller asking for the extension.
+		wp_set_presence( 'test/room', 'relay-1', array( 'a' => 1 ), self::$editor_id, null, HOUR_IN_SECONDS );
+
+		$this->assertGreaterThan(
+			strtotime( $before . ' UTC' ),
+			strtotime( $this->stored_expires_gmt( 'test/room', 'relay-1' ) . ' UTC' ),
+			'An explicit window extends the row.'
+		);
+	}
+
+	/**
+	 * Rows written before the column existed carry its zero default, so they
+	 * read as expired and the cleanup already scheduled collects them. Nobody
+	 * is left stranded: a client still present is back on its next ping, which
+	 * is why the upgrade needs no migration step of its own.
+	 *
+	 * @covers ::wp_get_presence
+	 * @covers ::wp_delete_expired_presence_data
+	 */
+	public function test_a_row_from_before_the_column_expires_and_is_collected() {
+		global $wpdb;
+
+		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
+		$wpdb->query( "UPDATE {$wpdb->presence} SET expires_gmt = '0000-00-00 00:00:00'" );
+
+		$this->assertCount( 0, wp_get_presence( 'test/room' ), 'It reads as expired.' );
+
+		wp_delete_expired_presence_data();
+
+		$this->assertSame(
+			'0',
+			$wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->presence}" ),
+			'The scheduled cleanup collects it without a migration.'
+		);
+
+		// And the client is present again as soon as it pings.
+		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
+		$this->assertCount( 1, wp_get_presence( 'test/room' ) );
+	}
+
+	/**
+	 * Reads the stored expiry for a row, as the raw string the column holds.
+	 */
+	private function stored_expires_gmt( $room, $client_id ) {
+		global $wpdb;
+
+		return $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT expires_gmt FROM {$wpdb->presence} WHERE room = %s AND client_id = %s",
+				$room,
+				$client_id
+			)
+		);
+	}
+
+	/**
 	 * Reads the stored timestamp for a row, as the raw string the column holds.
 	 */
 	private function stored_date_gmt( $room, $client_id ) {
@@ -1165,12 +1354,15 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 		$wpdb->update(
 			$wpdb->presence,
-			array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - $seconds ) ),
+			array(
+				'date_gmt'    => gmdate( 'Y-m-d H:i:s', time() - $seconds ),
+				'expires_gmt' => gmdate( 'Y-m-d H:i:s', time() - $seconds + wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL ) ),
+			),
 			array(
 				'room'      => $room,
 				'client_id' => $client_id,
 			),
-			array( '%s' ),
+			array( '%s', '%s' ),
 			array( '%s', '%s' )
 		);
 	}
