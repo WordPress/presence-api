@@ -1325,6 +1325,13 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * @covers ::wp_presence_max_staleness
+	 */
+	public function test_the_staleness_cap_matches_the_figure_the_readme_publishes() {
+		$this->assertSame( 30, wp_presence_max_staleness(), 'README.md tells consumers how far behind date_gmt can be, so the number has to change in both places.' );
+	}
+
+	/**
 	 * @covers ::wp_presence_idle_threshold
 	 */
 	public function test_the_idle_threshold_follows_the_heartbeat_backoff() {

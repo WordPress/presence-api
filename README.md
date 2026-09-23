@@ -119,7 +119,9 @@ Each entry object returned by `wp_get_presence()` has:
 | `client_id` | `string` | A `varchar` column — opaque, and not guaranteed numeric even when it looks like one. See [Client IDs](#client-ids).         |
 | `user_id`   | `string` | `"0"` for an entry with no signed-in user. Every column comes back as a string, so cast before a strict comparison. |
 | `data`      | `array`  | Decoded from the stored JSON; an empty array if that JSON failed to decode.                                                 |
-| `date_gmt`  | `string` | A MySQL `datetime` string in UTC (e.g. `2024-01-01 12:00:00`), not a Unix timestamp. Convert with `strtotime( $entry->date_gmt . ' UTC' )`. |
+| `date_gmt`  | `string` | A MySQL `datetime` string in UTC (e.g. `2024-01-01 12:00:00`), not a Unix timestamp. Convert with `strtotime( $entry->date_gmt . ' UTC' )`. See below for how far behind a live client it can sit. |
+
+`date_gmt` is not rewritten on every ping. An unchanged row is left alone until it is 30 seconds old, however high the TTL goes, and that is on top of the gap the client leaves between pings, so both have to fit inside any liveness window you read off `date_gmt` yourself. Entries from `wp_get_presence()` are already filtered on the TTL, so the window only matters if you are working out a tighter one. Passing an explicit `$date_gmt` to `wp_set_presence()` writes every time.
 
 ### Network
 
