@@ -163,9 +163,10 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 
 		wp_set_current_user( self::$editor_id );
 
-		$hash = $this->tick()['presence-online-hash'];
-
+		// The second tick is a redundant write, so the timestamp it reports is
+		// the one the first tick wrote.
 		$before = time();
+		$hash   = $this->tick()['presence-online-hash'];
 		$seen   = $this->tick( array( 'screen' => 'dashboard' ), array( 'presence-online-hash' => $hash ) )['presence-online-unchanged'];
 		$after  = time();
 
