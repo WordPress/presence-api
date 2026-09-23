@@ -46,12 +46,18 @@ function wp_presence_has_table() {
 /**
  * Gets all present clients in a room, filtered by TTL.
  *
- * @param string $room    The room identifier.
- * @param int    $timeout Optional. Timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL.
+ * Reserved rows are left out whatever the prefix, so `_` returns nothing.
+ *
+ * @since 0.7.0 Added the `$client_prefix` parameter.
+ *
+ * @param string $room          The room identifier.
+ * @param int    $timeout       Optional. Timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL.
+ * @param string $client_prefix Optional. Only return clients whose client_id starts with this.
+ *                              Default empty.
  * @return array Array of presence entry objects.
  */
-function wp_get_presence( $room, $timeout = WP_PRESENCE_DEFAULT_TTL ) {
-	return wp_presence_client_rows( wp_presence_room_rows( $room, $timeout ) );
+function wp_get_presence( $room, $timeout = WP_PRESENCE_DEFAULT_TTL, $client_prefix = '' ) {
+	return wp_presence_client_rows( wp_presence_room_rows( $room, $timeout, $client_prefix ) );
 }
 
 /**
@@ -119,14 +125,17 @@ function wp_presence_client_rows( $rows ) {
  * @access private
  *
  * @since 0.6.0
+ * @since 0.7.0 Added the `$client_prefix` parameter.
  *
  * @global wpdb $wpdb WordPress database abstraction object.
  *
- * @param string $room    The room identifier.
- * @param int    $timeout Optional. Timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL.
+ * @param string $room          The room identifier.
+ * @param int    $timeout       Optional. Timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL.
+ * @param string $client_prefix Optional. Only return rows whose client_id starts with this.
+ *                              Default empty.
  * @return array Array of presence row objects.
  */
-function wp_presence_room_rows( $room, $timeout = WP_PRESENCE_DEFAULT_TTL ) {
+function wp_presence_room_rows( $room, $timeout = WP_PRESENCE_DEFAULT_TTL, $client_prefix = '' ) {
 	global $wpdb;
 
 	if ( ! wp_presence_has_table() ) {
@@ -136,13 +145,23 @@ function wp_presence_room_rows( $room, $timeout = WP_PRESENCE_DEFAULT_TTL ) {
 	$timeout = wp_presence_get_timeout( $timeout );
 	$cutoff  = gmdate( 'Y-m-d H:i:s', time() - $timeout );
 
+	$client_clause = '';
+	$args          = array( $room, $cutoff );
+
+	if ( '' !== (string) $client_prefix ) {
+		$client_clause = ' AND client_id LIKE %s';
+		// Escaped, since LIKE reads `_` and `%` as wildcards.
+		$args[] = $wpdb->esc_like( (string) $client_prefix ) . '%';
+	}
+
 	// Presence data is ephemeral and changes on every heartbeat; caching would serve stale data.
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	$results = $wpdb->get_results(
+		// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 		$wpdb->prepare(
-			"SELECT room, client_id, user_id, data, date_gmt FROM {$wpdb->presence} WHERE room = %s AND date_gmt > %s ORDER BY date_gmt DESC",
-			$room,
-			$cutoff
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			"SELECT room, client_id, user_id, data, date_gmt FROM {$wpdb->presence} WHERE room = %s AND date_gmt > %s{$client_clause} ORDER BY date_gmt DESC",
+			...$args
 		)
 	);
 

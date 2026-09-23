@@ -54,7 +54,7 @@ Post types opt in via `add_post_type_support( 'post', 'presence' )`.
 
 Rooms carry no producer namespace of their own — this plugin's own writers are told apart from anyone else's entries in the same room by a `client_id` prefix instead. `user-{user_id}` (admin/online room, from `includes/heartbeat.php` and `includes/lifecycle.php`), `editor-{user_id}` (post rooms, from `includes/heartbeat.php` and `includes/post-lock-bridge.php`) and `cli-{user_id}` (any room, from `includes/cli/class-wp-presence-cli-command.php`, the default when `wp presence set` is given no client ID) are reserved this way; a row using any of them belongs to this plugin and has the state shape its writer expects.
 
-Anything else sharing a room — another plugin relaying awareness from an external source, a REST client — must prefix its own `client_id` so it can't collide with those rows or be mistaken for one. A plugin that backs the block editor's awareness with this table takes a prefix of its own, so `sync-` ([sync-storage](https://github.com/WordPress/sync-storage)) and `gse-` ([gutenberg-sync-engines](https://github.com/Automattic/gutenberg-sync-engines)) are both spoken for.
+Anything else sharing a room — another plugin relaying awareness from an external source, a REST client — must prefix its own `client_id` so it can't collide with those rows or be mistaken for one. A plugin that backs the block editor's awareness with this table takes a prefix of its own, so `sync-` ([sync-storage](https://github.com/WordPress/sync-storage)) and `gse-` ([gutenberg-sync-engines](https://github.com/Automattic/gutenberg-sync-engines)) are both spoken for. Pass that prefix as the third argument to `wp_get_presence()` to read back only your own rows: `wp_get_presence( $room, $timeout, 'gse-' )`.
 
 A leading `_` is reserved for this plugin's own bookkeeping rows, which are not participants. `_collab` holds a post room's last observed editor count, the state the collaboration actions below fire their edges from. `wp_get_presence()` and the REST collection leave those rows out, and the REST write and delete routes reject a reserved `client_id`.
 
@@ -68,8 +68,9 @@ The `editor-` prefix is load-bearing rather than cosmetic: `includes/heartbeat.p
 The following public functions are part of the stable public API contract. All other helper functions in `includes/functions.php` and `includes/network-functions.php` (such as `wp_get_active_rooms()`, `wp_get_presence_summary()`, etc.) are marked `@access private`, are intended for internal plugin use only, and may change or be removed without notice.
 
 ```php
-// Read all presence entries in a room.
-$entries = wp_get_presence( $room, $timeout = WP_PRESENCE_DEFAULT_TTL );
+// Read all presence entries in a room, or only those whose client_id starts
+// with $client_prefix. The prefix is matched literally, in the query.
+$entries = wp_get_presence( $room, $timeout = WP_PRESENCE_DEFAULT_TTL, $client_prefix = '' );
 
 // Upsert a client's presence state. Atomic via INSERT … ON DUPLICATE KEY UPDATE.
 // $date_gmt ('Y-m-d H:i:s') lets a caller relaying awareness on behalf of
