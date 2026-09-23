@@ -361,13 +361,27 @@ function wp_presence_idle_threshold() {
  * @return int Age in seconds. 0 means never skip.
  */
 function wp_presence_refresh_threshold() {
-	// Mirrors TTL_SAFETY_MARGIN in assets/js/presence-ping.js, which caps the
-	// client's own idle backoff against the same TTL. The two have to agree.
-	$margin = 15;
-
 	$timeout = wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL );
 
-	return max( 0, min( $timeout - $margin - wp_presence_next_tick_gap(), wp_presence_max_staleness() ) );
+	return max( 0, min( $timeout - wp_presence_ttl_margin() - wp_presence_next_tick_gap(), wp_presence_max_staleness() ) );
+}
+
+/**
+ * Returns the slice of the TTL kept in reserve rather than spent on waiting.
+ *
+ * Both sides of the plugin push their timing as close to the TTL as they dare,
+ * the server when it skips a write and the client when it widens its interval.
+ * Either one landing late drops a present user out of the room, so they hold
+ * back by the same amount, and presence-ping.js is passed this figure.
+ *
+ * @access private
+ *
+ * @since 0.6.0
+ *
+ * @return int Seconds.
+ */
+function wp_presence_ttl_margin() {
+	return 15;
 }
 
 /**
