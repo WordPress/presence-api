@@ -127,6 +127,37 @@ function captureHeartbeatSend( page ) {
 	);
 }
 
+/**
+ * Captures heartbeat-send ticks until one carries the given key.
+ *
+ * waitForHeartbeat() only proves heartbeat.js has evaluated. Handlers that
+ * other scripts bind on DOM ready, such as core's wp-refresh-post-lock, can
+ * still be missing from the first tick after a page load.
+ *
+ * @param {import('@playwright/test').Page} page
+ * @param {string}                          key
+ * @param {number}                          maxAttempts
+ */
+async function captureHeartbeatSendWith( page, key, maxAttempts = 20 ) {
+	let captured;
+
+	await expect
+		.poll(
+			async () => {
+				captured = await captureHeartbeatSend( page );
+				return Boolean( captured[ key ] );
+			},
+			{
+				intervals: [ 0 ],
+				timeout: maxAttempts * 100,
+				message: `No heartbeat-send ever carried ${ key }.`,
+			}
+		)
+		.toBe( true );
+
+	return captured;
+}
+
 test.describe( 'Presence Visibility', () => {
 	test.afterEach( async ( { requestUtils } ) => {
 		await requestUtils.deleteAllPosts();
@@ -207,13 +238,19 @@ test.describe( 'Presence Visibility', () => {
 			const takeOverButton = userB.page.locator(
 				'a:has-text("Take over")'
 			);
-			await takeOverButton.click();
+			await Promise.all( [
+				userB.page.waitForLoadState( 'load' ),
+				takeOverButton.click(),
+			] );
 
 			// Wait for heartbeat library on User B's page.
 			await waitForHeartbeat( userB.page );
 
 			// Verify that wp-refresh-post-lock is present when visible initially.
-			const initial = await captureHeartbeatSend( userB.page );
+			const initial = await captureHeartbeatSendWith(
+				userB.page,
+				'wp-refresh-post-lock'
+			);
 			expect( initial[ 'wp-refresh-post-lock' ] ).toBeDefined();
 			expect( initial[ 'wp-refresh-post-lock' ].post_id ).toBe(
 				String( post.id )
