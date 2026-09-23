@@ -354,7 +354,7 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 		$page     = $request->get_param( 'page' );
 		$offset   = ( $page - 1 ) * $per_page;
 
-		$cutoff  = gmdate( 'Y-m-d H:i:s' );
+		$cutoff = gmdate( 'Y-m-d H:i:s' );
 
 		// Get total count for pagination headers.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
