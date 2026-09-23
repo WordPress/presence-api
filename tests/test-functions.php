@@ -64,6 +64,62 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_get_presence
 	 * @covers ::wp_presence_room_rows
 	 */
+	public function test_get_presence_filters_by_client_prefix() {
+		wp_set_presence( 'postType/post:1', 'editor-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( 'postType/post:1', 'gse-a', array(), self::$editor_id );
+		wp_set_presence( 'postType/post:1', 'gse-b', array(), self::$editor_id );
+		wp_set_presence( 'postType/post:1', wp_presence_collaboration_state_client_id(), array( 'count' => 2 ) );
+		wp_set_presence( 'postType/post:2', 'gse-c', array(), self::$editor_id );
+
+		$client_ids = wp_list_pluck( wp_get_presence( 'postType/post:1', WP_PRESENCE_DEFAULT_TTL, 'gse-' ), 'client_id' );
+		sort( $client_ids );
+
+		$this->assertSame( array( 'gse-a', 'gse-b' ), $client_ids );
+	}
+
+	/**
+	 * @covers ::wp_get_presence
+	 * @covers ::wp_presence_room_rows
+	 */
+	public function test_get_presence_without_client_prefix_returns_every_client() {
+		wp_set_presence( 'postType/post:1', 'editor-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( 'postType/post:1', 'gse-a', array(), self::$editor_id );
+		wp_set_presence( 'postType/post:1', wp_presence_collaboration_state_client_id(), array( 'count' => 2 ) );
+
+		$this->assertCount( 2, wp_get_presence( 'postType/post:1', WP_PRESENCE_DEFAULT_TTL, '' ) );
+	}
+
+	/**
+	 * @covers ::wp_get_presence
+	 * @covers ::wp_presence_room_rows
+	 */
+	public function test_get_presence_with_reserved_client_prefix_returns_nothing() {
+		wp_set_presence( 'postType/post:1', 'editor-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( 'postType/post:1', wp_presence_collaboration_state_client_id(), array( 'count' => 2 ) );
+
+		$this->assertSame( array(), wp_get_presence( 'postType/post:1', WP_PRESENCE_DEFAULT_TTL, WP_PRESENCE_RESERVED_PREFIX ) );
+	}
+
+	/**
+	 * @covers ::wp_get_presence
+	 * @covers ::wp_presence_room_rows
+	 */
+	public function test_get_presence_client_prefix_matches_like_wildcards_literally() {
+		wp_set_presence( 'test/room', 'a_b-1', array(), self::$editor_id );
+		wp_set_presence( 'test/room', 'axb-1', array(), self::$editor_id );
+		wp_set_presence( 'test/room', 'a%b-1', array(), self::$editor_id );
+
+		$underscore = wp_get_presence( 'test/room', WP_PRESENCE_DEFAULT_TTL, 'a_b-' );
+		$percent    = wp_get_presence( 'test/room', WP_PRESENCE_DEFAULT_TTL, 'a%' );
+
+		$this->assertSame( array( 'a_b-1' ), wp_list_pluck( $underscore, 'client_id' ) );
+		$this->assertSame( array( 'a%b-1' ), wp_list_pluck( $percent, 'client_id' ) );
+	}
+
+	/**
+	 * @covers ::wp_get_presence
+	 * @covers ::wp_presence_room_rows
+	 */
 	public function test_get_presence_filters_expired_entries() {
 		global $wpdb;
 
