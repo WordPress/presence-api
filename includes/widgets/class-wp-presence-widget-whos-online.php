@@ -33,13 +33,6 @@ class WP_Presence_Widget_Whos_Online {
 	const OVERFLOW_THRESHOLD = 20;
 
 	/**
-	 * Seconds after which a user is considered idle (but still present).
-	 *
-	 * @var int
-	 */
-	const IDLE_THRESHOLD = 30;
-
-	/**
 	 * Maximum avatars in the overflow stack.
 	 *
 	 * @var int
@@ -285,7 +278,7 @@ class WP_Presence_Widget_Whos_Online {
 		return array(
 			'screenLabels'      => self::get_screen_labels(),
 			'screenUrls'        => $screen_urls,
-			'idleThreshold'     => self::IDLE_THRESHOLD,
+			'idleThreshold'     => wp_presence_idle_threshold(),
 			'overflowThreshold' => self::get_overflow_threshold(),
 			'usersUrl'          => admin_url( 'users.php?presence_status=online' ),
 			'avatarMax'         => self::AVATAR_STACK_MAX,
@@ -322,14 +315,14 @@ class WP_Presence_Widget_Whos_Online {
 		$screen  = isset( $entry->data['screen'] ) ? $entry->data['screen'] : '';
 		$elapsed = time() - strtotime( $entry->date_gmt . ' +0000' );
 
-		if ( $elapsed < self::IDLE_THRESHOLD ) {
+		if ( $elapsed < wp_presence_idle_threshold() ) {
 			$dot_label = __( 'Online now', 'presence-api' );
 		} else {
 			/* translators: %s: Human-readable time difference. */
 			$dot_label = sprintf( __( '%s ago', 'presence-api' ), human_time_diff( strtotime( $entry->date_gmt . ' +0000' ), time() ) );
 		}
 
-		$idle_class = $elapsed >= self::IDLE_THRESHOLD ? ' is-idle' : '';
+		$idle_class = $elapsed >= wp_presence_idle_threshold() ? ' is-idle' : '';
 
 		echo '<li class="presence-user-item" data-user-id="' . (int) $entry->user_id . '">';
 		echo wp_kses_post( get_avatar( $user->ID, 34, '', $user->display_name ) );
@@ -504,8 +497,8 @@ class WP_Presence_Widget_Whos_Online {
 	/**
 	 * Hashes the meaningful state of a room's presence entries.
 	 *
-	 * Excludes date_gmt, which every tick rewrites for the pinging user and so
-	 * would flip the hash on every tick.
+	 * Excludes date_gmt, which moves on its own cadence for a pinging user and
+	 * so would flip the hash on a tick that changed nothing else.
 	 *
 	 * @param array $entries Presence entry objects from wp_get_presence().
 	 * @return string The state hash.

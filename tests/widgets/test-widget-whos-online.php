@@ -479,13 +479,14 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 	 * @covers WP_Presence_Widget_Whos_Online::render_user_row
 	 */
 	public function test_render_marks_a_stale_entry_idle_with_a_relative_timestamp() {
-		// Past IDLE_THRESHOLD but inside the TTL, so the entry is still listed.
-		$this->add_user_to_room( 'dashboard', 45 );
+		// Past the idle threshold but inside the TTL, so the entry is still listed.
+		$age = wp_presence_idle_threshold() + 15;
+		$this->add_user_to_room( 'dashboard', $age );
 
 		$html = $this->render();
 
 		$this->assertStringContainsString( 'presence-online-dot is-idle', $html );
-		$this->assertStringContainsString( 'seconds ago', $html );
+		$this->assertStringContainsString( human_time_diff( time() - $age ) . ' ago', $html );
 	}
 
 	/**

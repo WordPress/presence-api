@@ -18,13 +18,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 class WP_Presence_Widget_Active_Posts {
 
 	/**
-	 * Seconds after which a user is considered idle.
-	 *
-	 * @var int
-	 */
-	const IDLE_THRESHOLD = 30;
-
-	/**
 	 * Registers the dashboard widget.
 	 */
 	public static function register() {
@@ -264,7 +257,7 @@ class WP_Presence_Widget_Active_Posts {
 			}
 
 			$elapsed = $now - strtotime( $entry->date_gmt . ' +0000' );
-			$status  = $elapsed > self::IDLE_THRESHOLD ? 'idle' : 'active';
+			$status  = $elapsed > wp_presence_idle_threshold() ? 'idle' : 'active';
 
 			if ( ! isset( $by_post[ $post_id ] ) ) {
 				$by_post[ $post_id ] = array(

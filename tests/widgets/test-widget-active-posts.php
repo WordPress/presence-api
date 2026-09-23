@@ -105,7 +105,7 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 		// Backdate the entry to exceed idle threshold.
 		$wpdb->update(
 			$wpdb->presence,
-			array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - 45 ) ),
+			array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - ( wp_presence_idle_threshold() + 15 ) ) ),
 			array( 'client_id' => 'lock-' . self::$editor_id ),
 			array( '%s' ),
 			array( '%s' )
@@ -463,7 +463,7 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 
 		$wpdb->update(
 			$wpdb->presence,
-			array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - 45 ) ),
+			array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - ( wp_presence_idle_threshold() + 15 ) ) ),
 			array( 'room' => $room ),
 			array( '%s' ),
 			array( '%s' )
