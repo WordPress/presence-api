@@ -11,6 +11,7 @@
  *   wp_presence_post_room()
  *   wp_presence_admin_room()
  *   wp_presence_recording_enabled()
+ *   wp_presence_is_available()
  *
  * @package Presence_API
  */
@@ -256,6 +257,23 @@ function wp_presence_recording_enabled() {
 	 *                      new install.
 	 */
 	return (bool) apply_filters( 'wp_presence_network_recording_enabled', (bool) get_site_option( 'wp_presence_network_recording', true ) );
+}
+
+/**
+ * Whether presence can be read and written on this site.
+ *
+ * The check an integrator makes before relying on presence. On a site with
+ * no table, or with recording switched off, wp_set_presence() returns false
+ * and wp_get_presence() returns an empty array, which reads as an empty room
+ * rather than an unavailable backend. Guard with function_exists() first to
+ * cover the plugin not being loaded.
+ *
+ * @since 0.6.0
+ *
+ * @return bool Whether the table exists and presence is recorded.
+ */
+function wp_presence_is_available() {
+	return wp_presence_has_table() && wp_presence_recording_enabled();
 }
 
 /**

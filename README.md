@@ -96,7 +96,20 @@ $room = wp_presence_post_room( $post );
 
 // Whether this site records presence at all.
 wp_presence_recording_enabled();
+
+// Whether presence can be used here: the table exists and recording is on.
+wp_presence_is_available();
 ```
+
+If you build on this plugin, check `wp_presence_is_available()` before you depend on it. The `function_exists()` guard covers the plugin not being loaded:
+
+```php
+if ( function_exists( 'wp_presence_is_available' ) && wp_presence_is_available() ) {
+	// Read and write presence.
+}
+```
+
+Without that check, a site with no table or with recording off still accepts your calls: `wp_set_presence()` returns `false`, and `wp_get_presence()` returns an empty array that reads the same as an empty room.
 
 Each entry object returned by `wp_get_presence()` has:
 
