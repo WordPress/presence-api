@@ -79,7 +79,7 @@ A new label joins an existing color. If it genuinely needs its own, check it in 
 ## Pull requests
 
 1. Branch off `main`.
-2. Title the pull request as a [Conventional Commit](https://www.conventionalcommits.org/). Pull requests are merged with a merge commit whose subject is the pull request title, so the title is what release-please reads. `lint-pr.yml` enforces this.
+2. Title the pull request as a [Conventional Commit](https://www.conventionalcommits.org/). Pull requests are squashed into a single commit whose subject is the pull request title, so the title is what release-please reads. `lint-pr.yml` enforces this.
 3. All CI checks must pass before merge (PHPCS, PHPStan, PHPUnit across PHP 7.4 + 8.3 plus a multisite run, Playwright).
 4. Keep commits focused, one logical change per commit.
 
