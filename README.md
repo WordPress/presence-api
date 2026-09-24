@@ -93,6 +93,12 @@ wp_set_presence( $room, $client_id, $state, $user_id = 0, $date_gmt = null, $exp
 // Remove a single client from a room.
 wp_remove_presence( $room, $client_id );
 
+// Write, or remove, a client and read the room back in one call, for a
+// caller that re-reads after every write. The read is scoped by
+// $client_prefix, as in wp_get_presence().
+$entries = wp_presence_exchange( $room, $client_id, $state, $user_id = 0, $timeout = WP_PRESENCE_DEFAULT_TTL, $client_prefix = '' );
+$entries = wp_presence_leave( $room, $client_id, $timeout = WP_PRESENCE_DEFAULT_TTL, $client_prefix = '' );
+
 // Remove all presence entries for a user across all rooms.
 wp_remove_user_presence( $user_id );
 
