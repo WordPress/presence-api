@@ -607,22 +607,35 @@ function wp_presence_expiry_for( $date_gmt, $expires_in = null ) {
 		$expires_in = wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL );
 	}
 
+	$expires_in = min( max( 1, (int) $expires_in ), wp_presence_max_expires_in() );
+
+	return gmdate( 'Y-m-d H:i:s', strtotime( $date_gmt . ' UTC' ) + $expires_in );
+}
+
+/**
+ * The longest window any row may carry, in seconds.
+ *
+ * The ceiling on the same hole the `$date_gmt` clamp closes from the other
+ * end: without it a caller could keep a row indefinitely, which is what the
+ * TTL exists to prevent. It is also the most a row can outlive its last
+ * activity, so the privacy policy text and the personal data export report
+ * this figure rather than the TTL.
+ *
+ * @access private
+ *
+ * @since 0.7.0
+ *
+ * @return int Seconds, at least 1.
+ */
+function wp_presence_max_expires_in() {
 	/**
-	 * Filters the longest window a writer may keep a row present for.
-	 *
-	 * The ceiling on the same hole the `$date_gmt` clamp closes from the other
-	 * end: without it a caller could keep a row indefinitely, which is what the
-	 * TTL exists to prevent.
+	 * Filters the longest window a writer may ask for through `$expires_in`.
 	 *
 	 * @since 0.7.0
 	 *
-	 * @param int $max Seconds. Default DAY_IN_SECONDS.
+	 * @param int $max Seconds. Default HOUR_IN_SECONDS.
 	 */
-	$max = (int) apply_filters( 'wp_presence_max_expires_in', DAY_IN_SECONDS );
-
-	$expires_in = min( max( 1, (int) $expires_in ), max( 1, $max ) );
-
-	return gmdate( 'Y-m-d H:i:s', strtotime( $date_gmt . ' UTC' ) + $expires_in );
+	return max( 1, (int) apply_filters( 'wp_presence_max_expires_in', HOUR_IN_SECONDS ) );
 }
 
 /**

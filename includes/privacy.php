@@ -12,9 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Builds the suggested privacy policy text for presence data.
  *
- * The retention window is read through wp_presence_get_timeout() rather than
- * printed from the constant, so a site filtering wp_presence_default_ttl gets
- * a suggestion that matches what it actually stores.
+ * The retention window is wp_presence_max_expires_in(), the most any row can outlive its last activity, rather than the TTL a heartbeat row is written with: since 0.7.0 a writer may name a longer window of its own, up to that cap.
  *
  * @since 0.3.0
  *
@@ -23,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @return string Policy content, ready for wp_add_privacy_policy_content().
  */
 function wp_presence_get_privacy_policy_content() {
-	$timeout = wp_presence_get_timeout();
+	$window = wp_presence_max_expires_in();
 
 	$content =
 		'<p class="privacy-policy-tutorial">' .
@@ -35,7 +33,7 @@ function wp_presence_get_privacy_policy_content() {
 		sprintf(
 			/* translators: %s: Number of seconds presence data is retained. */
 			__( 'While you are signed in, this site records that you are active, which screen you are viewing, and which post you are editing. Other signed-in users who can edit content are able to see this. It is kept for at most %s seconds after your last activity and is then deleted automatically. Nothing is retained beyond that.', 'presence-api' ),
-			number_format_i18n( $timeout )
+			number_format_i18n( $window )
 		) .
 		'<p class="privacy-policy-tutorial">' .
 		__( 'Recording can be switched off for the whole site under Settings &gt; General, or in code with the wp_presence_recording_enabled filter. Remove the paragraph above if you switch it off.', 'presence-api' ) .
@@ -173,7 +171,7 @@ function wp_presence_personal_data_exporter( $email_address ) {
 		'value' => sprintf(
 			/* translators: %s: Number of seconds presence data is retained. */
 			__( 'Presence is deleted at most %s seconds after the last activity. Nothing is kept beyond that, so there is no history to export.', 'presence-api' ),
-			number_format_i18n( wp_presence_get_timeout() )
+			number_format_i18n( wp_presence_max_expires_in() )
 		),
 	);
 
