@@ -531,19 +531,19 @@ function wp_presence_heartbeat_problem_message( $problem ) {
 
 	if ( 'missing' === $problem ) {
 		/* translators: %d: Presence timeout in seconds. */
-		return sprintf( __( 'Heartbeat is turned off, so anyone who has not loaded a page in the last %d seconds stops showing as present.', 'presence-api' ), $ttl );
+		return sprintf( __( 'Heartbeat is turned off, so Who\'s Online misses anyone who has not loaded a page in the last %d seconds.', 'presence-api' ), $ttl );
 	}
 
 	if ( 'slow' === $problem ) {
 		/* translators: %d: Presence timeout in seconds. */
-		return sprintf( __( 'Heartbeat runs less often than every %d seconds, so people who stay on one screen stop showing as present while still there.', 'presence-api' ), $ttl - wp_presence_ttl_margin() );
+		return sprintf( __( 'Heartbeat runs less often than every %d seconds, so Who\'s Online drops people who stay on one screen.', 'presence-api' ), $ttl - wp_presence_ttl_margin() );
 	}
 
 	return '';
 }
 
 /**
- * Prints a notice above a presence widget when Heartbeat cannot keep it current.
+ * Prints a notice above Who's Online when Heartbeat cannot keep it current.
  *
  * @access private
  *

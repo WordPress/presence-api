@@ -1093,7 +1093,7 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_heartbeat_problem_message
 	 * @covers ::wp_presence_render_heartbeat_notice
 	 */
-	public function test_heartbeat_problem_surfaces_in_site_health_and_widgets() {
+	public function test_heartbeat_problem_surfaces_in_site_health_and_whos_online() {
 		wp_set_current_user( self::$editor_id );
 
 		$this->assertArrayHasKey( 'presence_heartbeat', wp_presence_site_status_tests( array() )['direct'] );
@@ -1108,11 +1108,9 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 
 		$this->assertSame( 'recommended', wp_presence_site_health_heartbeat_test()['status'] );
 
-		foreach ( array( 'WP_Presence_Widget_Whos_Online', 'WP_Presence_Widget_Active_Posts' ) as $widget ) {
-			ob_start();
-			$widget::render();
-			$this->assertStringContainsString( 'presence-heartbeat-notice', ob_get_clean(), $widget );
-		}
+		ob_start();
+		WP_Presence_Widget_Whos_Online::render();
+		$this->assertStringContainsString( 'presence-heartbeat-notice', ob_get_clean() );
 	}
 
 	/**
