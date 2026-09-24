@@ -1238,6 +1238,25 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * A writer that names no window gets the site TTL, filter included, which
+	 * is what every heartbeat-backed writer wants.
+	 *
+	 * @covers ::wp_presence_expiry_for
+	 */
+	public function test_a_row_without_a_window_expires_on_the_site_ttl() {
+		add_filter( 'wp_presence_default_ttl', fn() => 300 );
+
+		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
+
+		$this->assertSame(
+			300,
+			strtotime( $this->stored_expires_gmt( 'test/room', 'client-1' ) . ' UTC' )
+				- strtotime( $this->stored_date_gmt( 'test/room', 'client-1' ) . ' UTC' ),
+			'The window is the filtered TTL, measured from the row timestamp.'
+		);
+	}
+
+	/**
 	 * @covers ::wp_presence_expiry_for
 	 */
 	public function test_the_window_is_capped() {
