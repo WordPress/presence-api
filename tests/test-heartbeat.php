@@ -1046,6 +1046,64 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * @covers ::wp_presence_site_status_tests
+	 */
+	public function test_heartbeat_check_registers_only_when_presence_is_available() {
+		$this->assertArrayHasKey( 'presence_heartbeat', wp_presence_site_status_tests( array() )['direct'] );
+
+		add_filter( 'wp_presence_recording_enabled', '__return_false' );
+		$this->assertArrayNotHasKey( 'direct', wp_presence_site_status_tests( array() ) );
+	}
+
+	/**
+	 * The last interval that still refreshes a row inside the TTL's margin passes.
+	 *
+	 * @covers ::wp_presence_site_health_heartbeat_test
+	 */
+	public function test_heartbeat_check_flags_an_interval_past_the_ttl() {
+		$limit    = wp_presence_get_timeout() - wp_presence_ttl_margin();
+		$interval = $limit;
+		add_filter(
+			'heartbeat_settings',
+			static function ( $settings ) use ( &$interval ) {
+				$settings['interval'] = $interval;
+				return $settings;
+			}
+		);
+
+		// Core filters the settings once, when it registers the script.
+		unset( $GLOBALS['wp_scripts'] );
+		$this->assertSame( 'good', wp_presence_site_health_heartbeat_test()['status'] );
+
+		++$interval;
+		unset( $GLOBALS['wp_scripts'] );
+		$status = wp_presence_site_health_heartbeat_test()['status'];
+		unset( $GLOBALS['wp_scripts'] );
+
+		$this->assertSame( 'recommended', $status );
+	}
+
+	/**
+	 * @covers ::wp_presence_site_health_heartbeat_test
+	 */
+	public function test_heartbeat_check_flags_a_ttl_shorter_than_a_background_tick() {
+		add_filter( 'wp_presence_default_ttl', fn() => 120 );
+
+		$this->assertSame( 'recommended', wp_presence_site_health_heartbeat_test()['status'] );
+	}
+
+	/**
+	 * @covers ::wp_presence_site_health_heartbeat_test
+	 */
+	public function test_heartbeat_check_flags_a_missing_script() {
+		wp_deregister_script( 'heartbeat' );
+		$status = wp_presence_site_health_heartbeat_test()['status'];
+		unset( $GLOBALS['wp_scripts'] );
+
+		$this->assertSame( 'recommended', $status );
+	}
+
+	/**
 	 * Decodes the wpPresenceConfig object handed to presence-ping.js.
 	 *
 	 * @return array The decoded config.
