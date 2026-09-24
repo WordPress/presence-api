@@ -1258,6 +1258,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers ::wp_presence_expiry_for
+	 * @covers ::wp_presence_max_expires_in
 	 */
 	public function test_the_window_is_capped() {
 		add_filter( 'wp_presence_max_expires_in', fn() => MINUTE_IN_SECONDS );
