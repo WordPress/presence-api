@@ -402,6 +402,7 @@ add_filter( 'heartbeat_received', 'wp_presence_admin_heartbeat_received', 9, 3 )
 add_filter( 'heartbeat_received', 'wp_presence_editor_heartbeat_received', 10, 3 );
 add_filter( 'heartbeat_received', 'wp_presence_bridge_post_lock', 11, 3 );
 add_filter( 'heartbeat_received', 'wp_presence_screen_heartbeat_received', 12, 3 );
+add_filter( 'site_status_tests', 'wp_presence_site_status_tests' );
 
 add_action( 'admin_enqueue_scripts', 'wp_presence_enqueue_stale_screen_banner' );
 add_action( 'updated_option', 'wp_presence_on_updated_option' );

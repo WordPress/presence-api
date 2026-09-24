@@ -119,6 +119,8 @@ class WP_Presence_Widget_Active_Posts {
 	public static function render() {
 		$posts = self::build_active_posts_data();
 
+		wp_presence_render_heartbeat_notice();
+
 		echo '<div id="presence-active-posts-list" aria-live="polite" tabindex="-1">';
 
 		if ( empty( $posts ) ) {

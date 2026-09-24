@@ -1046,6 +1046,76 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * @covers ::wp_presence_heartbeat_problem
+	 */
+	public function test_heartbeat_problem_reports_a_missing_script() {
+		$this->assertSame( '', wp_presence_heartbeat_problem() );
+
+		wp_deregister_script( 'heartbeat' );
+		$problem = wp_presence_heartbeat_problem();
+		unset( $GLOBALS['wp_scripts'] );
+
+		$this->assertSame( 'missing', $problem );
+	}
+
+	/**
+	 * The last interval that still refreshes a row inside the TTL's margin is fine.
+	 *
+	 * @covers ::wp_presence_heartbeat_problem
+	 */
+	public function test_heartbeat_problem_reports_an_interval_past_the_ttl() {
+		$limit    = wp_presence_get_timeout() - wp_presence_ttl_margin();
+		$settings = array( 'interval' => $limit );
+		$filter   = static function () use ( &$settings ) {
+			return $settings;
+		};
+		add_filter( 'heartbeat_settings', $filter );
+
+		$this->assertSame( '', wp_presence_heartbeat_problem() );
+
+		$settings = array( 'interval' => $limit + 1 );
+		$this->assertSame( 'slow', wp_presence_heartbeat_problem() );
+
+		// minimalInterval overrides a shorter interval, up to heartbeat.js's 600 cap.
+		$settings = array(
+			'interval'        => 15,
+			'minimalInterval' => $limit + 1,
+		);
+		$this->assertSame( 'slow', wp_presence_heartbeat_problem() );
+
+		$settings['minimalInterval'] = 601;
+		$this->assertSame( '', wp_presence_heartbeat_problem() );
+	}
+
+	/**
+	 * @covers ::wp_presence_site_status_tests
+	 * @covers ::wp_presence_site_health_heartbeat_test
+	 * @covers ::wp_presence_heartbeat_problem_message
+	 * @covers ::wp_presence_render_heartbeat_notice
+	 */
+	public function test_heartbeat_problem_surfaces_in_site_health_and_widgets() {
+		wp_set_current_user( self::$editor_id );
+
+		$this->assertArrayHasKey( 'presence_heartbeat', wp_presence_site_status_tests( array() )['direct'] );
+		$this->assertSame( 'good', wp_presence_site_health_heartbeat_test()['status'] );
+
+		add_filter(
+			'heartbeat_settings',
+			static function () {
+				return array( 'interval' => 300 );
+			}
+		);
+
+		$this->assertSame( 'recommended', wp_presence_site_health_heartbeat_test()['status'] );
+
+		foreach ( array( 'WP_Presence_Widget_Whos_Online', 'WP_Presence_Widget_Active_Posts' ) as $widget ) {
+			ob_start();
+			$widget::render();
+			$this->assertStringContainsString( 'presence-heartbeat-notice', ob_get_clean(), $widget );
+		}
+	}
+
+	/**
 	 * Decodes the wpPresenceConfig object handed to presence-ping.js.
 	 *
 	 * @return array The decoded config.
