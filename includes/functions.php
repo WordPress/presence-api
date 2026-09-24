@@ -422,24 +422,21 @@ function wp_presence_get_avatar_fetch_size( $display_size ) {
 }
 
 /**
- * Reports whether a write would leave the stored row exactly as it already is.
+ * Returns the date_gmt below which an unchanged row still has to be refreshed.
  *
  * @access private
  *
- * @since 0.4.0
+ * @since 0.7.0
  *
- * @param string $room      The room identifier.
- * @param string $client_id The client identifier.
- * @param string $data_json The encoded state about to be written.
- * @return bool True when the row can be left alone.
+ * @param string $room The room identifier.
+ * @return string A 'Y-m-d H:i:s' GMT timestamp, or an empty string when the
+ *                write must land whatever the stored row holds.
  */
-function wp_presence_write_is_redundant( $room, $client_id, $data_json ) {
-	global $wpdb;
-
+function wp_presence_refresh_cutoff( $room ) {
 	$threshold = wp_presence_refresh_threshold();
 
 	if ( $threshold <= 0 ) {
-		return false;
+		return '';
 	}
 
 	// The network summary push hangs off wp_presence_admin_room_changed, so an
@@ -449,23 +446,10 @@ function wp_presence_write_is_redundant( $room, $client_id, $data_json ) {
 		&& function_exists( 'wp_presence_network_summary_push_is_due' )
 		&& wp_presence_network_summary_push_is_due()
 	) {
-		return false;
+		return '';
 	}
 
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-	$current = $wpdb->get_row(
-		$wpdb->prepare(
-			"SELECT data, date_gmt FROM {$wpdb->presence} WHERE room = %s AND client_id = %s",
-			$room,
-			$client_id
-		)
-	);
-
-	if ( ! $current || $current->data !== $data_json ) {
-		return false;
-	}
-
-	return ( time() - (int) strtotime( $current->date_gmt . ' UTC' ) ) <= $threshold;
+	return gmdate( 'Y-m-d H:i:s', time() - $threshold );
 }
 
 /**
@@ -543,53 +527,57 @@ function wp_set_presence( $room, $client_id, $state, $user_id = 0, $date_gmt = n
 
 	// An explicit timestamp is how a relay backdates a collaborator who has
 	// since left; skipping it here would leave them looking present.
-	if ( null === $date_gmt && wp_presence_write_is_redundant( $room, $client_id, $data_json ) ) {
-		return true;
-	}
+	$refresh_cutoff = null === $date_gmt ? wp_presence_refresh_cutoff( $room ) : '';
 
-	return wp_presence_write_row( $room, $client_id, $user_id, $data_json, $now );
+	return wp_presence_write_row( $room, $client_id, $user_id, $data_json, $now, $refresh_cutoff );
 }
 
 /**
- * Upserts a presence row, skipping the redundant-write check.
+ * Upserts a presence row.
  *
- * For a caller that has already decided the write is needed from a row it read
- * earlier, so it does not pay for wp_presence_write_is_redundant()'s SELECT to
- * be told what it knows.
+ * Given a refresh cutoff, an unchanged row newer than it keeps its date_gmt, so
+ * no row is affected and the admin-room signal stays quiet.
  *
  * @access private
  *
  * @since 0.6.0
+ * @since 0.7.0 Added the `$refresh_cutoff` parameter.
  *
  * @global wpdb $wpdb WordPress database abstraction object.
  *
- * @param string $room      The room identifier.
- * @param string $client_id The client identifier.
- * @param int    $user_id   The user ID.
- * @param string $data_json The presence state, JSON encoded.
- * @param string $date_gmt  The GMT timestamp to stamp the row with.
+ * @param string $room           The room identifier.
+ * @param string $client_id      The client identifier.
+ * @param int    $user_id        The user ID.
+ * @param string $data_json      The presence state, JSON encoded.
+ * @param string $date_gmt       The GMT timestamp to stamp the row with.
+ * @param string $refresh_cutoff Optional. As returned by wp_presence_refresh_cutoff().
+ *                               Default empty, which always stamps $date_gmt.
  * @return bool True on success, false on failure.
  */
-function wp_presence_write_row( $room, $client_id, $user_id, $data_json, $date_gmt ) {
+function wp_presence_write_row( $room, $client_id, $user_id, $data_json, $date_gmt, $refresh_cutoff = '' ) {
 	global $wpdb;
 
-	// Repeated from wp_set_presence(), which checks them before its SELECT so a
-	// site with recording off runs no query at all.
+	// Repeated from wp_set_presence() for the callers that come here directly.
 	if ( ! wp_presence_recording_enabled() || ! wp_presence_has_table() ) {
 		return false;
 	}
 
+	$date_clause = 'date_gmt = VALUES(date_gmt)';
+	$args        = array( $room, $client_id, $user_id, $data_json, $date_gmt );
+
+	if ( '' !== $refresh_cutoff ) {
+		// MySQL assigns left to right, so this must precede `data = VALUES(data)`.
+		$date_clause = 'date_gmt = IF( data <> VALUES(data) OR date_gmt < %s, VALUES(date_gmt), date_gmt )';
+		$args[]      = $refresh_cutoff;
+	}
+
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	$result = $wpdb->query(
+		// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 		$wpdb->prepare(
-			"INSERT INTO {$wpdb->presence} (room, client_id, user_id, data, date_gmt)
-			VALUES (%s, %s, %d, %s, %s)
-			ON DUPLICATE KEY UPDATE user_id = VALUES(user_id), data = VALUES(data), date_gmt = VALUES(date_gmt)",
-			$room,
-			$client_id,
-			$user_id,
-			$data_json,
-			$date_gmt
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			"INSERT INTO {$wpdb->presence} (room, client_id, user_id, data, date_gmt) VALUES (%s, %s, %d, %s, %s) ON DUPLICATE KEY UPDATE user_id = VALUES(user_id), {$date_clause}, data = VALUES(data)",
+			...$args
 		)
 	);
 

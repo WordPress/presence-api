@@ -471,14 +471,11 @@ function wp_presence_store_collaboration_state( $room, $count, $stored ) {
 	$unchanged = $stored && isset( $stored->data['count'] ) && (int) $stored->data['count'] === $count;
 	$age       = $stored ? time() - (int) strtotime( $stored->date_gmt . ' UTC' ) : 0;
 
-	// Same rule as wp_presence_write_is_redundant(), decided from the row this
-	// request has already read rather than from a second SELECT.
+	// Same rule as wp_presence_refresh_cutoff(), decided from the row already read.
 	if ( $unchanged && $threshold > 0 && $age <= $threshold ) {
 		return;
 	}
 
-	// wp_set_presence() would run that same rule again over its own SELECT, so
-	// the write goes straight to the row.
 	wp_presence_write_row(
 		$room,
 		wp_presence_collaboration_state_client_id(),
