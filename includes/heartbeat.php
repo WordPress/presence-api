@@ -490,7 +490,7 @@ function wp_presence_store_collaboration_state( $room, $count, $stored ) {
  *
  * @access private
  *
- * @since 0.7.0
+ * @since 0.7.1
  *
  * @param array $tests Site Health tests.
  * @return array The tests.
@@ -514,7 +514,7 @@ function wp_presence_site_status_tests( $tests ) {
  *
  * @access private
  *
- * @since 0.7.0
+ * @since 0.7.1
  *
  * @return array The Site Health result.
  */
