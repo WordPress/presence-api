@@ -7,3 +7,4 @@
 
 define( 'WP_PRESENCE_PLUGIN_URL', 'https://example.com/wp-content/plugins/presence-api/' );
 define( 'MINUTE_IN_SECONDS', 60 );
+define( 'HOUR_IN_SECONDS', 3600 );

@@ -354,14 +354,13 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 		$page     = $request->get_param( 'page' );
 		$offset   = ( $page - 1 ) * $per_page;
 
-		$timeout = wp_presence_get_timeout();
-		$cutoff  = gmdate( 'Y-m-d H:i:s', time() - $timeout );
+		$cutoff = gmdate( 'Y-m-d H:i:s' );
 
 		// Get total count for pagination headers.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$total = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$wpdb->presence} WHERE room = %s AND date_gmt > %s AND client_id NOT LIKE %s",
+				"SELECT COUNT(*) FROM {$wpdb->presence} WHERE room = %s AND expires_gmt > %s AND client_id NOT LIKE %s",
 				$room,
 				$cutoff,
 				wp_presence_reserved_client_id_pattern()
@@ -372,7 +371,7 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT room, client_id, user_id, data, date_gmt FROM {$wpdb->presence} WHERE room = %s AND date_gmt > %s AND client_id NOT LIKE %s ORDER BY date_gmt DESC LIMIT %d OFFSET %d",
+				"SELECT room, client_id, user_id, data, date_gmt FROM {$wpdb->presence} WHERE room = %s AND expires_gmt > %s AND client_id NOT LIKE %s ORDER BY date_gmt DESC LIMIT %d OFFSET %d",
 				$room,
 				$cutoff,
 				wp_presence_reserved_client_id_pattern(),
@@ -482,11 +481,11 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 		}
 
 		$current_user_id = get_current_user_id();
-		$cutoff          = gmdate( 'Y-m-d H:i:s', time() - wp_presence_get_timeout() );
+		$cutoff          = gmdate( 'Y-m-d H:i:s' );
 
 		// Prevent overwriting another user's presence entry, and determine whether
 		// this request is an update to an existing active entry or a new insertion.
-		// Expired rows (date_gmt <= cutoff) are treated as absent: reactivating one
+		// Expired rows (expires_gmt <= now) are treated as absent: reactivating one
 		// counts against the cap the same as creating a brand-new entry.
 		//
 		// A narrow race window exists between the SELECT and INSERT below.
@@ -499,7 +498,7 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$existing_user_id = $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT user_id FROM {$wpdb->presence} WHERE room = %s AND client_id = %s AND date_gmt > %s",
+				"SELECT user_id FROM {$wpdb->presence} WHERE room = %s AND client_id = %s AND expires_gmt > %s",
 				$room,
 				$client_id,
 				$cutoff
@@ -520,7 +519,7 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$user_entry_count = $wpdb->get_var(
 				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$wpdb->presence} WHERE user_id = %d AND date_gmt > %s",
+					"SELECT COUNT(*) FROM {$wpdb->presence} WHERE user_id = %d AND expires_gmt > %s",
 					$current_user_id,
 					$cutoff
 				)

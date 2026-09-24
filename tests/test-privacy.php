@@ -30,10 +30,11 @@ class WP_Test_Presence_Privacy extends WP_Presence_UnitTestCase {
 	 * so a hard-coded number would understate its own retention.
 	 *
 	 * @covers ::wp_presence_get_privacy_policy_content
+	 * @covers ::wp_presence_max_expires_in
 	 */
-	public function test_the_retention_window_follows_the_ttl_filter() {
+	public function test_the_retention_window_follows_the_expiry_cap() {
 		add_filter(
-			'wp_presence_default_ttl',
+			'wp_presence_max_expires_in',
 			static function () {
 				return 900;
 			}
