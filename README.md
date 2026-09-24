@@ -70,7 +70,8 @@ The following public functions are part of the stable public API contract. All o
 ```php
 // Read all presence entries in a room, or only those whose client_id starts
 // with $client_prefix. The prefix is matched literally, in the query.
-$entries = wp_get_presence( $room, $timeout = WP_PRESENCE_DEFAULT_TTL, $client_prefix = '' );
+// A $timeout you pass is the window used; null takes the site's filtered TTL.
+$entries = wp_get_presence( $room, $timeout = null, $client_prefix = '' );
 
 // Upsert a client's presence state. Atomic via INSERT … ON DUPLICATE KEY UPDATE.
 // $date_gmt ('Y-m-d H:i:s') lets a caller relaying awareness on behalf of
@@ -156,9 +157,11 @@ Without support, `wp_presence_post_room()` returns `false` for that post type an
 
 ### Filters
 #### `wp_presence_default_ttl`
-Filters the presence TTL (time-to-live) in seconds used for all queries and cleanup. Default: 150.
+Filters the site's presence TTL (time-to-live) in seconds, used for cleanup and for any query that names no window of its own. Default: 150.
 
 Values under 120 drop a tab that is still open and still pinging, since that is the Heartbeat interval core gives an unfocused or five-minute-idle tab.
+
+A caller that passes its own `$timeout` gets that window on every site, so this filter leaves it alone. Something asking `wp_get_presence( $room, 30 )` has decided what counts as live for its own feature, and a site widening that would let it read stale clients as present.
 ```php
 add_filter( 'wp_presence_default_ttl', function( $timeout ) {
     return 300; // Override TTL to 5 minutes.

@@ -38,10 +38,10 @@ abstract class WP_Presence_UnitTestCase extends WP_UnitTestCase {
 	 * view and it stays a test affordance rather than an API function.
 	 *
 	 * @param int $user_id The user whose entries to read.
-	 * @param int $timeout Optional. TTL in seconds. Default WP_PRESENCE_DEFAULT_TTL.
+	 * @param int $timeout Optional. TTL in seconds. Default null, the site's filtered TTL.
 	 * @return object[] Entries with room, client_id, user_id, data (array), date_gmt.
 	 */
-	protected function presence_for_user( $user_id, $timeout = WP_PRESENCE_DEFAULT_TTL ) {
+	protected function presence_for_user( $user_id, $timeout = null ) {
 		global $wpdb;
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared

@@ -179,7 +179,7 @@ function wp_maybe_create_presence_network_summary_table() {
  * @return int Seconds.
  */
 function wp_presence_network_summary_refresh_interval() {
-	$timeout = wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL );
+	$timeout = wp_presence_get_timeout();
 	$maximum = max( 1, $timeout - wp_presence_get_heartbeat_idle_interval() );
 
 	/**
@@ -462,7 +462,7 @@ function wp_presence_delete_expired_network_summary_rows() {
 		return;
 	}
 
-	$timeout = wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL );
+	$timeout = wp_presence_get_timeout();
 	$cutoff  = gmdate( 'Y-m-d H:i:s', time() - $timeout );
 
 	/** This filter is documented in includes/functions.php */
@@ -624,7 +624,7 @@ function wp_presence_get_network_sites_for_user( $user_id ) {
  * @param array $args {
  *     Optional.
  *
- *     @type int $timeout TTL in seconds. Default WP_PRESENCE_DEFAULT_TTL.
+ *     @type int $timeout TTL in seconds. Default null, the site's filtered TTL.
  * }
  * @return array {
  *     @type array $sites               User IDs keyed by blog_id, busiest site
@@ -644,7 +644,7 @@ function wp_presence_get_network_sites_for_user( $user_id ) {
  * }
  */
 function wp_presence_get_network_snapshot( array $args = array() ) {
-	$timeout = wp_presence_get_timeout( $args['timeout'] ?? WP_PRESENCE_DEFAULT_TTL );
+	$timeout = wp_presence_get_timeout( $args['timeout'] ?? null );
 
 	return wp_presence_network_cached(
 		'snapshot:' . $timeout,
@@ -665,7 +665,7 @@ function wp_presence_get_network_snapshot( array $args = array() ) {
  * @param array $args {
  *     Optional.
  *
- *     @type int $timeout        TTL in seconds. Default WP_PRESENCE_DEFAULT_TTL.
+ *     @type int $timeout        TTL in seconds. Default null, the site's filtered TTL.
  *     @type int $sites          Maximum sites to resolve, busiest first. Default 0, every site.
  *     @type int $users_per_site Maximum users to resolve per site. Default 0, every user.
  *     @type int $blog_id        Resolve this site only. Default 0, no restriction.
@@ -689,7 +689,7 @@ function wp_presence_get_network_summary( array $args = array() ) {
 	$args = wp_parse_args(
 		$args,
 		array(
-			'timeout'        => WP_PRESENCE_DEFAULT_TTL,
+			'timeout'        => null,
 			'sites'          => 0,
 			'users_per_site' => 0,
 			'blog_id'        => 0,

@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @return string Policy content, ready for wp_add_privacy_policy_content().
  */
 function wp_presence_get_privacy_policy_content() {
-	$timeout = wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL );
+	$timeout = wp_presence_get_timeout();
 
 	$content =
 		'<p class="privacy-policy-tutorial">' .
@@ -173,7 +173,7 @@ function wp_presence_personal_data_exporter( $email_address ) {
 		'value' => sprintf(
 			/* translators: %s: Number of seconds presence data is retained. */
 			__( 'Presence is deleted at most %s seconds after the last activity. Nothing is kept beyond that, so there is no history to export.', 'presence-api' ),
-			number_format_i18n( wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL ) )
+			number_format_i18n( wp_presence_get_timeout() )
 		),
 	);
 

@@ -53,7 +53,7 @@ function wp_presence_heartbeat_widget_render() {
 		$summary['total_users'] = 1;
 	}
 	?>
-	<?php $ttl = wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL ); ?>
+	<?php $ttl = wp_presence_get_timeout(); ?>
 	<div id="presence-heartbeat-widget">
 		<div class="presence-debugger-header">
 			<div class="presence-heartbeat-pulse">
@@ -115,7 +115,7 @@ function wp_presence_heartbeat_widget_received( $response, $data, $screen_id ) {
 	$response['presence-heartbeat-users']    = $summary['total_users'];
 	$response['presence-heartbeat-entries']  = $summary['total_entries'];
 	$response['presence-heartbeat-query-ms'] = $query_ms;
-	$response['presence-heartbeat-ttl']      = wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL );
+	$response['presence-heartbeat-ttl']      = wp_presence_get_timeout();
 
 	$room_list = array();
 	foreach ( $summary['by_prefix'] as $prefix => $info ) {

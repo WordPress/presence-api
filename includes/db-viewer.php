@@ -39,7 +39,7 @@ add_action(
 			);
 		}
 
-		$ttl         = wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL );
+		$ttl         = wp_presence_get_timeout();
 		$now_ms      = (int) ( microtime( true ) * 1000 );
 		$max_visible = 10;
 		$is_embedded = isset( $_SERVER['HTTP_SEC_FETCH_DEST'] ) && 'iframe' === $_SERVER['HTTP_SEC_FETCH_DEST'];
