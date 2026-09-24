@@ -44,6 +44,27 @@ function wp_presence_has_table() {
 }
 
 /**
+ * Returns the date_gmt floor a read applies on top of a row's own expiry.
+ *
+ * A caller that named no window has no opinion about staleness, so the row's
+ * expiry is the only bound and this floor matches every stored row.
+ *
+ * @access private
+ *
+ * @since 0.7.0
+ *
+ * @param int|null $timeout The caller's window in seconds, or null for none.
+ * @return string A floor in `Y-m-d H:i:s`, UTC.
+ */
+function wp_presence_read_floor( $timeout ) {
+	if ( null === $timeout ) {
+		return '1000-01-01 00:00:00';
+	}
+
+	return gmdate( 'Y-m-d H:i:s', time() - wp_presence_get_timeout( $timeout ) );
+}
+
+/**
  * Gets all present clients in a room, filtered by TTL.
  *
  * Reserved rows are left out whatever the prefix, so `_` returns nothing.
@@ -55,8 +76,7 @@ function wp_presence_has_table() {
  * @since 0.7.0 An explicit `$timeout` is no longer overridden by `wp_presence_default_ttl`.
  *
  * @param string $room          The room identifier.
- * @param int    $timeout       Unused since 0.7.0: a row expires on the window it was written
- *                              with, so a read cannot narrow it. Kept so callers need not change.
+ * @param int    $timeout       Optional. Timeout in seconds. Default null, the site's filtered TTL.
  * @param string $client_prefix Optional. Only return clients whose client_id starts with this.
  *                              Default empty.
  * @return array Array of presence entry objects.
@@ -135,8 +155,7 @@ function wp_presence_client_rows( $rows ) {
  * @global wpdb $wpdb WordPress database abstraction object.
  *
  * @param string $room          The room identifier.
- * @param int    $timeout       Unused since 0.7.0: a row expires on the window it was written
- *                              with, so a read cannot narrow it. Kept so callers need not change.
+ * @param int    $timeout       Optional. Timeout in seconds. Default null, the site's filtered TTL.
  * @param string $client_prefix Optional. Only return rows whose client_id starts with this.
  *                              Default empty.
  * @return array Array of presence row objects.
@@ -149,9 +168,10 @@ function wp_presence_room_rows( $room, $timeout = null, $client_prefix = '' ) {
 	}
 
 	$cutoff = gmdate( 'Y-m-d H:i:s' );
+	$stale  = wp_presence_read_floor( $timeout );
 
 	$client_clause = '';
-	$args          = array( $room, $cutoff );
+	$args          = array( $room, $cutoff, $stale );
 
 	if ( '' !== (string) $client_prefix ) {
 		$client_clause = ' AND client_id LIKE %s';
@@ -165,7 +185,7 @@ function wp_presence_room_rows( $room, $timeout = null, $client_prefix = '' ) {
 		// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 		$wpdb->prepare(
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			"SELECT room, client_id, user_id, data, date_gmt FROM {$wpdb->presence} WHERE room = %s AND expires_gmt > %s{$client_clause} ORDER BY date_gmt DESC",
+			"SELECT room, client_id, user_id, data, date_gmt FROM {$wpdb->presence} WHERE room = %s AND expires_gmt > %s AND date_gmt > %s{$client_clause} ORDER BY date_gmt DESC",
 			...$args
 		)
 	);
@@ -604,7 +624,7 @@ function wp_set_presence( $room, $client_id, $state, $user_id = 0, $date_gmt = n
  */
 function wp_presence_expiry_for( $date_gmt, $expires_in = null ) {
 	if ( null === $expires_in ) {
-		$expires_in = wp_presence_get_timeout( WP_PRESENCE_DEFAULT_TTL );
+		$expires_in = wp_presence_get_timeout();
 	}
 
 	$expires_in = min( max( 1, (int) $expires_in ), wp_presence_max_expires_in() );
@@ -651,10 +671,10 @@ function wp_presence_max_expires_in() {
  *
  * @global wpdb $wpdb WordPress database abstraction object.
  *
- * @param string      $room        The room identifier.
- * @param string      $client_id   The client identifier.
- * @param int         $user_id     The user ID.
- * @param string      $data_json   The presence state, JSON encoded.
+ * @param string      $room      The room identifier.
+ * @param string      $client_id The client identifier.
+ * @param int         $user_id   The user ID.
+ * @param string      $data_json The presence state, JSON encoded.
  * @param string      $date_gmt    The GMT timestamp to stamp the row with.
  * @param string|null $expires_gmt Optional. When the row stops counting as present.
  *                                 Default the site TTL from `$date_gmt`.
@@ -873,9 +893,7 @@ function wp_presence_get_timeout( $timeout = null ) {
 	}
 
 	/**
-	 * Filters the presence TTL (time-to-live) a row is written with when its
-	 * writer names no window of its own. Applied at write time since 0.7.0, so
-	 * it does not re-age rows already in the table.
+	 * Filters the presence TTL (time-to-live) used when a caller names no window.
 	 *
 	 * @param int $timeout The timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL (150).
 	 */
@@ -887,10 +905,10 @@ function wp_presence_get_timeout( $timeout = null ) {
  *
  * @access private
  * @param string $prefix  The room prefix to match (e.g., 'postType/').
- * @param int    $timeout Unused since 0.7.0: rows expire on their own window. Kept for callers.
+ * @param int    $timeout Optional. Timeout in seconds. Default null, the site's filtered TTL.
  * @return array Array of presence entry objects.
  */
-function wp_get_presence_by_room_prefix( $prefix, $timeout = WP_PRESENCE_DEFAULT_TTL ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- rows expire on their own window since 0.7.0, see #539.
+function wp_get_presence_by_room_prefix( $prefix, $timeout = null ) {
 	global $wpdb;
 
 	if ( ! wp_presence_has_table() ) {
@@ -898,13 +916,15 @@ function wp_get_presence_by_room_prefix( $prefix, $timeout = WP_PRESENCE_DEFAULT
 	}
 
 	$cutoff = gmdate( 'Y-m-d H:i:s' );
+	$stale  = wp_presence_read_floor( $timeout );
 
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	$results = $wpdb->get_results(
 		$wpdb->prepare(
-			"SELECT room, client_id, user_id, data, date_gmt FROM {$wpdb->presence} WHERE room LIKE %s AND expires_gmt > %s AND client_id NOT LIKE %s ORDER BY date_gmt DESC",
+			"SELECT room, client_id, user_id, data, date_gmt FROM {$wpdb->presence} WHERE room LIKE %s AND expires_gmt > %s AND date_gmt > %s AND client_id NOT LIKE %s ORDER BY date_gmt DESC",
 			$wpdb->esc_like( $prefix ) . '%',
 			$cutoff,
+			$stale,
 			wp_presence_reserved_client_id_pattern()
 		)
 	);
@@ -925,14 +945,14 @@ function wp_get_presence_by_room_prefix( $prefix, $timeout = WP_PRESENCE_DEFAULT
  * Returns a site-wide presence summary grouped by room prefix.
  *
  * @access private
- * @param int $timeout Unused since 0.7.0: rows expire on their own window. Kept for callers.
+ * @param int $timeout Optional. Timeout in seconds. Default null, the site's filtered TTL.
  * @return array {
  *     @type int   $total_entries Total presence entries.
  *     @type int   $total_users   Distinct user count.
  *     @type array $by_prefix     Associative array keyed by prefix, each with 'entries' and 'users'.
  * }
  */
-function wp_get_presence_summary( $timeout = WP_PRESENCE_DEFAULT_TTL ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found -- rows expire on their own window since 0.7.0, see #539.
+function wp_get_presence_summary( $timeout = null ) {
 	global $wpdb;
 
 	$summary = array(
@@ -946,12 +966,14 @@ function wp_get_presence_summary( $timeout = WP_PRESENCE_DEFAULT_TTL ) { // phpc
 	}
 
 	$cutoff = gmdate( 'Y-m-d H:i:s' );
+	$stale  = wp_presence_read_floor( $timeout );
 
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	$room_rows = $wpdb->get_results(
 		$wpdb->prepare(
-			"SELECT room, COUNT(*) AS entries FROM {$wpdb->presence} WHERE expires_gmt > %s AND client_id NOT LIKE %s GROUP BY room",
+			"SELECT room, COUNT(*) AS entries FROM {$wpdb->presence} WHERE expires_gmt > %s AND date_gmt > %s AND client_id NOT LIKE %s GROUP BY room",
 			$cutoff,
+			$stale,
 			wp_presence_reserved_client_id_pattern()
 		)
 	);
@@ -985,8 +1007,9 @@ function wp_get_presence_summary( $timeout = WP_PRESENCE_DEFAULT_TTL ) { // phpc
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	$summary['total_users'] = (int) $wpdb->get_var(
 		$wpdb->prepare(
-			"SELECT COUNT(DISTINCT user_id) FROM {$wpdb->presence} WHERE expires_gmt > %s AND client_id NOT LIKE %s",
+			"SELECT COUNT(DISTINCT user_id) FROM {$wpdb->presence} WHERE expires_gmt > %s AND date_gmt > %s AND client_id NOT LIKE %s",
 			$cutoff,
+			$stale,
 			wp_presence_reserved_client_id_pattern()
 		)
 	);
@@ -996,7 +1019,7 @@ function wp_get_presence_summary( $timeout = WP_PRESENCE_DEFAULT_TTL ) { // phpc
 
 		// $placeholders holds only %s tokens generated above, so the interpolation is safe.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
-		$summary['by_prefix'][ $prefix ]['users'] = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(DISTINCT user_id) FROM {$wpdb->presence} WHERE expires_gmt > %s AND client_id NOT LIKE %s AND room IN ( $placeholders )", array_merge( array( $cutoff, wp_presence_reserved_client_id_pattern() ), $rooms ) ) );
+		$summary['by_prefix'][ $prefix ]['users'] = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(DISTINCT user_id) FROM {$wpdb->presence} WHERE expires_gmt > %s AND date_gmt > %s AND client_id NOT LIKE %s AND room IN ( $placeholders )", array_merge( array( $cutoff, $stale, wp_presence_reserved_client_id_pattern() ), $rooms ) ) );
 	}
 
 	return $summary;
@@ -1244,7 +1267,7 @@ function wp_maybe_create_presence_table() {
  *
  * @access private
  *
- * @param int  $timeout        Unused since 0.7.0: rows expire on their own window. Kept for callers.
+ * @param int  $timeout        Optional. Timeout in seconds. Default null, the site's filtered TTL.
  * @param bool $hydrate_users  Optional. Whether to hydrate user data. Default true.
  * @return array Array of room objects, each with 'room', 'user_count', and optionally 'users'.
  */
@@ -1256,6 +1279,7 @@ function wp_get_active_rooms( $timeout = null, $hydrate_users = true ) {
 	}
 
 	$cutoff = gmdate( 'Y-m-d H:i:s' );
+	$stale  = wp_presence_read_floor( $timeout );
 
 	// First pass: get room names and counts only (no user IDs).
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -1263,9 +1287,10 @@ function wp_get_active_rooms( $timeout = null, $hydrate_users = true ) {
 		$wpdb->prepare(
 			"SELECT room, COUNT(DISTINCT user_id) as user_count
 			FROM {$wpdb->presence}
-			WHERE expires_gmt > %s AND client_id NOT LIKE %s
+			WHERE expires_gmt > %s AND date_gmt > %s AND client_id NOT LIKE %s
 			GROUP BY room",
 			$cutoff,
+			$stale,
 			wp_presence_reserved_client_id_pattern()
 		)
 	);
@@ -1300,9 +1325,10 @@ function wp_get_active_rooms( $timeout = null, $hydrate_users = true ) {
 				$wpdb->prepare(
 					"SELECT DISTINCT user_id
 					FROM {$wpdb->presence}
-					WHERE room = %s AND expires_gmt > %s AND client_id NOT LIKE %s",
+					WHERE room = %s AND expires_gmt > %s AND date_gmt > %s AND client_id NOT LIKE %s",
 					$stat->room,
 					$cutoff,
+					$stale,
 					wp_presence_reserved_client_id_pattern()
 				)
 			);
@@ -1338,10 +1364,10 @@ function wp_get_active_rooms( $timeout = null, $hydrate_users = true ) {
  * @access private
  *
  * @param array $rooms   Array of room data (each with a 'room' key).
- * @param int   $timeout Unused since 0.7.0: rows expire on their own window. Kept for callers.
+ * @param int   $timeout Optional. Timeout in seconds. Default null, the site's filtered TTL.
  * @return array Rooms with hydrated user arrays.
  */
-function wp_presence_hydrate_room_users( $rooms, $timeout = WP_PRESENCE_DEFAULT_TTL ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- rows expire on their own window since 0.7.0, see #539.
+function wp_presence_hydrate_room_users( $rooms, $timeout = null ) {
 	global $wpdb;
 
 	if ( empty( $rooms ) ) {
@@ -1349,6 +1375,7 @@ function wp_presence_hydrate_room_users( $rooms, $timeout = WP_PRESENCE_DEFAULT_
 	}
 
 	$cutoff = gmdate( 'Y-m-d H:i:s' );
+	$stale  = wp_presence_read_floor( $timeout );
 
 	// Get user IDs for all rooms in one query.
 	$room_names   = wp_list_pluck( $rooms, 'room' );
@@ -1360,8 +1387,8 @@ function wp_presence_hydrate_room_users( $rooms, $timeout = WP_PRESENCE_DEFAULT_
 		$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 			"SELECT room, user_id
 			FROM {$wpdb->presence}
-			WHERE room IN ($placeholders) AND expires_gmt > %s AND client_id NOT LIKE %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
-			array_merge( $room_names, array( $cutoff, wp_presence_reserved_client_id_pattern() ) )
+			WHERE room IN ($placeholders) AND expires_gmt > %s AND date_gmt > %s AND client_id NOT LIKE %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+			array_merge( $room_names, array( $cutoff, $stale, wp_presence_reserved_client_id_pattern() ) )
 		)
 	);
 

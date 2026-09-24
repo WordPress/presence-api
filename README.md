@@ -70,9 +70,8 @@ The following public functions are part of the stable public API contract. All o
 ```php
 // Read all presence entries in a room, or only those whose client_id starts
 // with $client_prefix. The prefix is matched literally, in the query.
-// $timeout is unused since 0.7.0: each row expires on the window it was
-// written with, so a read cannot narrow it.
-$entries = wp_get_presence( $room, $timeout = WP_PRESENCE_DEFAULT_TTL, $client_prefix = '' );
+// A $timeout you pass is the window used; null takes the site's filtered TTL.
+$entries = wp_get_presence( $room, $timeout = null, $client_prefix = '' );
 
 // Upsert a client's presence state. Atomic via INSERT … ON DUPLICATE KEY UPDATE.
 // $date_gmt ('Y-m-d H:i:s') lets a caller relaying awareness on behalf of
@@ -165,7 +164,7 @@ Without support, `wp_presence_post_room()` returns `false` for that post type an
 
 ### Filters
 #### `wp_presence_default_ttl`
-Filters the presence TTL (time-to-live) in seconds a row is written with when its writer names no window of its own. Default: 150. Since 0.7.0 it applies at write time, so changing it does not re-age rows already stored; anyone still present picks up the new value on their next ping.
+Filters the presence TTL (time-to-live) in seconds, used when nobody names a window of their own: the expiry a row is written with, and the window a read treats as present. Default: 150. Changing it does not re-age rows already stored; anyone still present picks up the new expiry on their next ping.
 
 Values under 120 drop a tab that is still open and still pinging, since that is the Heartbeat interval core gives an unfocused or five-minute-idle tab.
 
