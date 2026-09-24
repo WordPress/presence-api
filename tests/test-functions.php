@@ -254,6 +254,56 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Fills a post room with rows from every kind of writer that shares one.
+	 */
+	private function seed_shared_room() {
+		wp_set_presence( 'postType/post:1', 'editor-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( 'postType/post:1', 'gse-1', array( 'cursor' => 1 ), self::$editor_id );
+		wp_set_presence( 'postType/post:1', wp_presence_collaboration_state_client_id(), array( 'count' => 2 ) );
+	}
+
+	/**
+	 * @covers ::wp_presence_exchange
+	 */
+	public function test_exchange_writes_and_returns_only_the_prefix_asked_for() {
+		$this->seed_shared_room();
+
+		$entries = wp_presence_exchange( 'postType/post:1', 'gse-2', array( 'cursor' => 2 ), self::$editor_id, WP_PRESENCE_DEFAULT_TTL, 'gse-' );
+
+		$client_ids = wp_list_pluck( $entries, 'client_id' );
+		sort( $client_ids );
+
+		$this->assertSame( array( 'gse-1', 'gse-2' ), $client_ids, 'The caller\'s own write is in the set, and nobody else\'s rows are.' );
+	}
+
+	/**
+	 * @covers ::wp_presence_exchange
+	 */
+	public function test_exchange_costs_the_write_and_one_read() {
+		$this->seed_shared_room();
+
+		$queries = $this->count_presence_queries(
+			function () {
+				wp_presence_exchange( 'postType/post:1', 'gse-1', array( 'cursor' => 3 ), self::$editor_id, WP_PRESENCE_DEFAULT_TTL, 'gse-' );
+			}
+		);
+
+		$this->assertSame( 2, $queries );
+	}
+
+	/**
+	 * @covers ::wp_presence_leave
+	 */
+	public function test_leave_removes_and_returns_only_the_prefix_asked_for() {
+		$this->seed_shared_room();
+		wp_set_presence( 'postType/post:1', 'gse-2', array(), self::$editor_id );
+
+		$entries = wp_presence_leave( 'postType/post:1', 'gse-2', WP_PRESENCE_DEFAULT_TTL, 'gse-' );
+
+		$this->assertSame( array( 'gse-1' ), wp_list_pluck( $entries, 'client_id' ) );
+	}
+
+	/**
 	 * @covers ::wp_remove_presence
 	 */
 	public function test_remove_nonexistent_returns_true() {
