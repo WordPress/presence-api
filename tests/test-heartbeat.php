@@ -1086,6 +1086,15 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	/**
 	 * @covers ::wp_presence_site_health_heartbeat_test
 	 */
+	public function test_heartbeat_check_flags_a_ttl_shorter_than_a_background_tick() {
+		add_filter( 'wp_presence_default_ttl', fn() => 120 );
+
+		$this->assertSame( 'recommended', wp_presence_site_health_heartbeat_test()['status'] );
+	}
+
+	/**
+	 * @covers ::wp_presence_site_health_heartbeat_test
+	 */
 	public function test_heartbeat_check_flags_a_missing_script() {
 		wp_deregister_script( 'heartbeat' );
 		$status = wp_presence_site_health_heartbeat_test()['status'];

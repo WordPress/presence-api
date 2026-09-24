@@ -541,7 +541,8 @@ function wp_presence_site_health_heartbeat_test() {
 		$settings = preg_match( '/var heartbeatSettings = (.*);$/m', (string) wp_scripts()->get_data( 'heartbeat', 'data' ), $matches ) ? json_decode( $matches[1], true ) : array();
 		$interval = empty( $settings['interval'] ) ? 60 : (int) $settings['interval'];
 
-		if ( $interval <= $limit ) {
+		// Core ticks a background tab every two minutes, whatever the interval.
+		if ( max( $interval, MINUTE_IN_SECONDS * 2 ) <= $limit ) {
 			return $result;
 		}
 
