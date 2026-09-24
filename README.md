@@ -70,8 +70,9 @@ The following public functions are part of the stable public API contract. All o
 ```php
 // Read all presence entries in a room, or only those whose client_id starts
 // with $client_prefix. The prefix is matched literally, in the query.
-// A $timeout you pass is the window used; null takes the site's filtered TTL.
-$entries = wp_get_presence( $room, $timeout = null, $client_prefix = '' );
+// $timeout is unused since 0.7.0: each row expires on the window it was
+// written with, so a read cannot narrow it.
+$entries = wp_get_presence( $room, $timeout = WP_PRESENCE_DEFAULT_TTL, $client_prefix = '' );
 
 // Upsert a client's presence state. Atomic via INSERT … ON DUPLICATE KEY UPDATE.
 // $date_gmt ('Y-m-d H:i:s') lets a caller relaying awareness on behalf of
@@ -81,7 +82,14 @@ $entries = wp_get_presence( $room, $timeout = null, $client_prefix = '' );
 // it also skips the internal check that otherwise leaves an unchanged row
 // untouched, since a relay backdating a departed collaborator needs that
 // write to land. Defaults to now.
-wp_set_presence( $room, $client_id, $state, $user_id = 0, $date_gmt = null );
+// $expires_in (seconds, relative to $date_gmt) is how long the row counts as
+// present, for a writer that knows when its clients leave and removes their
+// rows itself: the window is then the backstop for a departure that never
+// arrived, not the interval it has to keep re-stamping inside. Capped by the
+// wp_presence_max_expires_in filter (default one hour); below one second is
+// rejected (returns false). Passing it also skips the unchanged-row check, so
+// the extension always lands. Defaults to the site TTL.
+wp_set_presence( $room, $client_id, $state, $user_id = 0, $date_gmt = null, $expires_in = null );
 
 // Remove a single client from a room.
 wp_remove_presence( $room, $client_id );
@@ -123,7 +131,7 @@ Each entry object returned by `wp_get_presence()` has:
 | `data`      | `array`  | Decoded from the stored JSON; an empty array if that JSON failed to decode.                                                 |
 | `date_gmt`  | `string` | A MySQL `datetime` string in UTC (e.g. `2024-01-01 12:00:00`), not a Unix timestamp. Convert with `strtotime( $entry->date_gmt . ' UTC' )`. See below for how far behind a live client it can sit. |
 
-`date_gmt` is not rewritten on every ping. An unchanged row is left alone until it is 30 seconds old, however high the TTL goes, and that is on top of the gap the client leaves between pings, so both have to fit inside any liveness window you read off `date_gmt` yourself. Entries from `wp_get_presence()` are already filtered on the TTL, so the window only matters if you are working out a tighter one. Passing an explicit `$date_gmt` to `wp_set_presence()` writes every time.
+`date_gmt` is not rewritten on every ping. An unchanged row is left alone until it is 30 seconds old, however high the TTL goes, and that is on top of the gap the client leaves between pings, so both have to fit inside any liveness window you read off `date_gmt` yourself. Entries from `wp_get_presence()` are already filtered on each row's own expiry, so the window only matters if you are working out a tighter one yourself. Passing an explicit `$date_gmt` to `wp_set_presence()` writes every time.
 
 ### Network
 
@@ -157,7 +165,7 @@ Without support, `wp_presence_post_room()` returns `false` for that post type an
 
 ### Filters
 #### `wp_presence_default_ttl`
-Filters the site's presence TTL (time-to-live) in seconds, used for cleanup and for any query that names no window of its own. Default: 150.
+Filters the presence TTL (time-to-live) in seconds a row is written with when its writer names no window of its own. Default: 150. Since 0.7.0 it applies at write time, so changing it does not re-age rows already stored; anyone still present picks up the new value on their next ping.
 
 Values under 120 drop a tab that is still open and still pinging, since that is the Heartbeat interval core gives an unfocused or five-minute-idle tab.
 
@@ -171,6 +179,12 @@ add_filter( 'wp_presence_default_ttl', function( $timeout ) {
 Or define the constant before the plugin loads:
 ```php
 define( 'WP_PRESENCE_DEFAULT_TTL', 300 );
+```
+
+#### `wp_presence_max_expires_in`
+Filters the longest window, in seconds, a writer may ask for through `$expires_in`. Default: 3600. It is also the retention figure the privacy policy text and the personal data export report, since it is the most any row can outlive its last activity.
+```php
+add_filter( 'wp_presence_max_expires_in', fn() => 15 * MINUTE_IN_SECONDS );
 ```
 
 #### `wp_presence_current_screen_key`
