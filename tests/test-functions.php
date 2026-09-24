@@ -1285,7 +1285,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	/**
 	 * The guard skips unchanged writes, which would now also skip the extension.
 	 *
-	 * @covers ::wp_presence_write_is_redundant
+	 * @covers ::wp_presence_refresh_cutoff
 	 */
 	public function test_an_explicit_window_is_never_swallowed_by_the_redundant_write_guard() {
 		wp_set_presence( 'test/room', 'relay-1', array( 'a' => 1 ), self::$editor_id );
@@ -1334,6 +1334,27 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		// And the client is present again as soon as it pings.
 		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
 		$this->assertCount( 1, wp_get_presence( 'test/room' ) );
+	}
+
+	/**
+	 * The expiry rides the same test as the timestamp, so a write that is taken
+	 * moves both and the row never outlives the activity behind it.
+	 *
+	 * @covers ::wp_presence_write_row
+	 */
+	public function test_a_write_past_the_refresh_cutoff_moves_the_expiry_with_it() {
+		wp_set_presence( 'test/room', 'client-1', array( 'a' => 1 ), self::$editor_id );
+		$this->backdate( 'test/room', 'client-1', 60 );
+
+		$before = $this->stored_expires_gmt( 'test/room', 'client-1' );
+
+		wp_set_presence( 'test/room', 'client-1', array( 'a' => 1 ), self::$editor_id );
+
+		$this->assertGreaterThan(
+			strtotime( $before . ' UTC' ),
+			strtotime( $this->stored_expires_gmt( 'test/room', 'client-1' ) . ' UTC' ),
+			'A refreshed row carries a new expiry.'
+		);
 	}
 
 	/**
@@ -1389,7 +1410,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers ::wp_set_presence
-	 * @covers ::wp_presence_write_is_redundant
+	 * @covers ::wp_presence_refresh_cutoff
 	 */
 	public function test_unchanged_state_within_the_refresh_window_skips_the_write() {
 		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
@@ -1408,7 +1429,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers ::wp_set_presence
-	 * @covers ::wp_presence_write_is_redundant
+	 * @covers ::wp_presence_refresh_cutoff
 	 */
 	public function test_unchanged_state_past_the_refresh_window_writes() {
 		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
@@ -1426,7 +1447,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers ::wp_set_presence
-	 * @covers ::wp_presence_write_is_redundant
+	 * @covers ::wp_presence_refresh_cutoff
 	 */
 	public function test_changed_state_writes_inside_the_refresh_window() {
 		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
@@ -1451,7 +1472,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * explicit $date_gmt must bypass it rather than be silently swallowed.
 	 *
 	 * @covers ::wp_set_presence
-	 * @covers ::wp_presence_write_is_redundant
+	 * @covers ::wp_presence_refresh_cutoff
 	 */
 	public function test_explicit_timestamp_bypasses_the_redundant_write_guard() {
 		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
@@ -1469,7 +1490,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers ::wp_set_presence
-	 * @covers ::wp_presence_write_is_redundant
+	 * @covers ::wp_presence_refresh_cutoff
 	 */
 	public function test_skipped_write_does_not_announce_an_admin_room_change() {
 		$room = wp_presence_admin_room();
@@ -1524,7 +1545,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	/**
 	 * @covers ::wp_presence_refresh_threshold
 	 * @covers ::wp_set_presence
-	 * @covers ::wp_presence_write_is_redundant
+	 * @covers ::wp_presence_refresh_cutoff
 	 */
 	public function test_a_ttl_below_the_tick_gap_leaves_no_room_to_skip() {
 		add_filter(
@@ -1550,7 +1571,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * at any age above zero the comparison already refuses to skip.
 	 *
 	 * @covers ::wp_set_presence
-	 * @covers ::wp_presence_write_is_redundant
+	 * @covers ::wp_presence_refresh_cutoff
 	 */
 	public function test_a_zero_threshold_writes_again_inside_the_same_second() {
 		add_filter(
@@ -1569,6 +1590,61 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		);
 
 		$this->assertSame( 1, $inserts, 'A row written this same second is still owed its refresh.' );
+	}
+
+	/**
+	 * Counts every query against the presence table during a callback.
+	 */
+	private function count_presence_queries( callable $during ) {
+		global $wpdb;
+
+		$count = 0;
+		$table = $wpdb->presence;
+
+		$counter = static function ( $query ) use ( &$count, $table ) {
+			if ( false !== strpos( $query, $table ) ) {
+				++$count;
+			}
+
+			return $query;
+		};
+
+		add_filter( 'query', $counter );
+		$during();
+		remove_filter( 'query', $counter );
+
+		return $count;
+	}
+
+	/**
+	 * The upsert decides redundancy itself, so no SELECT runs ahead of it.
+	 *
+	 * @covers ::wp_set_presence
+	 * @covers ::wp_presence_refresh_cutoff
+	 * @covers ::wp_presence_write_row
+	 */
+	public function test_a_write_costs_one_query_whether_or_not_it_is_redundant() {
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+		$this->backdate( 'test/room', 'client-1', 5 );
+
+		$before = $this->stored_date_gmt( 'test/room', 'client-1' );
+
+		$redundant = $this->count_presence_queries(
+			function () {
+				wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+			}
+		);
+
+		$this->assertSame( 1, $redundant, 'An unchanged state inside the refresh window.' );
+		$this->assertSame( $before, $this->stored_date_gmt( 'test/room', 'client-1' ), 'The upsert still has to leave date_gmt alone.' );
+
+		$changed = $this->count_presence_queries(
+			function () {
+				wp_set_presence( 'test/room', 'client-1', array( 'action' => 'idle' ), self::$editor_id );
+			}
+		);
+
+		$this->assertSame( 1, $changed, 'A changed state.' );
 	}
 
 	/**
