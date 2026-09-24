@@ -1071,10 +1071,16 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 			}
 		);
 
+		// Core filters the settings once, when it registers the script.
+		unset( $GLOBALS['wp_scripts'] );
 		$this->assertSame( 'good', wp_presence_site_health_heartbeat_test()['status'] );
 
 		++$interval;
-		$this->assertSame( 'recommended', wp_presence_site_health_heartbeat_test()['status'] );
+		unset( $GLOBALS['wp_scripts'] );
+		$status = wp_presence_site_health_heartbeat_test()['status'];
+		unset( $GLOBALS['wp_scripts'] );
+
+		$this->assertSame( 'recommended', $status );
 	}
 
 	/**

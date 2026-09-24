@@ -537,8 +537,8 @@ function wp_presence_site_health_heartbeat_test() {
 		/* translators: %d: Presence timeout in seconds. */
 		$problem = sprintf( __( 'Heartbeat is turned off, so Who&#8217;s Online misses anyone who has not loaded a page in the last %d seconds.', 'presence-api' ), wp_presence_get_timeout() );
 	} else {
-		/** This filter is documented in wp-includes/script-loader.php */
-		$settings = apply_filters( 'heartbeat_settings', array() );
+		// Read what core already filtered for this page, so no callback runs twice.
+		$settings = preg_match( '/var heartbeatSettings = (.*);$/m', (string) wp_scripts()->get_data( 'heartbeat', 'data' ), $matches ) ? json_decode( $matches[1], true ) : array();
 		$interval = empty( $settings['interval'] ) ? 60 : (int) $settings['interval'];
 
 		if ( $interval <= $limit ) {
