@@ -1,3 +1,7 @@
+[default]
+# Release-please copies changelog entries, short commit hashes included, into readme.txt.
+extend-ignore-re = ['\[[0-9a-f]{7,40}\]\(https://github\.com/[^)]+/commit/[0-9a-f]{7,40}\)']
+
 [default.extend-words]
 # "Who's Online" widget -- "whos" is used intentionally throughout class names,
 # CSS IDs, and hook names (e.g. WP_Presence_Widget_Whos_Online, #presence-whos-online-list).
