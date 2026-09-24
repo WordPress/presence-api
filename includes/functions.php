@@ -735,18 +735,18 @@ function wp_remove_presence( $room, $client_id ) {
  * awareness backend. The read is scoped to `$client_prefix`, so it returns the
  * caller's own rows without the ones other clients keep in the same room.
  *
- * @since 0.7.0
+ * @since 0.8.0
  *
  * @param string $room          The room identifier.
  * @param string $client_id     The client identifier.
  * @param array  $state         The presence state data.
  * @param int    $user_id       Optional. The user ID. Default 0.
- * @param int    $timeout       Optional. Timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL.
+ * @param int    $timeout       Optional. Timeout in seconds. Default null, the site's filtered TTL.
  * @param string $client_prefix Optional. Only return clients whose client_id starts with this.
  *                              Default empty.
  * @return array Array of presence entry objects, as returned by wp_get_presence().
  */
-function wp_presence_exchange( $room, $client_id, $state, $user_id = 0, $timeout = WP_PRESENCE_DEFAULT_TTL, $client_prefix = '' ) {
+function wp_presence_exchange( $room, $client_id, $state, $user_id = 0, $timeout = null, $client_prefix = '' ) {
 	wp_set_presence( $room, $client_id, $state, $user_id );
 
 	return wp_get_presence( $room, $timeout, $client_prefix );
@@ -757,16 +757,16 @@ function wp_presence_exchange( $room, $client_id, $state, $user_id = 0, $timeout
  *
  * The removal counterpart to wp_presence_exchange().
  *
- * @since 0.7.0
+ * @since 0.8.0
  *
  * @param string $room          The room identifier.
  * @param string $client_id     The client identifier.
- * @param int    $timeout       Optional. Timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL.
+ * @param int    $timeout       Optional. Timeout in seconds. Default null, the site's filtered TTL.
  * @param string $client_prefix Optional. Only return clients whose client_id starts with this.
  *                              Default empty.
  * @return array Array of presence entry objects, as returned by wp_get_presence().
  */
-function wp_presence_leave( $room, $client_id, $timeout = WP_PRESENCE_DEFAULT_TTL, $client_prefix = '' ) {
+function wp_presence_leave( $room, $client_id, $timeout = null, $client_prefix = '' ) {
 	wp_remove_presence( $room, $client_id );
 
 	return wp_get_presence( $room, $timeout, $client_prefix );
