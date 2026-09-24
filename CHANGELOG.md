@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.7.0](https://github.com/WordPress/presence-api/compare/v0.6.0...v0.7.0) (2026-09-24)
+
+
+### Features
+
+* filter wp_get_presence() by client_id prefix in SQL ([#530](https://github.com/WordPress/presence-api/issues/530)) ([00bdb9f](https://github.com/WordPress/presence-api/commit/00bdb9fa024c8c26d6c9d89a68555fa357882994))
+* Store an expiry per presence row ([#541](https://github.com/WordPress/presence-api/issues/541)) ([872a618](https://github.com/WordPress/presence-api/commit/872a618cbd400c761bf6aa1c6052faa8f90f049b))
+
+
+### Bug Fixes
+
+* stop the site TTL filter overriding an explicit $timeout ([#540](https://github.com/WordPress/presence-api/issues/540)) ([b4ad7c4](https://github.com/WordPress/presence-api/commit/b4ad7c423106ea8ed02d56b29c5dd440cf22577a))
+* typos CI failure caused by changelog link label in `readme.txt` ([#527](https://github.com/WordPress/presence-api/issues/527)) ([dc514f3](https://github.com/WordPress/presence-api/commit/dc514f35db6eee6955a737ef7470b595d534ccea))
+
+
+### Performance Improvements
+
+* decide redundant presence writes inside the upsert ([#542](https://github.com/WordPress/presence-api/issues/542)) ([f76e3f2](https://github.com/WordPress/presence-api/commit/f76e3f2dfda0171eceec68dc42d57284c4919cfd))
+
+
+### Dependencies
+
+* **deps-dev:** bump @wordpress/e2e-test-utils-playwright from 1.54.0 to 2.0.0 ([#535](https://github.com/WordPress/presence-api/issues/535)) ([84b8b80](https://github.com/WordPress/presence-api/commit/84b8b80e726bd7d969d008ca254c99cb20e0cf3e))
+* **deps-dev:** bump @wordpress/env from 11.14.0 to 11.15.0 ([#533](https://github.com/WordPress/presence-api/issues/533)) ([f4e1e2e](https://github.com/WordPress/presence-api/commit/f4e1e2ee555505f7c1cc0701fa646a37a6548842))
+* **deps-dev:** bump @wordpress/eslint-plugin from 25.10.0 to 26.0.0 ([#532](https://github.com/WordPress/presence-api/issues/532)) ([c049a12](https://github.com/WordPress/presence-api/commit/c049a12f53fee994abdda738d668e5d5c140648d))
+* **deps-dev:** bump @wordpress/scripts from 34.2.0 to 35.0.0 ([#538](https://github.com/WordPress/presence-api/issues/538)) ([f7d7423](https://github.com/WordPress/presence-api/commit/f7d7423ba7fe1fb3af22fa70f82644af61d65c0d))
+* **deps-dev:** update phpstan/phpstan requirement ([#531](https://github.com/WordPress/presence-api/issues/531)) ([793fbd9](https://github.com/WordPress/presence-api/commit/793fbd9409630d70fc42ed5cafe4698c2dc26c42))
+* **deps:** bump astral-sh/setup-uv from 10.0.1 to 10.1.0 ([#534](https://github.com/WordPress/presence-api/issues/534)) ([2ad0e15](https://github.com/WordPress/presence-api/commit/2ad0e154f0b30488ce129c011384ae3cc18a5769))
+* **deps:** bump codecov/codecov-action from 7.0.0 to 7.1.1 ([#536](https://github.com/WordPress/presence-api/issues/536)) ([f126c73](https://github.com/WordPress/presence-api/commit/f126c73a97eddbdd80afd1c484d00aec7ecafd85))
+* **deps:** bump crate-ci/typos from 1.50.1 to 1.50.2 ([#537](https://github.com/WordPress/presence-api/issues/537)) ([242364c](https://github.com/WordPress/presence-api/commit/242364c3933506fab7dc9e67db475eda8da81f3c))
+
 ## [0.6.0](https://github.com/WordPress/presence-api/compare/v0.5.0...v0.6.0) (2026-09-23)
 
 

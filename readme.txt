@@ -3,7 +3,7 @@ Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas,
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.1
-Stable tag: 0.6.0
+Stable tag: 0.7.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -66,6 +66,13 @@ For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/presence-api/blob/main/CHANGELOG.md
 
+= 0.7.0 =
+* Filter wp_get_presence() by client_id prefix in SQL ([#530](https://github.com/WordPress/presence-api/issues/530)).
+* Store an expiry per presence row ([#541](https://github.com/WordPress/presence-api/issues/541)).
+* Stop the site TTL filter overriding an explicit $timeout ([#540](https://github.com/WordPress/presence-api/issues/540)).
+* Typos CI failure caused by changelog link label in `readme.txt` ([#527](https://github.com/WordPress/presence-api/issues/527)).
+* Decide redundant presence writes inside the upsert ([#542](https://github.com/WordPress/presence-api/issues/542)).
+
 = 0.6.0 =
 * Add Network Admin plugin action links ([#513](https://github.com/WordPress/presence-api/issues/513)).
 * Add wp_presence_is_available() for integrators ([#519](https://github.com/WordPress/presence-api/issues/519)).
@@ -75,7 +82,7 @@ Only the most recent releases are listed here. For the full history, see https:/
 * Keep the collaboration edge state in the presence table ([#514](https://github.com/WordPress/presence-api/issues/514)).
 
 = 0.5.0 =
-* Add a Settings link to the plugin row actions ([commit](https://github.com/WordPress/presence-api/commit/ba04159d8e780936ee8e25100d7b23e239fd8cab)), closes [#484](https://github.com/WordPress/presence-api/issues/484).
+* Add a Settings link to the plugin row actions ([ba04159](https://github.com/WordPress/presence-api/commit/ba04159d8e780936ee8e25100d7b23e239fd8cab)), closes [#484](https://github.com/WordPress/presence-api/issues/484).
 * Let wp_set_presence() accept an explicit GMT timestamp.
 * Bypass the redundant-write guard and validate $date_gmt on wp_set_presence().
 * Request a retina-sharp avatar resolution across the presence surfaces.
@@ -110,9 +117,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 * Skip the Playground preview publish when the built SHA is superseded.
 * Warn on the Network Sites list when the network does not aggregate presence.
 * Store network summary rows compact.
-
-= 0.2.1 =
-* Filter out archived, spam, and deleted sites from network presence.
-* Gate cross-tab relay on Web Locks availability.
-* Prune network summary rows past the read cutoff.
-* Stop tab coordinator rebroadcast loop when Web Locks is unavailable.
