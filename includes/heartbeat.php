@@ -486,78 +486,6 @@ function wp_presence_store_collaboration_state( $room, $count, $stored ) {
 }
 
 /**
- * Returns why Heartbeat cannot keep a present user's row alive, if it cannot.
- *
- * Only a page load writes presence without Heartbeat, so a user who stays on
- * one screen past the TTL drops out of the room while still there.
- *
- * @access private
- *
- * @since 0.7.0
- *
- * @return string 'missing' when the script is not registered, 'slow' when its
- *                interval outlasts the TTL, or an empty string.
- */
-function wp_presence_heartbeat_problem() {
-	if ( ! wp_script_is( 'heartbeat', 'registered' ) ) {
-		return 'missing';
-	}
-
-	/** This filter is documented in wp-includes/script-loader.php */
-	$settings = (array) apply_filters( 'heartbeat_settings', array() );
-
-	// heartbeat.js defaults to 60 and ignores a minimalInterval above 600.
-	$interval = empty( $settings['interval'] ) ? 60 : (int) $settings['interval'];
-	$minimal  = (int) ( $settings['minimalInterval'] ?? 0 );
-	if ( $minimal <= 600 ) {
-		$interval = max( $interval, $minimal );
-	}
-
-	return $interval > wp_presence_get_timeout() - wp_presence_ttl_margin() ? 'slow' : '';
-}
-
-/**
- * Explains a Heartbeat problem in terms of what it does to presence.
- *
- * @access private
- *
- * @since 0.7.0
- *
- * @param string $problem A value returned by wp_presence_heartbeat_problem().
- * @return string The message, or an empty string when there is no problem.
- */
-function wp_presence_heartbeat_problem_message( $problem ) {
-	$ttl = wp_presence_get_timeout();
-
-	if ( 'missing' === $problem ) {
-		/* translators: %d: Presence timeout in seconds. */
-		return sprintf( __( 'Heartbeat is turned off, so Who\'s Online misses anyone who has not loaded a page in the last %d seconds.', 'presence-api' ), $ttl );
-	}
-
-	if ( 'slow' === $problem ) {
-		/* translators: %d: Presence timeout in seconds. */
-		return sprintf( __( 'Heartbeat runs less often than every %d seconds, so Who\'s Online drops people who stay on one screen.', 'presence-api' ), $ttl - wp_presence_ttl_margin() );
-	}
-
-	return '';
-}
-
-/**
- * Prints a notice above Who's Online when Heartbeat cannot keep it current.
- *
- * @access private
- *
- * @since 0.7.0
- */
-function wp_presence_render_heartbeat_notice() {
-	$message = wp_presence_heartbeat_problem_message( wp_presence_heartbeat_problem() );
-
-	if ( $message ) {
-		echo '<div class="notice notice-warning inline presence-heartbeat-notice"><p>' . esc_html( $message ) . '</p></div>';
-	}
-}
-
-/**
  * Adds the Heartbeat check to Site Health.
  *
  * @access private
@@ -579,7 +507,10 @@ function wp_presence_site_status_tests( $tests ) {
 }
 
 /**
- * Runs the Heartbeat Site Health check.
+ * Tests whether Heartbeat refreshes presence rows before they expire.
+ *
+ * Only a page load writes presence without Heartbeat, so a user who stays on
+ * one screen past the TTL drops out of Who's Online while still there.
  *
  * @access private
  *
@@ -588,25 +519,39 @@ function wp_presence_site_status_tests( $tests ) {
  * @return array The Site Health result.
  */
 function wp_presence_site_health_heartbeat_test() {
-	$problem = wp_presence_heartbeat_problem();
-	$result  = array(
+	$result = array(
 		'label'       => __( 'Heartbeat keeps presence current', 'presence-api' ),
 		'status'      => 'good',
 		'badge'       => array(
 			'label' => __( 'Presence', 'presence-api' ),
 			'color' => 'blue',
 		),
-		'description' => '<p>' . esc_html__( 'Heartbeat refreshes each user\'s presence while they stay on one screen.', 'presence-api' ) . '</p>',
+		'description' => '<p>' . __( 'Heartbeat refreshes each user&#8217;s presence while they stay on one screen.', 'presence-api' ) . '</p>',
 		'actions'     => '',
 		'test'        => 'presence_heartbeat',
 	);
 
-	if ( $problem ) {
-		$result['label']       = __( 'Heartbeat is not keeping presence current', 'presence-api' );
-		$result['status']      = 'recommended';
-		$result['description'] = '<p>' . esc_html( wp_presence_heartbeat_problem_message( $problem ) ) . '</p>'
-			. '<p>' . esc_html__( 'A plugin that controls Heartbeat, or code removing its script, is the usual cause.', 'presence-api' ) . '</p>';
+	$limit = wp_presence_get_timeout() - wp_presence_ttl_margin();
+
+	if ( ! wp_script_is( 'heartbeat', 'registered' ) ) {
+		/* translators: %d: Presence timeout in seconds. */
+		$problem = sprintf( __( 'Heartbeat is turned off, so Who&#8217;s Online misses anyone who has not loaded a page in the last %d seconds.', 'presence-api' ), wp_presence_get_timeout() );
+	} else {
+		/** This filter is documented in wp-includes/script-loader.php */
+		$settings = apply_filters( 'heartbeat_settings', array() );
+		$interval = empty( $settings['interval'] ) ? 60 : (int) $settings['interval'];
+
+		if ( $interval <= $limit ) {
+			return $result;
+		}
+
+		/* translators: %d: Longest Heartbeat interval presence tolerates, in seconds. */
+		$problem = sprintf( __( 'Heartbeat runs less often than every %d seconds, so Who&#8217;s Online drops people who stay on one screen.', 'presence-api' ), $limit );
 	}
+
+	$result['label']       = __( 'Heartbeat is not keeping presence current', 'presence-api' );
+	$result['status']      = 'recommended';
+	$result['description'] = '<p>' . $problem . '</p><p>' . __( 'A plugin that controls Heartbeat, or code removing its script, is the usual cause.', 'presence-api' ) . '</p>';
 
 	return $result;
 }

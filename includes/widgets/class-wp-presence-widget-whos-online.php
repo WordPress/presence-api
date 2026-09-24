@@ -369,8 +369,6 @@ class WP_Presence_Widget_Whos_Online {
 		// with the admin bar and the users list. You are always one of them.
 		$entries = array_values( wp_presence_with_current_user( wp_get_presence( wp_presence_admin_room() ) ) );
 
-		wp_presence_render_heartbeat_notice();
-
 		echo '<div id="presence-whos-online-list" aria-live="polite" tabindex="-1">';
 
 		cache_users( wp_list_pluck( $entries, 'user_id' ) );

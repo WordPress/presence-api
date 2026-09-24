@@ -41,6 +41,8 @@ No install needed — launch a scratch site straight from `main`.
 4. Client diffs a signature of user IDs and swaps HTML when content changes
 5. Client-side interval re-evaluates idle state every 5s between heartbeat ticks
 
+Only Heartbeat refreshes a row between page loads. With its script removed, or its interval above the TTL less 15 seconds (135 by default), someone who stays on one screen drops out of the room while still there. Site Health reports both.
+
 ## Rooms
 
 | Pattern                | Example            |
