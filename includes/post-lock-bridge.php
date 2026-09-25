@@ -72,7 +72,7 @@ function wp_presence_bridge_post_lock( $response, $data, $screen_id ) {
  *
  * One per room, so the unique key keeps a single lock per post as meta did.
  *
- * @since 0.8.1
+ * @since 0.9.0
  *
  * @access private
  * @return string The reserved client_id.
@@ -84,7 +84,7 @@ function wp_presence_post_lock_client_id() {
 /**
  * Returns the room a post's lock is kept in, or false to leave it in meta.
  *
- * @since 0.8.1
+ * @since 0.9.0
  *
  * @access private
  * @param int    $post_id  The post ID.
@@ -107,7 +107,7 @@ function wp_presence_post_lock_room( $post_id, $meta_key ) {
 /**
  * Returns a post's lock in the `time:user_id` shape core stores.
  *
- * @since 0.8.1
+ * @since 0.9.0
  *
  * @access private
  * @param string $room The post's room.
@@ -132,7 +132,7 @@ function wp_presence_post_lock_value( $room ) {
 /**
  * Reads `_edit_lock` from the post's lock row.
  *
- * @since 0.8.1
+ * @since 0.9.0
  *
  * @param mixed  $check    The value to short-circuit with, null to read meta.
  * @param int    $post_id  The post ID.
@@ -162,7 +162,7 @@ function wp_presence_get_post_lock( $check, $post_id, $meta_key, $single ) {
  * The row is dated at the lock's own time and expires when core stops honouring
  * it, so a released lock, which core backdates, ages out on the same clock.
  *
- * @since 0.8.1
+ * @since 0.9.0
  *
  * @param null|bool $check      The value to short-circuit with, null to write meta.
  * @param int       $post_id    The post ID.
@@ -214,7 +214,7 @@ function wp_presence_update_post_lock( $check, $post_id, $meta_key, $meta_value,
 /**
  * Clears a post's lock row when `_edit_lock` is deleted.
  *
- * @since 0.8.1
+ * @since 0.9.0
  *
  * @param null|bool $check      The value to short-circuit with, null to delete meta.
  * @param int       $post_id    The post ID.
@@ -243,7 +243,7 @@ function wp_presence_delete_post_lock( $check, $post_id, $meta_key, $meta_value,
 /**
  * Reads the locks for many posts in one query, for screens that check each one.
  *
- * @since 0.8.1
+ * @since 0.9.0
  *
  * @access private
  * @param int[] $post_ids The post IDs.
@@ -290,7 +290,7 @@ function wp_presence_prime_post_locks( $post_ids ) {
 /**
  * Primes the locks for the posts list, which checks each row twice.
  *
- * @since 0.8.1
+ * @since 0.9.0
  *
  * @param WP_Post[] $posts The queried posts.
  * @param WP_Query  $query The query.
@@ -307,7 +307,7 @@ function wp_presence_prime_post_list_locks( $posts, $query ) {
 /**
  * Primes the locks the posts list asks about on each Heartbeat tick.
  *
- * @since 0.8.1
+ * @since 0.9.0
  *
  * @param array $response The Heartbeat response.
  * @param array $data     The Heartbeat data.
