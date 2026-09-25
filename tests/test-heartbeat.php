@@ -294,6 +294,100 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Runs one editor tick for the current user and returns the queries it made.
+	 *
+	 * @param int  $post_id The post being edited.
+	 * @param bool $locked  Whether the tick refreshes the post lock.
+	 * @return string[] The queries.
+	 */
+	private function editor_tick_queries( $post_id, $locked = false ) {
+		$data = array( 'presence-editor-ping' => array( 'post_id' => $post_id ) );
+
+		if ( $locked ) {
+			$data['wp-refresh-post-lock'] = array( 'post_id' => $post_id );
+		}
+
+		$queries = array();
+		$capture = static function ( $query ) use ( &$queries ) {
+			$queries[] = $query;
+
+			return $query;
+		};
+
+		add_filter( 'query', $capture );
+		wp_presence_editor_heartbeat_received( array(), $data, 'post' );
+		remove_filter( 'query', $capture );
+
+		return $queries;
+	}
+
+	/**
+	 * An editor sitting on a post re-sends the same state every tick. The
+	 * room is read for the editor count either way, and the editor's own row
+	 * is in it, so the tick can tell the write would change nothing.
+	 *
+	 * @covers ::wp_presence_editor_heartbeat_received
+	 * @covers ::wp_presence_set_presence_in_rows
+	 * @covers ::wp_presence_check_collaboration_threshold
+	 */
+	public function test_an_unchanged_editor_tick_reads_the_room_and_writes_nothing() {
+		$post_id = self::factory()->post->create();
+		wp_set_current_user( self::$editor_id );
+		$this->editor_tick_queries( $post_id );
+
+		$queries = $this->editor_tick_queries( $post_id );
+
+		$this->assertCount( 1, $queries, 'Only the room read should remain.' );
+		$this->assertStringStartsWith( 'SELECT', ltrim( $queries[0] ) );
+	}
+
+	/**
+	 * @covers ::wp_presence_editor_heartbeat_received
+	 * @covers ::wp_presence_set_presence_in_rows
+	 */
+	public function test_a_changed_editor_tick_writes_and_counts_the_new_state() {
+		$post_id = self::factory()->post->create();
+		wp_set_current_user( self::$editor_id );
+		$this->editor_tick_queries( $post_id );
+
+		$queries = $this->editor_tick_queries( $post_id, true );
+
+		$this->assertCount( 2, $queries, 'The room read and the write.' );
+		$this->assertTrue( wp_get_presence( wp_presence_post_room( $post_id ) )[0]->data['locked'] );
+	}
+
+	/**
+	 * Skipping on data alone would let an idle editor's row age out of the
+	 * room, so an old enough row is written even when nothing changed.
+	 *
+	 * @covers ::wp_presence_set_presence_in_rows
+	 */
+	public function test_an_unchanged_editor_row_past_the_refresh_cutoff_is_written() {
+		$post_id = self::factory()->post->create();
+		$room    = wp_presence_post_room( $post_id );
+		wp_set_current_user( self::$editor_id );
+
+		wp_set_presence(
+			$room,
+			'editor-' . self::$editor_id,
+			wp_presence_editor_state( 'post', false ),
+			self::$editor_id,
+			gmdate( 'Y-m-d H:i:s', time() - wp_presence_refresh_threshold() - 1 )
+		);
+
+		$rows = wp_presence_set_presence_in_rows(
+			wp_presence_room_rows( $room ),
+			$room,
+			'editor-' . self::$editor_id,
+			wp_presence_editor_state( 'post', false ),
+			self::$editor_id
+		);
+
+		$this->assertGreaterThanOrEqual( wp_presence_refresh_cutoff( $room ), $rows[0]->date_gmt );
+		$this->assertGreaterThanOrEqual( wp_presence_refresh_cutoff( $room ), wp_get_presence( $room )[0]->date_gmt );
+	}
+
+	/**
 	 * Gutenberg reads this to decide whether to start its sync loop, so the
 	 * count has to reflect everyone in the room, not just the ticking client.
 	 *
