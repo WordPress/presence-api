@@ -1241,6 +1241,11 @@ function wp_presence_release_lock( $lock_name ) {
  * @access private
  */
 function wp_maybe_create_presence_table() {
+	// Every presence read and write checks this option. Left unset, it costs a
+	// query per request; stored, it arrives with the other autoloaded options.
+	// Does nothing once it exists, including where recording was switched off.
+	add_option( 'wp_presence_recording', '1', '', true );
+
 	$provisioned = (int) get_option( 'wp_presence_db_version' ) === WP_PRESENCE_DB_VERSION;
 
 	if ( $provisioned && ( wp_doing_ajax() || wp_presence_table_exists() ) ) {
