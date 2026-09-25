@@ -586,7 +586,7 @@ function wp_set_presence( $room, $client_id, $state, $user_id = 0, $date_gmt = n
  *
  * @access private
  *
- * @since 0.8.1
+ * @since 0.9.0
  *
  * @param array  $rows      Rows for `$room`, as returned by wp_presence_room_rows()
  *                          with no client prefix.

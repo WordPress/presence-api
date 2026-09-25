@@ -410,7 +410,7 @@ function wp_presence_count_editors( $entries ) {
  *
  * @since 0.1.21
  * @since 0.4.0 Returns the current editor count instead of void.
- * @since 0.8.1 Added the `$rows` parameter.
+ * @since 0.9.0 Added the `$rows` parameter.
  *
  * @param string     $room The presence room identifier.
  * @param array|null $rows Optional. The room's rows, as returned by
