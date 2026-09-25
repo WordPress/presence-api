@@ -3,7 +3,7 @@ Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas,
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.1
-Stable tag: 0.8.0
+Stable tag: 0.9.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -66,6 +66,11 @@ For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/presence-api/blob/main/CHANGELOG.md
 
+= 0.9.0 =
+* Keep post locks in the presence table instead of post meta.
+* Skip an unchanged editor tick's presence write ([#553](https://github.com/WordPress/presence-api/issues/553)).
+* Store the recording option so reading it costs no query ([#552](https://github.com/WordPress/presence-api/issues/552)).
+
 = 0.8.0 =
 * Add wp_presence_exchange() and wp_presence_leave() ([#546](https://github.com/WordPress/presence-api/issues/546)).
 * Say when Heartbeat cannot keep presence current ([#544](https://github.com/WordPress/presence-api/issues/544)).
@@ -91,10 +96,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 * Bypass the redundant-write guard and validate $date_gmt on wp_set_presence().
 * Request a retina-sharp avatar resolution across the presence surfaces.
 * Stop PHPStan's bootstrap from silently exiting before analysis.
-
-= 0.4.0 =
-* Carry the room's editor count on the editor heartbeat response.
-* Gate the network column renderers on the network capability.
-* Pin the patched bullseye apt sources to the image's own frozen snapshot.
-* Public surface read constants.
-* Skip presence writes that would only move the timestamp.

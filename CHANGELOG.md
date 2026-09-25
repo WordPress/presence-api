@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.9.0](https://github.com/WordPress/presence-api/compare/v0.8.0...v0.9.0) (2026-09-25)
+
+
+### Features
+
+* keep post locks in the presence table instead of post meta ([1d0f494](https://github.com/WordPress/presence-api/commit/1d0f49408df8c6a5b9b2390c75364bb539510aeb))
+
+
+### Performance Improvements
+
+* skip an unchanged editor tick's presence write ([#553](https://github.com/WordPress/presence-api/issues/553)) ([45f15e0](https://github.com/WordPress/presence-api/commit/45f15e03fc599251444e7805e27c9689c31c05a6))
+* store the recording option so reading it costs no query ([#552](https://github.com/WordPress/presence-api/issues/552)) ([a8752c6](https://github.com/WordPress/presence-api/commit/a8752c61300754f48f5133ee9f9eb7ded7cff990))
+
 ## [0.8.0](https://github.com/WordPress/presence-api/compare/v0.7.0...v0.8.0) (2026-09-24)
 
 
