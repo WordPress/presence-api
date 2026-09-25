@@ -58,7 +58,7 @@ Rooms carry no producer namespace of their own — this plugin's own writers are
 
 Anything else sharing a room — another plugin relaying awareness from an external source, a REST client — must prefix its own `client_id` so it can't collide with those rows or be mistaken for one. A plugin that backs the block editor's awareness with this table takes a prefix of its own, so `sync-` ([sync-storage](https://github.com/WordPress/sync-storage)) and `gse-` ([gutenberg-sync-engines](https://github.com/Automattic/gutenberg-sync-engines)) are both spoken for. Pass that prefix as the third argument to `wp_get_presence()` to read back only your own rows: `wp_get_presence( $room, $timeout, 'gse-' )`.
 
-A leading `_` is reserved for this plugin's own bookkeeping rows, which are not participants. `_collab` holds a post room's last observed editor count, the state the collaboration actions below fire their edges from. `wp_get_presence()` and the REST collection leave those rows out, and the REST write and delete routes reject a reserved `client_id`.
+A leading `_` is reserved for this plugin's own bookkeeping rows, which are not participants. `_collab` holds a post room's last observed editor count, the state the collaboration actions below fire their edges from. `_lock` holds the post's `_edit_lock`. `wp_get_presence()` and the REST collection leave those rows out, and the REST write and delete routes reject a reserved `client_id`.
 
 The `editor-` prefix is load-bearing rather than cosmetic: `includes/heartbeat.php` counts the editors in a post room with `str_starts_with( $entry->client_id, 'editor-' )`, so a colliding prefix inflates that count.
 
@@ -340,7 +340,7 @@ The JS actions above exist for that same relationship. A consumer like Gutenberg
 
 ## Post-lock bridge
 
-Creates presence entries alongside `_edit_lock` postmeta when a post lock is refreshed via Heartbeat. Both systems coexist.
+Keeps `_edit_lock` in the post room's `_lock` row instead of post meta, through the `get_post_metadata`, `update_post_metadata` and `delete_post_metadata` short-circuits, so refreshing a lock no longer makes every cached post query stale. `wp_check_post_lock()` and every other caller work unchanged. Post types without `presence` support, and sites with recording turned off, keep the lock in meta.
 
 ## Capability
 
