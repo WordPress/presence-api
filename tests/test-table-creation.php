@@ -95,6 +95,30 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * @covers ::wp_maybe_create_presence_table
+	 */
+	public function test_provisioning_stores_the_recording_option_autoloaded() {
+		delete_option( 'wp_presence_recording' );
+
+		wp_maybe_create_presence_table();
+
+		$this->assertSame( '1', get_option( 'wp_presence_recording' ) );
+		$this->assertArrayHasKey( 'wp_presence_recording', wp_load_alloptions( true ), 'The option should load with the other autoloaded options.' );
+	}
+
+	/**
+	 * @covers ::wp_maybe_create_presence_table
+	 */
+	public function test_provisioning_keeps_recording_switched_off() {
+		update_option( 'wp_presence_recording', '0' );
+
+		wp_maybe_create_presence_table();
+
+		$this->assertSame( '0', get_option( 'wp_presence_recording' ) );
+		$this->assertFalse( wp_presence_recording_enabled() );
+	}
+
+	/**
 	 * Schema work belongs in the admin and CLI, never in a front-end request.
 	 */
 	public function test_schema_hooks_stay_out_of_the_front_end() {
@@ -227,8 +251,9 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 	public function test_ajax_requests_do_not_pay_for_the_table_check() {
 		global $wpdb;
 
-		// Warm the autoloaded option so it cannot account for a query below.
+		// Warm the autoloaded options so neither can account for a query below.
 		get_option( 'wp_presence_db_version' );
+		add_option( 'wp_presence_recording', '1', '', true );
 
 		add_filter( 'wp_doing_ajax', '__return_true' );
 
