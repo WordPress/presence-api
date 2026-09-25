@@ -9,11 +9,15 @@
 class WP_Test_Presence_Post_Lock_Bridge extends WP_Presence_UnitTestCase {
 
 	private static $editor_id;
+	private static $other_editor_id;
 	private static $subscriber_id;
 
 	public static function wpSetUpBeforeClass( WP_UnitTest_Factory $factory ) {
-		self::$editor_id     = $factory->user->create( array( 'role' => 'editor' ) );
-		self::$subscriber_id = $factory->user->create( array( 'role' => 'subscriber' ) );
+		require_once ABSPATH . 'wp-admin/includes/post.php';
+
+		self::$editor_id       = $factory->user->create( array( 'role' => 'editor' ) );
+		self::$other_editor_id = $factory->user->create( array( 'role' => 'editor' ) );
+		self::$subscriber_id   = $factory->user->create( array( 'role' => 'subscriber' ) );
 	}
 
 	/**
@@ -121,5 +125,74 @@ class WP_Test_Presence_Post_Lock_Bridge extends WP_Presence_UnitTestCase {
 
 		$this->assertCount( 1, $entries );
 		$this->assertSame( 'editor-' . self::$editor_id, $entries[0]->client_id );
+	}
+
+	/**
+	 * Asserts the cache key itself, since a meta write anywhere would bump it.
+	 *
+	 * @covers ::wp_presence_update_post_lock
+	 * @covers ::wp_presence_get_post_lock
+	 * @covers ::wp_presence_post_lock_room
+	 * @covers ::wp_presence_post_lock_value
+	 * @covers ::wp_presence_post_lock_client_id
+	 */
+	public function test_refreshing_a_post_lock_leaves_cached_post_queries_valid() {
+		$post_id = self::factory()->post->create();
+
+		wp_set_current_user( self::$editor_id );
+		wp_set_post_lock( $post_id );
+		$last_changed = wp_cache_get_last_changed( 'posts' );
+		wp_set_post_lock( $post_id );
+
+		$this->assertSame( $last_changed, wp_cache_get_last_changed( 'posts' ) );
+
+		wp_set_current_user( self::$other_editor_id );
+		$this->assertSame( self::$editor_id, wp_check_post_lock( $post_id ), 'A second user should still see the post as locked.' );
+	}
+
+	/**
+	 * @covers ::wp_presence_delete_post_lock
+	 */
+	public function test_deleting_a_post_lock_releases_the_post() {
+		$post_id = self::factory()->post->create();
+
+		wp_set_current_user( self::$editor_id );
+		wp_set_post_lock( $post_id );
+		delete_post_meta( $post_id, '_edit_lock' );
+
+		wp_set_current_user( self::$other_editor_id );
+		$this->assertFalse( wp_check_post_lock( $post_id ) );
+	}
+
+	/**
+	 * Core releases a lock on unload only if it still holds it, by passing it as $prev_value.
+	 *
+	 * @covers ::wp_presence_update_post_lock
+	 */
+	public function test_a_stale_previous_lock_leaves_the_current_one() {
+		$post_id = self::factory()->post->create();
+
+		wp_set_current_user( self::$editor_id );
+		wp_set_post_lock( $post_id );
+
+		$released = update_post_meta( $post_id, '_edit_lock', '1:' . self::$other_editor_id, '1:' . self::$other_editor_id );
+
+		$this->assertFalse( $released );
+		wp_set_current_user( self::$other_editor_id );
+		$this->assertSame( self::$editor_id, wp_check_post_lock( $post_id ) );
+	}
+
+	/**
+	 * @covers ::wp_presence_update_post_lock
+	 */
+	public function test_post_lock_stays_in_meta_when_recording_is_off() {
+		add_filter( 'wp_presence_recording_enabled', '__return_false' );
+		$post_id = self::factory()->post->create();
+
+		wp_set_current_user( self::$editor_id );
+		wp_set_post_lock( $post_id );
+
+		wp_set_current_user( self::$other_editor_id );
+		$this->assertSame( self::$editor_id, wp_check_post_lock( $post_id ) );
 	}
 }

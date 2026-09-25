@@ -402,6 +402,9 @@ add_filter( 'heartbeat_received', 'wp_presence_admin_heartbeat_received', 9, 3 )
 add_filter( 'heartbeat_received', 'wp_presence_editor_heartbeat_received', 10, 3 );
 add_filter( 'heartbeat_received', 'wp_presence_bridge_post_lock', 11, 3 );
 add_filter( 'heartbeat_received', 'wp_presence_screen_heartbeat_received', 12, 3 );
+add_filter( 'get_post_metadata', 'wp_presence_get_post_lock', 10, 4 );
+add_filter( 'update_post_metadata', 'wp_presence_update_post_lock', 10, 5 );
+add_filter( 'delete_post_metadata', 'wp_presence_delete_post_lock', 10, 5 );
 add_filter( 'site_status_tests', 'wp_presence_site_status_tests' );
 
 add_action( 'admin_enqueue_scripts', 'wp_presence_enqueue_stale_screen_banner' );
