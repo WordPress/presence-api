@@ -337,14 +337,17 @@ function wp_presence_editor_heartbeat_received( $response, $data, $screen_id ) {
 	 */
 	$state = apply_filters( 'wp_presence_editor_state', $state, $post_id, $user_id );
 
-	wp_set_presence(
+	// The editor count below needs the room anyway. Reading it first lets an
+	// unchanged tick skip the write.
+	$rows = wp_presence_set_presence_in_rows(
+		wp_presence_room_rows( $room ),
 		$room,
 		'editor-' . $user_id,
 		$state,
 		$user_id
 	);
 
-	$response['presence-heartbeat-collaborators'] = wp_presence_check_collaboration_threshold( $room );
+	$response['presence-heartbeat-collaborators'] = wp_presence_check_collaboration_threshold( $room, $rows );
 
 	return $response;
 }
@@ -407,12 +410,19 @@ function wp_presence_count_editors( $entries ) {
  *
  * @since 0.1.21
  * @since 0.4.0 Returns the current editor count instead of void.
+ * @since 0.8.1 Added the `$rows` parameter.
  *
- * @param string $room The presence room identifier.
+ * @param string     $room The presence room identifier.
+ * @param array|null $rows Optional. The room's rows, as returned by
+ *                         wp_presence_room_rows(), for a caller that has
+ *                         already read them. Default null, which reads them.
  * @return int The number of editors currently present in the room.
  */
-function wp_presence_check_collaboration_threshold( $room ) {
-	$rows         = wp_presence_room_rows( $room );
+function wp_presence_check_collaboration_threshold( $room, $rows = null ) {
+	if ( null === $rows ) {
+		$rows = wp_presence_room_rows( $room );
+	}
+
 	$entries      = wp_presence_client_rows( $rows );
 	$editor_count = wp_presence_count_editors( $entries );
 

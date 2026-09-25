@@ -577,6 +577,69 @@ function wp_set_presence( $room, $client_id, $state, $user_id = 0, $date_gmt = n
 }
 
 /**
+ * Upserts a client's presence state into a room the caller has already read.
+ *
+ * For a caller that needs the room's rows anyway. The client's own row is
+ * among them, so the rule the upsert applies in SQL (same data, stamped after
+ * the refresh cutoff) can be applied here instead, and an unchanged tick costs
+ * no write at all.
+ *
+ * @access private
+ *
+ * @since 0.8.1
+ *
+ * @param array  $rows      Rows for `$room`, as returned by wp_presence_room_rows()
+ *                          with no client prefix.
+ * @param string $room      The room identifier.
+ * @param string $client_id The client identifier.
+ * @param array  $state     The presence state data.
+ * @param int    $user_id   Optional. The user ID. Default 0.
+ * @return array The rows, with the client's own row as it now stands.
+ */
+function wp_presence_set_presence_in_rows( $rows, $room, $client_id, $state, $user_id = 0 ) {
+	$own = null;
+
+	foreach ( $rows as $index => $row ) {
+		if ( $client_id === $row->client_id ) {
+			$own = $index;
+			break;
+		}
+	}
+
+	$cutoff = wp_presence_refresh_cutoff( $room );
+
+	if ( null !== $own
+		&& '' !== $cutoff
+		&& $rows[ $own ]->date_gmt >= $cutoff
+		&& wp_json_encode( $rows[ $own ]->data ) === wp_json_encode( $state )
+	) {
+		return $rows;
+	}
+
+	if ( ! wp_set_presence( $room, $client_id, $state, $user_id ) ) {
+		return $rows;
+	}
+
+	if ( null !== $own ) {
+		unset( $rows[ $own ] );
+	}
+
+	// Newest first, the order wp_presence_room_rows() returns.
+	array_unshift(
+		$rows,
+		(object) array(
+			'room'      => $room,
+			'client_id' => $client_id,
+			'user_id'   => (string) $user_id,
+			'data'      => $state,
+			'date_gmt'  => gmdate( 'Y-m-d H:i:s' ),
+		)
+	);
+
+	return array_values( $rows );
+}
+
+/**
  * The expiry stamped on a row, from the window its writer asked for.
  *
  * A writer that knows when its clients leave, such as one relaying a socket's
