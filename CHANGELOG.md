@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.8.0](https://github.com/WordPress/presence-api/compare/v0.7.0...v0.8.0) (2026-09-24)
+
+
+### Features
+
+* add wp_presence_exchange() and wp_presence_leave() ([#546](https://github.com/WordPress/presence-api/issues/546)) ([7490790](https://github.com/WordPress/presence-api/commit/7490790147a802bd1212015e7645d051c672fbf9))
+
+
+### Bug Fixes
+
+* say when Heartbeat cannot keep presence current ([#544](https://github.com/WordPress/presence-api/issues/544)) ([17ea0f3](https://github.com/WordPress/presence-api/commit/17ea0f3fab73fc83ca6105addff4747dd31e21db))
+
 ## [0.7.0](https://github.com/WordPress/presence-api/compare/v0.6.0...v0.7.0) (2026-09-24)
 
 

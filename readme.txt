@@ -1,9 +1,9 @@
 === Presence API ===
-Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas, aldorza, bejignesh, stfulldev, obenland, moriikuri, ishitaj34, theaminuldev, muneebashraf, mindctrl, zahidui, mitgiselle
+Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas, aldorza, bejignesh, stfulldev, obenland, moriikuri, ishitaj34, theaminuldev, muneebashraf, mindctrl, zahidui, mitgiselle, jaredrethman
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.1
-Stable tag: 0.7.0
+Stable tag: 0.8.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -66,6 +66,10 @@ For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/presence-api/blob/main/CHANGELOG.md
 
+= 0.8.0 =
+* Add wp_presence_exchange() and wp_presence_leave() ([#546](https://github.com/WordPress/presence-api/issues/546)).
+* Say when Heartbeat cannot keep presence current ([#544](https://github.com/WordPress/presence-api/issues/544)).
+
 = 0.7.0 =
 * Filter wp_get_presence() by client_id prefix in SQL ([#530](https://github.com/WordPress/presence-api/issues/530)).
 * Store an expiry per presence row ([#541](https://github.com/WordPress/presence-api/issues/541)).
@@ -94,26 +98,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 * Pin the patched bullseye apt sources to the image's own frozen snapshot.
 * Public surface read constants.
 * Skip presence writes that would only move the timestamp.
-
-= 0.3.0 =
-* Add a site and network switch for whether presence is recorded.
-* Add policy content, exporter and eraser for presence data.
-* Switch presence recording on and off from Settings and WP-CLI.
-* Add data-post-id to server-rendered Active Posts rows.
-* Collapse the duplicated online-ID assembly into one helper.
-* Count everyone present, including yourself, on every surface.
-* Count Who's Online overflow from the heartbeat total.
-* Declare the current user next to where the bar renders it.
-* Distinguish a non-aggregating network from a quiet one.
-* Keep the network Who's Online widget's accessible names across a re-render.
-* List yourself in the widget so its rows match the count above them.
-* Preserve accessible names across heartbeat re-renders in the network Who's Online widget.
-* Report a switched-off site rather than a failed write.
-* Report network aggregation state from the REST and CLI network reads.
-* Restore the named stack limit on the admin bar avatar cap.
-* Run workflows on the release pull request's final commit.
-* Say so on the network dashboard widget when the network does not aggregate.
-* Say the network does not aggregate on the Users list too.
-* Skip the Playground preview publish when the built SHA is superseded.
-* Warn on the Network Sites list when the network does not aggregate presence.
-* Store network summary rows compact.
