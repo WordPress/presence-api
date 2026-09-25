@@ -114,6 +114,12 @@ function wp_presence_post_lock_room( $post_id, $meta_key ) {
  * @return string The lock, or an empty string when there is none.
  */
 function wp_presence_post_lock_value( $room ) {
+	global $_wp_presence_post_locks;
+
+	if ( isset( $_wp_presence_post_locks[ $room ] ) ) {
+		return $_wp_presence_post_locks[ $room ];
+	}
+
 	$rows = wp_presence_room_rows( $room, null, wp_presence_post_lock_client_id() );
 
 	if ( ! $rows ) {
@@ -193,6 +199,8 @@ function wp_presence_update_post_lock( $check, $post_id, $meta_key, $meta_value,
 	/** This filter is documented in wp-admin/includes/ajax-actions.php */
 	$window = (int) apply_filters( 'wp_check_post_lock_window', 150 );
 
+	unset( $GLOBALS['_wp_presence_post_locks'][ $room ] );
+
 	return (bool) wp_set_presence(
 		$room,
 		wp_presence_post_lock_client_id(),
@@ -227,5 +235,88 @@ function wp_presence_delete_post_lock( $check, $post_id, $meta_key, $meta_value,
 		return $check;
 	}
 
+	unset( $GLOBALS['_wp_presence_post_locks'][ $room ] );
+
 	return wp_remove_presence( $room, wp_presence_post_lock_client_id() );
+}
+
+/**
+ * Reads the locks for many posts in one query, for screens that check each one.
+ *
+ * @since 0.8.1
+ *
+ * @access private
+ * @param int[] $post_ids The post IDs.
+ * @return void
+ */
+function wp_presence_prime_post_locks( $post_ids ) {
+	global $wpdb, $_wp_presence_post_locks;
+
+	$rooms = array();
+
+	foreach ( $post_ids as $post_id ) {
+		$room = wp_presence_post_lock_room( (int) $post_id, '_edit_lock' );
+
+		if ( $room ) {
+			$rooms[] = $room;
+		}
+	}
+
+	if ( ! $rooms ) {
+		return;
+	}
+
+	$placeholders = implode( ', ', array_fill( 0, count( $rooms ), '%s' ) );
+
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+	$rows = $wpdb->get_results(
+		// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+		$wpdb->prepare(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			"SELECT room, user_id, date_gmt FROM {$wpdb->presence} WHERE client_id = %s AND expires_gmt > %s AND room IN ( $placeholders )",
+			array_merge( array( wp_presence_post_lock_client_id(), gmdate( 'Y-m-d H:i:s' ) ), $rooms )
+		)
+	);
+
+	foreach ( $rooms as $room ) {
+		$_wp_presence_post_locks[ $room ] = '';
+	}
+
+	foreach ( $rows as $row ) {
+		$_wp_presence_post_locks[ $row->room ] = strtotime( $row->date_gmt . ' UTC' ) . ':' . (int) $row->user_id;
+	}
+}
+
+/**
+ * Primes the locks for the posts list, which checks each row twice.
+ *
+ * @since 0.8.1
+ *
+ * @param WP_Post[] $posts The queried posts.
+ * @param WP_Query  $query The query.
+ * @return WP_Post[] The posts, unchanged.
+ */
+function wp_presence_prime_post_list_locks( $posts, $query ) {
+	if ( is_admin() && $query->is_main_query() ) {
+		wp_presence_prime_post_locks( wp_list_pluck( $posts, 'ID' ) );
+	}
+
+	return $posts;
+}
+
+/**
+ * Primes the locks the posts list asks about on each Heartbeat tick.
+ *
+ * @since 0.8.1
+ *
+ * @param array $response The Heartbeat response.
+ * @param array $data     The Heartbeat data.
+ * @return array The response, unchanged.
+ */
+function wp_presence_prime_heartbeat_locks( $response, $data ) {
+	if ( ! empty( $data['wp-check-locked-posts'] ) && is_array( $data['wp-check-locked-posts'] ) ) {
+		wp_presence_prime_post_locks( array_map( 'absint', str_replace( 'post-', '', $data['wp-check-locked-posts'] ) ) );
+	}
+
+	return $response;
 }

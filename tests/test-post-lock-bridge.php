@@ -14,6 +14,7 @@ class WP_Test_Presence_Post_Lock_Bridge extends WP_Presence_UnitTestCase {
 
 	public static function wpSetUpBeforeClass( WP_UnitTest_Factory $factory ) {
 		require_once ABSPATH . 'wp-admin/includes/post.php';
+		require_once ABSPATH . 'wp-admin/includes/misc.php';
 
 		self::$editor_id       = $factory->user->create( array( 'role' => 'editor' ) );
 		self::$other_editor_id = $factory->user->create( array( 'role' => 'editor' ) );
@@ -194,5 +195,42 @@ class WP_Test_Presence_Post_Lock_Bridge extends WP_Presence_UnitTestCase {
 
 		wp_set_current_user( self::$other_editor_id );
 		$this->assertSame( self::$editor_id, wp_check_post_lock( $post_id ) );
+	}
+
+	/**
+	 * The posts list checks every row's lock on each tick, so the checks share one query.
+	 *
+	 * @covers ::wp_presence_prime_heartbeat_locks
+	 * @covers ::wp_presence_prime_post_locks
+	 * @covers ::wp_presence_post_lock_value
+	 */
+	public function test_checking_locked_posts_reads_every_lock_in_one_query() {
+		$post_ids = self::factory()->post->create_many( 3 );
+
+		wp_set_current_user( self::$editor_id );
+		wp_set_post_lock( $post_ids[0] );
+		wp_set_current_user( self::$other_editor_id );
+
+		$data    = array( 'wp-check-locked-posts' => preg_replace( '/^/', 'post-', $post_ids ) );
+		$queries = 0;
+		$count   = static function ( $query ) use ( &$queries ) {
+			global $wpdb;
+
+			$queries += (int) str_contains( $query, $wpdb->presence );
+
+			return $query;
+		};
+
+		add_filter( 'query', $count );
+		wp_presence_prime_heartbeat_locks( array(), $data );
+		$response = wp_check_locked_posts( array(), $data, 'edit-post' );
+		remove_filter( 'query', $count );
+
+		$this->assertSame( 1, $queries );
+		$this->assertSame( array( 'post-' . $post_ids[0] ), array_keys( $response['wp-check-locked-posts'] ) );
+
+		wp_set_post_lock( $post_ids[1] );
+		wp_set_current_user( self::$editor_id );
+		$this->assertSame( self::$other_editor_id, wp_check_post_lock( $post_ids[1] ), 'A lock taken after priming should be read fresh.' );
 	}
 }
