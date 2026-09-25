@@ -1241,7 +1241,6 @@ function wp_presence_release_lock( $lock_name ) {
  * @access private
  */
 function wp_maybe_create_presence_table() {
-	// Stored so reading it costs no query; never overwrites a saved choice.
 	add_option( 'wp_presence_recording', '1', '', true );
 
 	$provisioned = (int) get_option( 'wp_presence_db_version' ) === WP_PRESENCE_DB_VERSION;
