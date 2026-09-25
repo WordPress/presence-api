@@ -95,9 +95,6 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * Every Heartbeat tick asks whether recording is on. A site that never saved
-	 * the setting has no row to autoload, so each tick paid a query to find none.
-	 *
 	 * @covers ::wp_maybe_create_presence_table
 	 */
 	public function test_provisioning_stores_the_recording_option_autoloaded() {
@@ -110,9 +107,6 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * Storing the default must not switch recording back on for a site that
-	 * turned it off.
-	 *
 	 * @covers ::wp_maybe_create_presence_table
 	 */
 	public function test_provisioning_keeps_recording_switched_off() {
@@ -258,9 +252,6 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 		global $wpdb;
 
 		// Warm the autoloaded options so neither can account for a query below.
-		// The recording option is stored on the first provisioning pass, which
-		// the base test case undoes, so a provisioned site has it and this one
-		// has to be given it.
 		get_option( 'wp_presence_db_version' );
 		add_option( 'wp_presence_recording', '1', '', true );
 
