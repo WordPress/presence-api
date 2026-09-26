@@ -102,7 +102,7 @@ function wp_presence_register_network_summary_table() {
 wp_presence_register_network_summary_table();
 
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/functions.php';
-require_once WP_PRESENCE_PLUGIN_DIR . 'includes/class-wp-rest-presence-controller.php';
+require_once WP_PRESENCE_PLUGIN_DIR . 'includes/rest-api/endpoints/class-wp-rest-presence-controller.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/heartbeat.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/cron.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/post-lock-bridge.php';
@@ -118,7 +118,7 @@ require_once WP_PRESENCE_PLUGIN_DIR . 'includes/widgets/class-wp-presence-widget
 
 if ( is_multisite() ) {
 	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/network-functions.php';
-	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/class-wp-rest-presence-network-controller.php';
+	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php';
 	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/network-sites-list.php';
 	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/network-user-list.php';
 	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/widgets/class-wp-presence-network-widget-whos-online.php';
