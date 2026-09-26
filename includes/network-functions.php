@@ -465,10 +465,10 @@ function wp_presence_delete_expired_network_summary_rows() {
 	$timeout = wp_presence_get_timeout();
 	$cutoff  = gmdate( 'Y-m-d H:i:s', time() - $timeout );
 
-	/** This filter is documented in includes/functions.php */
+	/** This filter is documented in includes/presence.php */
 	$batch_size = (int) apply_filters( 'wp_presence_cleanup_batch_size', 1000 );
 
-	/** This filter is documented in includes/functions.php */
+	/** This filter is documented in includes/presence.php */
 	$max_passes = (int) apply_filters( 'wp_presence_cleanup_max_passes', 10 );
 
 	if ( $batch_size < 1 || $max_passes < 1 ) {

@@ -67,7 +67,7 @@ The `editor-` prefix is load-bearing rather than cosmetic: `includes/heartbeat.p
 <details>
 <summary>Functions, return shapes, and network variants</summary>
 
-The following public functions are part of the stable public API contract. All other helper functions in `includes/functions.php` and `includes/network-functions.php` (such as `wp_get_active_rooms()`, `wp_get_presence_summary()`, etc.) are marked `@access private`, are intended for internal plugin use only, and may change or be removed without notice.
+The following public functions are part of the stable public API contract. All other helper functions in `includes/presence.php` and `includes/network-functions.php` (such as `wp_get_active_rooms()`, `wp_get_presence_summary()`, etc.) are marked `@access private`, are intended for internal plugin use only, and may change or be removed without notice.
 
 ```php
 // Read all presence entries in a room, or only those whose client_id starts

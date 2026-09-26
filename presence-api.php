@@ -101,7 +101,9 @@ function wp_presence_register_network_summary_table() {
 }
 wp_presence_register_network_summary_table();
 
-require_once WP_PRESENCE_PLUGIN_DIR . 'includes/functions.php';
+require_once WP_PRESENCE_PLUGIN_DIR . 'includes/schema.php';
+require_once WP_PRESENCE_PLUGIN_DIR . 'includes/presence.php';
+require_once WP_PRESENCE_PLUGIN_DIR . 'includes/avatar-stack.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/rest-api/endpoints/class-wp-rest-presence-controller.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/heartbeat.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/cron.php';
