@@ -78,7 +78,7 @@ jobs:
           flags: phpunit
       # This is the only multisite run in CI. It lives here rather than in its
       # own workflow because the run above skips every is_multisite() test, so
-      # the network provisioning paths in presence-api.php reported as uncovered
+      # the network provisioning paths in includes/plugin.php reported as uncovered
       # no matter how well tested they were. Reusing this job's environment
       # costs seconds, and Codecov merges the two reports for the commit.
       #
