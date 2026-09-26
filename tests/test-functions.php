@@ -1008,6 +1008,30 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Avatars are fetched at twice their displayed size so they stay sharp on a 2x display.
+	 *
+	 * @covers ::wp_presence_get_avatar_fetch_size
+	 */
+	public function test_avatars_are_fetched_at_twice_their_displayed_size() {
+		$this->assertSame( 40, wp_presence_get_avatar_fetch_size( 20 ) );
+	}
+
+	/**
+	 * Posts and pages get presence without a plugin opting them in.
+	 *
+	 * @covers ::wp_presence_register_post_type_support
+	 */
+	public function test_posts_and_pages_support_presence() {
+		remove_post_type_support( 'post', 'presence' );
+		remove_post_type_support( 'page', 'presence' );
+
+		wp_presence_register_post_type_support();
+
+		$this->assertTrue( post_type_supports( 'post', 'presence' ) );
+		$this->assertTrue( post_type_supports( 'page', 'presence' ) );
+	}
+
+	/**
 	 * The avatars overlap, so the first user has to paint on top of the ones
 	 * after them rather than under.
 	 *

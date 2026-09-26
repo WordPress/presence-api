@@ -841,17 +841,17 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * The summary table behind them only exists on a network.
+	 * The summary table behind the network routes only exists on a network.
 	 *
 	 * @covers ::wp_presence_register_rest_routes
 	 */
-	public function test_the_network_routes_are_not_registered_on_a_single_site() {
-		if ( is_multisite() ) {
-			$this->markTestSkipped( 'Requires single site.' );
-		}
+	public function test_the_network_routes_are_registered_only_on_a_network() {
+		// A fresh server fires rest_api_init inside this test, not an earlier one.
+		$GLOBALS['wp_rest_server'] = null;
+		$routes                    = rest_get_server()->get_routes();
+		$GLOBALS['wp_rest_server'] = null;
 
-		$response = rest_get_server()->dispatch( new WP_REST_Request( 'GET', '/wp-presence/v1/presence/network' ) );
-
-		$this->assertSame( 404, $response->get_status() );
+		$this->assertArrayHasKey( '/wp-presence/v1/presence', $routes );
+		$this->assertSame( is_multisite(), isset( $routes['/wp-presence/v1/presence/network'] ) );
 	}
 }
