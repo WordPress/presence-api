@@ -35,13 +35,15 @@ coverage:
         threshold: 0%
         informational: true
 
-# Files excluded here are also excluded from PHPUnit's coverage measurement in
-# phpunit.xml.dist and from the distributed zip in .distignore. All three lists
-# are checked for agreement by scripts/check-debug-exclusions.sh in CI.
+# Must match the coverage exclusions in phpunit.xml.dist, which CI checks with
+# scripts/check-debug-exclusions.sh.
 ignore:
   # WP_DEBUG-only developer tools, not part of the distributed zip (.distignore).
   - "includes/db-viewer.php"
   - "includes/debugger-widget.php"
+  # Only register hooks, and run during bootstrap before coverage starts.
+  - "includes/default-filters.php"
+  - "includes/ms-default-filters.php"
   - "tests/**"
   - "assets/**"
   - "blueprint.json"
