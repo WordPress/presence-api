@@ -88,6 +88,7 @@ require_once WP_PRESENCE_PLUGIN_DIR . 'includes/user-list.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/post-list.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/widgets/class-wp-presence-widget-whos-online.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/widgets/class-wp-presence-widget-active-posts.php';
+require_once WP_PRESENCE_PLUGIN_DIR . 'includes/default-filters.php';
 
 if ( is_multisite() ) {
 	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/network-functions.php';
@@ -95,6 +96,7 @@ if ( is_multisite() ) {
 	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/network-sites-list.php';
 	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/network-user-list.php';
 	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/widgets/class-wp-presence-network-widget-whos-online.php';
+	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/ms-default-filters.php';
 }
 
 if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
@@ -299,17 +301,17 @@ function wp_presence_network_plugin_action_links( $links ) {
 	return $links;
 }
 
+// Stands in for core's table registration and upgrade routine, catching any site missed at activation or creation.
 add_action( 'init', 'wp_presence_register_table', 0 );
 add_action( 'init', 'wp_presence_register_network_summary_table', 0 );
-add_action( 'init', 'wp_presence_register_post_type_support' );
-
-// Schema work stays in the admin and CLI, the way core keeps its own upgrade
-// routine out of the front end. Sites are provisioned at activation and at site
-// creation instead; this is the fallback for a site that missed both.
 add_action( 'admin_init', 'wp_maybe_create_presence_table' );
 add_action( 'cli_init', 'wp_maybe_create_presence_table' );
 
 add_action( 'admin_init', 'wp_presence_register_settings' );
+
+add_filter( 'get_user_option_meta-box-order_dashboard', 'wp_presence_default_widget_order' );
+add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'wp_presence_plugin_action_links' );
+
 if ( is_multisite() ) {
 	// Global so the keys are not prefixed with a blog ID. The push runs inside
 	// switch_to_blog(), and a per-site group would file the invalidation under
@@ -325,80 +327,13 @@ if ( is_multisite() ) {
 
 	add_action( 'admin_init', 'wp_maybe_create_presence_network_summary_table' );
 	add_action( 'cli_init', 'wp_maybe_create_presence_network_summary_table' );
-	add_action( 'wp_presence_admin_room_changed', 'wp_presence_push_network_summary' );
-	add_action( 'wp_presence_admin_room_changed', 'wp_presence_flush_network_summary_cache' );
-	add_action( 'wp_delete_site', 'wp_presence_on_delete_site' );
-	add_action( 'wp_delete_expired_presence_data', 'wp_presence_delete_expired_network_summary_rows' );
 	add_action( 'wpmu_options', 'wp_presence_render_network_settings' );
 	add_action( 'update_wpmu_options', 'wp_presence_save_network_settings' );
+	add_filter( 'network_admin_plugin_action_links_' . plugin_basename( __FILE__ ), 'wp_presence_network_plugin_action_links' );
 }
+
 // Priority 99 to run after core's wp_initialize_site() at 10.
 add_action( 'wp_initialize_site', 'wp_presence_on_initialize_site', 99 );
-add_action( 'rest_api_init', 'wp_presence_register_rest_routes' );
-
-add_action( 'wp_delete_expired_presence_data', 'wp_delete_expired_presence_data' );
-add_action( 'admin_init', 'wp_presence_schedule_cleanup' );
-add_action( 'admin_init', 'wp_presence_add_privacy_policy_content' );
-add_filter( 'wp_privacy_personal_data_exporters', 'wp_presence_register_personal_data_exporter' );
-add_filter( 'wp_privacy_personal_data_erasers', 'wp_presence_register_personal_data_eraser' );
-// phpcs:ignore WordPress.WP.CronInterval -- 60-second interval is intentional for presence cleanup.
-add_filter( 'cron_schedules', 'wp_presence_cron_schedules' );
-
-add_action( 'admin_enqueue_scripts', 'wp_presence_enqueue_heartbeat_ping' );
-add_action( 'wp_enqueue_scripts', 'wp_presence_enqueue_heartbeat_ping' );
-// Priority 9 so the admin/online write lands before any widget reads the room at 10.
-add_filter( 'heartbeat_received', 'wp_presence_admin_heartbeat_received', 9, 3 );
-add_filter( 'heartbeat_received', 'wp_presence_editor_heartbeat_received', 10, 3 );
-add_filter( 'heartbeat_received', 'wp_presence_bridge_post_lock', 11, 3 );
-add_filter( 'heartbeat_received', 'wp_presence_screen_heartbeat_received', 12, 3 );
-add_filter( 'heartbeat_received', 'wp_presence_prime_heartbeat_locks', 5, 2 );
-add_filter( 'get_post_metadata', 'wp_presence_get_post_lock', 10, 4 );
-add_filter( 'the_posts', 'wp_presence_prime_post_list_locks', 10, 2 );
-add_filter( 'update_post_metadata', 'wp_presence_update_post_lock', 10, 5 );
-add_filter( 'delete_post_metadata', 'wp_presence_delete_post_lock', 10, 5 );
-add_filter( 'site_status_tests', 'wp_presence_site_status_tests' );
-
-add_action( 'admin_enqueue_scripts', 'wp_presence_enqueue_stale_screen_banner' );
-add_action( 'updated_option', 'wp_presence_on_updated_option' );
-add_action( 'post_updated', 'wp_presence_on_post_updated', 10, 3 );
-add_action( 'profile_update', 'wp_presence_on_profile_update' );
-add_action( 'edited_term', 'wp_presence_on_edited_term', 10, 3 );
-add_action( 'edit_comment', 'wp_presence_on_edit_comment' );
-
-add_action( 'wp_login', 'wp_presence_on_login', 10, 2 );
-add_action( 'wp_logout', 'wp_presence_on_logout', 10, 1 );
-add_action( 'deleted_user', 'wp_presence_on_user_removed', 10, 1 );
-add_action( 'remove_user_from_blog', 'wp_presence_on_user_removed', 10, 1 );
-
-add_action( 'admin_bar_menu', 'wp_presence_admin_bar_node', 80 );
-add_action( 'admin_enqueue_scripts', 'wp_presence_admin_bar_assets' );
-add_action( 'wp_enqueue_scripts', 'wp_presence_admin_bar_assets' );
-
-add_filter( 'views_users', 'wp_presence_users_views' );
-add_action( 'pre_get_users', 'wp_presence_filter_online_users' );
-
-add_action( 'admin_init', 'wp_presence_register_post_list_columns' );
-
-add_filter( 'get_user_option_meta-box-order_dashboard', 'wp_presence_default_widget_order' );
-add_action( 'wp_dashboard_setup', array( 'WP_Presence_Widget_Whos_Online', 'register' ) );
-add_filter( 'heartbeat_received', array( 'WP_Presence_Widget_Whos_Online', 'heartbeat_received' ), 10, 3 );
-add_action( 'wp_dashboard_setup', array( 'WP_Presence_Widget_Active_Posts', 'register' ) );
-add_filter( 'heartbeat_received', array( 'WP_Presence_Widget_Active_Posts', 'heartbeat_received' ), 10, 3 );
-
-if ( is_multisite() ) {
-	add_filter( 'wpmu_blogs_columns', 'wp_presence_register_network_sites_column' );
-	add_action( 'manage_sites_custom_column', 'wp_presence_render_network_sites_column', 10, 2 );
-	add_action( 'admin_enqueue_scripts', 'wp_presence_enqueue_network_sites_assets' );
-	add_action( 'network_admin_notices', 'wp_presence_network_aggregation_notice' );
-
-	add_filter( 'views_users-network', 'wp_presence_network_users_views' );
-	add_filter( 'users_list_table_query_args', 'wp_presence_filter_network_online_users' );
-	add_filter( 'wpmu_users_columns', 'wp_presence_register_network_users_column' );
-	add_filter( 'manage_users-network_custom_column', 'wp_presence_render_network_users_column', 10, 3 );
-
-	add_action( 'wp_network_dashboard_setup', array( 'WP_Presence_Network_Widget_Whos_Online', 'register' ) );
-	add_filter( 'heartbeat_received', array( 'WP_Presence_Network_Widget_Whos_Online', 'heartbeat_received' ), 10, 3 );
-}
 
 if ( ( defined( 'WP_DEBUG' ) && WP_DEBUG )
 	&& function_exists( 'wp_presence_heartbeat_widget_register' )
@@ -407,9 +342,5 @@ if ( ( defined( 'WP_DEBUG' ) && WP_DEBUG )
 	add_filter( 'heartbeat_received', 'wp_presence_heartbeat_widget_received', 10, 3 );
 }
 
-add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'wp_presence_plugin_action_links' );
-if ( is_multisite() ) {
-	add_filter( 'network_admin_plugin_action_links_' . plugin_basename( __FILE__ ), 'wp_presence_network_plugin_action_links' );
-}
 register_activation_hook( __FILE__, 'wp_presence_activate' );
 register_deactivation_hook( __FILE__, 'wp_presence_deactivate' );
