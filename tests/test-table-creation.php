@@ -368,6 +368,37 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * A failed insert with no lock row behind it is refused, not taken as the lock.
+	 *
+	 * @covers ::wp_presence_create_lock
+	 */
+	public function test_a_lock_insert_that_fails_for_another_reason_is_refused() {
+		global $wpdb;
+
+		$fail_insert = static function ( $query ) use ( $wpdb ) {
+			return false !== strpos( $query, '/* LOCK */' ) ? "SELECT 1 FROM {$wpdb->options} WHERE 1 = 0" : $query;
+		};
+		add_filter( 'query', $fail_insert );
+		$taken = wp_presence_create_lock( 'wp_presence_table' );
+		remove_filter( 'query', $fail_insert );
+
+		$this->assertFalse( $taken );
+	}
+
+	/**
+	 * Deactivating on a single site clears its cleanup so no event is left without a callback.
+	 *
+	 * @covers ::wp_presence_deactivate
+	 */
+	public function test_deactivation_clears_cleanup() {
+		wp_schedule_event( time(), 'hourly', 'wp_delete_expired_presence_data' );
+
+		wp_presence_deactivate();
+
+		$this->assertFalse( wp_next_scheduled( 'wp_delete_expired_presence_data' ) );
+	}
+
+	/**
 	 * Cron events are per site, so a network deactivation that only cleared the
 	 * current one would leave every other site rescheduling a dead callback.
 	 *
@@ -647,5 +678,20 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 		$wpdb->ms_global_tables = $global_tables;
 
 		$this->assertSame( 1, $count, 'Registering twice should leave one entry in $wpdb->ms_global_tables.' );
+	}
+
+	/**
+	 * schema.php loads on single-site too, so the guard is all that keeps a stray call off the network table.
+	 *
+	 * @covers ::wp_maybe_create_presence_network_summary_table
+	 */
+	public function test_the_network_summary_table_is_never_provisioned_on_single_site() {
+		if ( is_multisite() ) {
+			$this->markTestSkipped( 'Single-site only.' );
+		}
+
+		wp_maybe_create_presence_network_summary_table();
+
+		$this->assertFalse( get_site_option( 'wp_presence_network_summary_db_version' ) );
 	}
 }
