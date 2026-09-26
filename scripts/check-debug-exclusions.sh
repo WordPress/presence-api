@@ -10,7 +10,9 @@
 # Nothing enforces that the three lists agree. If phpunit.xml.dist excludes a
 # file that codecov.yml does not, Codecov reports it as 0% covered and drags
 # the project total down for a file deliberately left unmeasured. This script
-# parses the includes/*.php entries out of all three and fails if they differ.
+# fails unless phpunit.xml.dist and codecov.yml exclude the same includes/*.php
+# files and every one in .distignore is among them; the two lists can also hold
+# files that ship but cannot be measured, such as the default-filters files.
 #
 # Called from .github/workflows/phpcs.yml. Also runnable locally:
 #
@@ -31,20 +33,21 @@ fi
 
 status=0
 
-if [[ "$distignore" != "$phpunit" ]]; then
-	echo "includes/*.php entries differ between .distignore and phpunit.xml.dist:" >&2
-	diff <(echo "$distignore") <(echo "$phpunit") >&2 || true
+if [[ "$phpunit" != "$codecov" ]]; then
+	echo "includes/*.php entries differ between phpunit.xml.dist and codecov.yml:" >&2
+	diff <(echo "$phpunit") <(echo "$codecov") >&2 || true
 	status=1
 fi
 
-if [[ "$distignore" != "$codecov" ]]; then
-	echo "includes/*.php entries differ between .distignore and codecov.yml:" >&2
-	diff <(echo "$distignore") <(echo "$codecov") >&2 || true
+missing=$(comm -23 <(echo "$distignore") <(echo "$phpunit"))
+if [[ -n "$missing" ]]; then
+	echo "In .distignore but not excluded from coverage:" >&2
+	echo "$missing" >&2
 	status=1
 fi
 
 if [[ $status -eq 0 ]]; then
-	echo "Debug-tool exclusion lists agree across .distignore, phpunit.xml.dist, and codecov.yml."
+	echo "Coverage exclusions agree across .distignore, phpunit.xml.dist, and codecov.yml."
 fi
 
 exit $status

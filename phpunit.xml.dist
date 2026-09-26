@@ -21,7 +21,6 @@
 	<coverage>
 		<include>
 			<directory suffix=".php">includes/</directory>
-			<file>presence-api.php</file>
 		</include>
 		<exclude>
 			<!--
@@ -32,6 +31,9 @@
 			-->
 			<file>includes/db-viewer.php</file>
 			<file>includes/debugger-widget.php</file>
+			<!-- Only register hooks, and run during bootstrap before coverage starts. -->
+			<file>includes/default-filters.php</file>
+			<file>includes/ms-default-filters.php</file>
 		</exclude>
 	</coverage>
 </phpunit>
