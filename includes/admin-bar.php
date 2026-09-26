@@ -139,8 +139,9 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 	$stack_limit = 5;
 	$stack_ids   = array_slice( array_unique( $stack_ids ), 0, $stack_limit );
 
-	$avatar = function ( $user, $size, $alt = '' ) {
-		return '<img class="presence-bar-avatar" src="' . esc_url( get_avatar_url( $user->ID, array( 'size' => wp_presence_get_avatar_fetch_size( $size ) ) ) ) . '" width="' . (int) $size . '" height="' . (int) $size . '" alt="' . esc_attr( $alt ) . '" />';
+	$avatar = function ( $user, $size, $alt = '' ) use ( $current_uid ) {
+		$color = (int) $user->ID === $current_uid ? '' : ' style="border-color:' . esc_attr( wp_presence_avatar_border_color( $user->ID ) ) . '"';
+		return '<img class="presence-bar-avatar" src="' . esc_url( get_avatar_url( $user->ID, array( 'size' => wp_presence_get_avatar_fetch_size( $size ) ) ) ) . '" width="' . (int) $size . '" height="' . (int) $size . '"' . $color . ' alt="' . esc_attr( $alt ) . '" />';
 	};
 
 	$stack_html = '<span class="presence-bar-avatars">';
@@ -150,7 +151,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 		if ( ! $user ) {
 			continue;
 		}
-		$stack_html .= str_replace( ' />', ' title="' . esc_attr( $user->display_name ) . '" />', $avatar( $user, 24, $user->display_name ) );
+		$stack_html .= str_replace( ' />', ' title="' . esc_attr( $user->display_name ) . '" />', $avatar( $user, 20, $user->display_name ) );
 	}
 
 	$stack_html .= '</span>';
@@ -341,6 +342,22 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 }
 
 /**
+ * Returns the border color the block editor gives a collaborator's avatar.
+ *
+ * Copies Gutenberg's getAvatarBorderColor(), so a person wears the same color here as in the editor.
+ *
+ * @access private
+ *
+ * @param int $user_id User ID.
+ * @return string A #RRGGBB hex color.
+ */
+function wp_presence_avatar_border_color( $user_id ) {
+	$colors = array( '#6F42C1', '#D94145', '#FBBF24', '#FF35EE', '#879F11', '#0F766E', '#00CFFF' );
+
+	return $colors[ absint( $user_id ) % count( $colors ) ];
+}
+
+/**
  * Enqueues CSS for the admin bar presence indicator.
  */
 function wp_presence_admin_bar_assets() {
@@ -351,9 +368,8 @@ function wp_presence_admin_bar_assets() {
 	$css = '
 		#wp-admin-bar-presence-online > .ab-item { display: flex !important; align-items: center; gap: 2px; cursor: default; }
 		#wp-admin-bar-presence-online .presence-bar-avatars { display: inline-flex; align-items: center; gap: 4px; margin-inline-end: 6px; }
-		#wp-admin-bar-presence-online .presence-bar-avatar { display: inline-block; border-radius: 50%; vertical-align: middle; }
-		#wp-admin-bar-presence-online .presence-bar-avatars .presence-bar-avatar { width: 24px !important; height: 24px !important; }
-		#wp-admin-bar-presence-online .ab-submenu .presence-bar-avatar { width: 20px !important; height: 20px !important; margin-inline-end: 8px; flex: none; }
+		#wp-admin-bar-presence-online .presence-bar-avatar { display: inline-block; box-sizing: border-box; width: 20px !important; height: 20px !important; padding: 1px; border: 2px solid var(--wp-admin-theme-color, #3858e9); border-radius: 50%; background: none; vertical-align: middle; }
+		#wp-admin-bar-presence-online .ab-submenu .presence-bar-avatar { margin-inline-end: 8px; flex: none; }
 		#wp-admin-bar-presence-online .ab-submenu li[id^="wp-admin-bar-presence-user-"] > .ab-item { display: flex !important; align-items: center; }
 		#wp-admin-bar-presence-online .ab-submenu li[id^="wp-admin-bar-presence-user-"] .presence-bar-you,
 		#wp-admin-bar-presence-online .ab-submenu li[id^="wp-admin-bar-presence-user-"] .presence-bar-screen { margin-inline-start: 0.3em; white-space: pre; }
