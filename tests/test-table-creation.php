@@ -679,4 +679,19 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 
 		$this->assertSame( 1, $count, 'Registering twice should leave one entry in $wpdb->ms_global_tables.' );
 	}
+
+	/**
+	 * schema.php loads on single-site too, so the guard is all that keeps a stray call off the network table.
+	 *
+	 * @covers ::wp_maybe_create_presence_network_summary_table
+	 */
+	public function test_the_network_summary_table_is_never_provisioned_on_single_site() {
+		if ( is_multisite() ) {
+			$this->markTestSkipped( 'Single-site only.' );
+		}
+
+		wp_maybe_create_presence_network_summary_table();
+
+		$this->assertFalse( get_site_option( 'wp_presence_network_summary_db_version' ) );
+	}
 }

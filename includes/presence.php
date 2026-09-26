@@ -1340,3 +1340,14 @@ function wp_presence_hydrate_room_users( $rooms, $timeout = null ) {
 
 	return $rooms;
 }
+
+/**
+ * Registers presence support for core post types.
+ *
+ * Plugins can opt in their own post types with:
+ *     add_post_type_support( 'product', 'presence' );
+ */
+function wp_presence_register_post_type_support() {
+	add_post_type_support( 'post', 'presence' );
+	add_post_type_support( 'page', 'presence' );
+}

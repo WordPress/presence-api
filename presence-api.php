@@ -67,45 +67,16 @@ if ( ! defined( 'WP_PRESENCE_DEFAULT_TTL' ) ) {
 	define( 'WP_PRESENCE_DEFAULT_TTL', 150 );
 }
 
-/**
- * Registers the presence table name on $wpdb.
- */
-function wp_presence_register_table() {
-	global $wpdb;
-	$wpdb->presence = $wpdb->prefix . 'presence';
-
-	// Runs at require time and again on init, so the append has to be idempotent.
-	if ( ! in_array( 'presence', $wpdb->tables, true ) ) {
-		$wpdb->tables[] = 'presence';
-	}
-}
+require_once WP_PRESENCE_PLUGIN_DIR . 'includes/schema.php';
 wp_presence_register_table();
-
-/**
- * Registers the network-wide presence summary table name on $wpdb.
- *
- * One table for the whole network rather than one per site: registered as an
- * ms_global_tables entry, using base_prefix, the same way core registers
- * blogs/site/sitemeta.
- */
-function wp_presence_register_network_summary_table() {
-	if ( ! is_multisite() ) {
-		return;
-	}
-	global $wpdb;
-	$wpdb->presence_network_summary = $wpdb->base_prefix . 'presence_network_summary';
-
-	if ( ! in_array( 'presence_network_summary', $wpdb->ms_global_tables, true ) ) {
-		$wpdb->ms_global_tables[] = 'presence_network_summary';
-	}
-}
 wp_presence_register_network_summary_table();
 
-require_once WP_PRESENCE_PLUGIN_DIR . 'includes/schema.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/presence.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/avatar-stack.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/rest-api/endpoints/class-wp-rest-presence-controller.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/heartbeat.php';
+require_once WP_PRESENCE_PLUGIN_DIR . 'includes/site-health.php';
+require_once WP_PRESENCE_PLUGIN_DIR . 'includes/rest-api.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/cron.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/post-lock-bridge.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/screen-revisions.php';
@@ -141,30 +112,6 @@ if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/cli/class-wp-presence-cli-command.php';
 	WP_CLI::add_command( 'presence', 'WP_Presence_CLI_Command' );
-}
-
-/**
- * Registers presence support for core post types.
- *
- * Plugins can opt in their own post types with:
- *     add_post_type_support( 'product', 'presence' );
- */
-function wp_presence_register_post_type_support() {
-	add_post_type_support( 'post', 'presence' );
-	add_post_type_support( 'page', 'presence' );
-}
-
-/**
- * Registers the presence REST routes.
- */
-function wp_presence_register_rest_routes() {
-	$controller = new WP_REST_Presence_Controller();
-	$controller->register_routes();
-
-	if ( is_multisite() ) {
-		$network_controller = new WP_REST_Presence_Network_Controller();
-		$network_controller->register_routes();
-	}
 }
 
 /**
