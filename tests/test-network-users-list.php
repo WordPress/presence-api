@@ -292,8 +292,8 @@ class WP_Test_Network_Users_List extends WP_Presence_Network_UnitTestCase {
 		$query = '?presence_status=online&_wpnonce=' . wp_create_nonce( 'presence_online_filter' );
 		$list  = wp_presence_users_list_heartbeat_received( array(), array( 'presence-users-list' => $query ), 'users-network' )['presence-users-list'];
 
-		$this->assertStringContainsString( 'id="user-' . self::$editor_id . '"', $list['rows'] );
-		$this->assertStringNotContainsString( 'id="user-' . self::$subscriber_id . '"', $list['rows'] );
+		$this->assertStringContainsString( 'name="allusers[]" value="' . self::$editor_id . '"', $list['rows'] );
+		$this->assertStringNotContainsString( 'name="allusers[]" value="' . self::$subscriber_id . '"', $list['rows'] );
 		$this->assertSame( 1, $list['count'] );
 	}
 }
