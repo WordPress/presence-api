@@ -12,8 +12,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Adds a presence indicator to the admin bar showing online users.
  *
+ * @since 0.1.1
+ *
  * @param WP_Admin_Bar $wp_admin_bar The admin bar instance.
- * @param string|null  $screen       The screen to group by, when not rendering the current page.
+ * @param string|null  $screen       Optional. The screen to group by, when not rendering the current page.
+ *                                   Default null.
  */
 function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	if ( ! is_user_logged_in() || ! current_user_can( 'edit_posts' ) ) {
@@ -23,7 +26,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	$entries     = wp_get_presence( wp_presence_admin_room() );
 	$current_uid = get_current_user_id();
 
-	// The node stays put when you are alone, so the bar never shifts and presence always shows it is on.
+	// The node stays put when the current user is alone, so the bar never shifts and presence always shows it is on.
 	$others = array_filter(
 		$entries,
 		function ( $e ) use ( $current_uid ) {
@@ -41,7 +44,6 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 		$current_screen = $wp_screen ? $wp_screen->id : 'unknown';
 	}
 
-	// Split others into "here" (same screen) and "elsewhere".
 	$here      = array();
 	$elsewhere = array();
 
@@ -56,7 +58,6 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 
 	cache_users( wp_list_pluck( $entries, 'user_id' ) );
 
-	// Sort both groups alphabetically by display name.
 	$sort_by_name = function ( $a, $b ) {
 		$user_a = get_userdata( $a->user_id );
 		$user_b = get_userdata( $b->user_id );
@@ -67,7 +68,6 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	usort( $here, $sort_by_name );
 	usort( $elsewhere, $sort_by_name );
 
-	// Build a map of user_id -> post for users currently editing a post.
 	$editing  = array();
 	$post_ids = array();
 	foreach ( wp_get_presence_by_room_prefix( 'postType/' ) as $pe ) {
@@ -88,9 +88,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 		_prime_post_caches( array_unique( $post_ids ), false, false );
 	}
 
-	// Drop the posts the current user cannot edit. Without this the menu gives
-	// the title and edit link of every post being worked on to anyone with
-	// `edit_posts`. Those entries keep the generic screen label instead.
+	// Hide titles and edit links for posts the current user cannot edit.
 	$user_editing_post = array();
 	foreach ( $editing as $user_id => $post ) {
 		if ( wp_can_access_presence_room( $post['room'], $current_uid ) ) {
@@ -98,7 +96,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 		}
 	}
 
-	// Others on this page only; your own face is already in My Account beside it. Five whole faces fit.
+	// Others on this page only, since My Account shows the current user. Five whole faces fit.
 	$stack_ids = array_slice( array_unique( array_map( 'intval', wp_list_pluck( $here, 'user_id' ) ) ), 0, 5 );
 
 	$colors = array();
@@ -106,7 +104,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 		$colors[ (int) $entry->user_id ] = wp_presence_entry_color( $entry );
 	}
 
-	// Only people on this page wear their color; it pairs them with what they do on the screen you share.
+	// Only people on this page wear their color; it pairs them with what they do on the shared screen.
 	$avatar = function ( $user, $size, $alt = '', $ring = true ) use ( $colors ) {
 		$color = $ring ? ' style="outline-color:' . esc_attr( $colors[ $user->ID ] ?? wp_presence_default_user_color( $user->ID ) ) . '"' : '';
 		return '<img class="presence-bar-avatar' . ( $ring ? '' : ' presence-bar-avatar-plain' ) . '" src="' . esc_url( get_avatar_url( $user->ID, array( 'size' => wp_presence_get_avatar_fetch_size( $size ) ) ) ) . '" width="' . (int) $size . '" height="' . (int) $size . '"' . $color . ' alt="' . esc_attr( $alt ) . '" />';
@@ -186,7 +184,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	// Each group is capped so a busy site cannot grow the dropdown past the screen.
 	$max_rows = 10;
 
-	// You are left out, as in Google Docs; My Account sits right beside the faces.
+	// The current user is left out, since My Account already shows them.
 	if ( ! empty( $here ) ) {
 		$add_section( 'here', __( 'On this page', 'presence-api' ) );
 
@@ -218,7 +216,6 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 			$screen_label = $screen ? wp_presence_get_rich_screen_label( $screen, $entry_ps ) : '';
 			$screen_url   = $screen ? wp_presence_get_screen_url( $screen ) : false;
 
-			// If user is editing a specific post, show the post title and link to it.
 			if ( in_array( $screen, array( 'post', 'edit-post' ), true ) && isset( $user_editing_post[ (int) $entry->user_id ] ) ) {
 				$post_id    = $user_editing_post[ (int) $entry->user_id ];
 				$post_title = get_the_title( $post_id );
@@ -228,7 +225,6 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 				$screen_url = get_edit_post_link( $post_id, 'raw' );
 			}
 
-			// If user is viewing a post on the frontend, show the post title and link to it.
 			if ( 'front' === $screen && ! empty( $entry->data['title'] ) ) {
 				$screen_label = $entry->data['title'];
 				if ( ! empty( $entry->data['post_id'] ) ) {
@@ -241,7 +237,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 		}
 	}
 
-	// Says how many the caps left out, so the rows never read as everyone online.
+	// Counts who the caps leave out, so the rows never read as everyone online.
 	$more = max( 0, count( $here ) - $max_rows ) + max( 0, count( $elsewhere ) - $shown );
 	if ( $more ) {
 		$wp_admin_bar->add_node(
@@ -256,7 +252,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 		);
 	}
 
-	// The footer links to the Users list.
+	// Only users who can list users get the footer link.
 	if ( ! current_user_can( 'list_users' ) ) {
 		return;
 	}
@@ -295,7 +291,7 @@ function wp_presence_admin_bar_node_markup( $screen ) {
 		 * Renders one top-level node.
 		 *
 		 * @param string $id Node ID.
-		 * @return string
+		 * @return string The node's list item markup.
 		 */
 		public function render_node( $id ) {
 			// Fetched first; _bind() fills in its children and then hides every node.
@@ -323,7 +319,7 @@ function wp_presence_admin_bar_node_markup( $screen ) {
  *
  * @param array $response Heartbeat response data.
  * @param array $data     Data received from the client.
- * @return array
+ * @return array The Heartbeat response.
  */
 function wp_presence_admin_bar_heartbeat_received( $response, $data ) {
 	if ( empty( $data['presence-admin-bar'] ) || empty( $data['presence-ping']['screen'] ) || ! current_user_can( 'edit_posts' ) ) {
@@ -337,6 +333,8 @@ function wp_presence_admin_bar_heartbeat_received( $response, $data ) {
 
 /**
  * Enqueues CSS for the admin bar presence indicator.
+ *
+ * @since 0.1.1
  */
 function wp_presence_admin_bar_assets() {
 	if ( ! is_user_logged_in() || ! is_admin_bar_showing() || ! current_user_can( 'edit_posts' ) ) {
@@ -355,14 +353,14 @@ function wp_presence_admin_bar_assets() {
 		#wp-admin-bar-presence-online .presence-bar-name { flex: 0 0 auto; max-width: 60%; }
 		#wp-admin-bar-presence-online .presence-bar-screen { flex: 0 1 auto; min-width: 0; margin-inline-start: auto; padding-inline-start: 16px; color: #a7aaad; font-size: 11px; }
 		#wp-admin-bar-presence-online .presence-bar-group-header > .ab-item, #wp-admin-bar-presence-online .presence-bar-more > .ab-item { color: #a7aaad !important; cursor: default; }
-		#wp-admin-bar-presence-online .presence-bar-group-label { font-size: 11px; font-weight: 500; text-transform: uppercase; color: inherit; }
+		#wp-admin-bar-presence-online .presence-bar-group-label { font-size: 11px; font-weight: 500; color: inherit; }
 		.admin-color-light #wpadminbar #wp-admin-bar-presence-online .presence-bar-count,
 		.admin-color-light #wpadminbar #wp-admin-bar-presence-online .presence-bar-screen,
 		.admin-color-light #wpadminbar #wp-admin-bar-presence-online .presence-bar-group-header > .ab-item,
 		.admin-color-light #wpadminbar #wp-admin-bar-presence-online .presence-bar-more > .ab-item { color: #50575e !important; }
 	';
 
-	// You wear the admin theme color, as in the block editor, so your ring never matches anyone on the page.
+	// The current user wears the admin theme color, as in the block editor, so it never matches a ring on the page.
 	$css .= '#wpadminbar:has(#wp-admin-bar-presence-here) #wp-admin-bar-my-account.with-avatar > .ab-item img { outline: 2px solid var(--wp-admin-theme-color, #2271b1); outline-offset: 1px; }';
 
 	wp_register_style( 'presence-admin-bar', false, array(), WP_PRESENCE_VERSION );
@@ -375,7 +373,7 @@ function wp_presence_admin_bar_assets() {
  *
  * @since 0.9.0
  *
- * @return array Associative array of slug => label.
+ * @return string[] Screen labels keyed by pagenow slug.
  */
 function wp_presence_get_screen_labels() {
 	return array(
@@ -463,7 +461,7 @@ function wp_presence_get_screen_url( $screen ) {
  * @since 0.9.0
  *
  * @param string $screen      The pagenow slug.
- * @param string $post_status Optional. The post status (draft, publish, etc.).
+ * @param string $post_status Optional. The post status (draft, publish, etc.). Default empty.
  * @return string The friendly label.
  */
 function wp_presence_get_rich_screen_label( $screen, $post_status = '' ) {
