@@ -1722,6 +1722,33 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * The SQLite integration's IF() always takes the false branch, so a
+	 * refresh built on it never moves date_gmt there (#616).
+	 *
+	 * @covers ::wp_presence_write_row
+	 */
+	public function test_the_refresh_upsert_avoids_if() {
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+
+		$upserts = array();
+		$capture = static function ( $query ) use ( &$upserts ) {
+			if ( false !== stripos( $query, 'ON DUPLICATE KEY UPDATE' ) ) {
+				$upserts[] = $query;
+			}
+
+			return $query;
+		};
+
+		add_filter( 'query', $capture );
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+		remove_filter( 'query', $capture );
+
+		$this->assertCount( 1, $upserts );
+		$this->assertStringContainsString( 'date_gmt <', $upserts[0], 'The write has to have taken the refresh path.' );
+		$this->assertDoesNotMatchRegularExpression( '/\bIF\s*\(/i', $upserts[0] );
+	}
+
+	/**
 	 * @covers ::wp_presence_next_tick_gap
 	 */
 	public function test_the_tick_gap_assumes_a_blurred_window_unless_the_request_says_otherwise() {

@@ -729,8 +729,9 @@ function wp_presence_write_row( $room, $client_id, $user_id, $data_json, $date_g
 	if ( '' !== $refresh_cutoff ) {
 		// MySQL assigns left to right, so expires_gmt is tested first, while
 		// date_gmt and data still hold the values the test is asking about.
+		// CASE rather than IF(), which the SQLite integration evaluates as always false.
 		$taken       = 'data <> VALUES(data) OR date_gmt < %s';
-		$date_clause = "expires_gmt = IF( {$taken}, VALUES(expires_gmt), expires_gmt ), date_gmt = IF( {$taken}, VALUES(date_gmt), date_gmt )";
+		$date_clause = "expires_gmt = CASE WHEN {$taken} THEN VALUES(expires_gmt) ELSE expires_gmt END, date_gmt = CASE WHEN {$taken} THEN VALUES(date_gmt) ELSE date_gmt END";
 		$args[]      = $refresh_cutoff;
 		$args[]      = $refresh_cutoff;
 	}
