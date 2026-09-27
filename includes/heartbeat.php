@@ -189,7 +189,6 @@ function wp_presence_enqueue_heartbeat_ping() {
 		'initialCollaboratorCount' => $initial_collaborator_count,
 		'restUrl'                  => esc_url_raw( rest_url( 'wp-presence/v1/presence' ) ),
 		'nonce'                    => wp_create_nonce( 'wp_rest' ),
-		// Proves the screen the ping reports is one this page was served for.
 		'screenToken'              => wp_create_nonce( 'wp_presence_screen_' . $screen_id ),
 		'idleTicks'                => wp_presence_get_heartbeat_idle_ticks(),
 		'idleInterval'             => wp_presence_get_heartbeat_idle_interval(),

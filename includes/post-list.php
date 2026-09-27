@@ -65,7 +65,6 @@ function wp_presence_add_editors_column( $columns ) {
  * @param int    $post_id     The post ID.
  */
 function wp_presence_render_editors_column( $column_name, $post_id ) {
-	// As core's lock notice, only for posts the current user can edit.
 	if ( 'presence_editors' !== $column_name || ! current_user_can( 'edit_post', $post_id ) ) {
 		return;
 	}
