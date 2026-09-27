@@ -124,12 +124,35 @@ class WP_Presence_Network_Widget_Whos_Online {
 	 * @return array See wp_presence_get_network_summary().
 	 */
 	private static function get_summary() {
-		return wp_presence_get_network_summary(
+		$summary = wp_presence_get_network_summary(
 			array(
 				'sites'          => self::VISIBLE_SITES,
 				'users_per_site' => WP_PRESENCE_NETWORK_AVATARS,
 			)
 		);
+
+		foreach ( $summary['sites'] as $index => $site ) {
+			$summary['sites'][ $index ]['name']     = self::site_name( $site );
+			$summary['sites'][ $index ]['edit_url'] = network_admin_url( 'site-info.php?id=' . (int) $site['blog_id'] );
+		}
+
+		return $summary;
+	}
+
+	/**
+	 * Returns a site's title, or its address when it has none.
+	 *
+	 * @since 0.11.0
+	 *
+	 * @param array $site A site from wp_presence_get_network_summary().
+	 * @return string The site name, unescaped.
+	 */
+	private static function site_name( $site ) {
+		$details = get_site( $site['blog_id'] );
+		// Stored HTML-escaped, so decode it for the escaping on output.
+		$name = $details ? wp_specialchars_decode( (string) $details->blogname, ENT_QUOTES ) : '';
+
+		return '' !== trim( $name ) ? $name : untrailingslashit( $site['domain'] . $site['path'] );
 	}
 
 	/**
@@ -167,7 +190,7 @@ class WP_Presence_Network_Widget_Whos_Online {
 		foreach ( $summary['sites'] as $site ) {
 			echo '<li class="presence-site-item" data-blog-id="' . (int) $site['blog_id'] . '">';
 			echo wp_kses_post( wp_presence_render_avatar_stack( $site['users'], WP_PRESENCE_NETWORK_AVATARS ) );
-			echo '<span class="presence-site-info"><a href="' . esc_url( $site['url'] ) . '">' . esc_html( $site['domain'] . $site['path'] ) . '</a></span>';
+			echo '<span class="presence-site-info"><a href="' . esc_url( $site['edit_url'] ) . '">' . esc_html( $site['name'] ) . '</a></span>';
 			echo '<span class="presence-site-count">' . (int) $site['user_count'] . '</span>';
 			echo '</li>';
 		}

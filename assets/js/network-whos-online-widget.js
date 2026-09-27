@@ -83,9 +83,9 @@
 				window.wpPresenceBuildAvatarStack( site.users, avatarMax );
 			html +=
 				'<span class="presence-site-info"><a href="' +
-				esc( site.url ) +
+				esc( site.edit_url ) +
 				'">' +
-				esc( site.domain + site.path ) +
+				esc( site.name ) +
 				'</a></span>';
 			html +=
 				'<span class="presence-site-count">' +

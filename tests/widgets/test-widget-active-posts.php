@@ -59,6 +59,28 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 		$this->assertArrayHasKey( 'status', $editor );
 	}
 
+	public function test_rows_name_the_post_type_and_untitled_posts() {
+		wp_set_current_user( self::$editor_id );
+
+		$page_id = self::factory()->post->create(
+			array(
+				'post_title' => '',
+				'post_type'  => 'page',
+			)
+		);
+		wp_set_presence( wp_presence_post_room( $page_id ), 'lock-' . self::$editor_id, array(), self::$editor_id );
+
+		$response = WP_Presence_Widget_Active_Posts::heartbeat_received(
+			array(),
+			array( 'presence-active-posts-ping' => true ),
+			'dashboard'
+		);
+
+		$post_entry = $response['presence-active-posts'][0];
+		$this->assertSame( '(no title)', $post_entry['post_title'] );
+		$this->assertSame( get_userdata( self::$editor_id )->display_name . ' · Page', $post_entry['editor_label'] );
+	}
+
 	/**
 	 * @covers WP_Presence_Widget_Active_Posts::heartbeat_received
 	 */

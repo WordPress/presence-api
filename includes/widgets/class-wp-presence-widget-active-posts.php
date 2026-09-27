@@ -270,7 +270,7 @@ class WP_Presence_Widget_Active_Posts {
 			if ( ! isset( $by_post[ $post_id ] ) ) {
 				$by_post[ $post_id ] = array(
 					'post_id'    => $post_id,
-					'post_title' => $post->post_title,
+					'post_title' => '' !== $post->post_title ? $post->post_title : __( '(no title)', 'presence-api' ),
 					'post_type'  => $post_type,
 					'edit_url'   => get_edit_post_link( $post_id, 'raw' ),
 					'editors'    => array(),
@@ -306,11 +306,18 @@ class WP_Presence_Widget_Active_Posts {
 			$editors = array_values( $post_data['editors'] );
 			$count   = count( $editors );
 
-			$by_post[ $index ]['editors']      = $editors;
-			$by_post[ $index ]['editor_label'] = 1 === $count
+			$editor_label = 1 === $count
 				? $editors[0]['display_name']
 				/* translators: %d: Number of people editing the post. */
 				: sprintf( _n( '%d person', '%d people', $count, 'presence-api' ), $count );
+
+			$by_post[ $index ]['editors']      = $editors;
+			$by_post[ $index ]['editor_label'] = sprintf(
+				/* translators: 1: Who is editing, a name or a count of people. 2: Singular post type name, such as Page. */
+				__( '%1$s · %2$s', 'presence-api' ),
+				$editor_label,
+				get_post_type_object( $post_data['post_type'] )->labels->singular_name
+			);
 		}
 
 		return array_values( $by_post );

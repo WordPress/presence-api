@@ -25,7 +25,6 @@ import {
 	forceHeartbeatTick,
 	networkSiteId,
 	setNetworkPresence,
-	siteLabel,
 } from './network-helpers';
 
 /**
@@ -94,7 +93,11 @@ test.describe( "Network Who's Online widget", () => {
 			team.locator( '.presence-avatar-stack img' )
 		).toHaveAttribute( 'alt', NETWORK_USERS.a.displayName );
 		await expect( team.locator( '.presence-site-info a' ) ).toHaveText(
-			siteLabel( SITE_SLUG )
+			SITE_SLUG
+		);
+		await expect( team.locator( '.presence-site-info a' ) ).toHaveAttribute(
+			'href',
+			new RegExp( `site-info\\.php\\?id=${ teamSiteId }$` )
 		);
 		await expect( team.locator( '.presence-site-count' ) ).toHaveText(
 			'1'

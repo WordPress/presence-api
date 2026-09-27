@@ -163,6 +163,33 @@ class WP_Test_Presence_Network_Widget_Whos_Online extends WP_Presence_Network_Un
 		);
 	}
 
+	public function test_sites_are_named_by_title_and_link_to_their_settings() {
+		$this->become_network_admin();
+		$blog_id = $this->create_blog();
+		update_blog_option( $blog_id, 'blogname', 'Team & Co' );
+		$this->set_presence_on_site( $blog_id, self::$editor_id );
+
+		ob_start();
+		WP_Presence_Network_Widget_Whos_Online::render();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString(
+			'<a href="' . esc_url( network_admin_url( 'site-info.php?id=' . $blog_id ) ) . '">Team &amp; Co</a>',
+			$output
+		);
+		$this->assertSame( 'Team & Co', $this->tick()['presence-network-widget'][0]['name'] );
+	}
+
+	public function test_a_site_without_a_title_is_named_by_its_address() {
+		$this->become_network_admin();
+		$blog_id = $this->create_blog();
+		update_blog_option( $blog_id, 'blogname', '' );
+		$this->set_presence_on_site( $blog_id, self::$editor_id );
+
+		$site = get_site( $blog_id );
+		$this->assertSame( untrailingslashit( $site->domain . $site->path ), $this->tick()['presence-network-widget'][0]['name'] );
+	}
+
 	/**
 	 * The widget draws five sites and links out for the rest, so it asks the
 	 * read path for five rather than pulling the whole network across and
