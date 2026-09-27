@@ -314,6 +314,18 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$this->assertSame( 'Secret Draft', $place->title );
 	}
 
+	public function test_someone_editing_a_template_in_the_site_editor_links_to_it() {
+		$template_id = self::factory()->post->create( array( 'post_type' => 'wp_template', 'post_name' => 'home', 'post_title' => 'Home' ) );
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'site-editor' ), self::$editor_id );
+		wp_set_presence( wp_presence_post_room( $template_id ), 'editor-' . self::$editor_id, array(), self::$editor_id );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$place = $this->place_of( $this->render_nodes(), self::$editor_id );
+
+		$this->assertSame( get_edit_post_link( $template_id, 'raw' ), $place->href );
+		$this->assertSame( 'Home', $place->title );
+	}
+
 	public function test_someone_editing_an_untitled_draft_is_on_no_title() {
 		$this->put_editor_on_post( self::factory()->post->create( array( 'post_title' => '', 'post_status' => 'draft', 'post_author' => self::$editor_id ) ) );
 
