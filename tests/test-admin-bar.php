@@ -332,13 +332,12 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * An admin page with no entry in the map still groups correctly, keyed on
-	 * its filename, which is what the client reports as window.pagenow.
+	 * The Posts list reports edit-post as window.pagenow, not its filename.
 	 */
-	public function test_an_unmapped_admin_page_is_keyed_by_its_filename() {
-		$this->view_admin_page( 'site-health.php', 'site-health' );
+	public function test_the_posts_list_groups_by_its_screen_id() {
+		$this->view_admin_page( 'edit.php', 'edit-post' );
 
-		$user_id = $this->put_user_on_screen( 'site-health' );
+		$user_id = $this->put_user_on_screen( 'edit-post' );
 
 		wp_set_current_user( self::$editor_id );
 		$nodes = $this->render_nodes();

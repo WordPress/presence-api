@@ -31,44 +31,14 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 		}
 	);
 
-	/*
-	 * Determine the current screen slug to match against what the JS heartbeat
-	 * sends as window.pagenow. Map $pagenow -> pagenow values.
-	 */
-	global $pagenow;
-	$pagenow_map = array(
-		'index.php'              => 'dashboard',
-		'edit.php'               => 'edit',
-		'post.php'               => 'post',
-		'post-new.php'           => 'post-new',
-		'upload.php'             => 'upload',
-		'edit-comments.php'      => 'edit-comments',
-		'themes.php'             => 'themes',
-		'widgets.php'            => 'widgets',
-		'nav-menus.php'          => 'nav-menus',
-		'plugins.php'            => 'plugins',
-		'users.php'              => 'users',
-		'profile.php'            => 'profile',
-		'user-edit.php'          => 'user-edit',
-		'tools.php'              => 'tools',
-		'import.php'             => 'import',
-		'export.php'             => 'export',
-		'options-general.php'    => 'options-general',
-		'options-writing.php'    => 'options-writing',
-		'options-reading.php'    => 'options-reading',
-		'options-discussion.php' => 'options-discussion',
-		'options-media.php'      => 'options-media',
-		'options-permalink.php'  => 'options-permalink',
-	);
-
+	// The ping reports window.pagenow, which core prints from the current screen's ID.
 	if ( null !== $screen ) {
 		$current_screen = $screen;
 	} elseif ( ! is_admin() ) {
 		$current_screen = 'front';
-	} elseif ( isset( $pagenow_map[ $pagenow ] ) ) {
-		$current_screen = $pagenow_map[ $pagenow ];
 	} else {
-		$current_screen = $pagenow ? str_replace( '.php', '', $pagenow ) : 'unknown';
+		$wp_screen      = get_current_screen();
+		$current_screen = $wp_screen ? $wp_screen->id : 'unknown';
 	}
 
 	// Split others into "here" (same screen) and "elsewhere".
