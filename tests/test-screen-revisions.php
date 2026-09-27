@@ -637,7 +637,6 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 		$config = $this->banner_config();
 		$this->assertSame( 'options/general', $config['screenKey'] );
 		$this->assertSame( $rev, $config['baselineRev'] );
-		$this->assertArrayHasKey( 'reload', $config['strings'] );
 	}
 
 	/**

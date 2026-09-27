@@ -3,9 +3,9 @@
  *
  * Pings the server with the current screen key on every Heartbeat tick and
  * renders a non-blocking warning notice when the server reports a revision
- * newer than this page's baseline. The baseline, current screen key, and
- * translated strings are passed in via `window.wpPresenceStaleScreen`,
- * which the enqueue handler emits as a `before` inline script.
+ * newer than this page's baseline. The baseline and current screen key are
+ * passed in via `window.wpPresenceStaleScreen`, which the enqueue handler
+ * emits as a `before` inline script.
  *
  * @param {jQuery} $ The jQuery instance.
  * @package Presence_API
@@ -20,7 +20,7 @@
 
 	const config = window.wpPresenceStaleScreen || {};
 	const screenKey = config.screenKey || '';
-	const strings = config.strings || {};
+	const { __, sprintf } = wp.i18n;
 	let baselineRev = parseInt( config.baselineRev, 10 ) || 0;
 	let bannerShown = false;
 
@@ -148,7 +148,7 @@
 		const reload = document.createElement( 'button' );
 		reload.type = 'button';
 		reload.className = 'button button-primary';
-		reload.textContent = strings.reload || 'Reload';
+		reload.textContent = __( 'Reload', 'presence-api' );
 		reload.addEventListener( 'click', function () {
 			window.location.reload();
 		} );
@@ -160,7 +160,7 @@
 		dismiss.className = 'notice-dismiss';
 		const sr = document.createElement( 'span' );
 		sr.className = 'screen-reader-text';
-		sr.textContent = strings.dismiss || 'Dismiss this notice.';
+		sr.textContent = __( 'Dismiss this notice.', 'presence-api' );
 		dismiss.appendChild( sr );
 		dismiss.addEventListener( 'click', function () {
 			notice.remove();
@@ -178,17 +178,17 @@
 	function formatMessage( info ) {
 		const timeAgo = info.time_ago || '';
 		if ( info.actor_name ) {
-			// `split('%1$s').join(name)` avoids String.replace's $-pattern
-			// interpretation so display names with `$&`, `$1`, etc. don't
-			// get reinterpreted as backreferences.
-			return ( strings.updatedBy || '%1$s updated this screen %2$s.' )
-				.split( '%1$s' )
-				.join( info.actor_name )
-				.split( '%2$s' )
-				.join( timeAgo );
+			return sprintf(
+				/* translators: 1: display name, 2: relative time like "2 minutes ago". */
+				__( '%1$s updated this screen %2$s.', 'presence-api' ),
+				info.actor_name,
+				timeAgo
+			);
 		}
-		return ( strings.updatedAnonymously || 'This screen was updated %s.' )
-			.split( '%s' )
-			.join( timeAgo );
+		return sprintf(
+			/* translators: %s: relative time like "2 minutes ago". */
+			__( 'This screen was updated %s.', 'presence-api' ),
+			timeAgo
+		);
 	}
 } )( jQuery );

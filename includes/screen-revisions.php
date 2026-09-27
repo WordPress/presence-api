@@ -899,7 +899,7 @@ function wp_presence_enqueue_stale_screen_banner() {
 	wp_enqueue_script(
 		'wp-presence-stale-screen',
 		WP_PRESENCE_PLUGIN_URL . 'assets/js/stale-screen.js',
-		array( 'jquery', 'heartbeat', 'wp-presence-tab-coordinator' ),
+		array( 'jquery', 'heartbeat', 'wp-i18n', 'wp-presence-tab-coordinator' ),
 		WP_PRESENCE_VERSION,
 		true
 	);
@@ -909,15 +909,9 @@ function wp_presence_enqueue_stale_screen_banner() {
 		'baselineRev' => $baseline_rev,
 		'restUrl'     => esc_url_raw( rest_url( 'wp-presence/v1/presence/screen-revisions/stale' ) ),
 		'nonce'       => wp_create_nonce( 'wp_rest' ),
-		'strings'     => array(
-			/* translators: 1: display name, 2: relative time like "2 minutes ago". */
-			'updatedBy'          => __( '%1$s updated this screen %2$s.', 'presence-api' ),
-			/* translators: %s: relative time like "2 minutes ago". */
-			'updatedAnonymously' => __( 'This screen was updated %s.', 'presence-api' ),
-			'reload'             => __( 'Reload', 'presence-api' ),
-			'dismiss'            => __( 'Dismiss this notice.', 'presence-api' ),
-		),
 	);
+
+	wp_set_script_translations( 'wp-presence-stale-screen', 'presence-api' );
 
 	wp_add_inline_script(
 		'wp-presence-stale-screen',
