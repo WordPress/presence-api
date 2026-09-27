@@ -219,9 +219,9 @@ class WP_Presence_Widget_Active_Posts {
 				continue;
 			}
 
-			// Rendering the widget only takes editing some post type, so without this a
-			// contributor would receive the title, edit link and editors of
-			// every post being worked on. Same check the REST controller
+			// Anyone who edits a post type can render the widget, so without
+			// this a contributor would receive the title, edit link and editors
+			// of every post being worked on. Same check the REST controller
 			// applies to the room collection.
 			if ( ! wp_can_access_presence_room( $entry->room, $current_user_id ) ) {
 				continue;
