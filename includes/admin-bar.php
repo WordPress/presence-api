@@ -78,7 +78,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	$place = function ( $entry ) use ( $user_editing_post ) {
 		$screen  = isset( $entry->data['screen'] ) ? (string) $entry->data['screen'] : '';
 		$post_id = 'front' === $screen ? (int) ( $entry->data['post_id'] ?? 0 ) : (int) ( $user_editing_post[ (int) $entry->user_id ] ?? 0 );
-		if ( $post_id && ( 'front' === $screen || get_post_type( $post_id ) === $screen ) ) {
+		if ( $post_id && ( 'front' === $screen || 'site-editor' === $screen || get_post_type( $post_id ) === $screen ) ) {
 			return $screen . ':' . $post_id;
 		}
 		return empty( $entry->data['object_id'] ) ? $screen : $screen . ':' . (int) $entry->data['object_id'];
@@ -156,7 +156,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 				return array( $title, '' );
 			}
 			return current_user_can( 'read_post', $post_id ) ? array( $title, get_permalink( $post_id ) ) : array( '', '' );
-		} elseif ( $post_id && get_post_type( $post_id ) === $screen ) {
+		} elseif ( $post_id && ( 'site-editor' === $screen || get_post_type( $post_id ) === $screen ) ) {
 			$post_title = get_the_title( $post_id );
 			// phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- Reuses core's string, as _draft_or_post_title() does.
 			return array( '' !== $post_title ? $post_title : __( '(no title)', 'default' ), (string) get_edit_post_link( $post_id, 'raw' ), true );

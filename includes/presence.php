@@ -1463,7 +1463,7 @@ function wp_presence_hydrate_room_users( $rooms, $timeout = null ) {
  * @since 0.11.0 Covers every post type edited in the admin, not only posts and pages.
  */
 function wp_presence_register_post_type_support() {
-	foreach ( get_post_types( array( 'show_ui' => true ), 'objects' ) as $post_type => $post_type_object ) {
+	foreach ( get_post_types( array(), 'objects' ) as $post_type => $post_type_object ) {
 		wp_presence_add_post_type_support( $post_type, $post_type_object );
 	}
 
@@ -1491,7 +1491,10 @@ function wp_presence_add_post_type_support( $post_type, $post_type_object ) {
 
 	$_wp_presence_post_types_seen[ $post_type ] = true;
 
-	if ( $post_type_object->show_ui && post_type_supports( $post_type, 'editor' ) ) {
+	// Core hides templates from the admin menus, since only the Site Editor edits them.
+	$site_editor = in_array( $post_type, array( 'wp_template', 'wp_template_part' ), true );
+
+	if ( ( $post_type_object->show_ui || $site_editor ) && post_type_supports( $post_type, 'editor' ) ) {
 		add_post_type_support( $post_type, 'presence' );
 	}
 }

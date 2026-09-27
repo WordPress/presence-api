@@ -209,6 +209,30 @@
 		);
 	}
 
+	// The Site Editor switches what it edits without a reload, so this is read on every tick.
+	function siteEditorPostId() {
+		if (
+			window.pagenow !== 'site-editor' ||
+			! wp.data ||
+			new URLSearchParams( window.location.search ).get( 'canvas' ) !==
+				'edit'
+		) {
+			return 0;
+		}
+		const editor = wp.data.select( 'core/editor' );
+		const id = editor.getCurrentPostId();
+		if ( typeof id === 'number' ) {
+			return id;
+		}
+		// A template's ID is "theme//slug"; wp_id is 0 until it is saved to the database.
+		const record =
+			id &&
+			wp.data
+				.select( 'core' )
+				.getEntityRecord( 'postType', editor.getCurrentPostType(), id );
+		return ( record && record.wp_id ) || 0;
+	}
+
 	// Defer registration to document ready to ensure it runs after WP Core's post.js handler.
 	$( function () {
 		$( document ).on( 'heartbeat-send', function ( event, data ) {
@@ -258,8 +282,9 @@
 				data[ 'presence-fragments' ] = asks;
 			}
 
-			if ( editorPostId ) {
-				data[ 'presence-editor-ping' ] = { post_id: editorPostId };
+			const postId = editorPostId || siteEditorPostId();
+			if ( postId ) {
+				data[ 'presence-editor-ping' ] = { post_id: postId };
 			}
 		} );
 
