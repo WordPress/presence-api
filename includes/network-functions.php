@@ -689,8 +689,10 @@ function wp_presence_get_network_summary( array $args = array() ) {
  *
  * @since 0.2.0
  * @param string   $key   What is being asked for.
- * @param callable $build Builds the value when it is not already held.
- * @return mixed The held value.
+ * @param callable $build Builds the value when it is not already held. A
+ *                        false return is rebuilt on every read, since the
+ *                        salted cache reads false as a miss.
+ * @return array The held value.
  */
 function wp_presence_network_cached( $key, callable $build ) {
 	$group        = wp_presence_network_cache_group();
