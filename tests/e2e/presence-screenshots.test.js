@@ -40,6 +40,17 @@ function demoSeeder( php ) {
 	wpCli( `eval 'require "${ SEEDER_PATH }"; ${ php }'` );
 }
 
+/**
+ * Ages the seeded editor rows one second past a threshold the plugin reports.
+ *
+ * @param {string} seconds PHP expression for the threshold, in seconds.
+ */
+function backdateEditors( seconds ) {
+	wpCli(
+		`eval 'global $wpdb; $wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->presence} SET date_gmt = %s WHERE room LIKE %s AND client_id LIKE %s", gmdate( "Y-m-d H:i:s", time() - ${ seconds } - 1 ), "postType/%", "editor-%" ) );'`
+	);
+}
+
 async function snap( page, name ) {
 	fs.mkdirSync( SCREENSHOTS_DIR, { recursive: true } );
 	await page.screenshot( {
@@ -152,9 +163,7 @@ test.describe.serial( 'Presence Screenshots', () => {
 	} );
 
 	test( '06 — Idle state', async ( { admin, page } ) => {
-		wpCli(
-			"db query \"UPDATE wp_presence SET date_gmt = DATE_SUB( UTC_TIMESTAMP(), INTERVAL 76 SECOND ) WHERE room LIKE 'postType/%' AND client_id LIKE 'editor-%'\""
-		);
+		backdateEditors( 'wp_presence_idle_threshold()' );
 		await admin.visitAdminPage( '/' );
 		await connectHeartbeat( page );
 		await expect(
@@ -170,9 +179,7 @@ test.describe.serial( 'Presence Screenshots', () => {
 	} );
 
 	test( '07 — Expired (back to empty)', async ( { admin, page } ) => {
-		wpCli(
-			"db query \"UPDATE wp_presence SET date_gmt = DATE_SUB( UTC_TIMESTAMP(), INTERVAL 151 SECOND ) WHERE room LIKE 'postType/%' AND client_id LIKE 'editor-%'\""
-		);
+		backdateEditors( 'wp_presence_get_timeout()' );
 		await admin.visitAdminPage( '/' );
 		await connectHeartbeat( page );
 
