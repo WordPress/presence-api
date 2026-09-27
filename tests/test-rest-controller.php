@@ -840,12 +840,18 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 		wp_set_current_user( self::$editor_id );
 
 		// Create 15 rooms with unique users per room.
-		$created_users = array();
+		$room_users = array();
 		for ( $i = 0; $i < 15; $i++ ) {
-			$user_id         = self::factory()->user->create( array( 'role' => 'editor' ) );
-			$created_users[] = $user_id;
-			$post_id         = self::factory()->post->create();
-			wp_set_presence( 'postType/post:' . $post_id, 'client-' . $i, array(), $user_id );
+			$user_id             = self::factory()->user->create( array( 'role' => 'editor' ) );
+			$room                = 'postType/post:' . self::factory()->post->create();
+			$room_users[ $room ] = $user_id;
+			wp_set_presence( $room, 'client-' . $i, array(), $user_id );
+		}
+
+		// Page 1 follows the listing's own order, which is not creation order once post IDs differ in length.
+		$page_one = array();
+		foreach ( array_slice( wp_get_active_rooms( null, false ), 0, 5 ) as $room ) {
+			$page_one[] = $room_users[ $room['room'] ];
 		}
 
 		// Request only first page with per_page=5.
@@ -873,11 +879,7 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 			$returned_user_ids[] = $room['users'][0]['user_id'];
 		}
 
-		// Verify we only got users from the first page, not all 15.
-		$this->assertCount( 5, $returned_user_ids );
-		foreach ( array_slice( $created_users, 5 ) as $unused_user_id ) {
-			$this->assertNotContains( $unused_user_id, $returned_user_ids, 'Users from rooms outside page 1 should not be queried' );
-		}
+		$this->assertEqualSets( $page_one, $returned_user_ids, 'Users from rooms outside page 1 should not be queried' );
 	}
 
 	/**
