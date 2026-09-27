@@ -449,14 +449,16 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		for ( $i = 0; $i < 101; $i++ ) {
 			$this->put_user_on_screen( 'upload' );
 		}
+		$this->put_user_on_screen( 'users', array( 'title' => 'Users' ) );
 
 		wp_set_current_user( self::$editor_id );
-		$this->assertSame( '1 more', $this->render_nodes()['presence-more']->title, 'Without the Online list to open, the row says how many it leaves out.' );
+		$this->assertSame( '2 more', $this->render_nodes()['presence-more']->title, 'Without the Online list to open, the row says how many it leaves out.' );
 
 		$this->let_current_user_list_users();
 		$nodes = $this->render_nodes();
 
 		$this->assertCount( 100, array_filter( $nodes, fn( $n ) => 0 === strpos( $n->id, 'presence-user-' ) ) );
+		$this->assertEmpty( wp_list_filter( $nodes, array( 'parent' => 'presence-elsewhere' ) ) );
 		$this->assertSame( 'See everyone online', $nodes['presence-more']->title );
 		$this->assertSame( $nodes['presence-online']->href, $nodes['presence-more']->href );
 		$this->assertSame( 8, substr_count( $nodes['presence-online']->title, '<img' ) );
