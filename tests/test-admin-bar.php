@@ -301,7 +301,7 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 	 * @dataProvider data_objects_being_edited
 	 */
 	public function test_someone_editing_a_comment_user_or_term_links_to_it( $screen, $object, $title ) {
-		$object_id = 'comment' === $screen ? self::factory()->comment->create() : ( 'user-edit' === $screen ? self::$editor_id : self::factory()->category->create( array( 'name' => 'Recipes' ) ) );
+		$object_id = 'comment' === $screen ? self::factory()->comment->create() : ( 0 === strpos( $screen, 'user-edit' ) ? self::$editor_id : self::factory()->category->create( array( 'name' => 'Recipes' ) ) );
 		$this->put_user_on_screen( $screen, array( 'title' => 'Somewhere', 'object_id' => $object_id ) );
 
 		$admin_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
@@ -318,6 +318,7 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		return array(
 			'comment' => array( 'comment', fn( $id ) => get_edit_comment_link( $id, 'url' ), 'Somewhere' ),
 			'user'    => array( 'user-edit', 'get_edit_user_link', 'Somewhere' ),
+			'network' => array( 'user-edit-network', fn( $id ) => network_admin_url( 'user-edit.php?user_id=' . $id ), 'Somewhere' ),
 			'term'    => array( 'edit-category', fn( $id ) => get_edit_term_link( $id, 'category' ), 'Recipes' ),
 		);
 	}
@@ -345,6 +346,7 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$admin_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
 		$on_user  = $this->put_user_on_screen( 'user-edit', array( 'title' => 'Edit User Admin', 'object_id' => $admin_id ) );
 		$on_term  = $this->put_user_on_screen( 'edit-category', array( 'title' => 'Edit Category', 'object_id' => self::factory()->category->create() ) );
+		$on_net   = $this->put_user_on_screen( 'user-edit-network', array( 'title' => 'Edit User Admin', 'object_id' => $admin_id ) );
 
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'contributor' ) ) );
 		$this->let_current_user_list_users();
@@ -354,6 +356,7 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$this->assertFalse( $this->place_of( $nodes, $on_user )->href );
 		$this->assertSame( 'Edit Category', $this->place_of( $nodes, $on_term )->title );
 		$this->assertFalse( $this->place_of( $nodes, $on_term )->href );
+		$this->assertSame( 'Edit User', $this->place_of( $nodes, $on_net )->title );
 	}
 
 	public function test_people_on_this_page_show_when_they_are_idle() {

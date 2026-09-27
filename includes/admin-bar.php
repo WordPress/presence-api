@@ -159,12 +159,14 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 			return array( $title, (string) get_edit_comment_link( $object_id, 'url' ) );
 		} elseif ( $object_id && 'user-edit' === $screen ) {
 			return array( $title, get_edit_user_link( $object_id ) );
+		} elseif ( $object_id && 'user-edit-network' === $screen ) {
+			return array( $title, network_admin_url( 'user-edit.php?user_id=' . $object_id ) );
 		} elseif ( $object_id ) {
 			return array( get_term( $object_id, $type )->name, (string) get_edit_term_link( $object_id, $type ) );
 		} elseif ( ! empty( $entry->data['object_id'] ) ) {
 			// The user editor's title names the user, so it is only shown to people who can edit them.
 			// phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- Reuses core's string.
-			return array( 'user-edit' === $screen ? __( 'Edit User', 'default' ) : $title, '' );
+			return array( in_array( $screen, array( 'user-edit', 'user-edit-network' ), true ) ? __( 'Edit User', 'default' ) : $title, '' );
 		} elseif ( 'dashboard' === $screen ) {
 			$path = '';
 		} elseif ( preg_match( '/_page_(.+)$/', $screen, $matches ) ) {

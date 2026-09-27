@@ -51,7 +51,7 @@ function wp_presence_screen_object_id( $screen, $object_id ) {
 	if ( 'comment' === $screen ) {
 		return current_user_can( 'edit_comment', $object_id ) ? $object_id : 0;
 	}
-	if ( 'user-edit' === $screen ) {
+	if ( 'user-edit' === $screen || 'user-edit-network' === $screen ) {
 		return get_userdata( $object_id ) && current_user_can( 'edit_user', $object_id ) ? $object_id : 0;
 	}
 	if ( taxonomy_exists( $taxonomy ) ) {
@@ -188,7 +188,12 @@ function wp_presence_enqueue_heartbeat_ping() {
 
 	if ( is_admin() ) {
 		$target    = wp_presence_parse_screen_key_target( wp_presence_current_screen_key() );
-		$object_id = wp_presence_screen_object_id( $screen_id, $target['id'] ?? 0 );
+		$screens   = array(
+			'comment' => array( 'comment' ),
+			'user'    => array( 'user-edit', 'user-edit-network' ),
+			'term'    => array( 'edit-' . ( $target['taxonomy'] ?? '' ) ),
+		);
+		$object_id = in_array( $screen_id, $screens[ $target['type'] ] ?? array(), true ) ? wp_presence_screen_object_id( $screen_id, $target['id'] ) : 0;
 		if ( $object_id ) {
 			$page_context['object_id'] = $object_id;
 		}

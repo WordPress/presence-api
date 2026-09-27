@@ -788,6 +788,13 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 
 		$this->assertSame( self::$editor_id, $this->get_ping_config()['pageContext']['object_id'] );
 		$this->assertSame( self::$editor_id, wp_get_presence( 'admin/online' )[0]->data['object_id'] );
+
+		// A key filtered to another kind of object is not taken for the user being edited.
+		add_filter( 'wp_presence_current_screen_key', fn() => 'term/category/' . self::$editor_id );
+		wp_deregister_script( 'wp-presence-ping' );
+		wp_presence_enqueue_heartbeat_ping();
+
+		$this->assertArrayNotHasKey( 'object_id', $this->get_ping_config()['pageContext'] );
 	}
 
 	/**
