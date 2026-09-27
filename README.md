@@ -4,7 +4,7 @@
 
 A feature plugin for system-wide presence and awareness in WordPress.
 
-![The dashboard with 100 people online: faces in the admin bar and Active Posts showing who is editing which story](.wordpress-org/screenshot-1.png)
+![The dashboard with 100 people online, the admin bar's presence menu open on who is editing the lead story, and Active Posts showing each story's editors](.wordpress-org/screenshot-1.png)
 
 > [!IMPORTANT]
 > **Built for the lowest common denominator of environments.** No object cache, no WebSockets, no extra services — a dedicated table with a TTL is the only moving part. Anything a managed host offers on top is a bonus, never a dependency.
