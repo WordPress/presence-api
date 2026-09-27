@@ -105,7 +105,7 @@ function wp_presence_post_lock_room( $post_id, $meta_key ) {
 
 	$post = get_post( $post_id );
 
-	// Every type, as core locks every type edited in post.php, whether or not it shows presence.
+	// Core locks posts of every type, so this covers types without presence support too.
 	return $post ? 'postType/' . $post->post_type . ':' . $post->ID : false;
 }
 

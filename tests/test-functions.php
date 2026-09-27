@@ -403,7 +403,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		$this->assertTrue( wp_can_access_presence_room( $room, $author_1 ) );
 		$this->assertFalse( wp_can_access_presence_room( $room, $author_2 ) );
 		$this->assertTrue( wp_can_access_presence_room( $room, self::$editor_id ) );
-		$this->assertFalse( wp_can_access_presence_room( 'postType/page:' . $post_id, self::$editor_id ), 'The room has to name the post\'s own type.' );
+		$this->assertFalse( wp_can_access_presence_room( 'postType/page:' . $post_id, self::$editor_id ), 'The room must name the post\'s own type.' );
 	}
 
 	/**

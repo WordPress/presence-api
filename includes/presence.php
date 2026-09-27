@@ -1450,11 +1450,10 @@ function wp_presence_hydrate_room_users( $rooms, $timeout = null ) {
 /**
  * Registers presence support for every post type edited in the admin, including ones registered later.
  *
- * Sites opt a type out with `remove_post_type_support( $post_type, 'presence' )`
- * after it is registered, on `init` at priority 11 or later.
+ * Remove it with `remove_post_type_support()` on `init` at priority 11 or later.
  *
  * @since 0.1.1
- * @since 0.11.0 Covers every `show_ui` post type that supports the editor, not only posts and pages.
+ * @since 0.11.0 Covers every post type edited in the admin, not only posts and pages.
  */
 function wp_presence_register_post_type_support() {
 	foreach ( get_post_types( array( 'show_ui' => true ), 'objects' ) as $post_type => $post_type_object ) {
@@ -1491,7 +1490,7 @@ function wp_presence_add_post_type_support( $post_type, $post_type_object ) {
 }
 
 /**
- * Lets a post type registered again after being unregistered get presence support afresh.
+ * Lets an unregistered post type get presence support again if it is registered anew.
  *
  * @access private
  *
