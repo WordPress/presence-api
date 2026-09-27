@@ -105,7 +105,7 @@ class WP_Presence_Widget_Active_Posts {
 			return '<p>' . esc_html__( 'All quiet.', 'presence-api' ) . '</p>';
 		}
 
-		$html = '<ul class="presence-active-posts-list" aria-label="' . esc_attr__( 'Posts currently being edited', 'presence-api' ) . '">';
+		$html = '<ul class="presence-active-posts-list" aria-label="' . esc_attr__( 'Posts people have open', 'presence-api' ) . '">';
 
 		foreach ( $posts as $post_data ) {
 			$any_active = false;
