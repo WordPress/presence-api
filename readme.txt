@@ -68,19 +68,16 @@ Only the most recent releases are listed here. For the full history, see https:/
 = 0.9.0 =
 * Gate where people are behind a per-user view_presence_location meta cap ([#571](https://github.com/WordPress/presence-api/issues/571)).
 * Give each user a room-assigned color from Gutenberg's palette ([#574](https://github.com/WordPress/presence-api/issues/574)).
-* Give each user one lasting color from their ID.
-* Give the admin bar menu roomier rows and real section headers.
-* Keep post locks in the presence table instead of post meta.
 * Keep the admin bar presence node in sync on each heartbeat ([#589](https://github.com/WordPress/presence-api/issues/589)).
-* Pick each user's color from Gutenberg's seven plus fifteen between them.
+* Put people on this page first in the admin bar menu and link everyone else to where they are ([#597](https://github.com/WordPress/presence-api/issues/597)).
 * Retire the site Who's Online dashboard widget ([#591](https://github.com/WordPress/presence-api/issues/591)).
 * Ring each admin bar face in its block editor collaborator color.
 * Say how many people the admin bar menu leaves out ([#594](https://github.com/WordPress/presence-api/issues/594)).
 * Seat the admin bar faces beside My Account and build the menu from core groups ([#565](https://github.com/WordPress/presence-api/issues/565)).
 * Show whole faces in the admin bar and beside each name in its menu.
-* Tune the admin bar presence menu 💅🏻 ([#597](https://github.com/WordPress/presence-api/issues/597)).
 * Carry the filter nonce on the Plugins screen's online users link ([#569](https://github.com/WordPress/presence-api/issues/569)).
 * Close the remaining location leaks and refresh the screen token ([#600](https://github.com/WordPress/presence-api/issues/600)).
+* Keep post locks in the presence table instead of post meta ([#551](https://github.com/WordPress/presence-api/issues/551)).
 * Keep presence markup and location to the people allowed them ([#596](https://github.com/WordPress/presence-api/issues/596)).
 * List everyone online in the admin bar and keep only their location behind the cap ([#590](https://github.com/WordPress/presence-api/issues/590)).
 * Skip an unchanged editor tick's presence write ([#553](https://github.com/WordPress/presence-api/issues/553)).

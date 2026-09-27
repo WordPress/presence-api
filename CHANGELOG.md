@@ -7,23 +7,20 @@
 
 * gate where people are behind a per-user view_presence_location meta cap ([#571](https://github.com/WordPress/presence-api/issues/571)) ([5c5a264](https://github.com/WordPress/presence-api/commit/5c5a2645b8356e952d26df5d37a4ef00b66341a4))
 * give each user a room-assigned color from Gutenberg's palette ([#574](https://github.com/WordPress/presence-api/issues/574)) ([423f9ba](https://github.com/WordPress/presence-api/commit/423f9ba0118bfadeea5623cf2b0c6dc3e22d5d52))
-* give each user one lasting color from their ID ([6c0773b](https://github.com/WordPress/presence-api/commit/6c0773b23684d46913f1a24704a66ce9abd9d858))
-* give the admin bar menu roomier rows and real section headers ([cdf9239](https://github.com/WordPress/presence-api/commit/cdf923951cf74988eb04b03ce0538f013451870d))
-* keep post locks in the presence table instead of post meta ([1d0f494](https://github.com/WordPress/presence-api/commit/1d0f49408df8c6a5b9b2390c75364bb539510aeb))
 * keep the admin bar presence node in sync on each heartbeat ([#589](https://github.com/WordPress/presence-api/issues/589)) ([590f2d2](https://github.com/WordPress/presence-api/commit/590f2d2a1824dda28ee4eddd807e5c0414cca4ba))
-* pick each user's color from Gutenberg's seven plus fifteen between them ([5bed6ab](https://github.com/WordPress/presence-api/commit/5bed6abd60a476ce64c72a232d1c00c6b1a08be1))
+* put people on this page first in the admin bar menu and link everyone else to where they are ([#597](https://github.com/WordPress/presence-api/issues/597)) ([70e94fb](https://github.com/WordPress/presence-api/commit/70e94fb34e41f7057041baa5a64251172dabc6b9))
 * retire the site Who's Online dashboard widget ([#591](https://github.com/WordPress/presence-api/issues/591)) ([395ad50](https://github.com/WordPress/presence-api/commit/395ad503b50ccf607b9b9109b9df0473a677dcf9))
 * ring each admin bar face in its block editor collaborator color ([6e3e4b3](https://github.com/WordPress/presence-api/commit/6e3e4b3f8dc4d6583cde6d46e5159069366dcb9d))
 * say how many people the admin bar menu leaves out ([#594](https://github.com/WordPress/presence-api/issues/594)) ([3382452](https://github.com/WordPress/presence-api/commit/3382452fc679236a3ad9f53361a41effaf802211))
 * seat the admin bar faces beside My Account and build the menu from core groups ([#565](https://github.com/WordPress/presence-api/issues/565)) ([5f1ced7](https://github.com/WordPress/presence-api/commit/5f1ced7c4ec3e02a9bec4403b4a1191382266296))
 * show whole faces in the admin bar and beside each name in its menu ([4f4bd22](https://github.com/WordPress/presence-api/commit/4f4bd226331856f9f1f939417366eb6b44f508ea))
-* tune the admin bar presence menu 💅🏻 ([#597](https://github.com/WordPress/presence-api/issues/597)) ([70e94fb](https://github.com/WordPress/presence-api/commit/70e94fb34e41f7057041baa5a64251172dabc6b9))
 
 
 ### Bug Fixes
 
 * carry the filter nonce on the Plugins screen's online users link ([#569](https://github.com/WordPress/presence-api/issues/569)) ([c9f0451](https://github.com/WordPress/presence-api/commit/c9f04511fbaa6423e24e0068330df9c3135ddfcc))
 * close the remaining location leaks and refresh the screen token ([#600](https://github.com/WordPress/presence-api/issues/600)) ([bad450a](https://github.com/WordPress/presence-api/commit/bad450a25ce18673700a0519036cab4b941dfa6c))
+* keep post locks in the presence table instead of post meta ([#551](https://github.com/WordPress/presence-api/issues/551)) ([1d0f494](https://github.com/WordPress/presence-api/commit/1d0f49408df8c6a5b9b2390c75364bb539510aeb))
 * keep presence markup and location to the people allowed them ([#596](https://github.com/WordPress/presence-api/issues/596)) ([b7a8400](https://github.com/WordPress/presence-api/commit/b7a8400ba7414bb4085206a0fb9035557c395384))
 * list everyone online in the admin bar and keep only their location behind the cap ([#590](https://github.com/WordPress/presence-api/issues/590)) ([25f0aab](https://github.com/WordPress/presence-api/commit/25f0aab3c177e23ec0d06c9ca8a93bc4d9ad3d3c))
 
