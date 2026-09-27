@@ -312,8 +312,7 @@ class WP_Presence_Widget_Whos_Online {
 	 * @param WP_User $user  The user object.
 	 */
 	private static function render_user_row( $entry, $user ) {
-		// Where someone is shows only to users who can browse the site's users, as in the admin bar.
-		$screen  = isset( $entry->data['screen'] ) && current_user_can( 'view_presence_locations' ) ? $entry->data['screen'] : '';
+		$screen  = isset( $entry->data['screen'] ) && current_user_can( 'view_presence_location', $entry->user_id ) ? $entry->data['screen'] : '';
 		$elapsed = time() - strtotime( $entry->date_gmt . ' +0000' );
 
 		if ( $elapsed < wp_presence_idle_threshold() ) {
@@ -554,8 +553,6 @@ class WP_Presence_Widget_Whos_Online {
 
 		cache_users( wp_list_pluck( $entries, 'user_id' ) );
 
-		$can_see_locations = current_user_can( 'view_presence_locations' );
-
 		foreach ( $entries as $entry ) {
 			$user = get_userdata( $entry->user_id );
 
@@ -563,7 +560,7 @@ class WP_Presence_Widget_Whos_Online {
 				continue;
 			}
 
-			$screen     = isset( $entry->data['screen'] ) && $can_see_locations ? $entry->data['screen'] : '';
+			$screen     = isset( $entry->data['screen'] ) && current_user_can( 'view_presence_location', $entry->user_id ) ? $entry->data['screen'] : '';
 			$entry_ps   = isset( $entry->data['post_status'] ) ? $entry->data['post_status'] : '';
 			$rich_label = $screen ? self::get_rich_screen_label( $screen, $entry_ps ) : '';
 

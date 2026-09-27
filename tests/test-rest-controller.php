@@ -321,17 +321,28 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 	 *
 	 * @covers ::wp_presence_map_meta_cap
 	 */
-	public function test_get_items_shows_screens_only_to_users_who_can_list_users() {
+	public function test_get_items_shows_other_users_screens_only_to_users_who_can_list_users() {
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'dashboard' ), self::$editor_id );
 		wp_set_presence( 'admin/online', 'user-' . self::$editor_2_id, array( 'screen' => 'options-general' ), self::$editor_2_id );
 
 		$request = new WP_REST_Request( 'GET', '/wp-presence/v1/presence' );
 		$request->set_param( 'room', 'admin/online' );
 
+		$screens = function () use ( $request ) {
+			$screens = array();
+			foreach ( rest_get_server()->dispatch( $request )->get_data() as $item ) {
+				$screens[ $item['user_id'] ] = $item['data']['screen'] ?? null;
+			}
+			return $screens;
+		};
+
 		wp_set_current_user( self::$editor_id );
-		$this->assertArrayNotHasKey( 'screen', rest_get_server()->dispatch( $request )->get_data()[0]['data'] );
+		$seen = $screens();
+		$this->assertSame( 'dashboard', $seen[ self::$editor_id ], 'Your own location is never hidden from you.' );
+		$this->assertNull( $seen[ self::$editor_2_id ] );
 
 		wp_set_current_user( self::$admin_id );
-		$this->assertSame( 'options-general', rest_get_server()->dispatch( $request )->get_data()[0]['data']['screen'] );
+		$this->assertSame( 'options-general', $screens()[ self::$editor_2_id ] );
 	}
 
 	/**

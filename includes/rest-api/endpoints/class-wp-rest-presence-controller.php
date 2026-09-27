@@ -745,7 +745,7 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 		if ( rest_is_field_included( 'data', $fields ) ) {
 			$data['data'] = $item->data;
 
-			if ( wp_presence_admin_room() === $item->room && ! current_user_can( 'view_presence_locations' ) ) {
+			if ( wp_presence_admin_room() === $item->room && ! current_user_can( 'view_presence_location', $item->user_id ) ) {
 				unset( $data['data']['screen'] );
 			}
 		}
@@ -859,7 +859,7 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 					'readonly'    => true,
 				),
 				'data'         => array(
-					'description'          => __( 'Arbitrary presence state data.', 'presence-api' ),
+					'description'          => __( 'Arbitrary presence state data. In the admin/online room, screen is omitted unless the current user can view that user\'s location.', 'presence-api' ),
 					'type'                 => 'object',
 					'context'              => array( 'view', 'edit' ),
 					'additionalProperties' => true,

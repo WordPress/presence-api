@@ -888,22 +888,28 @@ function wp_presence_parse_room( $room ) {
 }
 
 /**
- * Maps the capability to see which screen other users are on.
+ * Maps the capability to see which screen a user is on.
  *
- * Mapped to `list_users` because where people are is user-directory information.
+ * Anyone may see their own; others need `list_users`, since where people are is user-directory information.
  *
  * @since 0.9.0
  *
- * @param string[] $caps Primitive capabilities the user must have.
- * @param string   $cap  Capability being checked.
+ * @param string[] $caps    Primitive capabilities the user must have.
+ * @param string   $cap     Capability being checked.
+ * @param int      $user_id The user ID being checked.
+ * @param array    $args    The user whose location is being viewed, at index 0.
  * @return string[] Primitive capabilities the user must have.
  */
-function wp_presence_map_meta_cap( $caps, $cap ) {
-	if ( 'view_presence_locations' === $cap ) {
-		return array( 'list_users' );
+function wp_presence_map_meta_cap( $caps, $cap, $user_id, $args ) {
+	if ( 'view_presence_location' !== $cap ) {
+		return $caps;
 	}
 
-	return $caps;
+	if ( $user_id && isset( $args[0] ) && (int) $args[0] === (int) $user_id ) {
+		return array();
+	}
+
+	return array( 'list_users' );
 }
 
 /**
