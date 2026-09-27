@@ -40,33 +40,11 @@ function wp_presence_enqueue_avatar_stack_style() {
 }
 
 /**
- * Enqueues the shared avatar-stack script.
- *
- * Only the two widgets that repaint over Heartbeat need it; a stack rendered
- * once per page load is served by the PHP renderer alone.
- *
- * @access private
- *
- * @since 0.2.0
- */
-function wp_presence_enqueue_avatar_stack_script() {
-	wp_enqueue_script(
-		'wp-presence-avatar-stack',
-		WP_PRESENCE_PLUGIN_URL . 'assets/js/avatar-stack.js',
-		array(),
-		WP_PRESENCE_VERSION,
-		true
-	);
-}
-
-/**
  * Renders a small avatar stack for a list of users.
  *
  * Shared across every surface that shows an overlapping avatar stack (the
  * dashboard widget's overflow indicator, the network Sites list column, the
- * network dashboard widget) so they all render the stack identically, and
- * mirrored by wpPresenceBuildAvatarStack() in assets/js/avatar-stack.js for
- * the widgets that repaint over Heartbeat.
+ * network dashboard widget) so they all render the stack identically.
  *
  * assets/css/avatar-stack.css sizes the avatars; the attributes below only
  * reserve the space until it loads.

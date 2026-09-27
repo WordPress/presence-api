@@ -43,7 +43,7 @@ class WP_Presence_Widget_Active_Posts {
 	}
 
 	/**
-	 * Enqueues the widget's JavaScript and CSS.
+	 * Enqueues the widget's CSS.
 	 *
 	 * @since 0.1.1
 	 *
@@ -53,30 +53,6 @@ class WP_Presence_Widget_Active_Posts {
 		if ( 'index.php' !== $hook_suffix ) {
 			return;
 		}
-
-		wp_enqueue_script( 'heartbeat' );
-
-		wp_enqueue_script(
-			'wp-presence-tab-coordinator',
-			WP_PRESENCE_PLUGIN_URL . 'assets/js/tab-coordinator.js',
-			array( 'jquery' ),
-			WP_PRESENCE_VERSION,
-			true
-		);
-
-		wp_enqueue_script(
-			'wp-presence-active-posts',
-			WP_PRESENCE_PLUGIN_URL . 'assets/js/active-posts.js',
-			array( 'jquery', 'heartbeat', 'wp-presence-tab-coordinator' ),
-			WP_PRESENCE_VERSION,
-			true
-		);
-
-		wp_add_inline_script(
-			'wp-presence-active-posts',
-			sprintf( 'window.wpPresenceActivePosts = %s;', wp_json_encode( self::get_i18n_strings() ) ),
-			'before'
-		);
 
 		wp_register_style( 'presence-active-posts-widget', false, array(), WP_PRESENCE_VERSION );
 		wp_enqueue_style( 'presence-active-posts-widget' );
@@ -106,71 +82,63 @@ class WP_Presence_Widget_Active_Posts {
 	}
 
 	/**
-	 * Returns the translated strings active-posts.js reads off window.wpPresenceActivePosts.
-	 *
-	 * @since 0.1.24
-	 *
-	 * @return array Translated strings.
-	 */
-	private static function get_i18n_strings() {
-		return array(
-			'noPostsEdited'    => __( 'All quiet.', 'presence-api' ),
-			'postsBeingEdited' => __( 'Posts currently being edited', 'presence-api' ),
-			'statusIdle'       => __( 'Idle', 'presence-api' ),
-		);
-	}
-
-	/**
 	 * Renders the dashboard widget.
 	 *
 	 * @since 0.1.1
 	 */
 	public static function render() {
-		$posts = self::build_active_posts_data();
-
 		echo '<div id="presence-active-posts-list" aria-live="polite" tabindex="-1">';
+		echo self::list_markup( self::build_active_posts_data() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped as it is built.
+		echo '</div>';
+	}
 
+	/**
+	 * Returns the widget's list, as drawn on load and sent with each Heartbeat.
+	 *
+	 * @since 0.11.0
+	 *
+	 * @param array $posts Return value of self::build_active_posts_data().
+	 * @return string HTML markup.
+	 */
+	private static function list_markup( $posts ) {
 		if ( empty( $posts ) ) {
-			echo '<p>' . esc_html__( 'All quiet.', 'presence-api' ) . '</p>';
-		} else {
-			echo '<ul class="presence-active-posts-list" aria-label="' . esc_attr__( 'Posts currently being edited', 'presence-api' ) . '">';
-
-			foreach ( $posts as $post_data ) {
-				$any_active = false;
-				foreach ( $post_data['editors'] as $editor ) {
-					if ( 'active' === $editor['status'] ) {
-						$any_active = true;
-						break;
-					}
-				}
-				// Only show status when it differs — "Idle" is the signal.
-				// Active is the default state; labeling it adds noise.
-				$status_label = $any_active ? '' : __( 'Idle', 'presence-api' );
-
-				echo '<li class="presence-active-post-item" data-post-id="' . (int) $post_data['post_id'] . '">';
-
-				// Avatar stack.
-				echo '<span class="presence-editor-stack">';
-				$stack_max = min( count( $post_data['editors'] ), 4 );
-				foreach ( array_slice( $post_data['editors'], 0, $stack_max ) as $index => $editor ) {
-					$z = $stack_max - $index;
-					echo '<img src="' . esc_url( $editor['avatar_url'] ) . '" width="24" height="24" style="z-index:' . (int) $z . '" alt="' . esc_attr( $editor['display_name'] ) . '" />';
-				}
-				echo '</span>';
-
-				echo '<div class="presence-active-post-info">';
-				echo '<div><span class="presence-editor-count">' . esc_html( $post_data['editor_label'] ) . '</span></div>';
-				echo '<div><span class="presence-post-title"><a href="' . esc_url( $post_data['edit_url'] ) . '">' . esc_html( $post_data['post_title'] ) . '</a></span></div>';
-				echo '</div>';
-
-				echo '<span class="presence-status-text">' . esc_html( $status_label ) . '</span>';
-				echo '</li>';
-			}
-
-			echo '</ul>';
+			return '<p>' . esc_html__( 'All quiet.', 'presence-api' ) . '</p>';
 		}
 
-		echo '</div>';
+		$html = '<ul class="presence-active-posts-list" aria-label="' . esc_attr__( 'Posts currently being edited', 'presence-api' ) . '">';
+
+		foreach ( $posts as $post_data ) {
+			$any_active = false;
+			foreach ( $post_data['editors'] as $editor ) {
+				if ( 'active' === $editor['status'] ) {
+					$any_active = true;
+					break;
+				}
+			}
+			// Only show status when it differs — "Idle" is the signal.
+			// Active is the default state; labeling it adds noise.
+			$status_label = $any_active ? '' : __( 'Idle', 'presence-api' );
+
+			$html .= '<li class="presence-active-post-item" data-post-id="' . (int) $post_data['post_id'] . '">';
+
+			$html     .= '<span class="presence-editor-stack">';
+			$stack_max = min( count( $post_data['editors'] ), 4 );
+			foreach ( array_slice( $post_data['editors'], 0, $stack_max ) as $index => $editor ) {
+				$z     = $stack_max - $index;
+				$html .= '<img src="' . esc_url( $editor['avatar_url'] ) . '" width="24" height="24" style="z-index:' . (int) $z . '" alt="' . esc_attr( $editor['display_name'] ) . '" />';
+			}
+			$html .= '</span>';
+
+			$html .= '<div class="presence-active-post-info">';
+			$html .= '<div><span class="presence-editor-count">' . esc_html( $post_data['editor_label'] ) . '</span></div>';
+			$html .= '<div><span class="presence-post-title"><a href="' . esc_url( $post_data['edit_url'] ) . '">' . esc_html( $post_data['post_title'] ) . '</a></span></div>';
+			$html .= '</div>';
+
+			$html .= '<span class="presence-status-text">' . esc_html( $status_label ) . '</span>';
+			$html .= '</li>';
+		}
+
+		return $html . '</ul>';
 	}
 
 	/**
@@ -184,7 +152,7 @@ class WP_Presence_Widget_Active_Posts {
 	 * @return array The Heartbeat response.
 	 */
 	public static function heartbeat_received( $response, $data, $screen_id ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- Required by filter signature.
-		if ( empty( $data['presence-active-posts-ping'] ) ) {
+		if ( ! wp_presence_fragment_request( $data, 'active-posts' ) ) {
 			return $response;
 		}
 
@@ -192,7 +160,7 @@ class WP_Presence_Widget_Active_Posts {
 			return $response;
 		}
 
-		$response['presence-active-posts'] = self::build_active_posts_data();
+		$response['presence-fragments']['active-posts'] = self::list_markup( self::build_active_posts_data() );
 
 		return $response;
 	}
@@ -305,7 +273,7 @@ class WP_Presence_Widget_Active_Posts {
 			}
 		);
 
-		// Keyed by user id above; the response is JSON, so hand back a list.
+		// Keyed by user id above; hand back a list.
 		foreach ( $by_post as $index => $post_data ) {
 			$editors = array_values( $post_data['editors'] );
 			$count   = count( $editors );

@@ -1,12 +1,9 @@
 /**
  * Presence API — Active Posts Cross-Tab Coalescing E2E Tests
  *
- * Asserts active-posts.js elects one tab to send
- * presence-active-posts-ping, siblings stay silent, closing the leader
- * promotes a sibling, and the leader's presence-active-posts relays to
- * siblings over BroadcastChannel. Unlike presence-ping and
- * presence-screen-ping, this ping has no per-page context, so any two
- * Dashboard tabs are duplicates and the dedupe key is fixed.
+ * Asserts the leader's active-posts fragment relays to a sibling Dashboard
+ * tab over BroadcastChannel. Election and promotion are presence-ping's own,
+ * covered by presence-tab-coalescing.test.js.
  *
  * Uses two pages in one browser context, not two Playwright contexts —
  * Web Locks and BroadcastChannel are scoped per storage partition.
@@ -44,12 +41,14 @@ async function waitForLeaderPing( page, maxAttempts = 20 ) {
 		.poll(
 			async () => {
 				winningData = await captureHeartbeatSend( page );
-				return Boolean( winningData[ 'presence-active-posts-ping' ] );
+				return Boolean(
+					winningData[ 'presence-fragments' ]?.[ 'active-posts' ]
+				);
 			},
 			{
 				intervals: [ 0 ],
 				timeout: maxAttempts * 100,
-				message: 'Tab never won presence-active-posts-ping leadership.',
+				message: 'Tab never asked for the active-posts fragment.',
 			}
 		)
 		.toBe( true );
@@ -66,7 +65,7 @@ function waitForActivePostsTick( page, timeoutMs = 8000 ) {
 			}, timeout );
 
 			function handler( event, data ) {
-				if ( data && data[ 'presence-active-posts' ] ) {
+				if ( data?.[ 'presence-fragments' ]?.[ 'active-posts' ] ) {
 					clearTimeout( timer );
 					jQuery( document ).off( 'heartbeat-tick', handler );
 					resolve( data );
@@ -81,45 +80,6 @@ function waitForActivePostsTick( page, timeoutMs = 8000 ) {
 test.describe( 'Presence Active Posts Tab Coalescing', () => {
 	test.afterEach( async ( { requestUtils } ) => {
 		await requestUtils.deleteAllPosts();
-	} );
-
-	test( 'elects one tab to send presence-active-posts-ping; a sibling tab stays silent', async ( {
-		page,
-	} ) => {
-		await page.goto( '/wp-admin/' );
-		await waitForHeartbeat( page );
-		await waitForLeaderPing( page );
-
-		const sibling = await page.context().newPage();
-		await sibling.goto( '/wp-admin/' );
-		await waitForHeartbeat( sibling );
-
-		const siblingData = await captureHeartbeatSend( sibling );
-		expect( siblingData[ 'presence-active-posts-ping' ] ).toBeUndefined();
-
-		await sibling.close();
-	} );
-
-	test( 'promotes the sibling tab once the leader tab closes', async ( {
-		page,
-	} ) => {
-		await page.goto( '/wp-admin/' );
-		await waitForHeartbeat( page );
-		await waitForLeaderPing( page );
-
-		const sibling = await page.context().newPage();
-		await sibling.goto( '/wp-admin/' );
-		await waitForHeartbeat( sibling );
-
-		const beforeClose = await captureHeartbeatSend( sibling );
-		expect( beforeClose[ 'presence-active-posts-ping' ] ).toBeUndefined();
-
-		await page.close();
-
-		const promoted = await waitForLeaderPing( sibling );
-		expect( promoted[ 'presence-active-posts-ping' ] ).toBe( true );
-
-		await sibling.close();
 	} );
 
 	test( "relays the leader's active-posts data to a sibling tab", async ( {
@@ -153,11 +113,8 @@ test.describe( 'Presence Active Posts Tab Coalescing', () => {
 			page.evaluate( () => wp.heartbeat.connectNow() ),
 		] );
 
-		expect( relayed[ 'presence-active-posts' ].length ).toBeGreaterThan(
-			0
-		);
-		expect( relayed[ 'presence-active-posts' ][ 0 ].post_id ).toBe(
-			post.id
+		expect( relayed[ 'presence-fragments' ][ 'active-posts' ] ).toContain(
+			'Active Posts Coalescing Post'
 		);
 
 		await sibling.close();

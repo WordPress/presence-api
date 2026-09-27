@@ -48,7 +48,7 @@ class WP_Presence_Network_Widget_Whos_Online {
 	}
 
 	/**
-	 * Enqueues the widget's JavaScript and CSS.
+	 * Enqueues the widget's CSS.
 	 *
 	 * @since 0.2.0
 	 *
@@ -58,23 +58,6 @@ class WP_Presence_Network_Widget_Whos_Online {
 		if ( 'index.php' !== $hook_suffix ) {
 			return;
 		}
-
-		wp_enqueue_script( 'heartbeat' );
-		wp_presence_enqueue_avatar_stack_script();
-
-		wp_enqueue_script(
-			'presence-network-widget',
-			WP_PRESENCE_PLUGIN_URL . 'assets/js/network-whos-online-widget.js',
-			array( 'jquery', 'heartbeat', 'wp-presence-avatar-stack' ),
-			WP_PRESENCE_VERSION,
-			true
-		);
-
-		wp_add_inline_script(
-			'presence-network-widget',
-			sprintf( 'window.wpPresenceNetworkWhosOnline = %s;', wp_json_encode( self::get_script_config() ) ),
-			'before'
-		);
 
 		wp_presence_enqueue_avatar_stack_style();
 
@@ -108,7 +91,7 @@ class WP_Presence_Network_Widget_Whos_Online {
 	 */
 	public static function render() {
 		echo '<div id="presence-network-widget-list" aria-live="polite" tabindex="-1">';
-		self::render_summary( self::get_summary() );
+		echo self::summary_markup( self::get_summary() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped as it is built.
 		echo '</div>';
 	}
 
@@ -156,39 +139,38 @@ class WP_Presence_Network_Widget_Whos_Online {
 	}
 
 	/**
-	 * Renders the compact site list for a network summary.
+	 * Returns the compact site list for a network summary, as drawn on load and sent with each Heartbeat.
 	 *
-	 * @since 0.2.0
+	 * @since 0.11.0
 	 *
 	 * @param array $summary Return value of self::get_summary().
+	 * @return string HTML markup.
 	 */
-	private static function render_summary( $summary ) {
+	private static function summary_markup( $summary ) {
 		if ( ! $summary['aggregating'] ) {
-			echo '<p>' . esc_html__( 'Presence is not aggregated across this network, so who is online cannot be shown.', 'presence-api' ) . '</p>';
-			return;
+			return '<p>' . esc_html__( 'Presence is not aggregated across this network, so who is online cannot be shown.', 'presence-api' ) . '</p>';
 		}
 
 		if ( empty( $summary['sites'] ) ) {
-			echo '<p>' . esc_html__( 'No users are currently online anywhere on the network.', 'presence-api' ) . '</p>';
-			return;
+			return '<p>' . esc_html__( 'No users are currently online anywhere on the network.', 'presence-api' ) . '</p>';
 		}
 
-		echo '<ul class="presence-user-list" aria-label="' . esc_attr__( 'Sites with online users', 'presence-api' ) . '">';
+		$html = '<ul class="presence-user-list" aria-label="' . esc_attr__( 'Sites with online users', 'presence-api' ) . '">';
 
 		foreach ( $summary['sites'] as $site ) {
-			echo '<li class="presence-site-item" data-blog-id="' . (int) $site['blog_id'] . '">';
-			echo wp_kses_post( wp_presence_render_avatar_stack( $site['users'], WP_PRESENCE_NETWORK_AVATARS ) );
-			echo '<span class="presence-site-info"><a href="' . esc_url( $site['edit_url'] ) . '">' . esc_html( $site['name'] ) . '</a></span>';
-			echo '<span class="presence-site-count">' . (int) $site['user_count'] . '</span>';
-			echo '</li>';
+			$html .= '<li class="presence-site-item" data-blog-id="' . (int) $site['blog_id'] . '">';
+			$html .= wp_kses_post( wp_presence_render_avatar_stack( $site['users'], WP_PRESENCE_NETWORK_AVATARS ) );
+			$html .= '<span class="presence-site-info"><a href="' . esc_url( $site['edit_url'] ) . '">' . esc_html( $site['name'] ) . '</a></span>';
+			$html .= '<span class="presence-site-count">' . (int) $site['user_count'] . '</span>';
+			$html .= '</li>';
 		}
 
-		echo '</ul>';
+		$html .= '</ul>';
 
 		$overflow = self::overflow_count( $summary );
 
 		if ( $overflow ) {
-			printf(
+			$html .= sprintf(
 				'<a href="%1$s" class="presence-more-link">%2$s</a>',
 				esc_url( network_admin_url( 'sites.php' ) ),
 				esc_html(
@@ -200,13 +182,15 @@ class WP_Presence_Network_Widget_Whos_Online {
 				)
 			);
 		}
+
+		return $html;
 	}
 
 	/**
 	 * Handles the heartbeat received event for the network dashboard widget.
 	 *
-	 * Self-gates on a widget-specific ping key so every other admin screen's
-	 * tick costs one empty() check here, never the capability check or the
+	 * Self-gates on the widget's fragment request so every other admin screen's
+	 * tick costs one lookup here, never the capability check or the
 	 * summary query.
 	 *
 	 * @since 0.2.0
@@ -219,7 +203,7 @@ class WP_Presence_Network_Widget_Whos_Online {
 	 * @return array The Heartbeat response.
 	 */
 	public static function heartbeat_received( $response, $data, $screen_id ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- Required by filter signature.
-		if ( empty( $data['presence-network-widget-ping'] ) ) {
+		if ( ! wp_presence_fragment_request( $data, 'network-widget' ) ) {
 			return $response;
 		}
 
@@ -227,71 +211,8 @@ class WP_Presence_Network_Widget_Whos_Online {
 			return $response;
 		}
 
-		$summary     = self::get_summary();
-		$overflow    = self::overflow_count( $summary );
-		$hash        = self::hash_summary( $summary, $overflow );
-		$client_hash = isset( $data['presence-network-widget-hash'] ) ? sanitize_text_field( $data['presence-network-widget-hash'] ) : '';
-
-		if ( $client_hash && $client_hash === $hash ) {
-			$response['presence-network-widget-unchanged'] = true;
-
-			return $response;
-		}
-
-		$response['presence-network-widget']             = $summary['sites'];
-		$response['presence-network-widget-overflow']    = $overflow;
-		$response['presence-network-widget-aggregating'] = $summary['aggregating'];
-		$response['presence-network-widget-hash']        = $hash;
+		$response['presence-fragments']['network-widget'] = self::summary_markup( self::get_summary() );
 
 		return $response;
-	}
-
-	/**
-	 * Hashes the state this widget draws.
-	 *
-	 * The payload itself, rather than a picked-out subset of it. A hash over
-	 * blog IDs and user IDs alone held a stale rename or a changed avatar on
-	 * screen for as long as the same people stayed online, and a hash over the
-	 * whole network never matched twice on a network large enough for the sixth
-	 * site to keep changing out of sight.
-	 *
-	 * The read path already returns sites busiest-first and users by name, so
-	 * there is nothing left to normalize here.
-	 *
-	 * The aggregation flag is in the payload because a network that stops
-	 * aggregating sends the same empty list as a quiet one, and the widget has
-	 * to repaint to start saying so.
-	 *
-	 * @since 0.2.0
-	 *
-	 * @param array $summary  Return value of self::get_summary().
-	 * @param int   $overflow Sites online beyond the ones being sent.
-	 * @return string The state hash.
-	 */
-	private static function hash_summary( $summary, $overflow ) {
-		return md5( (string) wp_json_encode( array( $summary['sites'], $overflow, $summary['aggregating'] ) ) );
-	}
-
-	/**
-	 * Returns the configuration the widget's client script reads.
-	 *
-	 * @since 0.4.0
-	 *
-	 * @return array Script configuration.
-	 */
-	private static function get_script_config() {
-		return array(
-			'viewAllUrl' => esc_url_raw( network_admin_url( 'sites.php' ) ),
-			'avatarMax'  => WP_PRESENCE_NETWORK_AVATARS,
-			'i18n'       => array(
-				'noUsersOnline' => __( 'No users are currently online anywhere on the network.', 'presence-api' ),
-				'notAggregated' => __( 'Presence is not aggregated across this network, so who is online cannot be shown.', 'presence-api' ),
-				'sitesOnline'   => __( 'Sites with online users', 'presence-api' ),
-				/* translators: %d: Number of additional sites with online users. */
-				'moreSite'      => __( '+%d more site — view all', 'presence-api' ),
-				/* translators: %d: Number of additional sites with online users. */
-				'moreSites'     => __( '+%d more sites — view all', 'presence-api' ),
-			),
-		);
 	}
 }

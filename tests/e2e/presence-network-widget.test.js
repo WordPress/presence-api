@@ -123,7 +123,7 @@ test.describe( "Network Who's Online widget", () => {
 		).toHaveText( '1' );
 	} );
 
-	test( 'keeps focus on a site link across a heartbeat re-render', async ( {
+	test( 'holds the list while focus is inside it, then catches up', async ( {
 		admin,
 		page,
 	} ) => {
@@ -134,34 +134,20 @@ test.describe( "Network Who's Online widget", () => {
 		);
 
 		await mainLink.focus();
+
+		setNetworkPresence( { login: NETWORK_USERS.a.login, slug: SITE_SLUG } );
+		await forceHeartbeatTick( page );
+
+		await expect( siteItem( page, teamSiteId ) ).toHaveCount( 0 );
 		await expect( mainLink ).toBeFocused();
 
-		setNetworkPresence( { login: NETWORK_USERS.a.login, slug: SITE_SLUG } );
+		await mainLink.blur();
 		await forceHeartbeatTick( page );
 
 		await expect( siteItem( page, teamSiteId ) ).toBeVisible();
-		await expect(
-			siteItem( page, mainSiteId ).locator( '.presence-site-info a' )
-		).toBeFocused();
 	} );
 
-	test( 'keeps the accessible name of the list across a heartbeat re-render', async ( {
-		admin,
-		page,
-	} ) => {
-		await admin.visitAdminPage( 'network/' );
-
-		setNetworkPresence( { login: NETWORK_USERS.a.login, slug: SITE_SLUG } );
-		await forceHeartbeatTick( page );
-
-		await expect( siteItem( page, teamSiteId ) ).toBeVisible();
-		await expect( widgetList( page ) ).toHaveAttribute(
-			'aria-label',
-			'Sites with online users'
-		);
-	} );
-
-	test( 'keeps the accessible name of the overflow link across a heartbeat re-render', async ( {
+	test( 'redraws the overflow link over a heartbeat tick', async ( {
 		admin,
 		page,
 	} ) => {

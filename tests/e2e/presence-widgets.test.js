@@ -45,7 +45,7 @@ test.describe( 'Presence Widgets', () => {
 		);
 	} );
 
-	test( 'Focus stays on the post link in Active Posts widget across a heartbeat re-render', async ( {
+	test( 'Active Posts waits while focus is inside it, then catches up', async ( {
 		admin,
 		page,
 		requestUtils,
@@ -72,16 +72,28 @@ test.describe( 'Presence Widgets', () => {
 		await postLink.focus();
 		await expect( postLink ).toBeFocused();
 
-		// Backdate the entry past the idle threshold so the next tick's
-		// signature differs and the list markup gets rebuilt.
+		// Backdate the entry past the idle threshold so the next tick sends different markup.
 		wpCli(
 			`eval 'global $wpdb; $wpdb->update( $wpdb->presence, array( "date_gmt" => gmdate( "Y-m-d H:i:s", time() - wp_presence_idle_threshold() - 1 ) ), array( "client_id" => "session-a" ), array( "%s" ), array( "%s" ) );'`
 		);
+		await page.evaluate(
+			() =>
+				new Promise( ( resolve ) => {
+					jQuery( document ).one( 'heartbeat-tick', () => resolve() );
+					wp.heartbeat.connectNow();
+				} )
+		);
+
+		const postRow = page.locator( '#presence-active-posts-list li', {
+			has: page.locator( `a[href$="post=${ post.id }&action=edit"]` ),
+		} );
+
+		await expect( postLink ).toBeFocused();
+		await expect( postRow ).not.toContainText( 'Idle' );
+
+		await postLink.blur();
 		await page.evaluate( () => wp.heartbeat.connectNow() );
 
-		await expect(
-			page.locator( '#presence-active-posts-list' )
-		).toContainText( 'Idle', { timeout: 30_000 } );
-		await expect( postLink ).toBeFocused();
+		await expect( postRow ).toContainText( 'Idle', { timeout: 30_000 } );
 	} );
 } );

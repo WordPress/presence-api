@@ -28,9 +28,21 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Runs the widget's data query.
+	 *
+	 * @return array The posts being edited, as the widget draws them.
+	 */
+	private function active_posts() {
+		$method = new ReflectionMethod( WP_Presence_Widget_Active_Posts::class, 'build_active_posts_data' );
+		$method->setAccessible( true );
+
+		return $method->invoke( null );
+	}
+
+	/**
 	 * @covers WP_Presence_Widget_Active_Posts::heartbeat_received
 	 */
-	public function test_heartbeat_received_returns_active_posts() {
+	public function test_heartbeat_sends_the_list_it_renders() {
 		wp_set_current_user( self::$editor_id );
 
 		$room = wp_presence_post_room( self::$post_id );
@@ -38,25 +50,16 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 
 		$response = WP_Presence_Widget_Active_Posts::heartbeat_received(
 			array(),
-			array( 'presence-active-posts-ping' => true ),
+			array( 'presence-fragments' => array( 'active-posts' => true ) ),
 			'dashboard'
 		);
 
-		$this->assertArrayHasKey( 'presence-active-posts', $response );
-		$this->assertCount( 1, $response['presence-active-posts'] );
+		ob_start();
+		WP_Presence_Widget_Active_Posts::render();
+		$html = ob_get_clean();
 
-		$post_entry = $response['presence-active-posts'][0];
-		$this->assertSame( self::$post_id, $post_entry['post_id'] );
-		$this->assertSame( 'Test Post', $post_entry['post_title'] );
-		$this->assertSame( 'post', $post_entry['post_type'] );
-		$this->assertArrayHasKey( 'edit_url', $post_entry );
-		$this->assertArrayHasKey( 'editors', $post_entry );
-		$this->assertCount( 1, $post_entry['editors'] );
-
-		$editor = $post_entry['editors'][0];
-		$this->assertSame( (int) self::$editor_id, $editor['user_id'] );
-		$this->assertArrayHasKey( 'avatar_url', $editor );
-		$this->assertArrayHasKey( 'status', $editor );
+		$this->assertStringContainsString( 'Test Post', $response['presence-fragments']['active-posts'] );
+		$this->assertStringContainsString( $response['presence-fragments']['active-posts'], $html );
 	}
 
 	/**
@@ -76,13 +79,13 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 
 		$response = WP_Presence_Widget_Active_Posts::heartbeat_received(
 			array(),
-			array( 'presence-active-posts-ping' => true ),
+			array( 'presence-fragments' => array( 'active-posts' => true ) ),
 			'dashboard'
 		);
 
-		$post_entry = $response['presence-active-posts'][0];
-		$this->assertSame( '(no title)', $post_entry['post_title'] );
-		$this->assertSame( get_userdata( self::$editor_id )->display_name . ' · Page', $post_entry['editor_label'] );
+		$html = $response['presence-fragments']['active-posts'];
+		$this->assertStringContainsString( '(no title)', $html );
+		$this->assertStringContainsString( esc_html( get_userdata( self::$editor_id )->display_name . ' · Page' ), $html );
 	}
 
 	public function data_untitled_posts() {
@@ -102,12 +105,12 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 			'dashboard'
 		);
 
-		$this->assertArrayNotHasKey( 'presence-active-posts', $response );
+		$this->assertArrayNotHasKey( 'presence-fragments', $response );
 		$this->assertArrayHasKey( 'existing', $response );
 	}
 
 	/**
-	 * @covers WP_Presence_Widget_Active_Posts::heartbeat_received
+	 * @covers WP_Presence_Widget_Active_Posts::build_active_posts_data
 	 */
 	public function test_active_status() {
 		wp_set_current_user( self::$editor_id );
@@ -115,17 +118,13 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 		$room = wp_presence_post_room( self::$post_id );
 		wp_set_presence( $room, 'lock-' . self::$editor_id, array(), self::$editor_id );
 
-		$response = WP_Presence_Widget_Active_Posts::heartbeat_received(
-			array(),
-			array( 'presence-active-posts-ping' => true ),
-			'dashboard'
-		);
+		$posts = $this->active_posts();
 
-		$this->assertSame( 'active', $response['presence-active-posts'][0]['editors'][0]['status'] );
+		$this->assertSame( 'active', $posts[0]['editors'][0]['status'] );
 	}
 
 	/**
-	 * @covers WP_Presence_Widget_Active_Posts::heartbeat_received
+	 * @covers WP_Presence_Widget_Active_Posts::build_active_posts_data
 	 */
 	public function test_idle_status() {
 		global $wpdb;
@@ -144,17 +143,13 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 			array( '%s' )
 		);
 
-		$response = WP_Presence_Widget_Active_Posts::heartbeat_received(
-			array(),
-			array( 'presence-active-posts-ping' => true ),
-			'dashboard'
-		);
+		$posts = $this->active_posts();
 
-		$this->assertSame( 'idle', $response['presence-active-posts'][0]['editors'][0]['status'] );
+		$this->assertSame( 'idle', $posts[0]['editors'][0]['status'] );
 	}
 
 	/**
-	 * @covers WP_Presence_Widget_Active_Posts::heartbeat_received
+	 * @covers WP_Presence_Widget_Active_Posts::build_active_posts_data
 	 */
 	public function test_multiple_users_editing() {
 		wp_set_current_user( self::$editor_id );
@@ -167,30 +162,22 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 		wp_set_presence( $room1, 'lock-' . self::$editor_id, array(), self::$editor_id );
 		wp_set_presence( $room2, 'lock-' . self::$editor2_id, array(), self::$editor2_id );
 
-		$response = WP_Presence_Widget_Active_Posts::heartbeat_received(
-			array(),
-			array( 'presence-active-posts-ping' => true ),
-			'dashboard'
-		);
+		$posts = $this->active_posts();
 
-		$this->assertCount( 2, $response['presence-active-posts'] );
+		$this->assertCount( 2, $posts );
 	}
 
 	/**
-	 * @covers WP_Presence_Widget_Active_Posts::heartbeat_received
+	 * @covers WP_Presence_Widget_Active_Posts::build_active_posts_data
 	 */
 	public function test_excludes_non_post_rooms() {
 		wp_set_current_user( self::$editor_id );
 
 		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), self::$editor_id );
 
-		$response = WP_Presence_Widget_Active_Posts::heartbeat_received(
-			array(),
-			array( 'presence-active-posts-ping' => true ),
-			'dashboard'
-		);
+		$posts = $this->active_posts();
 
-		$this->assertCount( 0, $response['presence-active-posts'] );
+		$this->assertCount( 0, $posts );
 	}
 
 	/**
@@ -198,7 +185,7 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 	 * but cannot edit someone else's post and must not learn it is being
 	 * worked on.
 	 *
-	 * @covers WP_Presence_Widget_Active_Posts::heartbeat_received
+	 * @covers WP_Presence_Widget_Active_Posts::build_active_posts_data
 	 */
 	public function test_heartbeat_excludes_posts_the_user_cannot_edit() {
 		$room = wp_presence_post_room( self::$post_id );
@@ -206,17 +193,13 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 
 		wp_set_current_user( self::$contributor_id );
 
-		$response = WP_Presence_Widget_Active_Posts::heartbeat_received(
-			array(),
-			array( 'presence-active-posts-ping' => true ),
-			'dashboard'
-		);
+		$posts = $this->active_posts();
 
-		$this->assertCount( 0, $response['presence-active-posts'] );
+		$this->assertCount( 0, $posts );
 	}
 
 	/**
-	 * @covers WP_Presence_Widget_Active_Posts::heartbeat_received
+	 * @covers WP_Presence_Widget_Active_Posts::build_active_posts_data
 	 */
 	public function test_heartbeat_includes_posts_the_user_can_edit() {
 		$draft_id = self::factory()->post->create(
@@ -232,20 +215,16 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 
 		wp_set_current_user( self::$contributor_id );
 
-		$response = WP_Presence_Widget_Active_Posts::heartbeat_received(
-			array(),
-			array( 'presence-active-posts-ping' => true ),
-			'dashboard'
-		);
+		$posts = $this->active_posts();
 
-		$this->assertCount( 1, $response['presence-active-posts'] );
-		$this->assertSame( $draft_id, $response['presence-active-posts'][0]['post_id'] );
+		$this->assertCount( 1, $posts );
+		$this->assertSame( $draft_id, $posts[0]['post_id'] );
 	}
 
 	/**
 	 * Only the rooms the user cannot reach are dropped, not the whole response.
 	 *
-	 * @covers WP_Presence_Widget_Active_Posts::heartbeat_received
+	 * @covers WP_Presence_Widget_Active_Posts::build_active_posts_data
 	 */
 	public function test_heartbeat_filters_per_post_rather_than_all_or_nothing() {
 		$draft_id = self::factory()->post->create(
@@ -260,21 +239,17 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 
 		wp_set_current_user( self::$contributor_id );
 
-		$response = WP_Presence_Widget_Active_Posts::heartbeat_received(
-			array(),
-			array( 'presence-active-posts-ping' => true ),
-			'dashboard'
-		);
+		$posts = $this->active_posts();
 
-		$this->assertCount( 1, $response['presence-active-posts'] );
-		$this->assertSame( $draft_id, $response['presence-active-posts'][0]['post_id'] );
+		$this->assertCount( 1, $posts );
+		$this->assertSame( $draft_id, $posts[0]['post_id'] );
 	}
 
 	/**
 	 * Nothing guarantees one row per user in a room, so the widget counts
 	 * people rather than rows.
 	 *
-	 * @covers WP_Presence_Widget_Active_Posts::heartbeat_received
+	 * @covers WP_Presence_Widget_Active_Posts::build_active_posts_data
 	 */
 	public function test_a_user_holding_two_entries_is_counted_once() {
 		wp_set_current_user( self::$editor_id );
@@ -283,18 +258,14 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 		wp_set_presence( $room, 'editor-' . self::$editor_id, array(), self::$editor_id );
 		wp_set_presence( $room, 'other-' . self::$editor_id, array(), self::$editor_id );
 
-		$response = WP_Presence_Widget_Active_Posts::heartbeat_received(
-			array(),
-			array( 'presence-active-posts-ping' => true ),
-			'dashboard'
-		);
+		$posts = $this->active_posts();
 
-		$this->assertCount( 1, $response['presence-active-posts'][0]['editors'] );
-		$this->assertSame( self::$editor_id, $response['presence-active-posts'][0]['editors'][0]['user_id'] );
+		$this->assertCount( 1, $posts[0]['editors'] );
+		$this->assertSame( self::$editor_id, $posts[0]['editors'][0]['user_id'] );
 	}
 
 	/**
-	 * @covers WP_Presence_Widget_Active_Posts::heartbeat_received
+	 * @covers WP_Presence_Widget_Active_Posts::build_active_posts_data
 	 */
 	public function test_a_users_freshest_entry_decides_their_status() {
 		global $wpdb;
@@ -314,85 +285,25 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 
 		wp_set_presence( $room, 'editor-' . self::$editor_id, array(), self::$editor_id );
 
-		$response = WP_Presence_Widget_Active_Posts::heartbeat_received(
-			array(),
-			array( 'presence-active-posts-ping' => true ),
-			'dashboard'
-		);
+		$posts = $this->active_posts();
 
-		$editors = $response['presence-active-posts'][0]['editors'];
+		$editors = $posts[0]['editors'];
 
 		$this->assertCount( 1, $editors );
 		$this->assertSame( 'active', $editors[0]['status'] );
 	}
 
 	/**
-	 * The response is JSON, so the editors list has to stay a list.
-	 *
-	 * @covers WP_Presence_Widget_Active_Posts::heartbeat_received
-	 */
-	public function test_editors_encode_as_a_json_array() {
-		wp_set_current_user( self::$editor_id );
-
-		$room = wp_presence_post_room( self::$post_id );
-		wp_set_presence( $room, 'editor-' . self::$editor_id, array(), self::$editor_id );
-		wp_set_presence( $room, 'other-' . self::$editor_id, array(), self::$editor_id );
-
-		$response = WP_Presence_Widget_Active_Posts::heartbeat_received(
-			array(),
-			array( 'presence-active-posts-ping' => true ),
-			'dashboard'
-		);
-
-		$encoded = wp_json_encode( $response['presence-active-posts'][0]['editors'] );
-
-		$this->assertStringStartsWith( '[', $encoded );
-	}
-
-	/**
 	 * @covers WP_Presence_Widget_Active_Posts::enqueue_scripts
-	 * @covers WP_Presence_Widget_Active_Posts::get_i18n_strings
 	 */
-	public function test_enqueue_scripts_registers_script_with_i18n_config() {
-		wp_deregister_script( 'wp-presence-active-posts' );
+	public function test_enqueue_scripts_only_styles_the_dashboard() {
+		WP_Presence_Widget_Active_Posts::enqueue_scripts( 'edit.php' );
 
-		$wp_scripts        = wp_scripts();
-		$wp_scripts->queue = array();
-		$wp_scripts->done  = array();
+		$this->assertFalse( wp_style_is( 'presence-active-posts-widget', 'enqueued' ) );
 
 		WP_Presence_Widget_Active_Posts::enqueue_scripts( 'index.php' );
 
-		$this->assertTrue( wp_script_is( 'wp-presence-active-posts', 'enqueued' ) );
-
-		$wp_scripts = wp_scripts();
-		$this->assertArrayHasKey( 'wp-presence-active-posts', $wp_scripts->registered );
-		$extra = $wp_scripts->registered['wp-presence-active-posts']->extra;
-		$this->assertArrayHasKey( 'before', $extra );
-
-		$found_config = false;
-		foreach ( $extra['before'] as $script ) {
-			if ( $script && strpos( $script, 'window.wpPresenceActivePosts =' ) !== false ) {
-				$found_config = true;
-				$this->assertStringContainsString( 'Posts currently being edited', $script );
-				break;
-			}
-		}
-		$this->assertTrue( $found_config );
-	}
-
-	/**
-	 * @covers WP_Presence_Widget_Active_Posts::enqueue_scripts
-	 */
-	public function test_enqueue_scripts_skips_other_admin_pages() {
-		wp_deregister_script( 'wp-presence-active-posts' );
-
-		$wp_scripts        = wp_scripts();
-		$wp_scripts->queue = array();
-		$wp_scripts->done  = array();
-
-		WP_Presence_Widget_Active_Posts::enqueue_scripts( 'edit.php' );
-
-		$this->assertFalse( wp_script_is( 'wp-presence-active-posts', 'enqueued' ) );
+		$this->assertTrue( wp_style_is( 'presence-active-posts-widget', 'enqueued' ) );
 	}
 
 	/**
@@ -462,24 +373,6 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 		$this->assertStringContainsString( 'post=' . self::$post_id, $html );
 		// An active editor is the default state, so no status text is rendered.
 		$this->assertStringContainsString( '<span class="presence-status-text"></span>', $html );
-	}
-
-	/**
-	 * @covers WP_Presence_Widget_Active_Posts::render
-	 */
-	public function test_render_tags_rows_with_the_post_id_focus_restore_keys_on() {
-		wp_set_current_user( self::$editor_id );
-
-		$room = wp_presence_post_room( self::$post_id );
-		wp_set_presence( $room, 'lock-' . self::$editor_id, array(), self::$editor_id );
-
-		ob_start();
-		WP_Presence_Widget_Active_Posts::render();
-		$html = ob_get_clean();
-
-		// Must match the attribute active-posts.js rebuilds rows with, or the
-		// first heartbeat re-render drops focus to the container.
-		$this->assertStringContainsString( 'data-post-id="' . self::$post_id . '"', $html );
 	}
 
 	/**
