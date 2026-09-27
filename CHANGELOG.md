@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.10.0](https://github.com/WordPress/presence-api/compare/v0.9.0...v0.10.0) (2026-09-27)
+
+
+### Features
+
+* fold shared screens into one row in the admin bar menu ([#615](https://github.com/WordPress/presence-api/issues/615)) ([f708b2b](https://github.com/WordPress/presence-api/commit/f708b2be7fa22195f6defb220bb7e5cd933ab7a5))
+* list people editing posts first in the admin bar menu ([#603](https://github.com/WordPress/presence-api/issues/603)) ([0d45f1d](https://github.com/WordPress/presence-api/commit/0d45f1db7af01b7ef038d185c2ada4bb7445d666))
+* refresh the Editors column on each heartbeat ([#606](https://github.com/WordPress/presence-api/issues/606)) ([2a1af18](https://github.com/WordPress/presence-api/commit/2a1af188d4a87b81f022f7a58dcfcff1d4464595))
+* refresh the Online users list on each heartbeat ([#604](https://github.com/WordPress/presence-api/issues/604)) ([01b8a70](https://github.com/WordPress/presence-api/commit/01b8a70a788c08d5ddbf80abacd5bcb48adf1271))
+* show the stale-screen banner on Settings API, Privacy and Network Admin screens ([#619](https://github.com/WordPress/presence-api/issues/619)) ([570c569](https://github.com/WordPress/presence-api/commit/570c56976b533cb565529b46bbcddbb2bee6a907))
+
+
+### Bug Fixes
+
+* bump the right Users screen on a row Remove and skip bumps while deleting a site ([#628](https://github.com/WordPress/presence-api/issues/628)) ([fef1be8](https://github.com/WordPress/presence-api/commit/fef1be8f4a7c1fcc2754218f7883def6f0e6fea1))
+* link admin bar rows to the comment, user or term being edited ([#617](https://github.com/WordPress/presence-api/issues/617)) ([11fb34a](https://github.com/WordPress/presence-api/commit/11fb34a4a4bf4b66fb886ab5b9525476cfd3a9ed))
+* link Network Admin rows and count the network in the admin bar ([#618](https://github.com/WordPress/presence-api/issues/618)) ([ab5e181](https://github.com/WordPress/presence-api/commit/ab5e1819097e960024569c7d9a1038ceed61a0c8))
+* read the network Online view from the heartbeat's screen ([#622](https://github.com/WordPress/presence-api/issues/622)) ([7791523](https://github.com/WordPress/presence-api/commit/7791523f4ee8b9d06d16d0b075e721fdb7aead85))
+* refresh presence rows on SQLite with CASE instead of IF() ([#623](https://github.com/WordPress/presence-api/issues/623)) ([825f849](https://github.com/WordPress/presence-api/commit/825f849bde4f30854728ef3165f209cb9258c145))
+
+
+### Performance Improvements
+
+* cut e2e runtime with backdated fixtures and readiness waits ([#621](https://github.com/WordPress/presence-api/issues/621)) ([528cf1c](https://github.com/WordPress/presence-api/commit/528cf1c628c5cf3b0ac4064f8b5969eb4cf72977))
+
 ## [0.9.0](https://github.com/WordPress/presence-api/compare/v0.8.0...v0.9.0) (2026-09-27)
 
 
