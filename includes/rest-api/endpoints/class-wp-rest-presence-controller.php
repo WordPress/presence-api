@@ -402,7 +402,7 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 
 		$user_ids = wp_list_pluck( $results, 'user_id' );
 		if ( ! empty( $user_ids ) ) {
-			cache_users( array_unique( array_map( 'intval', $user_ids ) ) );
+			cache_users( $user_ids );
 		}
 
 		foreach ( $results as $row ) {
@@ -708,7 +708,7 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 			}
 		}
 		if ( ! empty( $post_ids ) ) {
-			_prime_post_caches( array_unique( $post_ids ), false, false );
+			_prime_post_caches( $post_ids, false, false );
 		}
 
 		$rooms = array_values(

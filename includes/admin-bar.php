@@ -64,7 +64,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	// The capability check below calls get_post() per room, so prime in one go.
 	// It reads neither the term nor the meta cache.
 	if ( ! empty( $post_ids ) ) {
-		_prime_post_caches( array_unique( $post_ids ), false, false );
+		_prime_post_caches( $post_ids, false, false );
 	}
 
 	// Hide titles and edit links for posts the current user cannot edit.
@@ -121,11 +121,11 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 		}
 	}
 	if ( $comment_ids ) {
-		_prime_comment_caches( array_unique( $comment_ids ), false );
-		_prime_post_caches( array_unique( array_map( 'intval', wp_list_pluck( array_filter( array_map( 'get_comment', $comment_ids ) ), 'comment_post_ID' ) ) ), false, false );
+		_prime_comment_caches( $comment_ids, false );
+		_prime_post_caches( wp_list_pluck( array_filter( array_map( 'get_comment', $comment_ids ) ), 'comment_post_ID' ), false, false );
 	}
 	if ( $term_ids ) {
-		_prime_term_caches( array_unique( $term_ids ), false );
+		_prime_term_caches( $term_ids, false );
 	}
 
 	$by_name = function ( $a, $b ) {

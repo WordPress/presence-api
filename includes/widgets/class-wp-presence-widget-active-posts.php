@@ -195,7 +195,7 @@ class WP_Presence_Widget_Active_Posts {
 			}
 		}
 		if ( ! empty( $post_ids ) ) {
-			_prime_post_caches( array_unique( $post_ids ), false, false );
+			_prime_post_caches( $post_ids, false, false );
 		}
 
 		foreach ( $entries as $entry ) {

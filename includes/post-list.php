@@ -110,7 +110,7 @@ function wp_presence_post_list_editors() {
 	foreach ( $presence_map as $editors ) {
 		$all_user_ids = array_merge( $all_user_ids, array_keys( $editors ) );
 	}
-	cache_users( array_unique( $all_user_ids ) );
+	cache_users( $all_user_ids );
 
 	return $presence_map;
 }
