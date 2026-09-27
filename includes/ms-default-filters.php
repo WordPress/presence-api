@@ -21,7 +21,7 @@ add_action( 'add_option_allowedthemes', 'wp_presence_on_site_allowed_themes_upda
 add_action( 'update_option_allowedthemes', 'wp_presence_on_site_allowed_themes_updated' );
 add_action( 'add_user_to_blog', 'wp_presence_on_site_users_changed', 10, 3 );
 add_action( 'remove_user_from_blog', 'wp_presence_on_site_users_changed', 10, 2 );
-add_action( 'set_user_role', 'wp_presence_on_site_users_changed', 10, 2 );
+add_action( 'set_user_role', 'wp_presence_on_site_users_changed', 10, 3 );
 add_action( 'wp_delete_expired_presence_data', 'wp_presence_delete_expired_network_summary_rows' );
 
 add_filter( 'wpmu_blogs_columns', 'wp_presence_register_network_sites_column' );

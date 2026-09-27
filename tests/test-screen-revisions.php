@@ -895,16 +895,18 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Screen IDs are lowercased, so a mixed-case group still has to match.
+	 *
 	 * @covers ::wp_presence_current_screen_key
 	 * @covers ::wp_presence_settings_page_option_group
 	 */
 	public function test_a_top_level_settings_api_page_keys_to_its_option_group() {
 		wp_set_current_user( self::$admin_id );
-		register_setting( 'example-plugin', 'example_plugin_options' );
-		set_current_screen( 'toplevel_page_example-plugin' );
+		register_setting( 'Example-Plugin', 'example_plugin_options' );
+		set_current_screen( 'toplevel_page_Example-Plugin' );
 
 		$key = wp_presence_current_screen_key();
-		unregister_setting( 'example-plugin', 'example_plugin_options' );
+		unregister_setting( 'Example-Plugin', 'example_plugin_options' );
 
 		$this->assertSame( 'options/example-plugin', $key );
 	}
@@ -939,14 +941,20 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Settings → Privacy needs manage_privacy_options, which a multisite site admin lacks, so this holds false there.
-	 *
 	 * @covers ::wp_presence_current_user_can_access_screen
 	 */
 	public function test_the_privacy_screen_requires_manage_privacy_options() {
 		wp_set_current_user( self::$admin_id );
+		add_filter(
+			'map_meta_cap',
+			static function ( $caps, $cap ) {
+				return 'manage_privacy_options' === $cap ? array( 'do_not_allow' ) : $caps;
+			},
+			10,
+			2
+		);
 
-		$this->assertSame( current_user_can( 'manage_privacy_options' ), wp_presence_current_user_can_access_screen( 'options/privacy' ) );
+		$this->assertFalse( wp_presence_current_user_can_access_screen( 'options/privacy' ) );
 	}
 
 	/**

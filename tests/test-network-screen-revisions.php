@@ -132,6 +132,24 @@ class WP_Test_Network_Screen_Revisions extends WP_Presence_Network_UnitTestCase 
 	}
 
 	/**
+	 * The Info screen lets a super admin edit Last Updated directly.
+	 *
+	 * @covers ::wp_presence_on_update_site
+	 */
+	public function test_editing_last_updated_on_the_info_screen_bumps_it() {
+		$this->become_network_admin();
+		set_current_screen( 'site-info-network' );
+		$blog_id            = $this->create_blog();
+		$pagenow            = $GLOBALS['pagenow'] ?? null;
+		$GLOBALS['pagenow'] = 'site-info.php';
+
+		wp_update_site( $blog_id, array( 'last_updated' => '2020-01-01 00:00:00' ) );
+		$GLOBALS['pagenow'] = $pagenow;
+
+		$this->assertNotNull( wp_presence_get_screen_revision( 'network/site-info/' . $blog_id ) );
+	}
+
+	/**
 	 * A key trimmed from the map must come back above any baseline a viewer loaded before the trim.
 	 *
 	 * @covers ::wp_presence_advance_screen_revision_map
@@ -211,6 +229,20 @@ class WP_Test_Network_Screen_Revisions extends WP_Presence_Network_UnitTestCase 
 		restore_current_blog();
 
 		$this->assertNotNull( wp_presence_get_screen_revision( 'network/site-users/' . $blog_id ) );
+	}
+
+	/**
+	 * Creating a user gives them a first role on the current site, which isn't a change to its Users screen.
+	 *
+	 * @covers ::wp_presence_on_site_users_changed
+	 */
+	public function test_creating_a_user_does_not_bump_the_current_sites_users_screen() {
+		$this->become_network_admin();
+		set_current_screen( 'user-new-network' );
+
+		wpmu_create_user( 'newperson', 'password', 'newperson@example.com' );
+
+		$this->assertNull( wp_presence_get_screen_revision( 'network/site-users/' . get_current_blog_id() ) );
 	}
 
 	/**

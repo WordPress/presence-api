@@ -271,9 +271,9 @@ function wp_presence_normalize_screen_key( $screen_key ) {
 /**
  * Records a screen's revision and actor.
  *
- * Posts, users, terms, comments, and the six known Settings pages each write
+ * Posts, users, terms, comments, and the known Settings pages each write
  * straight to the object (or their own option) they describe, with no prior
- * read — the revision is the current time, not an incremented counter, so
+ * read: the revision is the current time, not an incremented counter, so
  * there's nothing to read-modify-write and nothing for two overlapping saves
  * to race over. Posts write nothing at all: post_modified_gmt and _edit_last
  * are already set by core on the same save.
@@ -286,9 +286,8 @@ function wp_presence_normalize_screen_key( $screen_key ) {
  *
  * @param string $screen_key Screen key to bump.
  * @param int    $actor_id   Optional. Defaults to the current user.
- * @return int|false New revision (a Unix timestamp for dedicated storage, an
- *                    incrementing counter for the shared-option fallback), or
- *                    false when the key is empty.
+ * @return int|false New revision (a Unix timestamp, or one past the previous
+ *                    revision when that is later), or false when the key is empty.
  */
 function wp_presence_bump_screen_revision( $screen_key, $actor_id = 0 ) {
 	$screen_key = wp_presence_normalize_screen_key( $screen_key );
@@ -545,7 +544,7 @@ function wp_presence_settings_page_option_group( $screen_base ) {
 		}
 		$slug   = substr( $screen_base, strlen( $prefix ) );
 		$groups = wp_list_pluck( get_registered_settings(), 'group' );
-		return in_array( $slug, $groups, true ) ? $slug : '';
+		return in_array( $slug, array_map( 'sanitize_key', $groups ), true ) ? $slug : '';
 	}
 	return '';
 }
@@ -672,7 +671,8 @@ function wp_presence_on_update_network_options() {
 /**
  * Bumps an Edit Site → Info screen's revision when the site is updated.
  *
- * Skips `last_updated`-only updates, which core writes on every publish.
+ * Skips `last_updated`-only updates, which core writes on every publish,
+ * unless they come from the Info screen, where the field is editable.
  *
  * @since 0.10.0
  *
@@ -685,7 +685,9 @@ function wp_presence_on_update_site( $new_site, $old_site ) {
 	}
 	$new_fields = $new_site->to_array();
 	$old_fields = $old_site->to_array();
-	unset( $new_fields['last_updated'], $old_fields['last_updated'] );
+	if ( 'site-info.php' !== ( $GLOBALS['pagenow'] ?? '' ) ) {
+		unset( $new_fields['last_updated'], $old_fields['last_updated'] );
+	}
 	if ( $new_fields === $old_fields ) {
 		return;
 	}
@@ -730,7 +732,7 @@ function wp_presence_on_site_allowed_themes_updated() {
  *
  * @param int        $user_id User ID. Unused.
  * @param int|string $arg2    Site ID for remove_user_from_blog, a role otherwise.
- * @param mixed      $arg3    Site ID for add_user_to_blog. Unused otherwise.
+ * @param mixed      $arg3    Site ID for add_user_to_blog, previous roles for set_user_role.
  */
 function wp_presence_on_site_users_changed( $user_id, $arg2 = null, $arg3 = null ) {
 	unset( $user_id );
@@ -741,8 +743,11 @@ function wp_presence_on_site_users_changed( $user_id, $arg2 = null, $arg3 = null
 		$site_id = (int) $arg3;
 	} elseif ( 'remove_user_from_blog' === current_action() ) {
 		$site_id = (int) $arg2;
-	} else {
+	} elseif ( $arg3 ) {
 		$site_id = get_current_blog_id();
+	} else {
+		// A first role comes from creating a user or add_user_to_blog, which bumps on its own.
+		return;
 	}
 	wp_presence_bump_screen_revision( 'network/site-users/' . $site_id );
 }
