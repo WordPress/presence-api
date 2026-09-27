@@ -363,6 +363,19 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$this->assertSame( wp_nonce_url( admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' ), $nodes['presence-view-all']->href );
 	}
 
+	public function test_people_on_this_page_never_share_a_ring_color() {
+		$this->view_admin_page( 'upload.php', 'upload' );
+
+		$first  = $this->put_user_on_screen( 'upload', array( 'color' => '#6F42C1' ) );
+		$second = $this->put_user_on_screen( 'upload', array( 'color' => '#6F42C1' ) );
+
+		wp_set_current_user( self::$editor_id );
+		$nodes = $this->render_nodes();
+
+		$this->assertStringContainsString( 'outline-color:#6F42C1', $nodes[ 'presence-user-' . $first ]->title );
+		$this->assertStringContainsString( 'outline-color:#D94145', $nodes[ 'presence-user-' . $second ]->title );
+	}
+
 	/**
 	 * With no one elsewhere, the count closes the On this page group.
 	 */

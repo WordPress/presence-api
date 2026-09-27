@@ -104,6 +104,18 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 		$colors[ (int) $entry->user_id ] = wp_presence_entry_color( $entry );
 	}
 
+	// Seven colors cannot go round a busy site, so people on this page trade a clash for a free one.
+	$here_ids = array_unique( array_map( 'intval', wp_list_pluck( $here, 'user_id' ) ) );
+	sort( $here_ids );
+	$taken = array();
+	foreach ( $here_ids as $user_id ) {
+		$free = array_values( array_diff( wp_presence_color_palette(), $taken ) );
+		if ( in_array( $colors[ $user_id ], $taken, true ) && $free ) {
+			$colors[ $user_id ] = $free[0];
+		}
+		$taken[] = $colors[ $user_id ];
+	}
+
 	// Only people on this page wear their color; it pairs them with what they do on the shared screen.
 	$avatar = function ( $user, $size, $alt = '', $ring = true ) use ( $colors ) {
 		$color = $ring ? ' style="outline-color:' . esc_attr( $colors[ $user->ID ] ?? wp_presence_default_user_color( $user->ID ) ) . '"' : '';
