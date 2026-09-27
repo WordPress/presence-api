@@ -22,6 +22,9 @@ jobs:
       matrix:
         php: [ '7.4', '8.3' ]
         include:
+          # The oldest PHP runs against the oldest WordPress the plugin supports, so the floor in the readme is tested.
+          - php: '7.4'
+            core: 'https://wordpress.org/wordpress-7.0.zip'
           - php: '8.3'
             coverage: true
     steps:
@@ -67,6 +70,7 @@ jobs:
           done
         env:
           WP_ENV_PHP_VERSION: ${{ matrix.php }}
+          WP_ENV_CORE: ${{ matrix.core }}
       - run: npx wp-env run tests-cli --env-cwd='wp-content/plugins/presence-api' -- ./vendor/bin/phpunit ${{ matrix.coverage && '--coverage-clover coverage.xml' || '' }}
         if: ${{ inputs.should-run }}
       - name: Upload coverage to Codecov
