@@ -75,7 +75,7 @@ test.describe( 'Presence Widgets', () => {
 		// Backdate the entry past the idle threshold so the next tick's
 		// signature differs and the list markup gets rebuilt.
 		wpCli(
-			`eval 'global $wpdb; $wpdb->update( $wpdb->presence, array( "date_gmt" => gmdate( "Y-m-d H:i:s", time() - 45 ) ), array( "client_id" => "session-a" ), array( "%s" ), array( "%s" ) );'`
+			`eval 'global $wpdb; $wpdb->update( $wpdb->presence, array( "date_gmt" => gmdate( "Y-m-d H:i:s", time() - wp_presence_idle_threshold() - 1 ) ), array( "client_id" => "session-a" ), array( "%s" ), array( "%s" ) );'`
 		);
 		await page.evaluate( () => wp.heartbeat.connectNow() );
 
