@@ -15,7 +15,7 @@ WordPress has no way to know who is logged in, what screen they are on, or which
 >
 > [Matt Mullenweg, WordPress 7.0 planning session](https://youtu.be/F-xMPY9WqG4?si=YK0rIUM2nuYy7x45&t=2435)
 
-![The dashboard with 100 people online, the admin bar's presence menu open on who is editing the lead story, and Active Posts showing each story's editors](.wordpress-org/screenshot-1.png)
+![The dashboard with 101 people online, the admin bar's presence menu open, and Active Posts listing who is editing each post](.wordpress-org/screenshot-1.png)
 
 ## Run locally
 
