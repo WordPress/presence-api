@@ -156,7 +156,7 @@ wp_presence_network_aggregation_enabled();
 ## Extension Points
 
 ### Post Type Support
-The plugin adds `presence` support to every post type with `show_ui` and `editor` support, plus templates and template parts, including ones registered after it loads. To leave one out, remove support once it is registered:
+The plugin adds `presence` support to templates, template parts, and every post type with `show_ui` and `editor` support, including ones registered after it loads. To leave one out, remove support once it is registered:
 ```php
 add_action( 'init', function () {
     remove_post_type_support( 'my-post-type', 'presence' );

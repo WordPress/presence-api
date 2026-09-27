@@ -1484,7 +1484,7 @@ function wp_presence_add_post_type_support( $post_type, $post_type_object ) {
 
 	$_wp_presence_post_types_seen[ $post_type ] = true;
 
-	// Templates and template parts are edited only in the Site Editor, so core hides them from the admin menus.
+	// Core hides templates from the admin menus, since only the Site Editor edits them.
 	$site_editor = in_array( $post_type, array( 'wp_template', 'wp_template_part' ), true );
 
 	if ( ( $post_type_object->show_ui || $site_editor ) && post_type_supports( $post_type, 'editor' ) ) {
