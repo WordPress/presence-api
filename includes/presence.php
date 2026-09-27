@@ -696,7 +696,7 @@ function wp_presence_max_expires_in() {
  * @access private
  *
  * @since 0.6.0
- * @since 0.7.0 Added the `$refresh_cutoff` parameter.
+ * @since 0.7.0 Added the `$expires_gmt` and `$refresh_cutoff` parameters.
  *
  * @global wpdb $wpdb WordPress database abstraction object.
  *
