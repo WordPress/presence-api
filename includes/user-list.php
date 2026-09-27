@@ -83,12 +83,13 @@ function wp_presence_filter_online_users( $query ) {
  *
  * @since 0.10.0
  *
- * @param array $response Heartbeat response data.
- * @param array $data     Data received from the client.
+ * @param array  $response  Heartbeat response data.
+ * @param array  $data      Data received from the client.
+ * @param string $screen_id The screen ID the heartbeat came from.
  * @return array The Heartbeat response.
  */
-function wp_presence_users_list_heartbeat_received( $response, $data ) {
-	$network = is_network_admin();
+function wp_presence_users_list_heartbeat_received( $response, $data, $screen_id = '' ) {
+	$network = 'users-network' === $screen_id;
 	$allowed = $network
 		? current_user_can( 'manage_network_users' ) && current_user_can( wp_presence_network_capability() ) && wp_presence_network_aggregation_enabled()
 		: current_user_can( 'list_users' );
@@ -103,10 +104,11 @@ function wp_presence_users_list_heartbeat_received( $response, $data ) {
 	}
 
 	// The list table and the online filters read the page's own request, so it stands in for this one.
-	$saved                  = array( $_REQUEST, $_GET, $_SERVER['REQUEST_URI'] ?? '' ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash
+	$saved                  = array( $_REQUEST, $_GET, $_SERVER['REQUEST_URI'] ?? '', $GLOBALS['current_screen'] ?? null ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash
 	$_REQUEST               = wp_slash( $args );
 	$_GET                   = $_REQUEST;
 	$_SERVER['REQUEST_URI'] = wp_parse_url( $network ? network_admin_url( 'users.php' ) : admin_url( 'users.php' ), PHP_URL_PATH ) . '?' . http_build_query( $args );
+	set_current_screen( $network ? 'users-network' : 'users' );
 
 	$table = _get_list_table( $network ? 'WP_MS_Users_List_Table' : 'WP_Users_List_Table', array( 'screen' => $network ? 'users-network' : 'users' ) );
 	$table->prepare_items();
@@ -114,7 +116,7 @@ function wp_presence_users_list_heartbeat_received( $response, $data ) {
 	$table->display_rows_or_placeholder();
 	$rows = (string) ob_get_clean();
 
-	list( $_REQUEST, $_GET, $_SERVER['REQUEST_URI'] ) = $saved; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash
+	list( $_REQUEST, $_GET, $_SERVER['REQUEST_URI'], $GLOBALS['current_screen'] ) = $saved; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash
 
 	$response['presence-users-list'] = array(
 		'rows'  => $rows,

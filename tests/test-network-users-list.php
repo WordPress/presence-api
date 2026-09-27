@@ -287,11 +287,10 @@ class WP_Test_Network_Users_List extends WP_Presence_Network_UnitTestCase {
 	public function test_the_network_online_view_gets_fresh_rows_each_heartbeat() {
 		require_once ABSPATH . 'wp-admin/includes/admin.php';
 		$this->become_network_admin();
-		set_current_screen( 'users-network' );
 		$this->set_presence_on_site( $this->create_blog(), self::$editor_id );
 
 		$query = '?presence_status=online&_wpnonce=' . wp_create_nonce( 'presence_online_filter' );
-		$list  = wp_presence_users_list_heartbeat_received( array(), array( 'presence-users-list' => $query ) )['presence-users-list'];
+		$list  = wp_presence_users_list_heartbeat_received( array(), array( 'presence-users-list' => $query ), 'users-network' )['presence-users-list'];
 
 		$this->assertStringContainsString( 'id="user-' . self::$editor_id . '"', $list['rows'] );
 		$this->assertStringNotContainsString( 'id="user-' . self::$subscriber_id . '"', $list['rows'] );

@@ -56,7 +56,7 @@ add_filter( 'wp_refresh_nonces', 'wp_presence_refresh_screen_token', 10, 3 );
 
 add_filter( 'views_users', 'wp_presence_users_views' );
 add_action( 'pre_get_users', 'wp_presence_filter_online_users' );
-add_filter( 'heartbeat_received', 'wp_presence_users_list_heartbeat_received', 13, 2 );
+add_filter( 'heartbeat_received', 'wp_presence_users_list_heartbeat_received', 13, 3 );
 
 add_action( 'admin_init', 'wp_presence_register_post_list_columns' );
 add_filter( 'heartbeat_received', 'wp_presence_editors_column_heartbeat_received', 13, 2 );
