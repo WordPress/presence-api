@@ -78,9 +78,3 @@ jobs:
         if: ${{ failure() }}
         working-directory: tests/e2e/multisite
         run: npx wp-env run cli -- cat wp-content/debug.log || true
-
-      - name: Stop the testing environment
-        if: ${{ always() }}
-        run: |
-          npx wp-env stop || true
-          npm run env:stop:multisite || true
