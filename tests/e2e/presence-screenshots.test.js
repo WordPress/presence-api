@@ -41,13 +41,13 @@ function demoSeeder( php ) {
 }
 
 /**
- * Ages the seeded editor rows one second past a threshold the plugin reports.
+ * Ages the seeded editor rows one second past a threshold the plugin reports, as if they were last written then.
  *
  * @param {string} seconds PHP expression for the threshold, in seconds.
  */
 function backdateEditors( seconds ) {
 	wpCli(
-		`eval 'global $wpdb; $wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->presence} SET date_gmt = %s WHERE room LIKE %s AND client_id LIKE %s", gmdate( "Y-m-d H:i:s", time() - ${ seconds } - 1 ), "postType/%", "editor-%" ) );'`
+		`eval 'global $wpdb; $wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->presence} SET date_gmt = %s, expires_gmt = %s WHERE room LIKE %s AND client_id LIKE %s", gmdate( "Y-m-d H:i:s", $t = time() - ${ seconds } - 1 ), gmdate( "Y-m-d H:i:s", $t + wp_presence_get_timeout() ), "postType/%", "editor-%" ) );'`
 	);
 }
 
