@@ -220,9 +220,7 @@ function wp_presence_room_rows( $room, $timeout = null, $client_prefix = '' ) {
  * @return int[] Unique user IDs.
  */
 function wp_presence_online_user_ids( $entries ) {
-	$online_ids = array_map( 'intval', wp_list_pluck( wp_presence_with_current_user( $entries ), 'user_id' ) );
-
-	return array_values( array_unique( $online_ids ) );
+	return array_values( wp_parse_id_list( wp_list_pluck( wp_presence_with_current_user( $entries ), 'user_id' ) ) );
 }
 
 /**

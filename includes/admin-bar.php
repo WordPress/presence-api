@@ -211,7 +211,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	);
 
 	// My Account already shows the current user, so the faces are only the others on this page.
-	$here_ids  = array_unique( array_map( 'intval', wp_list_pluck( $here, 'user_id' ) ) );
+	$here_ids  = wp_parse_id_list( wp_list_pluck( $here, 'user_id' ) );
 	$stack_ids = array_slice( $here_ids, 0, 8 );
 
 	$colors = array();
