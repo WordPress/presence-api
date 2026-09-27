@@ -120,8 +120,9 @@ class WP_Presence_Network_Widget_Whos_Online {
 	 * network this read is the one that has to stay cheap.
 	 *
 	 * @since 0.2.0
+	 * @since 0.11.0 Names each site by its title and links it to its settings, as the Sites list does.
 	 *
-	 * @return array See wp_presence_get_network_summary().
+	 * @return array See wp_presence_get_network_summary(), plus each site's `name` and `edit_url`.
 	 */
 	private static function get_summary() {
 		$summary = wp_presence_get_network_summary(
@@ -132,27 +133,14 @@ class WP_Presence_Network_Widget_Whos_Online {
 		);
 
 		foreach ( $summary['sites'] as $index => $site ) {
-			$summary['sites'][ $index ]['name']     = self::site_name( $site );
-			$summary['sites'][ $index ]['edit_url'] = network_admin_url( 'site-info.php?id=' . (int) $site['blog_id'] );
+			// Stored HTML-escaped, so decoded here for the escaping on output.
+			$name = trim( wp_specialchars_decode( get_site( $site['blog_id'] )->blogname, ENT_QUOTES ) );
+
+			$summary['sites'][ $index ]['name']     = '' !== $name ? $name : untrailingslashit( $site['domain'] . $site['path'] );
+			$summary['sites'][ $index ]['edit_url'] = network_admin_url( 'site-info.php?id=' . $site['blog_id'] );
 		}
 
 		return $summary;
-	}
-
-	/**
-	 * Returns a site's title, or its address when it has none.
-	 *
-	 * @since 0.11.0
-	 *
-	 * @param array $site A site from wp_presence_get_network_summary().
-	 * @return string The site name, unescaped.
-	 */
-	private static function site_name( $site ) {
-		$details = get_site( $site['blog_id'] );
-		// Stored HTML-escaped, so decode it for the escaping on output.
-		$name = $details ? wp_specialchars_decode( (string) $details->blogname, ENT_QUOTES ) : '';
-
-		return '' !== trim( $name ) ? $name : untrailingslashit( $site['domain'] . $site['path'] );
 	}
 
 	/**

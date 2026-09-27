@@ -204,6 +204,7 @@ class WP_Presence_Widget_Active_Posts {
 	 * the users currently editing that post.
 	 *
 	 * @since 0.1.1
+	 * @since 0.11.0 Adds the post type to each editor label and titles untitled posts "(no title)".
 	 *
 	 * @return array Array of post data with grouped editors.
 	 */
