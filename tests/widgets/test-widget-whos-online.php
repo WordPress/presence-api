@@ -221,18 +221,23 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 	/**
 	 * @covers WP_Presence_Widget_Whos_Online::heartbeat_received
 	 */
-	public function test_hash_changes_when_a_users_screen_changes() {
+	public function test_hash_changes_when_a_users_screen_changes_only_for_users_who_can_see_it() {
 		$other_id = $this->add_user_to_room( 'edit', 10 );
+		$admin_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
 
 		wp_set_current_user( self::$editor_id );
-
-		$first = $this->tick()['presence-online-hash'];
+		$this->tick();
+		wp_set_current_user( $admin_id );
+		$admin_first = $this->tick()['presence-online-hash'];
+		wp_set_current_user( self::$editor_id );
+		$editor_first = $this->tick()['presence-online-hash'];
+		wp_set_current_user( $admin_id );
 
 		wp_set_presence( wp_presence_admin_room(), 'user-' . $other_id, array( 'screen' => 'upload' ), $other_id );
 
-		$second = $this->tick()['presence-online-hash'];
-
-		$this->assertNotSame( $first, $second );
+		$this->assertNotSame( $admin_first, $this->tick()['presence-online-hash'] );
+		wp_set_current_user( self::$editor_id );
+		$this->assertSame( $editor_first, $this->tick()['presence-online-hash'], 'A move the editor cannot see must not refresh their widget.' );
 	}
 
 	/**

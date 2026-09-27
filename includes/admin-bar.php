@@ -246,7 +246,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 			if ( ! $user ) {
 				continue;
 			}
-			$screen       = isset( $entry->data['screen'] ) ? $entry->data['screen'] : '';
+			$screen       = wp_presence_get_entry_screen( $entry );
 			$entry_ps     = isset( $entry->data['post_status'] ) ? $entry->data['post_status'] : '';
 			$screen_label = $screen ? WP_Presence_Widget_Whos_Online::get_rich_screen_label( $screen, $entry_ps ) : '';
 			$screen_url   = $screen ? WP_Presence_Widget_Whos_Online::get_screen_url( $screen ) : false;

@@ -312,7 +312,7 @@ class WP_Presence_Widget_Whos_Online {
 	 * @param WP_User $user  The user object.
 	 */
 	private static function render_user_row( $entry, $user ) {
-		$screen  = isset( $entry->data['screen'] ) && current_user_can( 'view_presence_location', $entry->user_id ) ? $entry->data['screen'] : '';
+		$screen  = wp_presence_get_entry_screen( $entry );
 		$elapsed = time() - strtotime( $entry->date_gmt . ' +0000' );
 
 		if ( $elapsed < wp_presence_idle_threshold() ) {
@@ -509,7 +509,7 @@ class WP_Presence_Widget_Whos_Online {
 		foreach ( $entries as $entry ) {
 			$state[] = array(
 				(int) $entry->user_id,
-				isset( $entry->data['screen'] ) ? $entry->data['screen'] : '',
+				wp_presence_get_entry_screen( $entry ),
 				isset( $entry->data['post_status'] ) ? $entry->data['post_status'] : '',
 				isset( $entry->data['title'] ) ? $entry->data['title'] : '',
 				isset( $entry->data['post_id'] ) ? (int) $entry->data['post_id'] : 0,
@@ -560,7 +560,7 @@ class WP_Presence_Widget_Whos_Online {
 				continue;
 			}
 
-			$screen     = isset( $entry->data['screen'] ) && current_user_can( 'view_presence_location', $entry->user_id ) ? $entry->data['screen'] : '';
+			$screen     = wp_presence_get_entry_screen( $entry );
 			$entry_ps   = isset( $entry->data['post_status'] ) ? $entry->data['post_status'] : '';
 			$rich_label = $screen ? self::get_rich_screen_label( $screen, $entry_ps ) : '';
 

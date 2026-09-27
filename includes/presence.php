@@ -913,6 +913,22 @@ function wp_presence_map_meta_cap( $caps, $cap, $user_id, $args ) {
 }
 
 /**
+ * Returns the screen an entry's user is on, if the current user may see it.
+ *
+ * @since 0.9.0
+ *
+ * @param object $entry Presence entry from wp_get_presence().
+ * @return string The screen ID, or an empty string.
+ */
+function wp_presence_get_entry_screen( $entry ) {
+	if ( ! isset( $entry->data['screen'] ) || ! current_user_can( 'view_presence_location', $entry->user_id ) ) {
+		return '';
+	}
+
+	return (string) $entry->data['screen'];
+}
+
+/**
  * Checks if a user can access a presence room.
  *
  * @param string $room    The room identifier.

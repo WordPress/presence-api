@@ -320,6 +320,7 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 	 * Where people are is gated in the UI, so REST must not hand it to the same users.
 	 *
 	 * @covers ::wp_presence_map_meta_cap
+	 * @covers ::wp_presence_get_entry_screen
 	 */
 	public function test_get_items_shows_other_users_screens_only_to_users_who_can_list_users() {
 		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'dashboard' ), self::$editor_id );

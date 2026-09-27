@@ -745,7 +745,7 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 		if ( rest_is_field_included( 'data', $fields ) ) {
 			$data['data'] = $item->data;
 
-			if ( wp_presence_admin_room() === $item->room && ! current_user_can( 'view_presence_location', $item->user_id ) ) {
+			if ( wp_presence_admin_room() === $item->room && '' === wp_presence_get_entry_screen( $item ) ) {
 				unset( $data['data']['screen'] );
 			}
 		}
