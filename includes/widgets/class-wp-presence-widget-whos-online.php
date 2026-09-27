@@ -280,7 +280,7 @@ class WP_Presence_Widget_Whos_Online {
 			'screenUrls'        => $screen_urls,
 			'idleThreshold'     => wp_presence_idle_threshold(),
 			'overflowThreshold' => self::get_overflow_threshold(),
-			'usersUrl'          => admin_url( 'users.php?presence_status=online' ),
+			'usersUrl'          => add_query_arg( '_wpnonce', wp_create_nonce( 'presence_online_filter' ), admin_url( 'users.php?presence_status=online' ) ),
 			'avatarMax'         => self::AVATAR_STACK_MAX,
 			'maxRows'           => self::VISIBLE_ROWS,
 			'i18n'              => array(
@@ -409,7 +409,7 @@ class WP_Presence_Widget_Whos_Online {
 
 			if ( count( $overflow ) > self::get_overflow_threshold() ) {
 				// Summary mode: avatar stack + count linking to Users page.
-				echo '<a href="' . esc_url( admin_url( 'users.php?presence_status=online' ) ) . '" class="presence-overflow-toggle">';
+				echo '<a href="' . esc_url( wp_nonce_url( admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' ) ) . '" class="presence-overflow-toggle">';
 				echo wp_kses_post( wp_presence_render_avatar_stack( $stack_users, self::AVATAR_STACK_MAX ) );
 				echo '<span class="presence-overflow-text">';
 				/* translators: %d: Number of additional online users. */

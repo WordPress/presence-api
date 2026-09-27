@@ -411,6 +411,7 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 
 		$config = implode( '', (array) wp_scripts()->get_data( 'presence-dashboard-widget', 'before' ) );
 		$this->assertStringContainsString( 'window.wpPresenceWhosOnline', $config );
+		$this->assertStringContainsString( '_wpnonce=' . wp_create_nonce( 'presence_online_filter' ), $config, 'The Users list ignores the online filter without its nonce.' );
 
 		// The inline script calls into the shared file, so it has to load first.
 		$this->assertTrue( wp_script_is( 'wp-presence-avatar-stack', 'enqueued' ) );
@@ -529,7 +530,7 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 
 		$html = $this->render();
 
-		$this->assertStringContainsString( esc_url( admin_url( 'users.php?presence_status=online' ) ), $html );
+		$this->assertStringContainsString( '_wpnonce=' . wp_create_nonce( 'presence_online_filter' ), $html );
 		$this->assertStringContainsString( sprintf( '+%d more', $overflow ), $html );
 		$this->assertStringNotContainsString( 'data-action="expand"', $html );
 	}
