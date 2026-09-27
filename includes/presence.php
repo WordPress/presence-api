@@ -1486,7 +1486,45 @@ function wp_presence_assign_user_color( $user_id ) {
 		++$counts[ $color ];
 	}
 
+	return wp_presence_pick_color( $user_id, $counts );
+}
+
+/**
+ * Picks the color fewest others wear, preferring Gutenberg's pick for the ID.
+ *
+ * @access private
+ *
+ * @param int   $user_id User ID.
+ * @param int[] $counts  How many others wear each palette color, keyed by color.
+ * @return string A hex color.
+ */
+function wp_presence_pick_color( $user_id, $counts ) {
 	$own = wp_presence_default_user_color( $user_id );
 
 	return min( $counts ) === $counts[ $own ] ? $own : (string) array_search( min( $counts ), $counts, true );
+}
+
+/**
+ * Gives each of a group of users a color no other in the group wears, while colors last.
+ *
+ * Lower user IDs keep the color they hold.
+ *
+ * @access private
+ *
+ * @param string[] $colors Hex colors keyed by user ID.
+ * @return string[] Hex colors keyed by user ID.
+ */
+function wp_presence_spread_colors( $colors ) {
+	ksort( $colors );
+	$counts = array_fill_keys( wp_presence_color_palette(), 0 );
+
+	foreach ( $colors as $user_id => $color ) {
+		if ( ! empty( $counts[ $color ] ) ) {
+			$color              = wp_presence_pick_color( $user_id, $counts );
+			$colors[ $user_id ] = $color;
+		}
+		++$counts[ $color ];
+	}
+
+	return $colors;
 }

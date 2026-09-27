@@ -97,7 +97,8 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	}
 
 	// Others on this page only, since My Account shows the current user. Five whole faces fit.
-	$stack_ids = array_slice( array_unique( array_map( 'intval', wp_list_pluck( $here, 'user_id' ) ) ), 0, 5 );
+	$here_ids  = array_unique( array_map( 'intval', wp_list_pluck( $here, 'user_id' ) ) );
+	$stack_ids = array_slice( $here_ids, 0, 5 );
 
 	$colors = array();
 	foreach ( $entries as $entry ) {
@@ -105,16 +106,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	}
 
 	// Seven colors cannot go round a busy site, so people on this page trade a clash for a free one.
-	$here_ids = array_unique( array_map( 'intval', wp_list_pluck( $here, 'user_id' ) ) );
-	sort( $here_ids );
-	$taken = array();
-	foreach ( $here_ids as $user_id ) {
-		$free = array_values( array_diff( wp_presence_color_palette(), $taken ) );
-		if ( in_array( $colors[ $user_id ], $taken, true ) && $free ) {
-			$colors[ $user_id ] = $free[0];
-		}
-		$taken[] = $colors[ $user_id ];
-	}
+	$colors = wp_presence_spread_colors( array_intersect_key( $colors, array_flip( $here_ids ) ) ) + $colors;
 
 	// Only people on this page wear their color; it pairs them with what they do on the shared screen.
 	$avatar = function ( $user, $size, $alt = '', $ring = true ) use ( $colors ) {

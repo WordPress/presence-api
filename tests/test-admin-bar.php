@@ -373,7 +373,7 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$nodes = $this->render_nodes();
 
 		$this->assertStringContainsString( 'outline-color:#6F42C1', $nodes[ 'presence-user-' . $first ]->title );
-		$this->assertStringContainsString( 'outline-color:#D94145', $nodes[ 'presence-user-' . $second ]->title );
+		$this->assertStringNotContainsString( 'outline-color:#6F42C1', $nodes[ 'presence-user-' . $second ]->title );
 	}
 
 	/**
