@@ -163,6 +163,23 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * @covers ::wp_presence_admin_heartbeat_received
+	 * @covers ::wp_presence_screen_object_id
+	 */
+	public function test_admin_heartbeat_records_only_an_object_the_user_can_edit() {
+		$comment_id = self::factory()->comment->create();
+		$admin_id   = self::factory()->user->create( array( 'role' => 'administrator' ) );
+
+		wp_set_current_user( self::$editor_id );
+
+		wp_presence_admin_heartbeat_received( array(), array( 'presence-ping' => array( 'screen' => 'comment', 'object_id' => $comment_id ) ), 'comment' );
+		$this->assertSame( $comment_id, wp_get_presence( 'admin/online' )[0]->data['object_id'] );
+
+		wp_presence_admin_heartbeat_received( array(), array( 'presence-ping' => array( 'screen' => 'user-edit', 'object_id' => $admin_id ) ), 'user-edit' );
+		$this->assertArrayNotHasKey( 'object_id', wp_get_presence( 'admin/online' )[0]->data );
+	}
+
+	/**
 	 * The write must land before the hash reads the room on the same filter.
 	 *
 	 * @covers ::wp_presence_admin_heartbeat_received
@@ -215,6 +232,20 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 		wp_remove_presence( wp_presence_admin_room(), 'user-' . $other_id );
 
 		$this->assertNotSame( $hash, $this->hash_tick( $hash )['presence-online-hash'] );
+	}
+
+	/**
+	 * @covers ::wp_presence_online_hash_heartbeat_received
+	 */
+	public function test_the_online_hash_changes_when_someone_moves_to_another_term() {
+		$other_id = self::factory()->user->create( array( 'role' => 'editor' ) );
+		wp_set_presence( wp_presence_admin_room(), 'user-' . $other_id, array( 'screen' => 'edit-category', 'object_id' => 1 ), $other_id );
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+
+		$hash = $this->hash_tick()['presence-online-hash'];
+		wp_set_presence( wp_presence_admin_room(), 'user-' . $other_id, array( 'screen' => 'edit-category', 'object_id' => 2 ), $other_id );
+
+		$this->assertArrayHasKey( 'presence-online-hash', $this->hash_tick( $hash ) );
 	}
 
 	/**
@@ -732,6 +763,31 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 		$config = $this->get_ping_config();
 
 		$this->assertSame( wp_presence_post_room( $post_id ), $config['editorRoom'] );
+	}
+
+	/**
+	 * @covers ::wp_presence_enqueue_heartbeat_ping
+	 * @covers ::wp_presence_screen_object_id
+	 */
+	public function test_ping_config_carries_the_user_being_edited() {
+		$admin_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		grant_super_admin( $admin_id );
+		wp_set_current_user( $admin_id );
+
+		set_current_screen( 'user-edit' );
+		$_GET['user_id'] = (string) self::$editor_id;
+
+		wp_deregister_script( 'wp-presence-ping' );
+
+		$wp_scripts        = wp_scripts();
+		$wp_scripts->queue = array();
+		$wp_scripts->done  = array();
+
+		wp_presence_enqueue_heartbeat_ping();
+		unset( $_GET['user_id'] );
+
+		$this->assertSame( self::$editor_id, $this->get_ping_config()['pageContext']['object_id'] );
+		$this->assertSame( self::$editor_id, wp_get_presence( 'admin/online' )[0]->data['object_id'] );
 	}
 
 	/**

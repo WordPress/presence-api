@@ -80,6 +80,7 @@
 			editorPostId,
 			pageTitle: ( pageContext && pageContext.title ) || '',
 			pagePostId: ( pageContext && pageContext.post_id ) || 0,
+			pageObjectId: ( pageContext && pageContext.object_id ) || 0,
 			usersList,
 		} );
 
@@ -134,6 +135,9 @@
 				}
 				if ( pageContext.post_id ) {
 					ping.post_id = pageContext.post_id;
+				}
+				if ( pageContext.object_id ) {
+					ping.object_id = pageContext.object_id;
 				}
 			}
 			data[ 'presence-ping' ] = ping;

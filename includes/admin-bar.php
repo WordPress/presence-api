@@ -75,7 +75,10 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	$place = function ( $entry ) use ( $user_editing_post ) {
 		$screen  = isset( $entry->data['screen'] ) ? (string) $entry->data['screen'] : '';
 		$post_id = 'front' === $screen ? (int) ( $entry->data['post_id'] ?? 0 ) : (int) ( $user_editing_post[ (int) $entry->user_id ] ?? 0 );
-		return $post_id && ( 'front' === $screen || get_post_type( $post_id ) === $screen ) ? $screen . ':' . $post_id : $screen;
+		if ( $post_id && ( 'front' === $screen || get_post_type( $post_id ) === $screen ) ) {
+			return $screen . ':' . $post_id;
+		}
+		return empty( $entry->data['object_id'] ) ? $screen : $screen . ':' . (int) $entry->data['object_id'];
 	};
 
 	$own        = wp_list_filter( $entries, array( 'user_id' => $current_uid ) );
@@ -116,10 +119,11 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 			return array( '', '' );
 		}
 
-		$title   = isset( $entry->data['title'] ) ? (string) $entry->data['title'] : '';
-		$post_id = (int) ( $user_editing_post[ (int) $entry->user_id ] ?? 0 );
-		$type    = substr( $screen, 5 );
-		$path    = null;
+		$title     = isset( $entry->data['title'] ) ? (string) $entry->data['title'] : '';
+		$post_id   = (int) ( $user_editing_post[ (int) $entry->user_id ] ?? 0 );
+		$object_id = wp_presence_screen_object_id( $screen, $entry->data['object_id'] ?? 0 );
+		$type      = substr( $screen, 5 );
+		$path      = null;
 
 		if ( 'front' === $screen ) {
 			$post_id = (int) ( $entry->data['post_id'] ?? 0 );
@@ -129,6 +133,16 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 			return current_user_can( 'read_post', $post_id ) ? array( $title, get_permalink( $post_id ) ) : array( '', '' );
 		} elseif ( $post_id && get_post_type( $post_id ) === $screen ) {
 			return array( get_the_title( $post_id ), (string) get_edit_post_link( $post_id, 'raw' ), true );
+		} elseif ( $object_id && 'comment' === $screen ) {
+			return array( $title, (string) get_edit_comment_link( $object_id, 'url' ) );
+		} elseif ( $object_id && 'user-edit' === $screen ) {
+			return array( $title, get_edit_user_link( $object_id ) );
+		} elseif ( $object_id ) {
+			return array( get_term( $object_id )->name, (string) get_edit_term_link( $object_id, $type ) );
+		} elseif ( ! empty( $entry->data['object_id'] ) ) {
+			// The user editor's title names the user, so it is only shown to people who can edit them.
+			// phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- Reuses core's string.
+			return array( 'user-edit' === $screen ? __( 'Edit User', 'default' ) : $title, '' );
 		} elseif ( 'dashboard' === $screen ) {
 			$path = '';
 		} elseif ( preg_match( '/_page_(.+)$/', $screen, $matches ) ) {

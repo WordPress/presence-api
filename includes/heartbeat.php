@@ -31,6 +31,37 @@ function wp_presence_editor_state( $screen_id, $locked ) {
 }
 
 /**
+ * Returns the comment, user or term an admin screen edits, when the current user can edit it.
+ *
+ * @access private
+ *
+ * @since 0.10.0
+ *
+ * @param string $screen    The screen ID.
+ * @param mixed  $object_id The object ID to check.
+ * @return int The object ID, or 0.
+ */
+function wp_presence_screen_object_id( $screen, $object_id ) {
+	$object_id = is_numeric( $object_id ) ? (int) $object_id : 0;
+	$taxonomy  = 0 === strpos( $screen, 'edit-' ) ? substr( $screen, 5 ) : '';
+
+	if ( $object_id <= 0 ) {
+		return 0;
+	}
+	if ( 'comment' === $screen ) {
+		return current_user_can( 'edit_comment', $object_id ) ? $object_id : 0;
+	}
+	if ( 'user-edit' === $screen ) {
+		return get_userdata( $object_id ) && current_user_can( 'edit_user', $object_id ) ? $object_id : 0;
+	}
+	if ( taxonomy_exists( $taxonomy ) ) {
+		return get_term( $object_id, $taxonomy ) instanceof WP_Term && current_user_can( 'edit_term', $object_id ) ? $object_id : 0;
+	}
+
+	return 0;
+}
+
+/**
  * Returns how many consecutive unchanged ticks trigger the idle Heartbeat backoff.
  *
  * @access private
@@ -155,6 +186,14 @@ function wp_presence_enqueue_heartbeat_ping() {
 		? get_current_screen()->id
 		: 'front';
 
+	if ( is_admin() ) {
+		$target    = wp_presence_parse_screen_key_target( wp_presence_current_screen_key() );
+		$object_id = wp_presence_screen_object_id( $screen_id, $target['id'] ?? 0 );
+		if ( $object_id ) {
+			$page_context['object_id'] = $object_id;
+		}
+	}
+
 	$admin_state = array( 'screen' => $screen_id );
 	if ( $page_context ) {
 		if ( ! empty( $page_context['title'] ) ) {
@@ -162,6 +201,9 @@ function wp_presence_enqueue_heartbeat_ping() {
 		}
 		if ( ! empty( $page_context['post_id'] ) ) {
 			$admin_state['post_id'] = $page_context['post_id'];
+		}
+		if ( ! empty( $page_context['object_id'] ) ) {
+			$admin_state['object_id'] = $page_context['object_id'];
 		}
 	}
 	$admin_state['color'] = wp_presence_assign_user_color( $user_id );
@@ -277,6 +319,11 @@ function wp_presence_admin_heartbeat_received( $response, $data, $screen_id ) { 
 		$state['title'] = sanitize_text_field( $data['presence-ping']['title'] );
 	}
 
+	$object_id = wp_presence_screen_object_id( $screen, $data['presence-ping']['object_id'] ?? 0 );
+	if ( $object_id ) {
+		$state['object_id'] = $object_id;
+	}
+
 	if ( 'front' === $screen ) {
 		$post_id = (int) ( $data['presence-ping']['post_id'] ?? 0 );
 		if ( $post_id > 0 ) {
@@ -323,6 +370,7 @@ function wp_presence_online_hash_heartbeat_received( $response, $data ) {
 			isset( $entry->data['post_status'] ) ? $entry->data['post_status'] : '',
 			isset( $entry->data['title'] ) ? $entry->data['title'] : '',
 			isset( $entry->data['post_id'] ) ? (int) $entry->data['post_id'] : 0,
+			isset( $entry->data['object_id'] ) ? (int) $entry->data['object_id'] : 0,
 		);
 	}
 
