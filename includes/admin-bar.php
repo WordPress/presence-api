@@ -280,8 +280,14 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	$shown = 0;
 	foreach ( $rows as $i => $row ) {
 		if ( is_array( $row ) && isset( $row[3] ) ) {
-			$people = array_filter( $row[3] );
-			$names  = wp_sprintf( '%l', wp_list_pluck( $people, 'display_name' ) );
+			$people = wp_list_pluck( array_filter( $row[3] ), 'display_name' );
+			// Only a few names are spelled out, so a crowded screen cannot grow the markup every Heartbeat tick resends.
+			$names = array_slice( $people, 0, 10 );
+			if ( count( $people ) > 10 ) {
+				/* translators: %d: Number of people on a screen whose names are not listed. */
+				$names[] = sprintf( _n( '%d other', '%d others', count( $people ) - 10, 'presence-api' ), count( $people ) - 10 );
+			}
+			$names  = wp_sprintf( '%l', $names );
 			$shown += count( $row[3] );
 			$wp_admin_bar->add_node(
 				array(

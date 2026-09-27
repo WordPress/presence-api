@@ -264,6 +264,19 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$this->assertStringContainsString( esc_html( get_userdata( $alone )->display_name ), $nodes['presence-place-3']->title );
 	}
 
+	public function test_a_crowded_screen_names_only_a_few() {
+		for ( $i = 0; $i < 12; $i++ ) {
+			$this->put_user_on_screen( 'users', array( 'title' => 'Users' ) );
+		}
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$row = $this->render_nodes()['presence-place-0'];
+
+		$this->assertStringContainsString( '<span class="presence-bar-crowd" aria-hidden="true">12</span>', $row->title );
+		$this->assertStringContainsString( ', and 2 others</span>', $row->title );
+		$this->assertStringEndsWith( ', and 2 others', $row->meta['title'] );
+	}
+
 	public function test_someone_editing_a_post_links_to_it() {
 		$this->put_editor_on_post( self::$post_id );
 
