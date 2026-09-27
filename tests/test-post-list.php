@@ -10,6 +10,8 @@
  * @covers ::wp_presence_add_editors_column
  * @covers ::wp_presence_render_editors_column
  * @covers ::wp_presence_editors_column_css
+ * @covers ::wp_presence_post_list_editors
+ * @covers ::wp_presence_editors_stack
  * @covers ::wp_presence_editors_column_heartbeat_received
  */
 class WP_Test_Presence_Post_List extends WP_Presence_UnitTestCase {
@@ -183,6 +185,7 @@ class WP_Test_Presence_Post_List extends WP_Presence_UnitTestCase {
 		$this->assertSame( 1, substr_count( $cells[ 'post-' . $page ], '<img' ) );
 		$this->assertSame( '', $cells[ 'post-' . $empty ], 'An empty cell clears whoever left.' );
 		$this->assertArrayNotHasKey( 'post-' . $other, $cells );
+		$this->assertSame( array( 'kept' => 1 ), wp_presence_editors_column_heartbeat_received( array( 'kept' => 1 ), array( 'wp-check-locked-posts' => 'post-' . $page ) ) );
 
 		wp_set_current_user( self::$subscriber_id );
 		$this->assertSame( array(), wp_presence_editors_column_heartbeat_received( array(), array( 'wp-check-locked-posts' => array( 'post-' . $page ) ) ) );
