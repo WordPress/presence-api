@@ -142,6 +142,8 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 		$title     = isset( $entry->data['title'] ) ? (string) $entry->data['title'] : '';
 		$post_id   = (int) ( $user_editing_post[ (int) $entry->user_id ] ?? 0 );
 		$object_id = wp_presence_screen_object_id( $screen, $entry->data['object_id'] ?? 0 );
+		$network   = '-network' === substr( $screen, -8 );
+		$base      = $network ? substr( $screen, 0, -8 ) : $screen;
 		$type      = substr( $screen, 5 );
 		$path      = null;
 
@@ -167,19 +169,19 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 			// The user editor's title names the user, so it is only shown to people who can edit them.
 			// phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- Reuses core's string.
 			return array( in_array( $screen, array( 'user-edit', 'user-edit-network' ), true ) ? __( 'Edit User', 'default' ) : $title, '' );
-		} elseif ( 'dashboard' === $screen ) {
+		} elseif ( 'dashboard' === $base ) {
 			$path = '';
-		} elseif ( preg_match( '/_page_(.+)$/', $screen, $matches ) ) {
+		} elseif ( preg_match( '/_page_(.+)$/', $base, $matches ) ) {
 			$path = 'admin.php?page=' . $matches[1];
 		} elseif ( 0 === strpos( $screen, 'edit-' ) && post_type_exists( $type ) ) {
 			$path = 'edit.php?post_type=' . $type;
 		} elseif ( 0 === strpos( $screen, 'edit-' ) && taxonomy_exists( $type ) ) {
 			$path = 'edit-tags.php?taxonomy=' . $type;
-		} elseif ( ! in_array( $screen, array( 'post', 'post-new', 'profile', 'comment', 'user-edit', 'term', 'media' ), true ) && file_exists( ABSPATH . 'wp-admin/' . $screen . '.php' ) ) {
-			$path = $screen . '.php';
+		} elseif ( ! in_array( $base, array( 'post', 'post-new', 'profile', 'comment', 'user-edit', 'term', 'media', 'site-info', 'site-users', 'site-themes', 'site-settings' ), true ) && file_exists( ABSPATH . 'wp-admin/' . ( $network ? 'network/' : '' ) . $base . '.php' ) ) {
+			$path = $base . '.php';
 		}
 
-		return array( $title, null === $path ? '' : admin_url( $path ) );
+		return array( $title, null === $path ? '' : ( $network ? network_admin_url( $path ) : admin_url( $path ) ) );
 	};
 
 	$places = array();
@@ -235,14 +237,24 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	// Core drops a node's aria-label, so the spoken label rides in the title and the faces stay quiet.
 	$stack_html = '' !== $stack_html ? '<span class="presence-bar-avatars" aria-hidden="true">' . $stack_html . '</span>' : '';
 
-	$online_count = count( wp_presence_online_user_ids( $entries ) );
+	$online_ids = wp_presence_online_user_ids( $entries );
+	$users_url  = current_user_can( 'list_users' ) ? wp_nonce_url( admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' ) : false;
+
+	// Network screens count and link the network Online view, which reads empty when the network does not aggregate.
+	if ( is_multisite() && '-network' === substr( $current_screen, -8 ) && current_user_can( wp_presence_network_capability() ) ) {
+		$network_ids = wp_presence_get_network_online_user_ids();
+		if ( $network_ids ) {
+			$online_ids = $network_ids;
+			$users_url  = wp_nonce_url( network_admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' );
+		}
+	}
+
+	$online_count = count( $online_ids );
 
 	/* translators: %d: Number of online users, including the current user. */
 	$label = sprintf( _n( '%d online', '%d online', $online_count, 'presence-api' ), $online_count );
 	/* translators: %d: Number of users currently online. */
 	$sr_label = sprintf( _n( '%d user online', '%d users online', $online_count, 'presence-api' ), $online_count );
-
-	$users_url = current_user_can( 'list_users' ) ? wp_nonce_url( admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' ) : false;
 
 	$wp_admin_bar->add_node(
 		array(

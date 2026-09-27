@@ -240,6 +240,31 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		);
 	}
 
+	public function test_network_screens_link_into_network_admin() {
+		$this->put_user_on_screen( 'sites-network', array( 'title' => 'Sites' ) );
+		$this->put_user_on_screen( 'dashboard-network', array( 'title' => 'Dashboard' ) );
+		$site = $this->put_user_on_screen( 'site-info-network', array( 'title' => 'Edit Site' ) );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$nodes = $this->render_nodes();
+		$hrefs = wp_list_pluck( wp_list_filter( $nodes, array( 'parent' => 'presence-elsewhere' ) ), 'href' );
+
+		$this->assertContains( network_admin_url( 'sites.php' ), $hrefs );
+		$this->assertContains( network_admin_url(), $hrefs );
+		$this->assertFalse( $this->place_of( $nodes, $site )->href, 'A screen that needs a site ID has nothing to link to.' );
+	}
+
+	/**
+	 * Any screen ID can earn a heartbeat token, so a network one reaches the node on a single site too.
+	 */
+	public function test_a_network_screen_renders_the_node_anywhere() {
+		wp_set_current_user( self::$editor_id );
+		$bar = new WP_Admin_Bar();
+		wp_presence_admin_bar_node( $bar, 'users-network' );
+
+		$this->assertNotNull( $bar->get_node( 'presence-online' ) );
+	}
+
 	public function test_posts_being_edited_come_first_then_the_busiest_places() {
 		$this->put_editor_on_post( self::$post_id );
 		$hidden = $this->put_user_on_screen( '../wp-login' );
