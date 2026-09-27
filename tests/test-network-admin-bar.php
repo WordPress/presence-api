@@ -60,6 +60,19 @@ class WP_Test_Network_Admin_Bar extends WP_Presence_Network_UnitTestCase {
 		$this->assertSame( wp_nonce_url( admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' ), $node->href );
 	}
 
+	public function test_a_network_screen_counts_the_site_without_manage_network_users() {
+		add_filter(
+			'map_meta_cap',
+			static function ( $caps, $cap ) {
+				return 'manage_network_users' === $cap ? array( 'do_not_allow' ) : $caps;
+			},
+			10,
+			2
+		);
+
+		$this->assertStringContainsString( '1 online', $this->render_node( 'users-network' )->title );
+	}
+
 	public function test_a_network_screen_counts_the_site_when_the_network_does_not_aggregate() {
 		add_filter( 'wp_presence_network_aggregation_enabled', '__return_false' );
 

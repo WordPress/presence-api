@@ -241,7 +241,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	$users_url  = current_user_can( 'list_users' ) ? wp_nonce_url( admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' ) : false;
 
 	// Network screens count and link the network Online view, which reads empty when the network does not aggregate.
-	if ( is_multisite() && '-network' === substr( $current_screen, -8 ) && current_user_can( wp_presence_network_capability() ) ) {
+	if ( is_multisite() && '-network' === substr( $current_screen, -8 ) && current_user_can( 'manage_network_users' ) && current_user_can( wp_presence_network_capability() ) ) {
 		$network_ids = wp_presence_get_network_online_user_ids();
 		if ( $network_ids ) {
 			$online_ids = $network_ids;
