@@ -899,7 +899,7 @@ function wp_presence_enqueue_stale_screen_banner() {
 	wp_enqueue_script(
 		'wp-presence-stale-screen',
 		WP_PRESENCE_PLUGIN_URL . 'assets/js/stale-screen.js',
-		array( 'jquery', 'heartbeat', 'wp-i18n', 'wp-presence-tab-coordinator' ),
+		array( 'jquery', 'heartbeat', 'wp-presence-tab-coordinator' ),
 		WP_PRESENCE_VERSION,
 		true
 	);
