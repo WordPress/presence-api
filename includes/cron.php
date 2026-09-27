@@ -11,6 +11,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Schedules the presence cleanup cron event.
+ *
+ * @since 0.1.1
  */
 function wp_presence_schedule_cleanup() {
 	if ( ! wp_next_scheduled( 'wp_delete_expired_presence_data' ) ) {
@@ -20,6 +22,8 @@ function wp_presence_schedule_cleanup() {
 
 /**
  * Adds a custom one-minute cron interval.
+ *
+ * @since 0.1.1
  *
  * @param array $schedules Existing cron schedules.
  * @return array Modified cron schedules.

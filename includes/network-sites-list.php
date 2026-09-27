@@ -13,6 +13,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Adds an "Online" column to the Network Admin Sites list table.
  *
+ * @since 0.2.0
+ *
  * @param array $columns Existing column headers.
  * @return array Column headers with "Online" added.
  */
@@ -30,6 +32,8 @@ function wp_presence_register_network_sites_column( $columns ) {
  * Enqueues the avatar-stack stylesheet on the Sites list.
  *
  * No other presence asset loads on this screen, so nothing else pulls it in.
+ *
+ * @since 0.2.0
  *
  * @param string $hook_suffix The current admin page.
  */
@@ -53,6 +57,8 @@ function wp_presence_enqueue_network_sites_assets( $hook_suffix ) {
  * above the table rather than repeated down every row of it. Both tables carry
  * that column and both are wrong in the same way without this, so they share
  * one notice rather than each wording the same thing.
+ *
+ * @since 0.3.0
  */
 function wp_presence_network_aggregation_notice() {
 	$screen = get_current_screen();
@@ -89,6 +95,8 @@ function wp_presence_network_aggregation_notice() {
  * Gates on the capability again rather than trusting the registration above:
  * core calls this for whatever columns the screen ended up with, and ours is
  * not the only thing that can put a name in that list.
+ *
+ * @since 0.2.0
  *
  * @param string $column_name Column being rendered.
  * @param int    $blog_id     The site ID for the current row.

@@ -27,6 +27,8 @@ function wp_presence_get_avatar_fetch_size( $display_size ) {
  * Enqueues the shared avatar-stack stylesheet.
  *
  * @access private
+ *
+ * @since 0.2.0
  */
 function wp_presence_enqueue_avatar_stack_style() {
 	wp_enqueue_style(
@@ -44,6 +46,8 @@ function wp_presence_enqueue_avatar_stack_style() {
  * once per page load is served by the PHP renderer alone.
  *
  * @access private
+ *
+ * @since 0.2.0
  */
 function wp_presence_enqueue_avatar_stack_script() {
 	wp_enqueue_script(
@@ -68,6 +72,8 @@ function wp_presence_enqueue_avatar_stack_script() {
  * reserve the space until it loads.
  *
  * @access private
+ *
+ * @since 0.2.0
  * @param array $users Users, each with 'avatar_url' and 'display_name'.
  * @param int   $max   Optional. Maximum avatars to show. Default 4.
  * @return string HTML markup.

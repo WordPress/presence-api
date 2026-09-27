@@ -294,6 +294,8 @@ function wp_presence_admin_bar_node_markup( $screen ) {
 		/**
 		 * Renders one top-level node.
 		 *
+		 * @since 0.9.0
+		 *
 		 * @param string $id Node ID.
 		 * @return string The node's list item markup.
 		 */

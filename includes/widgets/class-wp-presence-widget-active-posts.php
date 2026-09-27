@@ -14,11 +14,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * Shows which posts are currently being edited, grouped by post with
  * an avatar stack of editors.
+ *
+ * @since 0.1.1
  */
 class WP_Presence_Widget_Active_Posts {
 
 	/**
 	 * Registers the dashboard widget.
+	 *
+	 * @since 0.1.1
 	 */
 	public static function register() {
 		if ( ! current_user_can( 'edit_posts' ) ) {
@@ -40,6 +44,8 @@ class WP_Presence_Widget_Active_Posts {
 
 	/**
 	 * Enqueues the widget's JavaScript and CSS.
+	 *
+	 * @since 0.1.1
 	 *
 	 * @param string $hook_suffix The current admin page.
 	 */
@@ -80,6 +86,8 @@ class WP_Presence_Widget_Active_Posts {
 	/**
 	 * Returns the inline CSS for the dashboard widget.
 	 *
+	 * @since 0.1.1
+	 *
 	 * @return string CSS code.
 	 */
 	private static function get_inline_css() {
@@ -100,6 +108,8 @@ class WP_Presence_Widget_Active_Posts {
 	/**
 	 * Returns the translated strings active-posts.js reads off window.wpPresenceActivePosts.
 	 *
+	 * @since 0.1.24
+	 *
 	 * @return array Translated strings.
 	 */
 	private static function get_i18n_strings() {
@@ -115,6 +125,8 @@ class WP_Presence_Widget_Active_Posts {
 
 	/**
 	 * Renders the dashboard widget.
+	 *
+	 * @since 0.1.1
 	 */
 	public static function render() {
 		$posts = self::build_active_posts_data();
@@ -172,6 +184,8 @@ class WP_Presence_Widget_Active_Posts {
 	/**
 	 * Handles the heartbeat received event for active posts updates.
 	 *
+	 * @since 0.1.1
+	 *
 	 * @param array  $response  The Heartbeat response.
 	 * @param array  $data      The $_POST data sent.
 	 * @param string $screen_id The screen ID.
@@ -196,6 +210,8 @@ class WP_Presence_Widget_Active_Posts {
 	 *
 	 * Returns an array of posts, each with an 'editors' array containing
 	 * the users currently editing that post.
+	 *
+	 * @since 0.1.1
 	 *
 	 * @return array Array of post data with grouped editors.
 	 */

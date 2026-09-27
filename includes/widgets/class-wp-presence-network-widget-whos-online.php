@@ -16,6 +16,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * into existing Network Admin screens (Sites and Users list columns), but a
  * dashboard widget mirrors the single-site "at a glance" pattern and has no
  * existing native screen to fold into.
+ *
+ * @since 0.2.0
  */
 class WP_Presence_Network_Widget_Whos_Online {
 
@@ -28,6 +30,8 @@ class WP_Presence_Network_Widget_Whos_Online {
 
 	/**
 	 * Registers the network dashboard widget.
+	 *
+	 * @since 0.2.0
 	 */
 	public static function register() {
 		if ( ! current_user_can( wp_presence_network_capability() ) ) {
@@ -45,6 +49,8 @@ class WP_Presence_Network_Widget_Whos_Online {
 
 	/**
 	 * Enqueues the widget's JavaScript and CSS.
+	 *
+	 * @since 0.2.0
 	 *
 	 * @param string $hook_suffix The current admin page.
 	 */
@@ -80,6 +86,8 @@ class WP_Presence_Network_Widget_Whos_Online {
 	/**
 	 * Returns the inline CSS for the widget.
 	 *
+	 * @since 0.2.0
+	 *
 	 * @return string CSS code.
 	 */
 	private static function get_inline_css() {
@@ -95,6 +103,8 @@ class WP_Presence_Network_Widget_Whos_Online {
 
 	/**
 	 * Renders the widget.
+	 *
+	 * @since 0.2.0
 	 */
 	public static function render() {
 		echo '<div id="presence-network-widget-list" aria-live="polite" tabindex="-1">';
@@ -108,6 +118,8 @@ class WP_Presence_Network_Widget_Whos_Online {
 	 * Five sites with four avatars each, asked for as five sites with four
 	 * avatars each. The widget is on the network dashboard, so on a large
 	 * network this read is the one that has to stay cheap.
+	 *
+	 * @since 0.2.0
 	 *
 	 * @return array See wp_presence_get_network_summary().
 	 */
@@ -123,6 +135,8 @@ class WP_Presence_Network_Widget_Whos_Online {
 	/**
 	 * Returns how many sites are online beyond the ones being shown.
 	 *
+	 * @since 0.2.0
+	 *
 	 * @param array $summary Return value of self::get_summary().
 	 * @return int Site count, zero if the whole network fits.
 	 */
@@ -132,6 +146,8 @@ class WP_Presence_Network_Widget_Whos_Online {
 
 	/**
 	 * Renders the compact site list for a network summary.
+	 *
+	 * @since 0.2.0
 	 *
 	 * @param array $summary Return value of self::get_summary().
 	 */
@@ -181,6 +197,8 @@ class WP_Presence_Network_Widget_Whos_Online {
 	 * Self-gates on a widget-specific ping key so every other admin screen's
 	 * tick costs one empty() check here, never the capability check or the
 	 * summary query.
+	 *
+	 * @since 0.2.0
 	 *
 	 * @param array  $response  The Heartbeat response.
 	 * @param array  $data      The $_POST data sent.
@@ -233,6 +251,8 @@ class WP_Presence_Network_Widget_Whos_Online {
 	 * aggregating sends the same empty list as a quiet one, and the widget has
 	 * to repaint to start saying so.
 	 *
+	 * @since 0.2.0
+	 *
 	 * @param array $summary  Return value of self::get_summary().
 	 * @param int   $overflow Sites online beyond the ones being sent.
 	 * @return string The state hash.
@@ -243,6 +263,8 @@ class WP_Presence_Network_Widget_Whos_Online {
 
 	/**
 	 * Returns the configuration the widget's client script reads.
+	 *
+	 * @since 0.4.0
 	 *
 	 * @return array Script configuration.
 	 */

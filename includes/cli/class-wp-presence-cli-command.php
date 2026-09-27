@@ -11,6 +11,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Manages presence entries.
+ *
+ * @since 0.1.1
  */
 class WP_Presence_CLI_Command extends WP_CLI_Command {
 
@@ -38,6 +40,8 @@ class WP_Presence_CLI_Command extends WP_CLI_Command {
 	 *     wp presence set admin/online
 	 *     wp presence set admin/online cli-1 --user=1
 	 *     wp presence set postType/post:42 lock-5 --user=5 --data='{"action":"editing"}'
+	 *
+	 * @since 0.1.1
 	 *
 	 * @param array $args       Positional arguments.
 	 * @param array $assoc_args Associative arguments.
@@ -77,6 +81,8 @@ class WP_Presence_CLI_Command extends WP_CLI_Command {
 
 	/**
 	 * Lists presence entries in a room.
+	 *
+	 * @since 0.1.1
 	 *
 	 * @subcommand list
 	 *
@@ -155,6 +161,8 @@ class WP_Presence_CLI_Command extends WP_CLI_Command {
 	 *     wp presence summary
 	 *     wp presence summary --format=json
 	 *
+	 * @since 0.1.1
+	 *
 	 * @param array $args       Positional arguments.
 	 * @param array $assoc_args Associative arguments.
 	 */
@@ -222,6 +230,8 @@ class WP_Presence_CLI_Command extends WP_CLI_Command {
 	 *     wp presence network --sites=5 --users-per-site=4
 	 *     wp presence network --site=3
 	 *     wp presence network --format=json
+	 *
+	 * @since 0.2.0
 	 *
 	 * @param array $args       Positional arguments.
 	 * @param array $assoc_args Associative arguments.
@@ -323,6 +333,8 @@ class WP_Presence_CLI_Command extends WP_CLI_Command {
 	 *     wp presence recording get --network
 	 *     wp presence recording set off --network
 	 *
+	 * @since 0.3.0
+	 *
 	 * @param array $args       Positional arguments.
 	 * @param array $assoc_args Associative arguments.
 	 */
@@ -379,6 +391,8 @@ class WP_Presence_CLI_Command extends WP_CLI_Command {
 	 *
 	 *     wp presence cleanup
 	 *     wp presence cleanup --yes
+	 *
+	 * @since 0.1.1
 	 *
 	 * @param array $args       Positional arguments.
 	 * @param array $assoc_args Associative arguments.

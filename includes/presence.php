@@ -37,6 +37,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * bring it current.
  *
  * @access private
+ *
+ * @since 0.1.17
  * @return bool Whether presence storage is available on this site.
  */
 function wp_presence_has_table() {
@@ -72,6 +74,7 @@ function wp_presence_read_floor( $timeout ) {
  * A `$timeout` given here is the window used, on every site. Omit it to take
  * the site's own TTL, which is what `wp_presence_default_ttl` filters.
  *
+ * @since 0.1.1
  * @since 0.7.0 Added the `$client_prefix` parameter.
  * @since 0.7.0 An explicit `$timeout` is no longer overridden by `wp_presence_default_ttl`.
  *
@@ -211,6 +214,8 @@ function wp_presence_room_rows( $room, $timeout = null, $client_prefix = '' ) {
  *
  * @access private
  *
+ * @since 0.3.0
+ *
  * @param array $entries Presence entries, as returned by wp_get_presence().
  * @return int[] Unique user IDs.
  */
@@ -224,6 +229,8 @@ function wp_presence_online_user_ids( $entries ) {
  * Adds an entry for the current user to a set of entries when their row is absent.
  *
  * @access private
+ *
+ * @since 0.3.0
  *
  * @param array $entries Presence entries, as returned by wp_get_presence().
  * @return array Entries with the current user included.
@@ -467,7 +474,7 @@ function wp_presence_refresh_cutoff( $room ) {
  *
  * @access private
  *
- * @since 0.4.0
+ * @since 0.5.0
  *
  * @param string $date_gmt The timestamp to validate.
  * @return bool Whether the timestamp is well-formed and real.
@@ -494,7 +501,8 @@ function wp_presence_is_valid_date_gmt( $date_gmt ) {
  * Uses INSERT ... ON DUPLICATE KEY UPDATE for atomic upserts
  * via the UNIQUE KEY (room, client_id).
  *
- * @since 0.4.0 Added the $date_gmt parameter.
+ * @since 0.1.1
+ * @since 0.5.0 Added the $date_gmt parameter.
  * @since 0.7.0 Added the $expires_in parameter.
  *
  * @param string      $room      The room identifier.
@@ -747,6 +755,8 @@ function wp_presence_write_row( $room, $client_id, $user_id, $data_json, $date_g
 /**
  * Removes a client from a room.
  *
+ * @since 0.1.1
+ *
  * @param string $room      The room identifier.
  * @param string $client_id The client identifier.
  * @return bool True on success, false on failure.
@@ -822,6 +832,8 @@ function wp_presence_leave( $room, $client_id, $timeout = null, $client_prefix =
 /**
  * Removes all presence entries for a given user across all rooms.
  *
+ * @since 0.1.1
+ *
  * @param int $user_id The user ID.
  * @return bool True on success, false on failure.
  */
@@ -855,6 +867,8 @@ function wp_remove_user_presence( $user_id ) {
  * behind the pagehide handler.
  *
  * @access private
+ *
+ * @since 0.2.0
  */
 function wp_presence_admin_room_changed() {
 	/**
@@ -873,6 +887,8 @@ function wp_presence_admin_room_changed() {
  * Room format: `postType/{post_type}:{post_id}`
  *
  * @access private
+ *
+ * @since 0.1.11
  * @param string $room The room identifier.
  * @return array|false An array containing 'post_type' and 'post_id' on success, false otherwise.
  */
@@ -931,6 +947,8 @@ function wp_presence_get_entry_screen( $entry ) {
 /**
  * Checks if a user can access a presence room.
  *
+ * @since 0.1.1
+ *
  * @param string $room    The room identifier.
  * @param int    $user_id Optional. The user ID. Default 0 (current user).
  * @return bool True if the user can access the room, false otherwise.
@@ -957,6 +975,8 @@ function wp_can_access_presence_room( $room, $user_id = 0 ) {
  *
  * Room format: `postType/{post_type}:{post_id}`
  *
+ * @since 0.1.1
+ *
  * @param int|WP_Post $post The post ID or post object.
  * @return string|false The room identifier, or false if the post doesn't exist
  *                      or its post type does not support presence.
@@ -977,6 +997,8 @@ function wp_presence_post_room( $post ) {
 
 /**
  * Returns the presence room identifier for the admin "who's online" list.
+ *
+ * @since 0.1.14
  *
  * @return string The room identifier.
  */
@@ -1022,6 +1044,8 @@ function wp_presence_get_user_color( $user_id ) {
  * fallback is filtered, so a site cannot widen someone else's liveness check.
  *
  * @access private
+ *
+ * @since 0.1.1
  * @param int|null $timeout Timeout in seconds, or null for the site's TTL.
  * @return int The timeout in seconds.
  */
@@ -1033,6 +1057,8 @@ function wp_presence_get_timeout( $timeout = null ) {
 	/**
 	 * Filters the presence TTL (time-to-live) used when a caller names no window.
 	 *
+	 * @since 0.1.1
+	 *
 	 * @param int $timeout The timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL (150).
 	 */
 	return max( 0, (int) apply_filters( 'wp_presence_default_ttl', WP_PRESENCE_DEFAULT_TTL ) );
@@ -1042,6 +1068,8 @@ function wp_presence_get_timeout( $timeout = null ) {
  * Gets all presence entries for rooms matching a prefix.
  *
  * @access private
+ *
+ * @since 0.1.1
  * @param string $prefix  The room prefix to match (e.g., 'postType/').
  * @param int    $timeout Optional. Timeout in seconds. Default null, the site's filtered TTL.
  * @return array Array of presence entry objects.
@@ -1083,6 +1111,8 @@ function wp_get_presence_by_room_prefix( $prefix, $timeout = null ) {
  * Returns a site-wide presence summary grouped by room prefix.
  *
  * @access private
+ *
+ * @since 0.1.1
  * @param int $timeout Optional. Timeout in seconds. Default null, the site's filtered TTL.
  * @return array {
  *     @type int   $total_entries Total presence entries.
@@ -1176,6 +1206,8 @@ function wp_get_presence_summary( $timeout = null ) {
  * SQLite integration Playground uses to run the demo blueprints.
  *
  * @access private
+ *
+ * @since 0.1.1
  */
 function wp_delete_expired_presence_data() {
 	global $wpdb;
@@ -1189,6 +1221,8 @@ function wp_delete_expired_presence_data() {
 	/**
 	 * Filters the number of expired rows deleted per pass.
 	 *
+	 * @since 0.1.18
+	 *
 	 * @param int $batch_size Rows per pass. Default 1000.
 	 */
 	$batch_size = (int) apply_filters( 'wp_presence_cleanup_batch_size', 1000 );
@@ -1198,6 +1232,8 @@ function wp_delete_expired_presence_data() {
 	 *
 	 * The remainder is left for the next scheduled run, bounding the work a
 	 * single request performs.
+	 *
+	 * @since 0.1.18
 	 *
 	 * @param int $max_passes Passes per invocation. Default 10.
 	 */
@@ -1239,6 +1275,8 @@ function wp_delete_expired_presence_data() {
  * Returns all active rooms with their user counts and member lists.
  *
  * @access private
+ *
+ * @since 0.1.1
  *
  * @param int  $timeout        Optional. Timeout in seconds. Default null, the site's filtered TTL.
  * @param bool $hydrate_users  Optional. Whether to hydrate user data. Default true.
@@ -1336,6 +1374,8 @@ function wp_get_active_rooms( $timeout = null, $hydrate_users = true ) {
  *
  * @access private
  *
+ * @since 0.1.23
+ *
  * @param array $rooms   Array of room data (each with a 'room' key).
  * @param int   $timeout Optional. Timeout in seconds. Default null, the site's filtered TTL.
  * @return array Rooms with hydrated user arrays.
@@ -1411,6 +1451,8 @@ function wp_presence_hydrate_room_users( $rooms, $timeout = null ) {
  *
  * Plugins can opt in their own post types with:
  *     add_post_type_support( 'product', 'presence' );
+ *
+ * @since 0.1.1
  */
 function wp_presence_register_post_type_support() {
 	add_post_type_support( 'post', 'presence' );
@@ -1422,6 +1464,8 @@ function wp_presence_register_post_type_support() {
  *
  * @access private
  *
+ * @since 0.9.0
+ *
  * @return string[] Hex colors.
  */
 function wp_presence_color_palette() {
@@ -1432,6 +1476,8 @@ function wp_presence_color_palette() {
  * Returns the color Gutenberg gives a user ID.
  *
  * @access private
+ *
+ * @since 0.9.0
  *
  * @param int $user_id User ID.
  * @return string A hex color.
@@ -1449,6 +1495,8 @@ function wp_presence_default_user_color( $user_id ) {
  *
  * @access private
  *
+ * @since 0.9.0
+ *
  * @param object $entry A presence entry.
  * @return string A hex color.
  */
@@ -1465,6 +1513,8 @@ function wp_presence_entry_color( $entry ) {
  * preferring Gutenberg's pick for the ID so the two only differ on a collision.
  *
  * @access private
+ *
+ * @since 0.9.0
  *
  * @param int $user_id User ID.
  * @return string A hex color.

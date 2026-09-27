@@ -43,6 +43,8 @@ if ( ! defined( 'WP_PRESENCE_SCREEN_KEY_LIMIT' ) ) {
  * so a save on one screen doesn't invalidate the cache entry for every other
  * screen in the map.
  *
+ * @since 0.1.3
+ *
  * @return array
  */
 function wp_presence_get_screen_revisions() {
@@ -59,6 +61,8 @@ function wp_presence_get_screen_revisions() {
  * so an arbitrary options/{page} value from the REST endpoint can't create an
  * unbounded number of option rows.
  *
+ * @since 0.1.20
+ *
  * @return string[]
  */
 function wp_presence_known_options_pages() {
@@ -67,6 +71,8 @@ function wp_presence_known_options_pages() {
 
 /**
  * Resolves what a screen key's revision is stored on.
+ *
+ * @since 0.1.20
  *
  * @param string $screen_key Normalized screen key.
  * @return array {
@@ -117,6 +123,8 @@ function wp_presence_parse_screen_key_target( $screen_key ) {
 
 /**
  * Returns the revision entry for a single screen, or null if none.
+ *
+ * @since 0.1.3
  *
  * @param string $screen_key Screen key to look up.
  * @return array|null
@@ -186,6 +194,8 @@ function wp_presence_get_screen_revision( $screen_key ) {
 /**
  * Normalizes a screen key for storage and lookup.
  *
+ * @since 0.1.3
+ *
  * @param string $screen_key Screen key to normalize.
  * @return string
  */
@@ -205,6 +215,8 @@ function wp_presence_normalize_screen_key( $screen_key ) {
  *
  * Anything else falls back to a shared, size-bounded option keyed by screen
  * key, the same storage this function used for every key before this split.
+ *
+ * @since 0.1.3
  *
  * @param string $screen_key Screen key to bump.
  * @param int    $actor_id   Optional. Defaults to the current user.
@@ -313,6 +325,8 @@ function wp_presence_bump_screen_revision( $screen_key, $actor_id = 0 ) {
 	/**
 	 * Fires after a screen revision is bumped.
 	 *
+	 * @since 0.1.3
+	 *
 	 * @param string $screen_key Screen key that was bumped.
 	 * @param int    $revision   New revision number.
 	 * @param int    $actor_id   User who triggered the bump.
@@ -329,6 +343,8 @@ function wp_presence_bump_screen_revision( $screen_key, $actor_id = 0 ) {
  * PHPUnit test would leak into every subsequent test in the same process
  * (PHP constants can't be unset), so the gate is intentionally not exercised
  * via integration tests.
+ *
+ * @since 0.1.3
  *
  * @return bool
  */
@@ -347,6 +363,8 @@ function wp_presence_is_admin_screen_save() {
 
 /**
  * Resolves the screen key for the currently rendered admin screen.
+ *
+ * @since 0.1.3
  *
  * @return string Empty string when the current screen has no stale-detection coverage.
  */
@@ -420,6 +438,8 @@ function wp_presence_current_screen_key() {
 	 *
 	 * Return a non-empty string to opt a custom screen into stale-screen detection.
 	 *
+	 * @since 0.1.3
+	 *
 	 * @param string    $key    Computed screen key, or '' when none applies.
 	 * @param WP_Screen $screen Current screen.
 	 */
@@ -429,6 +449,8 @@ function wp_presence_current_screen_key() {
 
 /**
  * Bumps the Settings screen's revision when its option_page is saved.
+ *
+ * @since 0.1.3
  *
  * @param string $option Updated option name. Unused; we key on $_POST['option_page'].
  */
@@ -453,6 +475,8 @@ function wp_presence_on_updated_option( $option ) {
 /**
  * Bumps a post's screen revision when the post is updated.
  *
+ * @since 0.1.3
+ *
  * @param int     $post_id     Post ID.
  * @param WP_Post $post_after  Post after update.
  * @param WP_Post $post_before Post before update. Unused.
@@ -474,6 +498,8 @@ function wp_presence_on_post_updated( $post_id, $post_after, $post_before ) {
 /**
  * Bumps a user-edit screen's revision when the user is updated.
  *
+ * @since 0.1.3
+ *
  * @param int $user_id User ID.
  */
 function wp_presence_on_profile_update( $user_id ) {
@@ -485,6 +511,8 @@ function wp_presence_on_profile_update( $user_id ) {
 
 /**
  * Bumps a term-edit screen's revision when the term is updated.
+ *
+ * @since 0.1.3
  *
  * @param int    $term_id  Term ID.
  * @param int    $tt_id    Term taxonomy ID. Unused.
@@ -501,6 +529,8 @@ function wp_presence_on_edited_term( $term_id, $tt_id, $taxonomy ) {
 /**
  * Bumps a comment-edit screen's revision when the comment is updated.
  *
+ * @since 0.1.3
+ *
  * @param int $comment_id Comment ID.
  */
 function wp_presence_on_edit_comment( $comment_id ) {
@@ -512,6 +542,8 @@ function wp_presence_on_edit_comment( $comment_id ) {
 
 /**
  * Checks if the current user has permission to access or edit a given screen.
+ *
+ * @since 0.1.7
  *
  * @param string $screen_key Normalized screen key.
  * @return bool
@@ -546,6 +578,8 @@ function wp_presence_current_user_can_access_screen( $screen_key ) {
 
 /**
  * Returns the current revision for the screen the client claims to be on.
+ *
+ * @since 0.1.3
  *
  * @param array  $response  Heartbeat response.
  * @param array  $data      $_POST data.
@@ -605,6 +639,8 @@ function wp_presence_screen_heartbeat_received( $response, $data, $screen_id ) {
 
 /**
  * Enqueues the stale-screen banner script on screens we cover.
+ *
+ * @since 0.1.3
  */
 function wp_presence_enqueue_stale_screen_banner() {
 	if ( ! is_admin() ) {

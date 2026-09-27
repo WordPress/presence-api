@@ -13,6 +13,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Registers the Heartbeat dashboard widget.
  *
  * Hiding it by default is not a permission: Screen Options undoes that.
+ *
+ * @since 0.1.1
  */
 function wp_presence_heartbeat_widget_register() {
 	if ( ! current_user_can( 'manage_options' ) ) {
@@ -43,6 +45,8 @@ function wp_presence_heartbeat_widget_register() {
 
 /**
  * Renders the Heartbeat dashboard widget.
+ *
+ * @since 0.1.1
  */
 function wp_presence_heartbeat_widget_render() {
 	$summary = wp_get_presence_summary();
@@ -98,6 +102,8 @@ function wp_presence_heartbeat_widget_render() {
  *
  * Checked again here because Heartbeat does not run through the registration.
  *
+ * @since 0.1.1
+ *
  * @param array  $response  The Heartbeat response.
  * @param array  $data      The $_POST data sent.
  * @param string $screen_id The screen ID.
@@ -132,6 +138,8 @@ function wp_presence_heartbeat_widget_received( $response, $data, $screen_id ) {
 
 /**
  * Enqueues assets for the Heartbeat dashboard widget.
+ *
+ * @since 0.1.1
  *
  * @param string $hook_suffix The current admin page.
  */

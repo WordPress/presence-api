@@ -11,6 +11,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Registers the "Editors" column for post types with presence support.
+ *
+ * @since 0.1.1
  */
 function wp_presence_register_post_list_columns() {
 	if ( ! current_user_can( 'edit_posts' ) ) {
@@ -33,6 +35,8 @@ function wp_presence_register_post_list_columns() {
 
 /**
  * Adds the "Editors" column to the post list table.
+ *
+ * @since 0.1.1
  *
  * @param array $columns Existing columns.
  * @return array Modified columns.
@@ -60,6 +64,8 @@ function wp_presence_add_editors_column( $columns ) {
  * Renders the "Editors" column content for a post.
  *
  * Queries presence data once and caches it for the entire page load.
+ *
+ * @since 0.1.1
  *
  * @param string $column_name The column name.
  * @param int    $post_id     The post ID.
@@ -128,6 +134,8 @@ function wp_presence_render_editors_column( $column_name, $post_id ) {
 
 /**
  * Enqueues CSS for the editors column on the post list screen.
+ *
+ * @since 0.1.1
  *
  * @param string $hook_suffix The current admin page.
  */

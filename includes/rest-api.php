@@ -11,6 +11,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Registers the presence REST routes.
+ *
+ * @since 0.1.1
  */
 function wp_presence_register_rest_routes() {
 	$controller = new WP_REST_Presence_Controller();

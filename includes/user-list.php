@@ -15,6 +15,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Displays a tab alongside the role-based views (All | Administrator | Editor | etc.)
  * that filters the list to only show users with active presence entries.
  *
+ * @since 0.1.1
+ *
  * @param array $views Existing views.
  * @return array Modified views.
  */
@@ -53,6 +55,8 @@ function wp_presence_users_views( $views ) {
  * Users list runs its own WP_User_Query, so without this the network "Online"
  * view would have its network-wide set of IDs replaced with the ones online on
  * whichever site the request resolved to.
+ *
+ * @since 0.1.1
  *
  * @param WP_User_Query $query The user query.
  */

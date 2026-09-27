@@ -11,6 +11,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Registers the presence table name on $wpdb.
+ *
+ * @since 0.1.1
  */
 function wp_presence_register_table() {
 	global $wpdb;
@@ -28,6 +30,8 @@ function wp_presence_register_table() {
  * One table for the whole network rather than one per site: registered as an
  * ms_global_tables entry, using base_prefix, the same way core registers
  * blogs/site/sitemeta.
+ *
+ * @since 0.2.0
  */
 function wp_presence_register_network_summary_table() {
 	if ( ! is_multisite() ) {
@@ -48,6 +52,8 @@ function wp_presence_register_network_summary_table() {
  * which reads an autoloaded option and costs nothing.
  *
  * @access private
+ *
+ * @since 0.1.17
  * @return bool Whether the table exists on the current site.
  */
 function wp_presence_table_exists() {
@@ -74,6 +80,8 @@ function wp_presence_table_exists() {
  * cli_init for the sake of one static method.
  *
  * @access private
+ *
+ * @since 0.1.20
  *
  * @global wpdb $wpdb WordPress database abstraction object.
  *
@@ -132,6 +140,8 @@ function wp_presence_create_lock( $lock_name, $release_timeout = null ) {
  *
  * @access private
  *
+ * @since 0.1.20
+ *
  * @see wp_presence_create_lock()
  *
  * @param string $lock_name Name of the lock.
@@ -157,6 +167,8 @@ function wp_presence_release_lock( $lock_name ) {
  * of them will reach. The next real admin page load repairs it instead.
  *
  * @access private
+ *
+ * @since 0.1.1
  */
 function wp_maybe_create_presence_table() {
 	add_option( 'wp_presence_recording', '1', '', true );
@@ -216,6 +228,8 @@ function wp_maybe_create_presence_table() {
  * wp_presence_has_network_summary_table().
  *
  * @access private
+ *
+ * @since 0.2.0
  * @return bool
  */
 function wp_presence_network_summary_table_exists() {
@@ -237,6 +251,8 @@ function wp_presence_network_summary_table_exists() {
  * not once per site.
  *
  * @access private
+ *
+ * @since 0.2.0
  */
 function wp_maybe_create_presence_network_summary_table() {
 	if ( ! is_multisite() ) {

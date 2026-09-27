@@ -13,6 +13,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Registers the site recording option and its field on Settings > General.
  *
  * @access private
+ *
+ * @since 0.3.0
  */
 function wp_presence_register_settings() {
 	register_setting(
@@ -44,6 +46,8 @@ function wp_presence_register_settings() {
  *
  * @access private
  *
+ * @since 0.3.0
+ *
  * @param mixed $value The submitted value.
  * @return string '1' when recording is on, '0' when off.
  */
@@ -55,6 +59,8 @@ function wp_presence_sanitize_checkbox( $value ) {
  * Renders the recording checkbox on Settings > General.
  *
  * @access private
+ *
+ * @since 0.3.0
  */
 function wp_presence_render_recording_field() {
 	$enabled = (bool) get_option( 'wp_presence_recording', true );
@@ -77,6 +83,8 @@ function wp_presence_render_recording_field() {
  * wpmu_options and read back in wp_presence_save_network_settings().
  *
  * @access private
+ *
+ * @since 0.3.0
  */
 function wp_presence_render_network_settings() {
 	$enabled = (bool) get_site_option( 'wp_presence_network_recording', true );
@@ -105,6 +113,8 @@ function wp_presence_render_network_settings() {
  * Core verifies the siteoptions nonce before firing this action.
  *
  * @access private
+ *
+ * @since 0.3.0
  */
 function wp_presence_save_network_settings() {
 	// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Verified by core in wp-admin/network/settings.php.

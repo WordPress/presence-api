@@ -16,6 +16,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @access private
  *
+ * @since 0.1.20
+ *
  * @param string $screen_id The screen ID.
  * @param bool   $locked    Whether this write carries a post lock refresh.
  * @return array The state to store.
@@ -74,6 +76,8 @@ function wp_presence_get_heartbeat_idle_interval() {
 
 /**
  * Enqueues heartbeat and the presence ping script on all admin pages.
+ *
+ * @since 0.1.1
  */
 function wp_presence_enqueue_heartbeat_ping() {
 	if ( ! is_user_logged_in() || ! current_user_can( 'edit_posts' ) ) {
@@ -224,6 +228,8 @@ function wp_presence_enqueue_heartbeat_ping() {
  * This is the API's primary write path. It runs regardless of which dashboard
  * widgets are registered.
  *
+ * @since 0.1.10
+ *
  * @param array  $response  The Heartbeat response.
  * @param array  $data      The $_POST data sent.
  * @param string $screen_id The screen ID.
@@ -337,6 +343,8 @@ function wp_presence_online_hash_heartbeat_received( $response, $data ) {
  * Also carries the room's current editor count back as
  * `presence-heartbeat-collaborators`, so a client can decide whether to start
  * a real-time sync loop without polling for it separately.
+ *
+ * @since 0.1.1
  *
  * @param array  $response  The Heartbeat response.
  * @param array  $data      The $_POST data sent.

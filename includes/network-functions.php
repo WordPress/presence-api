@@ -43,6 +43,8 @@ if ( ! defined( 'WP_PRESENCE_NETWORK_AVATARS' ) ) {
  * something consulted once at provisioning time.
  *
  * @access private
+ *
+ * @since 0.2.0
  * @return bool
  */
 function wp_presence_has_network_summary_table() {
@@ -98,6 +100,8 @@ function wp_presence_network_aggregation_enabled() {
  * expires. Filterable downward; clamped so a filter can't widen it past that.
  *
  * @access private
+ *
+ * @since 0.2.0
  * @return int Seconds.
  */
 function wp_presence_network_summary_refresh_interval() {
@@ -135,6 +139,8 @@ function wp_presence_network_summary_refresh_interval() {
  * every ID in it, which wp_get_presence() already TTL-filtered on this site.
  *
  * @access private
+ *
+ * @since 0.2.0
  */
 function wp_presence_push_network_summary() {
 	if ( ! wp_presence_network_aggregation_enabled() || ! wp_presence_has_network_summary_table() ) {
@@ -229,6 +235,8 @@ function wp_presence_network_summary_push_is_due() {
  * of alloptions, and on the site's own shard when it is written.
  *
  * @access private
+ *
+ * @since 0.2.0
  * @param int[] $user_ids Online user IDs, pre-sorted.
  * @return bool Whether to push.
  */
@@ -253,6 +261,8 @@ function wp_presence_network_summary_needs_push( array $user_ids ) {
  * which the gate it feeds is there to make rare.
  *
  * @access private
+ *
+ * @since 0.2.0
  * @param int[] $user_ids Online user IDs, pre-sorted.
  */
 function wp_presence_record_network_summary_push( array $user_ids ) {
@@ -286,6 +296,8 @@ function wp_presence_record_network_summary_push( array $user_ids ) {
  * scheme that one happens to be on.
  *
  * @access private
+ *
+ * @since 0.2.0
  * @param int   $blog_id  The site the row belongs to.
  * @param int[] $user_ids Online user IDs, pre-sorted.
  * @return string JSON for the data column.
@@ -307,6 +319,8 @@ function wp_presence_encode_network_summary_row( $blog_id, array $user_ids ) {
  * Decodes a summary row's data column into a list of user IDs.
  *
  * @access private
+ *
+ * @since 0.2.0
  * @param string $data The row's JSON-encoded data column.
  * @return int[] User IDs, empty if the column is empty or malformed.
  */
@@ -327,6 +341,8 @@ function wp_presence_decode_network_summary_row( $data ) {
  * push time rather than read live off the viewing request.
  *
  * @access private
+ *
+ * @since 0.2.0
  * @param string $data The row's JSON-encoded data column.
  * @return string 'http' or 'https'. Defaults to 'https' for a row pushed
  *                before this field existed, or one that does not decode.
@@ -344,6 +360,8 @@ function wp_presence_decode_network_summary_scheme( $data ) {
  * the one table on the network that a shard router cannot split.
  *
  * @access private
+ *
+ * @since 0.2.0
  * @param WP_Site $old_site The site that was deleted.
  */
 function wp_presence_on_delete_site( $old_site ) {
@@ -374,6 +392,8 @@ function wp_presence_on_delete_site( $old_site ) {
  * being written without clearing the ones already there.
  *
  * @access private
+ *
+ * @since 0.2.1
  *
  * @global wpdb $wpdb WordPress database abstraction object.
  */
@@ -439,6 +459,8 @@ function wp_presence_delete_expired_network_summary_rows() {
  * Returns the capability required to see network-wide presence data.
  *
  * @access private
+ *
+ * @since 0.2.0
  * @return string
  */
 function wp_presence_network_capability() {
@@ -450,6 +472,8 @@ function wp_presence_network_capability() {
 	 * role already holds, such as 'edit_posts', hands presence for the whole
 	 * network to every holder on every site, including sites they are not a
 	 * member of.
+	 *
+	 * @since 0.2.0
 	 *
 	 * @param string $capability Default 'manage_network'.
 	 */
@@ -465,6 +489,8 @@ function wp_presence_network_capability() {
  * the read for none of its output.
  *
  * @access private
+ *
+ * @since 0.2.0
  * @return int[] User IDs.
  */
 function wp_presence_get_network_online_user_ids() {
@@ -487,6 +513,8 @@ function wp_presence_get_network_online_user_ids() {
  * rather than rescanning the network per row.
  *
  * @access private
+ *
+ * @since 0.2.0
  * @param int $user_id The user to look up.
  * @return WP_Site[] Sites the user is online on, busiest site first.
  */
@@ -543,6 +571,8 @@ function wp_presence_get_network_sites_for_user( $user_id ) {
  * write on this site still sees the write.
  *
  * @access private
+ *
+ * @since 0.2.0
  * @param array $args {
  *     Optional.
  *
@@ -584,6 +614,8 @@ function wp_presence_get_network_snapshot( array $args = array() ) {
  * network and slicing afterwards.
  *
  * @access private
+ *
+ * @since 0.2.0
  * @param array $args {
  *     Optional.
  *
@@ -654,6 +686,8 @@ function wp_presence_get_network_summary( array $args = array() ) {
  * network writes, and there is no invalidation event a single site could see.
  *
  * @access private
+ *
+ * @since 0.2.0
  * @param string   $key   What is being asked for.
  * @param callable $build Builds the value when it is not already held.
  * @return mixed The held value.
@@ -679,6 +713,8 @@ function wp_presence_network_cached( $key, callable $build ) {
  * Returns the object cache group the built network reads live in.
  *
  * @access private
+ *
+ * @since 0.2.0
  * @return string Cache group.
  */
 function wp_presence_network_cache_group() {
@@ -694,6 +730,8 @@ function wp_presence_network_cache_group() {
  * built from the old rows is left behind at once.
  *
  * @access private
+ *
+ * @since 0.2.0
  */
 function wp_presence_flush_network_summary_cache() {
 	wp_cache_set_last_changed( wp_presence_network_cache_group() );
@@ -780,6 +818,8 @@ function wp_presence_filter_network_snapshot_users( array $by_site ) {
  * aggregating => false, so callers do not report it as a quiet network.
  *
  * @access private
+ *
+ * @since 0.2.0
  * @param int $timeout TTL in seconds; rows untouched longer than this are skipped.
  * @return array See wp_presence_get_network_snapshot().
  */
@@ -880,6 +920,8 @@ function wp_presence_compute_network_snapshot( $timeout ) {
  * Resolves names, avatars, and site details for a slice of a snapshot.
  *
  * @access private
+ *
+ * @since 0.2.0
  * @param array $snapshot       Return value of wp_presence_get_network_snapshot().
  * @param int   $max_sites      Maximum sites to resolve. 0 for every site.
  * @param int   $users_per_site Maximum users to resolve per site. 0 for every user.
@@ -1003,6 +1045,8 @@ function wp_presence_hydrate_network_snapshot( array $snapshot, $max_sites, $use
  * Returns the shape wp_presence_get_network_summary() returns when nobody is online.
  *
  * @access private
+ *
+ * @since 0.2.0
  * @param bool $aggregating Optional. Default true, a network that aggregates
  *                          and is simply quiet.
  * @return array See wp_presence_get_network_summary().

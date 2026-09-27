@@ -15,12 +15,16 @@ if ( ! defined( 'ABSPATH' ) ) {
  * A site is the item here, not a presence entry: the summary table holds one
  * row per site, and resolving names and avatars is what costs.
  *
+ * @since 0.2.0
+ *
  * @see WP_REST_Controller
  */
 class WP_REST_Presence_Network_Controller extends WP_REST_Controller {
 
 	/**
 	 * Constructor.
+	 *
+	 * @since 0.2.0
 	 */
 	public function __construct() {
 		$this->namespace = 'wp-presence/v1';
@@ -29,6 +33,8 @@ class WP_REST_Presence_Network_Controller extends WP_REST_Controller {
 
 	/**
 	 * Registers the routes for network presence.
+	 *
+	 * @since 0.2.0
 	 *
 	 * @see register_rest_route()
 	 */
@@ -90,6 +96,8 @@ class WP_REST_Presence_Network_Controller extends WP_REST_Controller {
 	/**
 	 * Returns the shared definition of the per-site resolve cap.
 	 *
+	 * @since 0.2.0
+	 *
 	 * @return array Argument definition.
 	 */
 	private static function users_per_site_arg() {
@@ -105,6 +113,8 @@ class WP_REST_Presence_Network_Controller extends WP_REST_Controller {
 
 	/**
 	 * Checks if the current user has permission to read network presence.
+	 *
+	 * @since 0.2.0
 	 *
 	 * @param WP_REST_Request $request Full details about the request.
 	 * @return true|WP_Error True if the request has access, WP_Error otherwise.
@@ -124,6 +134,8 @@ class WP_REST_Presence_Network_Controller extends WP_REST_Controller {
 	/**
 	 * Checks if the current user has permission to read one site's presence.
 	 *
+	 * @since 0.2.0
+	 *
 	 * @param WP_REST_Request $request Full details about the request.
 	 * @return true|WP_Error True if the request has access, WP_Error otherwise.
 	 */
@@ -133,6 +145,8 @@ class WP_REST_Presence_Network_Controller extends WP_REST_Controller {
 
 	/**
 	 * Retrieves the sites with users online, busiest first.
+	 *
+	 * @since 0.2.0
 	 *
 	 * @param WP_REST_Request $request Full details about the request.
 	 * @return WP_REST_Response Response object.
@@ -176,6 +190,8 @@ class WP_REST_Presence_Network_Controller extends WP_REST_Controller {
 	 * A site nobody is on answers with an empty user list, so only an unknown
 	 * site is a 404 and a poll reads the same shape either way.
 	 *
+	 * @since 0.2.0
+	 *
 	 * @param WP_REST_Request $request Full details about the request.
 	 * @return WP_REST_Response|WP_Error Response object on success, WP_Error otherwise.
 	 */
@@ -214,6 +230,8 @@ class WP_REST_Presence_Network_Controller extends WP_REST_Controller {
 	 * With no summary row to derive the URL from, this reads the site's own
 	 * siteurl: one switch_to_blog(), and it reflects a mapped domain.
 	 *
+	 * @since 0.2.0
+	 *
 	 * @param WP_Site $site The site.
 	 * @return array Item in the shape wp_presence_get_network_summary() returns.
 	 */
@@ -230,6 +248,8 @@ class WP_REST_Presence_Network_Controller extends WP_REST_Controller {
 
 	/**
 	 * Prepares a site for the REST response.
+	 *
+	 * @since 0.2.0
 	 *
 	 * @param array           $item    Site entry from wp_presence_get_network_summary().
 	 * @param WP_REST_Request $request Full details about the request.
@@ -273,6 +293,8 @@ class WP_REST_Presence_Network_Controller extends WP_REST_Controller {
 
 	/**
 	 * Retrieves the network presence site schema, conforming to JSON Schema.
+	 *
+	 * @since 0.2.0
 	 *
 	 * @return array Item schema data.
 	 */

@@ -12,6 +12,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Sets presence when a user logs in.
  *
+ * @since 0.1.1
+ *
  * @param string  $user_login Username.
  * @param WP_User $user       User object.
  */
@@ -34,6 +36,8 @@ function wp_presence_on_login( $user_login, $user ) {
 /**
  * Removes all presence entries when a user logs out.
  *
+ * @since 0.1.1
+ *
  * @param int $user_id The ID of the user who just logged out.
  */
 function wp_presence_on_logout( $user_id ) {
@@ -49,6 +53,8 @@ function wp_presence_on_logout( $user_id ) {
  * Hooked to 'deleted_user' and 'remove_user_from_blog', both of which fire
  * with the site already switched to the one the user is leaving. No
  * capability gate, unlike login/logout: their role may already be gone.
+ *
+ * @since 0.2.0
  *
  * @param int $user_id The ID of the user being deleted or removed.
  */

@@ -15,6 +15,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Adds an "Online" view to the Network Users list table.
  *
+ * @since 0.2.0
+ *
  * @param array $views Existing views.
  * @return array Modified views.
  */
@@ -56,6 +58,8 @@ function wp_presence_network_users_views( $views ) {
  * Restricts the Network Users list query to users online anywhere on the
  * network, when the "Online" view is active.
  *
+ * @since 0.2.0
+ *
  * @param array $args Query args passed to WP_User_Query.
  * @return array Modified query args.
  */
@@ -87,6 +91,8 @@ function wp_presence_filter_network_online_users( $args ) {
 /**
  * Adds an "Online" column to the Network Users list table.
  *
+ * @since 0.2.0
+ *
  * @param array $columns Existing column headers.
  * @return array Column headers with "Online" added.
  */
@@ -111,6 +117,8 @@ function wp_presence_register_network_users_column( $columns ) {
  * Gates on the capability again rather than trusting the registration above:
  * core calls this for whatever columns the screen ended up with, and ours is
  * not the only thing that can put a name in that list.
+ *
+ * @since 0.2.0
  *
  * @param string $output      Existing column output.
  * @param string $column_name Column being rendered.

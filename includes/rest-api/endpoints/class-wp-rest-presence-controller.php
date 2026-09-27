@@ -12,6 +12,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Core class used to manage presence via the REST API.
  *
+ * @since 0.1.1
+ *
  * @see WP_REST_Controller
  */
 class WP_REST_Presence_Controller extends WP_REST_Controller {
@@ -39,6 +41,8 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 
 	/**
 	 * Constructor.
+	 *
+	 * @since 0.1.1
 	 */
 	public function __construct() {
 		$this->namespace = 'wp-presence/v1';
@@ -47,6 +51,8 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 
 	/**
 	 * Registers the routes for presence.
+	 *
+	 * @since 0.1.1
 	 *
 	 * @see register_rest_route()
 	 */
@@ -236,6 +242,8 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	/**
 	 * Validates the data parameter size and type.
 	 *
+	 * @since 0.1.1
+	 *
 	 * @param mixed           $value   The data parameter value.
 	 * @param WP_REST_Request $request Full details about the request.
 	 * @param string          $param   The parameter name.
@@ -272,6 +280,8 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	 * String values are passed through untouched; output-time encoding
 	 * (e.g. wp_json_encode, esc_html) is responsible for escaping.
 	 *
+	 * @since 0.1.1
+	 *
 	 * @param mixed $value The data parameter value.
 	 * @return array Sanitized data array.
 	 */
@@ -289,6 +299,8 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	 * Keys are sanitized via sanitize_text_field(). Scalar values
 	 * (strings, integers, floats, booleans) are preserved as-is;
 	 * unsupported types are silently dropped.
+	 *
+	 * @since 0.1.1
 	 *
 	 * @param array $data  The data to process.
 	 * @param int   $depth Current nesting depth.
@@ -319,6 +331,8 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	/**
 	 * Checks if the current user has permission to read presence.
 	 *
+	 * @since 0.1.1
+	 *
 	 * @param WP_REST_Request $request Full details about the request.
 	 * @return true|WP_Error True if the request has access, WP_Error otherwise.
 	 */
@@ -338,6 +352,8 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 
 	/**
 	 * Retrieves presence entries for a room.
+	 *
+	 * @since 0.1.1
 	 *
 	 * @param WP_REST_Request $request Full details about the request.
 	 * @return WP_REST_Response Response object.
@@ -411,6 +427,8 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	/**
 	 * Builds the response used when this site has no presence storage yet.
 	 *
+	 * @since 0.1.17
+	 *
 	 * @return WP_REST_Response Empty collection with pagination headers.
 	 */
 	private function empty_collection_response() {
@@ -425,6 +443,8 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 
 	/**
 	 * Checks if the current user has permission to create a presence entry.
+	 *
+	 * @since 0.1.1
 	 *
 	 * @param WP_REST_Request $request Full details about the request.
 	 * @return true|WP_Error True if the request has access, WP_Error otherwise.
@@ -448,6 +468,8 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	 *
 	 * Validates that the client_id is not already claimed by a different user
 	 * in the same room to prevent impersonation.
+	 *
+	 * @since 0.1.1
 	 *
 	 * @param WP_REST_Request $request Full details about the request.
 	 * @return WP_REST_Response|WP_Error Response object on success, WP_Error on failure.
@@ -562,6 +584,8 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	 * the 'manage_options' capability. Ownership is determined by the
 	 * user_id column in the database, not by the client_id format.
 	 *
+	 * @since 0.1.1
+	 *
 	 * @param WP_REST_Request $request Full details about the request.
 	 * @return true|WP_Error True if the request has access, WP_Error otherwise.
 	 */
@@ -618,6 +642,8 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	/**
 	 * Deletes a presence entry.
 	 *
+	 * @since 0.1.1
+	 *
 	 * @param WP_REST_Request $request Full details about the request.
 	 * @return WP_REST_Response Response object.
 	 */
@@ -638,6 +664,8 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	/**
 	 * Checks if the current user has permission to list rooms.
 	 *
+	 * @since 0.1.1
+	 *
 	 * @param WP_REST_Request $request Full details about the request.
 	 * @return true|WP_Error True if the request has access, WP_Error otherwise.
 	 */
@@ -655,6 +683,8 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 
 	/**
 	 * Retrieves all active rooms with user counts and members.
+	 *
+	 * @since 0.1.1
 	 *
 	 * @param WP_REST_Request $request Full details about the request.
 	 * @return WP_REST_Response Response object.
@@ -709,6 +739,8 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 
 	/**
 	 * Prepares a presence entry for the REST response.
+	 *
+	 * @since 0.1.1
 	 *
 	 * @param object          $item    Presence entry object.
 	 * @param WP_REST_Request $request Full details about the request.
@@ -768,6 +800,8 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	/**
 	 * Checks if the current user has permission to bump the given screen revision.
 	 *
+	 * @since 0.1.7
+	 *
 	 * @param WP_REST_Request $request Full details about the request.
 	 * @return true|WP_Error True if the request has access, WP_Error otherwise.
 	 */
@@ -788,6 +822,8 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 
 	/**
 	 * Bumps a screen revision.
+	 *
+	 * @since 0.1.7
 	 *
 	 * @param WP_REST_Request $request Full details about the request.
 	 * @return WP_REST_Response|WP_Error Response object on success, WP_Error on failure.
@@ -814,6 +850,8 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 
 	/**
 	 * Retrieves the presence entry schema, conforming to JSON Schema.
+	 *
+	 * @since 0.1.1
 	 *
 	 * @return array Item schema data.
 	 */

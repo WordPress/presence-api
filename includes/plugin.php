@@ -13,6 +13,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Creates the presence table and schedules cleanup for the current site.
  *
  * @access private
+ *
+ * @since 0.1.17
  */
 function wp_presence_provision_site() {
 	wp_maybe_create_presence_table();
@@ -29,6 +31,8 @@ function wp_presence_provision_site() {
  * Large networks are skipped, matching core's own guard against iterating every
  * site in one request. Those sites are provisioned the first time an admin
  * screen loads, and presence reads and writes are a no-op until then.
+ *
+ * @since 0.1.1
  *
  * @param bool $network_wide Whether the plugin is being activated for the network.
  */
@@ -57,6 +61,8 @@ function wp_presence_activate( $network_wide = false ) {
  * create the site's tables, so this runs after it. The action fires from
  * wp_insert_site() outside of any blog switch, hence the switch here.
  *
+ * @since 0.1.17
+ *
  * @param WP_Site $site The site that was just created.
  */
 function wp_presence_on_initialize_site( $site ) {
@@ -76,6 +82,8 @@ function wp_presence_on_initialize_site( $site ) {
  * Returns every site ID on the current network.
  *
  * @access private
+ *
+ * @since 0.1.17
  * @return int[] Site IDs.
  */
 function wp_presence_get_network_site_ids() {
@@ -92,6 +100,8 @@ function wp_presence_get_network_site_ids() {
 
 /**
  * Returns the default dashboard widget order when the user has no stored preference.
+ *
+ * @since 0.1.9
  *
  * @param array|false $result Stored meta value, or false if not set.
  * @return array|false Original value, or a default order with presence widgets first.
@@ -111,6 +121,8 @@ function wp_presence_default_widget_order( $result ) {
  *
  * Cron events are stored per site, so a network deactivation has to clear each
  * one or every site keeps rescheduling an event with no callback behind it.
+ *
+ * @since 0.1.1
  *
  * @param bool $network_wide Whether the plugin is being deactivated for the network.
  */
@@ -134,6 +146,8 @@ function wp_presence_deactivate( $network_wide = false ) {
  * The online users link points at the Users list filtered to the users who are
  * currently online. The plugin has no settings screen of its own, so the
  * settings link points at Settings > General, where the recording switch lives.
+ *
+ * @since 0.1.12
  *
  * @param string[] $links Existing plugin action links.
  * @return string[] Action links with the plugin's own links prepended.
@@ -166,6 +180,8 @@ function wp_presence_plugin_action_links( $links ) {
  * the presence_online_filter nonce, the same way the network Users view builds
  * its link, so the URL is nonced here too. The settings link points at Network
  * Settings.
+ *
+ * @since 0.6.0
  *
  * @param string[] $links Existing network plugin action links.
  * @return string[] Action links with the plugin's own links prepended.

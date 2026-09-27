@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @access private
  *
- * @since 0.7.1
+ * @since 0.8.0
  *
  * @param array $tests Site Health tests.
  * @return array The tests.
@@ -38,7 +38,7 @@ function wp_presence_site_status_tests( $tests ) {
  *
  * @access private
  *
- * @since 0.7.1
+ * @since 0.8.0
  *
  * @return array The Site Health result.
  */
