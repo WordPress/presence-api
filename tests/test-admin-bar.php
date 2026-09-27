@@ -322,6 +322,25 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		);
 	}
 
+	public function test_more_comments_and_terms_being_edited_cost_no_more_queries() {
+		global $wpdb;
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$queries = array();
+		for ( $i = 0; $i < 2; $i++ ) {
+			for ( $j = 0; $j < 3; $j++ ) {
+				$this->put_user_on_screen( 'comment', array( 'object_id' => self::factory()->comment->create( array( 'comment_post_ID' => self::factory()->post->create() ) ) ) );
+				$this->put_user_on_screen( 'edit-category', array( 'object_id' => self::factory()->category->create() ) );
+			}
+			wp_cache_flush();
+			$before = $wpdb->num_queries;
+			$this->render_nodes();
+			$queries[] = $wpdb->num_queries - $before;
+		}
+
+		$this->assertSame( $queries[0], $queries[1] );
+	}
+
 	public function test_a_user_or_term_you_cannot_edit_is_not_named_or_linked() {
 		$admin_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
 		$on_user  = $this->put_user_on_screen( 'user-edit', array( 'title' => 'Edit User Admin', 'object_id' => $admin_id ) );

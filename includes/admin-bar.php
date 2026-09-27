@@ -105,6 +105,26 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 
 	cache_users( wp_list_pluck( $entries, 'user_id' ) );
 
+	// Each row's capability check reads its comment and post or its term, so prime in one go.
+	$comment_ids = array();
+	$term_ids    = array();
+	foreach ( $elsewhere as $entry ) {
+		$object_id = (int) ( $entry->data['object_id'] ?? 0 );
+		$on        = (string) ( $entry->data['screen'] ?? '' );
+		if ( $object_id > 0 && 'comment' === $on ) {
+			$comment_ids[] = $object_id;
+		} elseif ( $object_id > 0 && 0 === strpos( $on, 'edit-' ) ) {
+			$term_ids[] = $object_id;
+		}
+	}
+	if ( $comment_ids ) {
+		_prime_comment_caches( array_unique( $comment_ids ), false );
+		_prime_post_caches( array_unique( array_map( 'intval', wp_list_pluck( array_filter( array_map( 'get_comment', $comment_ids ) ), 'comment_post_ID' ) ) ), false, false );
+	}
+	if ( $term_ids ) {
+		_prime_term_caches( array_unique( $term_ids ), false );
+	}
+
 	$by_name = function ( $a, $b ) {
 		$user_a = get_userdata( $a->user_id );
 		$user_b = get_userdata( $b->user_id );
@@ -140,7 +160,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 		} elseif ( $object_id && 'user-edit' === $screen ) {
 			return array( $title, get_edit_user_link( $object_id ) );
 		} elseif ( $object_id ) {
-			return array( get_term( $object_id )->name, (string) get_edit_term_link( $object_id, $type ) );
+			return array( get_term( $object_id, $type )->name, (string) get_edit_term_link( $object_id, $type ) );
 		} elseif ( ! empty( $entry->data['object_id'] ) ) {
 			// The user editor's title names the user, so it is only shown to people who can edit them.
 			// phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- Reuses core's string.
