@@ -76,6 +76,19 @@ class WP_Test_Presence_Network_Widget_Whos_Online extends WP_Presence_Network_Un
 		$this->assertTrue( wp_style_is( 'presence-network-widget', 'enqueued' ) );
 	}
 
+	/**
+	 * The network capability does not imply edit_posts, which the ping's own enqueue requires.
+	 *
+	 * @covers ::wp_presence_enqueue_ping_script
+	 */
+	public function test_the_dashboard_loads_the_script_that_keeps_the_widget_current() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+
+		WP_Presence_Network_Widget_Whos_Online::enqueue_scripts( 'index.php' );
+
+		$this->assertTrue( wp_script_is( 'wp-presence-ping' ) );
+	}
+
 	public function test_heartbeat_ignores_without_ping() {
 		$response = WP_Presence_Network_Widget_Whos_Online::heartbeat_received( array( 'existing' => true ), array(), 'dashboard-network' );
 

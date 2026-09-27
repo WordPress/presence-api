@@ -247,6 +247,18 @@ function wp_presence_enqueue_heartbeat_ping() {
 		'ttlMargin'                => wp_presence_ttl_margin(),
 	);
 
+	wp_presence_enqueue_ping_script( $config );
+}
+
+/**
+ * Enqueues the presence ping script, which also keeps the live surfaces current.
+ *
+ * @since 0.11.0
+ *
+ * @access private
+ * @param array $config The `wpPresenceConfig` object.
+ */
+function wp_presence_enqueue_ping_script( $config ) {
 	wp_enqueue_script(
 		'wp-presence-tab-coordinator',
 		WP_PRESENCE_PLUGIN_URL . 'assets/js/tab-coordinator.js',

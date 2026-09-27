@@ -48,7 +48,7 @@ class WP_Presence_Network_Widget_Whos_Online {
 	}
 
 	/**
-	 * Enqueues the widget's CSS.
+	 * Enqueues the widget's CSS, and the script that keeps it current.
 	 *
 	 * @since 0.2.0
 	 *
@@ -60,6 +60,11 @@ class WP_Presence_Network_Widget_Whos_Online {
 		}
 
 		wp_presence_enqueue_avatar_stack_style();
+
+		// Someone who cannot edit posts writes no presence, but the widget still needs the script that refreshes it.
+		if ( ! wp_script_is( 'wp-presence-ping' ) ) {
+			wp_presence_enqueue_ping_script( array() );
+		}
 
 		wp_register_style( 'presence-network-widget', false, array(), WP_PRESENCE_VERSION );
 		wp_enqueue_style( 'presence-network-widget' );
