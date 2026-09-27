@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *                                   Default null.
  */
 function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
-	if ( ! is_user_logged_in() || ! current_user_can( 'edit_posts' ) ) {
+	if ( ! is_user_logged_in() || ! wp_can_access_presence_room( wp_presence_admin_room() ) ) {
 		return;
 	}
 
@@ -64,7 +64,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	// The capability check below calls get_post() per room, so prime in one go.
 	// It reads neither the term nor the meta cache.
 	if ( ! empty( $post_ids ) ) {
-		_prime_post_caches( array_unique( $post_ids ), false, false );
+		_prime_post_caches( $post_ids, false, false );
 	}
 
 	// Hide titles and edit links for posts the current user cannot edit.
@@ -78,7 +78,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	$place = function ( $entry ) use ( $user_editing_post ) {
 		$screen  = isset( $entry->data['screen'] ) ? (string) $entry->data['screen'] : '';
 		$post_id = 'front' === $screen ? (int) ( $entry->data['post_id'] ?? 0 ) : (int) ( $user_editing_post[ (int) $entry->user_id ] ?? 0 );
-		if ( $post_id && ( 'front' === $screen || get_post_type( $post_id ) === $screen ) ) {
+		if ( $post_id && ( 'front' === $screen || 'site-editor' === $screen || get_post_type( $post_id ) === $screen ) ) {
 			return $screen . ':' . $post_id;
 		}
 		return empty( $entry->data['object_id'] ) ? $screen : $screen . ':' . (int) $entry->data['object_id'];
@@ -121,11 +121,11 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 		}
 	}
 	if ( $comment_ids ) {
-		_prime_comment_caches( array_unique( $comment_ids ), false );
-		_prime_post_caches( array_unique( array_map( 'intval', wp_list_pluck( array_filter( array_map( 'get_comment', $comment_ids ) ), 'comment_post_ID' ) ) ), false, false );
+		_prime_comment_caches( $comment_ids, false );
+		_prime_post_caches( wp_list_pluck( array_filter( array_map( 'get_comment', $comment_ids ) ), 'comment_post_ID' ), false, false );
 	}
 	if ( $term_ids ) {
-		_prime_term_caches( array_unique( $term_ids ), false );
+		_prime_term_caches( $term_ids, false );
 	}
 
 	$by_name = function ( $a, $b ) {
@@ -156,7 +156,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 				return array( $title, '' );
 			}
 			return current_user_can( 'read_post', $post_id ) ? array( $title, get_permalink( $post_id ) ) : array( '', '' );
-		} elseif ( $post_id && get_post_type( $post_id ) === $screen ) {
+		} elseif ( $post_id && ( 'site-editor' === $screen || get_post_type( $post_id ) === $screen ) ) {
 			$post_title = get_the_title( $post_id );
 			// phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- Reuses core's string, as _draft_or_post_title() does.
 			return array( '' !== $post_title ? $post_title : __( '(no title)', 'default' ), (string) get_edit_post_link( $post_id, 'raw' ), true );
@@ -211,7 +211,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	);
 
 	// My Account already shows the current user, so the faces are only the others on this page.
-	$here_ids  = array_unique( array_map( 'intval', wp_list_pluck( $here, 'user_id' ) ) );
+	$here_ids  = wp_parse_id_list( wp_list_pluck( $here, 'user_id' ) );
 	$stack_ids = array_slice( $here_ids, 0, 8 );
 
 	$colors = array();
@@ -223,8 +223,21 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	$colors = wp_presence_spread_colors( array_intersect_key( $colors, array_flip( $here_ids ) ) ) + $colors;
 
 	$avatar = function ( $user, $size, $alt = '' ) use ( $colors ) {
-		$color = ' style="outline-color:' . esc_attr( $colors[ $user->ID ] ?? wp_presence_default_user_color( $user->ID ) ) . '"';
-		return '<img class="presence-bar-avatar" src="' . esc_url( get_avatar_url( $user->ID, array( 'size' => wp_presence_get_avatar_fetch_size( $size ) ) ) ) . '" width="' . (int) $size . '" height="' . (int) $size . '"' . $color . ' alt="' . esc_attr( $alt ) . '" />';
+		$extra_attr = 'style="outline-color:' . esc_attr( $colors[ $user->ID ] ?? wp_presence_default_user_color( $user->ID ) ) . '"';
+		if ( '' !== $alt ) {
+			$extra_attr .= ' title="' . esc_attr( $alt ) . '"';
+		}
+		return (string) get_avatar(
+			$user->ID,
+			$size,
+			'',
+			$alt,
+			array(
+				'class'      => 'presence-bar-avatar',
+				'extra_attr' => $extra_attr,
+				'loading'    => false,
+			)
+		);
 	};
 
 	$stack_html = '';
@@ -234,7 +247,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 		if ( ! $user ) {
 			continue;
 		}
-		$stack_html .= str_replace( ' />', ' title="' . esc_attr( $user->display_name ) . '" />', $avatar( $user, 20, $user->display_name ) );
+		$stack_html .= $avatar( $user, 20, $user->display_name );
 	}
 
 	// Core drops a node's aria-label, so the spoken label rides in the title and the faces stay quiet.
@@ -455,7 +468,7 @@ function wp_presence_admin_bar_node_markup( $screen ) {
  * @return array The Heartbeat response.
  */
 function wp_presence_admin_bar_heartbeat_received( $response, $data ) {
-	if ( ! wp_presence_fragment_request( $data, 'admin-bar' ) || empty( $data['presence-ping']['screen'] ) || ! current_user_can( 'edit_posts' ) ) {
+	if ( ! wp_presence_fragment_request( $data, 'admin-bar' ) || empty( $data['presence-ping']['screen'] ) || ! wp_can_access_presence_room( wp_presence_admin_room() ) ) {
 		return $response;
 	}
 
@@ -496,7 +509,7 @@ function wp_presence_refresh_screen_token( $response, $data, $screen_id ) {
  * @since 0.1.1
  */
 function wp_presence_admin_bar_assets() {
-	if ( ! is_user_logged_in() || ! is_admin_bar_showing() || ! current_user_can( 'edit_posts' ) ) {
+	if ( ! is_user_logged_in() || ! is_admin_bar_showing() || ! wp_can_access_presence_room( wp_presence_admin_room() ) ) {
 		return;
 	}
 

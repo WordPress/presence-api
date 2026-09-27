@@ -106,7 +106,7 @@ $entries = wp_presence_leave( $room, $client_id, $timeout = null, $client_prefix
 // Remove all presence entries for a user across all rooms.
 wp_remove_user_presence( $user_id );
 
-// Check whether a user can access a room (requires edit_posts).
+// Check whether a user can access a room (edit_post for a post's room, otherwise any post type).
 wp_can_access_presence_room( $room, $user_id = 0 );
 
 // Return the canonical room string for a post, or false if the post type
@@ -156,7 +156,7 @@ wp_presence_network_aggregation_enabled();
 ## Extension Points
 
 ### Post Type Support
-The plugin adds `presence` support to every post type with `show_ui` and `editor` support, including ones registered after it loads. To leave one out, remove support once it is registered:
+The plugin adds `presence` support to templates, template parts, and every post type with `show_ui` and `editor` support, including ones registered after it loads. To leave one out, remove support once it is registered:
 ```php
 add_action( 'init', function () {
     remove_post_type_support( 'my-post-type', 'presence' );
@@ -302,7 +302,7 @@ wp.hooks.addFilter( 'presence-api.liveSurfaces', 'my-plugin', ( surfaces ) => [
 ```
 ```php
 add_filter( 'heartbeat_received', function( $response, $data ) {
-    if ( ! empty( $data['presence-fragments']['my-plugin-count'] ) && current_user_can( 'edit_posts' ) ) {
+    if ( ! empty( $data['presence-fragments']['my-plugin-count'] ) && wp_can_access_presence_room( wp_presence_admin_room() ) ) {
         $response['presence-fragments']['my-plugin-count'] = esc_html( my_plugin_count() );
     }
     return $response;
@@ -313,7 +313,7 @@ add_filter( 'heartbeat_received', function( $response, $data ) {
 
 ## REST API
 
-All endpoints require `edit_posts`. Responses include `Cache-Control: no-store`.
+All endpoints require editing at least one post type. Responses include `Cache-Control: no-store`.
 
 <details>
 <summary>Endpoints</summary>
@@ -378,7 +378,7 @@ Keeps `_edit_lock` in the post room's `_lock` row instead of post meta, through 
 
 ## Capability
 
-All features require `edit_posts`.
+All features require editing at least one post type shown in the admin, so a role limited to pages or a custom post type is included.
 
 ## Stale-screen detection
 

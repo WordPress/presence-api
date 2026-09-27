@@ -383,6 +383,27 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	/**
 	 * @covers ::wp_can_access_presence_room
 	 */
+	public function test_a_role_that_edits_only_a_custom_post_type_can_access_room() {
+		register_post_type(
+			'book',
+			array(
+				'show_ui'         => true,
+				'capability_type' => 'book',
+				'map_meta_cap'    => true,
+			)
+		);
+		$user = self::factory()->user->create_and_get( array( 'role' => 'subscriber' ) );
+		$user->add_cap( 'edit_books' );
+
+		$can_access = wp_can_access_presence_room( 'test/room', $user->ID );
+		unregister_post_type( 'book' );
+
+		$this->assertTrue( $can_access );
+	}
+
+	/**
+	 * @covers ::wp_can_access_presence_room
+	 */
 	public function test_logged_out_user_cannot_access_room() {
 		$this->assertFalse( wp_can_access_presence_room( 'test/room', 0 ) );
 	}

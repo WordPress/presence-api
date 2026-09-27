@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @since 0.1.1
  */
 function wp_presence_register_post_list_columns() {
-	if ( ! current_user_can( 'edit_posts' ) ) {
+	if ( ! wp_can_access_presence_room( wp_presence_admin_room() ) ) {
 		return;
 	}
 
@@ -110,7 +110,7 @@ function wp_presence_post_list_editors() {
 	foreach ( $presence_map as $editors ) {
 		$all_user_ids = array_merge( $all_user_ids, array_keys( $editors ) );
 	}
-	cache_users( array_unique( $all_user_ids ) );
+	cache_users( $all_user_ids );
 
 	return $presence_map;
 }

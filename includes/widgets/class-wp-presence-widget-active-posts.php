@@ -25,7 +25,7 @@ class WP_Presence_Widget_Active_Posts {
 	 * @since 0.1.1
 	 */
 	public static function register() {
-		if ( ! current_user_can( 'edit_posts' ) ) {
+		if ( ! wp_can_access_presence_room( wp_presence_admin_room() ) ) {
 			return;
 		}
 
@@ -156,7 +156,7 @@ class WP_Presence_Widget_Active_Posts {
 			return $response;
 		}
 
-		if ( ! current_user_can( 'edit_posts' ) ) {
+		if ( ! wp_can_access_presence_room( wp_presence_admin_room() ) ) {
 			return $response;
 		}
 
@@ -195,7 +195,7 @@ class WP_Presence_Widget_Active_Posts {
 			}
 		}
 		if ( ! empty( $post_ids ) ) {
-			_prime_post_caches( array_unique( $post_ids ), false, false );
+			_prime_post_caches( $post_ids, false, false );
 		}
 
 		foreach ( $entries as $entry ) {
@@ -219,9 +219,9 @@ class WP_Presence_Widget_Active_Posts {
 				continue;
 			}
 
-			// Rendering the widget only takes `edit_posts`, so without this a
-			// contributor would receive the title, edit link and editors of
-			// every post being worked on. Same check the REST controller
+			// Anyone who edits a post type can render the widget, so without
+			// this a contributor would receive the title, edit link and editors
+			// of every post being worked on. Same check the REST controller
 			// applies to the room collection.
 			if ( ! wp_can_access_presence_room( $entry->room, $current_user_id ) ) {
 				continue;

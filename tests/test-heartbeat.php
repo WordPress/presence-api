@@ -44,6 +44,23 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * @covers ::wp_presence_admin_heartbeat_received
+	 */
+	public function test_a_role_that_edits_only_pages_writes_presence() {
+		$user = self::factory()->user->create_and_get( array( 'role' => 'subscriber' ) );
+		$user->add_cap( 'edit_pages' );
+		wp_set_current_user( $user->ID );
+
+		wp_presence_admin_heartbeat_received(
+			array(),
+			array( 'presence-ping' => array( 'screen' => 'edit-page' ) ),
+			'edit-page'
+		);
+
+		$this->assertCount( 1, wp_get_presence( wp_presence_admin_room() ) );
+	}
+
+	/**
 	 * Core pins an unfocused tab to a 120-second interval no client-side call can
 	 * shorten, leaving the TTL as the only thing holding it in its room.
 	 *

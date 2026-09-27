@@ -400,10 +400,7 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 			$results = array();
 		}
 
-		$user_ids = wp_list_pluck( $results, 'user_id' );
-		if ( ! empty( $user_ids ) ) {
-			cache_users( array_unique( array_map( 'intval', $user_ids ) ) );
-		}
+		cache_users( wp_list_pluck( $results, 'user_id' ) );
 
 		foreach ( $results as $row ) {
 			$decoded   = json_decode( $row->data, true );
@@ -670,7 +667,7 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	 * @return true|WP_Error True if the request has access, WP_Error otherwise.
 	 */
 	public function get_rooms_permissions_check( $request ) {
-		if ( ! current_user_can( 'edit_posts' ) ) {
+		if ( ! wp_can_access_presence_room( wp_presence_admin_room() ) ) {
 			return new WP_Error(
 				'rest_forbidden',
 				__( 'Sorry, you are not allowed to view presence rooms.', 'presence-api' ),
@@ -708,7 +705,7 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 			}
 		}
 		if ( ! empty( $post_ids ) ) {
-			_prime_post_caches( array_unique( $post_ids ), false, false );
+			_prime_post_caches( $post_ids, false, false );
 		}
 
 		$rooms = array_values(

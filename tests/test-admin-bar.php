@@ -175,11 +175,22 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$this->assertSame( esc_html( get_userdata( $elsewhere )->display_name ), $nodes[ 'presence-user-' . $elsewhere ]->title );
 		$this->assertFalse( $nodes[ 'presence-user-' . $elsewhere ]->href );
 		// The faces are the others on this page; you are already in My Account.
-		$this->assertStringContainsString( 'alt="' . esc_attr( $here->display_name ) . '"', $nodes['presence-online']->title );
+		$this->assertStringContainsString( "alt='" . esc_attr( $here->display_name ) . "'", $nodes['presence-online']->title );
 		$this->assertStringNotContainsString(
-			'alt="' . esc_attr( get_userdata( self::$editor_id )->display_name ) . '"',
+			"alt='" . esc_attr( get_userdata( self::$editor_id )->display_name ) . "'",
 			$nodes['presence-online']->title
 		);
+	}
+
+	public function test_faces_follow_the_show_avatars_setting() {
+		$this->view_admin_page( 'upload.php', 'upload' );
+		$this->put_user_on_screen( 'upload' );
+		add_filter( 'pre_option_show_avatars', '__return_zero' );
+
+		wp_set_current_user( self::$editor_id );
+		$nodes = $this->render_nodes();
+
+		$this->assertStringNotContainsString( '<img', $nodes['presence-online']->title );
 	}
 
 	/**
@@ -312,6 +323,18 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 
 		$this->assertSame( get_edit_post_link( self::$post_id, 'raw' ), $place->href );
 		$this->assertSame( 'Secret Draft', $place->title );
+	}
+
+	public function test_someone_editing_a_template_in_the_site_editor_links_to_it() {
+		$template_id = self::factory()->post->create( array( 'post_type' => 'wp_template', 'post_name' => 'home', 'post_title' => 'Home' ) );
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'site-editor' ), self::$editor_id );
+		wp_set_presence( wp_presence_post_room( $template_id ), 'editor-' . self::$editor_id, array(), self::$editor_id );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$place = $this->place_of( $this->render_nodes(), self::$editor_id );
+
+		$this->assertSame( get_edit_post_link( $template_id, 'raw' ), $place->href );
+		$this->assertSame( 'Home', $place->title );
 	}
 
 	public function test_someone_editing_an_untitled_draft_is_on_no_title() {

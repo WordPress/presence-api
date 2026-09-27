@@ -220,9 +220,7 @@ function wp_presence_room_rows( $room, $timeout = null, $client_prefix = '' ) {
  * @return int[] Unique user IDs.
  */
 function wp_presence_online_user_ids( $entries ) {
-	$online_ids = array_map( 'intval', wp_list_pluck( wp_presence_with_current_user( $entries ), 'user_id' ) );
-
-	return array_values( array_unique( $online_ids ) );
+	return array_values( wp_parse_id_list( wp_list_pluck( wp_presence_with_current_user( $entries ), 'user_id' ) ) );
 }
 
 /**
@@ -968,7 +966,14 @@ function wp_can_access_presence_room( $room, $user_id = 0 ) {
 		return get_post_type( $parsed['post_id'] ) === $parsed['post_type'] && user_can( $user_id, 'edit_post', $parsed['post_id'] );
 	}
 
-	return user_can( $user_id, 'edit_posts' );
+	// Any post type shown in the admin will do, so a role that edits only pages or a custom post type is included.
+	foreach ( get_post_types( array( 'show_ui' => true ), 'objects' ) as $post_type ) {
+		if ( user_can( $user_id, $post_type->cap->edit_posts ) ) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 /**
@@ -1456,7 +1461,7 @@ function wp_presence_hydrate_room_users( $rooms, $timeout = null ) {
  * @since 0.11.0 Covers every post type edited in the admin, not only posts and pages.
  */
 function wp_presence_register_post_type_support() {
-	foreach ( get_post_types( array( 'show_ui' => true ), 'objects' ) as $post_type => $post_type_object ) {
+	foreach ( get_post_types( array(), 'objects' ) as $post_type => $post_type_object ) {
 		wp_presence_add_post_type_support( $post_type, $post_type_object );
 	}
 
@@ -1484,7 +1489,10 @@ function wp_presence_add_post_type_support( $post_type, $post_type_object ) {
 
 	$_wp_presence_post_types_seen[ $post_type ] = true;
 
-	if ( $post_type_object->show_ui && post_type_supports( $post_type, 'editor' ) ) {
+	// Core hides templates from the admin menus, since only the Site Editor edits them.
+	$site_editor = in_array( $post_type, array( 'wp_template', 'wp_template_part' ), true );
+
+	if ( ( $post_type_object->show_ui || $site_editor ) && post_type_supports( $post_type, 'editor' ) ) {
 		add_post_type_support( $post_type, 'presence' );
 	}
 }
