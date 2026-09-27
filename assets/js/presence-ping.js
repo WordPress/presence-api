@@ -115,7 +115,10 @@
 				return;
 			}
 
-			const ping = { screen: window.pagenow || 'front' };
+			const ping = {
+				screen: window.pagenow || 'front',
+				token: config.screenToken || '',
+			};
 			if ( frontContext ) {
 				if ( frontContext.title ) {
 					ping.title = frontContext.title;

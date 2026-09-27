@@ -324,7 +324,16 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 	 */
 	public function test_get_items_shows_other_users_screens_only_to_users_who_can_list_users() {
 		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'dashboard' ), self::$editor_id );
-		wp_set_presence( 'admin/online', 'user-' . self::$editor_2_id, array( 'screen' => 'options-general' ), self::$editor_2_id );
+		wp_set_presence(
+			'admin/online',
+			'user-' . self::$editor_2_id,
+			array(
+				'screen'  => 'front',
+				'title'   => 'Hello world!',
+				'post_id' => 1,
+			),
+			self::$editor_2_id
+		);
 
 		$request = new WP_REST_Request( 'GET', '/wp-presence/v1/presence' );
 		$request->set_param( 'room', 'admin/online' );
@@ -332,18 +341,18 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 		$screens = function () use ( $request ) {
 			$screens = array();
 			foreach ( rest_get_server()->dispatch( $request )->get_data() as $item ) {
-				$screens[ $item['user_id'] ] = $item['data']['screen'] ?? null;
+				$screens[ $item['user_id'] ] = $item['data'];
 			}
 			return $screens;
 		};
 
 		wp_set_current_user( self::$editor_id );
 		$seen = $screens();
-		$this->assertSame( 'dashboard', $seen[ self::$editor_id ], 'Your own location is never hidden from you.' );
-		$this->assertNull( $seen[ self::$editor_2_id ] );
+		$this->assertSame( 'dashboard', $seen[ self::$editor_id ]['screen'], 'Your own location is never hidden from you.' );
+		$this->assertSame( array(), $seen[ self::$editor_2_id ], 'A front-end title and post ID say where someone is as plainly as a screen.' );
 
 		wp_set_current_user( self::$admin_id );
-		$this->assertSame( 'options-general', $screens()[ self::$editor_2_id ] );
+		$this->assertSame( 'Hello world!', $screens()[ self::$editor_2_id ]['title'] );
 	}
 
 	/**

@@ -515,7 +515,10 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$response = wp_presence_admin_bar_heartbeat_received(
 			array(),
 			array(
-				'presence-ping'      => array( 'screen' => 'upload' ),
+				'presence-ping'      => array(
+					'screen' => 'upload',
+					'token'  => wp_create_nonce( 'wp_presence_screen_upload' ),
+				),
 				'presence-admin-bar' => 1,
 			)
 		);
@@ -524,6 +527,25 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$this->assertStringContainsString( 'id=\'wp-admin-bar-presence-user-' . $here->ID . '\'', $response['presence-admin-bar'] );
 		$this->assertStringContainsString( 'On this page', $response['presence-admin-bar'] );
 		$this->assertStringContainsString( '3 online', $response['presence-admin-bar'] );
+	}
+
+	/**
+	 * Grouping by a screen the page was not served for would say who is on it.
+	 */
+	public function test_the_heartbeat_sends_no_node_for_a_screen_it_cannot_prove() {
+		wp_set_current_user( self::$editor_id );
+		$response = wp_presence_admin_bar_heartbeat_received(
+			array(),
+			array(
+				'presence-ping'      => array(
+					'screen' => 'users',
+					'token'  => wp_create_nonce( 'wp_presence_screen_upload' ),
+				),
+				'presence-admin-bar' => 1,
+			)
+		);
+
+		$this->assertArrayNotHasKey( 'presence-admin-bar', $response );
 	}
 
 	public function test_the_heartbeat_sends_no_node_unless_the_page_has_one() {

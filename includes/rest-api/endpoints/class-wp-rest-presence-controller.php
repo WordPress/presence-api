@@ -745,8 +745,9 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 		if ( rest_is_field_included( 'data', $fields ) ) {
 			$data['data'] = $item->data;
 
+			// Everything but the color says where the user is.
 			if ( wp_presence_admin_room() === $item->room && '' === wp_presence_get_entry_screen( $item ) ) {
-				unset( $data['data']['screen'] );
+				$data['data'] = array_intersect_key( (array) $data['data'], array( 'color' => true ) );
 			}
 		}
 
@@ -859,7 +860,7 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 					'readonly'    => true,
 				),
 				'data'         => array(
-					'description'          => __( 'Arbitrary presence state data. In the admin/online room, screen is omitted unless the current user can view that user\'s location.', 'presence-api' ),
+					'description'          => __( 'Arbitrary presence state data. In the admin/online room, only the color is kept unless the current user can view that user\'s location.', 'presence-api' ),
 					'type'                 => 'object',
 					'context'              => array( 'view', 'edit' ),
 					'additionalProperties' => true,

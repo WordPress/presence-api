@@ -330,7 +330,13 @@ function wp_presence_admin_bar_heartbeat_received( $response, $data ) {
 		return $response;
 	}
 
-	$response['presence-admin-bar'] = wp_presence_admin_bar_node_markup( sanitize_text_field( $data['presence-ping']['screen'] ) );
+	// The screen decides who is "On this page", so an unproven one would reveal where anyone is.
+	$screen = sanitize_text_field( $data['presence-ping']['screen'] );
+	if ( ! wp_verify_nonce( $data['presence-ping']['token'] ?? '', 'wp_presence_screen_' . $screen ) ) {
+		return $response;
+	}
+
+	$response['presence-admin-bar'] = wp_presence_admin_bar_node_markup( $screen );
 
 	return $response;
 }

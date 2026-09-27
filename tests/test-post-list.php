@@ -95,6 +95,8 @@ class WP_Test_Presence_Post_List extends WP_Presence_UnitTestCase {
 	 * single request.
 	 */
 	public function test_render_editors_column() {
+		wp_set_current_user( self::$editor_id );
+
 		$post_none    = self::factory()->post->create();
 		$post_one     = self::factory()->post->create();
 		$post_many    = self::factory()->post->create();
@@ -144,6 +146,9 @@ class WP_Test_Presence_Post_List extends WP_Presence_UnitTestCase {
 		ob_start();
 		wp_presence_render_editors_column( 'some_other_column', $post_many );
 		$this->assertSame( '', ob_get_clean() );
+
+		wp_set_current_user( self::$subscriber_id );
+		$this->assertSame( '', $this->render_column( $post_many ), 'Who is editing stays with those who could edit it too.' );
 	}
 
 	public function test_editors_column_css_enqueues_only_on_edit_php() {

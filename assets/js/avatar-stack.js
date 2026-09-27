@@ -13,7 +13,8 @@
 	function esc( str ) {
 		const el = document.createElement( 'span' );
 		el.textContent = str;
-		return el.innerHTML;
+		// innerHTML leaves quotes alone, and these strings land in attributes too.
+		return el.innerHTML.replace( /"/g, '&quot;' ).replace( /'/g, '&#039;' );
 	}
 
 	/**

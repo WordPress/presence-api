@@ -189,6 +189,8 @@ function wp_presence_enqueue_heartbeat_ping() {
 		'initialCollaboratorCount' => $initial_collaborator_count,
 		'restUrl'                  => esc_url_raw( rest_url( 'wp-presence/v1/presence' ) ),
 		'nonce'                    => wp_create_nonce( 'wp_rest' ),
+		// Proves the screen the ping reports is one this page was served for.
+		'screenToken'              => wp_create_nonce( 'wp_presence_screen_' . $screen_id ),
 		'idleTicks'                => wp_presence_get_heartbeat_idle_ticks(),
 		'idleInterval'             => wp_presence_get_heartbeat_idle_interval(),
 		'ttl'                      => wp_presence_get_timeout(),
@@ -276,7 +278,7 @@ function wp_presence_admin_heartbeat_received( $response, $data, $screen_id ) { 
 		$post_id = (int) ( $data['presence-ping']['post_id'] ?? 0 );
 		if ( $post_id > 0 ) {
 			$front_post = get_post( $post_id );
-			if ( $front_post ) {
+			if ( $front_post && current_user_can( 'read_post', $front_post->ID ) ) {
 				$state['post_id'] = $front_post->ID;
 			}
 		}
