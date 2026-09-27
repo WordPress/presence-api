@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.11.0](https://github.com/WordPress/presence-api/compare/v0.10.0...v0.11.0) (2026-09-27)
+
+
+### Features
+
+* show presence on every post type edited in the admin ([#631](https://github.com/WordPress/presence-api/issues/631)) ([82b6128](https://github.com/WordPress/presence-api/commit/82b61289803d79055f239d5301423ce65d188f62))
+
+
+### Bug Fixes
+
+* give presence to roles that edit only pages or a custom post type ([#637](https://github.com/WordPress/presence-api/issues/637)) ([dd1c879](https://github.com/WordPress/presence-api/commit/dd1c879cc60a1a26b1548d01f03c2a0126142a01))
+* join the post room for what the Site Editor has open ([#638](https://github.com/WordPress/presence-api/issues/638)) ([aaf265d](https://github.com/WordPress/presence-api/commit/aaf265d97cb587d77c2b09cb6c10165c92d97b08))
+* keep post locks in the presence table with recording off ([#644](https://github.com/WordPress/presence-api/issues/644)) ([91d2873](https://github.com/WordPress/presence-api/commit/91d2873638d5caf85a923ce2da8bbb813948c2fa))
+* name post types, untitled posts and sites in the dashboard widgets ([#634](https://github.com/WordPress/presence-api/issues/634)) ([ba951ac](https://github.com/WordPress/presence-api/commit/ba951ac1b6eb9e1d4324ce47e0f09c62a3f0f3bd))
+* stop labelling Active Posts as posts being edited ([#645](https://github.com/WordPress/presence-api/issues/645)) ([306f9ff](https://github.com/WordPress/presence-api/commit/306f9ff27d39311793bf87270358341d0fec94e0))
+* translate reused core strings under the plugin's text domain ([#646](https://github.com/WordPress/presence-api/issues/646)) ([32bf815](https://github.com/WordPress/presence-api/commit/32bf815ac8c8b6cd5f518eafcc39c29e6d2611bf))
+
 ## [0.10.0](https://github.com/WordPress/presence-api/compare/v0.9.0...v0.10.0) (2026-09-27)
 
 
