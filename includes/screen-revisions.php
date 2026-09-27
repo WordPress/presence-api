@@ -57,11 +57,8 @@ function wp_presence_get_screen_revisions() {
 /**
  * Returns the network-wide screen-revision map.
  *
- * Holds the `network/` keys for Network Settings and the Edit Site tabs. It is
- * a site option rather than a per-site one because core fires some of their
- * save hooks while switched to the site being edited, which would otherwise
- * write the revision to that site's options instead of where Network Admin
- * reads it.
+ * A site option, since core fires some Edit Site save hooks while switched
+ * to the edited site.
  *
  * @since 0.10.0
  * @access private
@@ -236,7 +233,7 @@ function wp_presence_get_screen_revision( $screen_key ) {
 function wp_presence_advance_screen_revision_map( $map, $screen_key, $actor_id ) {
 	$previous = isset( $map[ $screen_key ]['rev'] ) ? (int) $map[ $screen_key ]['rev'] : 0;
 
-	// Seeded from the clock so a key evicted by the trim below never restarts below a viewer's baseline.
+	// Clock-seeded so an evicted key never restarts below a viewer's baseline.
 	$map[ $screen_key ] = array(
 		'rev'      => max( $previous + 1, time() ),
 		'actor_id' => (int) $actor_id,
@@ -531,11 +528,9 @@ function wp_presence_current_screen_key() {
 /**
  * Returns the option group a Settings API page saves, or '' if it isn't one.
  *
- * A page is recognized when its menu slug is also a registered option group,
- * the convention core's own Settings API examples follow. Nothing records
- * which group a page's form submits until settings_fields() prints it, so a
- * page that uses a different slug can opt in through the
- * `wp_presence_current_screen_key` filter instead.
+ * Matches when the menu slug is also a registered option group, as core's
+ * Settings API examples do. Other pages can use the
+ * `wp_presence_current_screen_key` filter.
  *
  * @since 0.10.0
  * @access private
@@ -651,8 +646,7 @@ function wp_presence_on_edit_comment( $comment_id ) {
 /**
  * Bumps the Privacy settings screen's revision when its page is changed.
  *
- * The Privacy page saves through its own form rather than options.php, so
- * there is no option_page for wp_presence_on_updated_option() to read.
+ * The Privacy page saves through its own form, so there is no option_page.
  *
  * @since 0.10.0
  */
@@ -678,8 +672,7 @@ function wp_presence_on_update_network_options() {
 /**
  * Bumps an Edit Site → Info screen's revision when the site is updated.
  *
- * Skips updates that only touch `last_updated`, which core writes on every
- * post publish or delete.
+ * Skips `last_updated`-only updates, which core writes on every publish.
  *
  * @since 0.10.0
  *
@@ -716,8 +709,7 @@ function wp_presence_on_update_site_options( $site_id ) {
 /**
  * Bumps an Edit Site → Themes screen's revision when its allowed themes change.
  *
- * Core's site-themes.php writes `allowedthemes` while switched to the site, so the
- * current blog is the site being edited.
+ * Core writes `allowedthemes` while switched to the edited site.
  *
  * @since 0.10.0
  */
