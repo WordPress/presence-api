@@ -602,3 +602,21 @@ function wp_presence_store_collaboration_state( $room, $count, $stored ) {
 		gmdate( 'Y-m-d H:i:s' )
 	);
 }
+
+/**
+ * Returns what the page asked a live surface's Heartbeat feed for.
+ *
+ * Surfaces register in presence-ping.js and ask under `presence-fragments`,
+ * each by its key; the feed answers with HTML under the same key.
+ *
+ * @access private
+ *
+ * @since 0.11.0
+ *
+ * @param array  $data Data received from the client.
+ * @param string $key  The surface key.
+ * @return mixed What the surface sent, or null when it did not ask.
+ */
+function wp_presence_fragment_request( $data, $key ) {
+	return $data['presence-fragments'][ $key ] ?? null;
+}

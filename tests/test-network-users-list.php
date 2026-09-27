@@ -290,10 +290,9 @@ class WP_Test_Network_Users_List extends WP_Presence_Network_UnitTestCase {
 		$this->set_presence_on_site( $this->create_blog(), self::$editor_id );
 
 		$query = '?presence_status=online&_wpnonce=' . wp_create_nonce( 'presence_online_filter' );
-		$list  = wp_presence_users_list_heartbeat_received( array(), array( 'presence-users-list' => $query ), 'users-network' )['presence-users-list'];
+		$rows  = wp_presence_users_list_heartbeat_received( array(), array( 'presence-fragments' => array( 'users-list' => $query ) ), 'users-network' )['presence-fragments']['users-list'];
 
-		$this->assertStringContainsString( 'name="allusers[]" value="' . self::$editor_id . '"', $list['rows'] );
-		$this->assertStringNotContainsString( 'name="allusers[]" value="' . self::$subscriber_id . '"', $list['rows'] );
-		$this->assertSame( 1, $list['count'] );
+		$this->assertStringContainsString( 'name="allusers[]" value="' . self::$editor_id . '"', $rows );
+		$this->assertStringNotContainsString( 'name="allusers[]" value="' . self::$subscriber_id . '"', $rows );
 	}
 }

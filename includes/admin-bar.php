@@ -455,7 +455,7 @@ function wp_presence_admin_bar_node_markup( $screen ) {
  * @return array The Heartbeat response.
  */
 function wp_presence_admin_bar_heartbeat_received( $response, $data ) {
-	if ( empty( $data['presence-admin-bar'] ) || empty( $data['presence-ping']['screen'] ) || ! current_user_can( 'edit_posts' ) ) {
+	if ( ! wp_presence_fragment_request( $data, 'admin-bar' ) || empty( $data['presence-ping']['screen'] ) || ! current_user_can( 'edit_posts' ) ) {
 		return $response;
 	}
 
@@ -466,7 +466,7 @@ function wp_presence_admin_bar_heartbeat_received( $response, $data ) {
 		return $response;
 	}
 
-	$response['presence-admin-bar'] = wp_presence_admin_bar_node_markup( $screen );
+	$response['presence-fragments']['admin-bar'] = wp_presence_admin_bar_node_markup( $screen );
 
 	return $response;
 }

@@ -97,14 +97,93 @@
 		'presence-heartbeat-ttl',
 		'presence-heartbeat-room-list',
 		'presence-heartbeat-collaborators',
-		'presence-admin-bar',
-		'presence-users-list',
+		'presence-fragments',
 	];
 
 	const tabCoordinator = window.wpPresenceCreateTabCoordinator(
 		pingContextKey,
 		RELAYED_TICK_KEYS
 	);
+
+	// Each surface the server keeps current, by the key its Heartbeat feed answers under.
+	const SURFACES = [
+		{
+			key: 'admin-bar',
+			target: () =>
+				document.getElementById( 'wp-admin-bar-presence-online' ),
+			// Keep the list item itself, which core's admin-bar.js bound its hover and Enter handlers to.
+			apply( node, html ) {
+				const template = document.createElement( 'template' );
+				template.innerHTML = html.trim();
+				const fresh = template.content.firstElementChild;
+				if ( fresh ) {
+					node.className = fresh.className;
+					node.innerHTML = fresh.innerHTML;
+				}
+			},
+		},
+		{
+			key: 'users-list',
+			target: () => usersList && document.getElementById( 'the-list' ),
+			request: () => usersList,
+		},
+		{
+			// Core's own lock check asks for these, from every tab, with the row IDs.
+			key: 'editors',
+			target: ( id ) =>
+				document.querySelector(
+					'#' + CSS.escape( id ) + ' .column-presence_editors'
+				),
+			request: () => false,
+		},
+		{
+			key: 'active-posts',
+			target: () =>
+				document.getElementById( 'presence-active-posts-list' ),
+		},
+		{
+			key: 'network-widget',
+			target: () =>
+				document.getElementById( 'presence-network-widget-list' ),
+		},
+	];
+
+	function liveSurfaces() {
+		return wp.hooks.applyFilters( 'presence-api.liveSurfaces', SURFACES );
+	}
+
+	const lastFragments = {};
+
+	// Swapping under the pointer or focus would close a menu, drop a selection or move the caret; the next tick catches up.
+	function isBusy( element ) {
+		return (
+			element.matches( ':hover' ) ||
+			element.classList.contains( 'hover' ) ||
+			element.contains( document.activeElement ) ||
+			!! element.querySelector( 'input:checked' )
+		);
+	}
+
+	function swapFragment( surface, element, html, slot ) {
+		if (
+			! element ||
+			lastFragments[ slot ] === html ||
+			isBusy( element )
+		) {
+			return;
+		}
+		if ( surface.apply ) {
+			surface.apply( element, html );
+		} else {
+			element.innerHTML = html;
+		}
+		lastFragments[ slot ] = html;
+		wp.hooks.doAction(
+			'presence-api.surfaceUpdated',
+			surface.key,
+			element
+		);
+	}
 
 	// Defer registration to document ready to ensure it runs after WP Core's post.js handler.
 	$( function () {
@@ -142,12 +221,17 @@
 			}
 			data[ 'presence-ping' ] = ping;
 
-			if ( document.getElementById( 'wp-admin-bar-presence-online' ) ) {
-				data[ 'presence-admin-bar' ] = 1;
-			}
-
-			if ( usersList ) {
-				data[ 'presence-users-list' ] = usersList;
+			const asks = {};
+			liveSurfaces().forEach( function ( surface ) {
+				const ask = surface.request
+					? surface.request()
+					: !! surface.target();
+				if ( ask ) {
+					asks[ surface.key ] = ask;
+				}
+			} );
+			if ( Object.keys( asks ).length ) {
+				data[ 'presence-fragments' ] = asks;
 			}
 
 			if ( editorPostId ) {
@@ -155,45 +239,43 @@
 			}
 		} );
 
+		$( document ).on( 'heartbeat-tick', function ( event, data ) {
+			const minted = data[ 'presence-screen-token' ];
+			if ( minted && minted.screen === ( window.pagenow || 'front' ) ) {
+				config.screenToken = minted.token;
+			}
+
+			const fragments = data[ 'presence-fragments' ];
+			if ( ! fragments ) {
+				return;
+			}
+			liveSurfaces().forEach( function ( surface ) {
+				const value = fragments[ surface.key ];
+				if ( typeof value === 'string' ) {
+					swapFragment(
+						surface,
+						surface.target(),
+						value,
+						surface.key
+					);
+				} else if ( value ) {
+					Object.keys( value ).forEach( function ( id ) {
+						swapFragment(
+							surface,
+							surface.target( id ),
+							value[ id ],
+							surface.key + '/' + id
+						);
+					} );
+				}
+			} );
+		} );
+
 		const adminBarNode = document.getElementById(
 			'wp-admin-bar-presence-online'
 		);
 
 		if ( adminBarNode ) {
-			let lastAdminBar = '';
-
-			$( document ).on( 'heartbeat-tick', function ( event, data ) {
-				const minted = data[ 'presence-screen-token' ];
-				if (
-					minted &&
-					minted.screen === ( window.pagenow || 'front' )
-				) {
-					config.screenToken = minted.token;
-				}
-				const html = data[ 'presence-admin-bar' ];
-				if ( ! html || html === lastAdminBar ) {
-					return;
-				}
-				// Swapping an open menu would close it; the next tick catches up.
-				if (
-					adminBarNode.matches( ':hover' ) ||
-					adminBarNode.classList.contains( 'hover' ) ||
-					adminBarNode.contains( document.activeElement )
-				) {
-					return;
-				}
-				const template = document.createElement( 'template' );
-				template.innerHTML = html.trim();
-				const fresh = template.content.firstElementChild;
-				if ( ! fresh ) {
-					return;
-				}
-				// Keep the list item itself, which core's admin-bar.js bound its hover and Enter handlers to.
-				adminBarNode.className = fresh.className;
-				adminBarNode.innerHTML = fresh.innerHTML;
-				lastAdminBar = html;
-			} );
-
 			// Core binds Escape to each .ab-item at load, which the swapped rows no longer are.
 			adminBarNode.addEventListener( 'keydown', function ( event ) {
 				if ( event.key !== 'Escape' ) {
@@ -212,53 +294,6 @@
 						String( adminBarNode.classList.contains( 'hover' ) )
 					);
 			} ).observe( adminBarNode, { attributeFilter: [ 'class' ] } );
-		}
-
-		const usersTable = usersList && document.getElementById( 'the-list' );
-
-		if ( usersTable ) {
-			let lastRows = '';
-
-			$( document ).on( 'heartbeat-tick', function ( event, data ) {
-				const list = data[ 'presence-users-list' ];
-				if ( ! list ) {
-					return;
-				}
-				const count = document.querySelector(
-					'.subsubsub .presence_online .count'
-				);
-				if ( count ) {
-					count.textContent = '(' + list.count + ')';
-				}
-				// Swapping would drop a selection or keyboard focus; the next tick catches up.
-				if (
-					list.rows === lastRows ||
-					usersTable.matches( ':hover' ) ||
-					usersTable.contains( document.activeElement ) ||
-					usersTable.querySelector( 'input:checked' )
-				) {
-					return;
-				}
-				usersTable.innerHTML = list.rows;
-				lastRows = list.rows;
-			} );
-		}
-
-		if ( document.querySelector( '#the-list .column-presence_editors' ) ) {
-			const lastCells = {};
-
-			$( document ).on( 'heartbeat-tick', function ( event, data ) {
-				const cells = data[ 'presence-editors' ] || {};
-				Object.keys( cells ).forEach( function ( id ) {
-					const cell = document.querySelector(
-						'#' + CSS.escape( id ) + ' .column-presence_editors'
-					);
-					if ( cell && lastCells[ id ] !== cells[ id ] ) {
-						cell.innerHTML = cells[ id ];
-						lastCells[ id ] = cells[ id ];
-					}
-				} );
-			} );
 		}
 
 		if ( editorRoom ) {

@@ -657,13 +657,13 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 					'screen' => 'upload',
 					'token'  => wp_create_nonce( 'wp_presence_screen_upload' ),
 				),
-				'presence-admin-bar' => 1,
+				'presence-fragments' => array( 'admin-bar' => 1 ),
 			)
 		);
 
-		$this->assertStringStartsWith( "<li role='group' id='wp-admin-bar-presence-online'", $response['presence-admin-bar'] );
-		$this->assertStringContainsString( 'id=\'wp-admin-bar-presence-user-' . $here->ID . '\'', $response['presence-admin-bar'] );
-		$this->assertStringContainsString( '3 online', $response['presence-admin-bar'] );
+		$this->assertStringStartsWith( "<li role='group' id='wp-admin-bar-presence-online'", $response['presence-fragments']['admin-bar'] );
+		$this->assertStringContainsString( 'id=\'wp-admin-bar-presence-user-' . $here->ID . '\'', $response['presence-fragments']['admin-bar'] );
+		$this->assertStringContainsString( '3 online', $response['presence-fragments']['admin-bar'] );
 	}
 
 	/**
@@ -678,11 +678,11 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 					'screen' => 'users',
 					'token'  => wp_create_nonce( 'wp_presence_screen_upload' ),
 				),
-				'presence-admin-bar' => 1,
+				'presence-fragments' => array( 'admin-bar' => 1 ),
 			)
 		);
 
-		$this->assertArrayNotHasKey( 'presence-admin-bar', $response );
+		$this->assertArrayNotHasKey( 'presence-fragments', $response );
 	}
 
 	public function test_a_refreshed_heartbeat_nonce_brings_a_fresh_screen_token() {
@@ -700,6 +700,6 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 			array( 'presence-ping' => array( 'screen' => 'upload' ) )
 		);
 
-		$this->assertArrayNotHasKey( 'presence-admin-bar', $response );
+		$this->assertArrayNotHasKey( 'presence-fragments', $response );
 	}
 }

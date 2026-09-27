@@ -179,7 +179,7 @@ class WP_Test_Presence_Post_List extends WP_Presence_UnitTestCase {
 			array(),
 			array( 'wp-check-locked-posts' => array( 'post-' . $page, 'post-' . $empty, 'post-' . $other, array( 'post-1' ) ) )
 		);
-		$cells    = $response['presence-editors'];
+		$cells    = $response['presence-fragments']['editors'];
 
 		$this->assertSame( 1, substr_count( $cells[ 'post-' . $page ], '<img' ) );
 		$this->assertSame( '', $cells[ 'post-' . $empty ], 'An empty cell clears whoever left.' );

@@ -185,7 +185,7 @@ function wp_presence_editors_column_heartbeat_received( $response, $data ) {
 	}
 
 	if ( $cells ) {
-		$response['presence-editors'] = $cells;
+		$response['presence-fragments']['editors'] = $cells;
 	}
 
 	return $response;
