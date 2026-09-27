@@ -182,6 +182,17 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		);
 	}
 
+	public function test_faces_follow_the_show_avatars_setting() {
+		$this->view_admin_page( 'upload.php', 'upload' );
+		$this->put_user_on_screen( 'upload' );
+		add_filter( 'pre_option_show_avatars', '__return_zero' );
+
+		wp_set_current_user( self::$editor_id );
+		$nodes = $this->render_nodes();
+
+		$this->assertStringNotContainsString( '<img', $nodes['presence-online']->title );
+	}
+
 	/**
 	 * Returns the place heading a person is listed under, or null.
 	 *
