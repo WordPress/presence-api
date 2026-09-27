@@ -15,7 +15,7 @@ add_action( 'remove_user_from_blog', 'wp_presence_on_user_removed', 10, 1 );
 add_action( 'wp_delete_site', 'wp_presence_on_delete_site' );
 
 add_action( 'update_wpmu_options', 'wp_presence_on_update_network_options' );
-add_action( 'wp_update_site', 'wp_presence_on_update_site' );
+add_action( 'wp_update_site', 'wp_presence_on_update_site', 10, 2 );
 add_action( 'wpmu_update_blog_options', 'wp_presence_on_update_site_options' );
 add_action( 'add_option_allowedthemes', 'wp_presence_on_site_allowed_themes_updated' );
 add_action( 'update_option_allowedthemes', 'wp_presence_on_site_allowed_themes_updated' );

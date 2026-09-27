@@ -677,12 +677,22 @@ function wp_presence_on_update_network_options() {
 /**
  * Bumps an Edit Site → Info screen's revision when the site is updated.
  *
+ * Skips updates that only touch `last_updated`, which core writes on every
+ * post publish or delete.
+ *
  * @since 0.10.0
  *
  * @param WP_Site $new_site Site after the update.
+ * @param WP_Site $old_site Site before the update.
  */
-function wp_presence_on_update_site( $new_site ) {
+function wp_presence_on_update_site( $new_site, $old_site ) {
 	if ( ! wp_presence_is_admin_screen_save() ) {
+		return;
+	}
+	$new_fields = $new_site->to_array();
+	$old_fields = $old_site->to_array();
+	unset( $new_fields['last_updated'], $old_fields['last_updated'] );
+	if ( $new_fields === $old_fields ) {
 		return;
 	}
 	wp_presence_bump_screen_revision( 'network/site-info/' . (int) $new_site->id );

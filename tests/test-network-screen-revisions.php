@@ -114,6 +114,24 @@ class WP_Test_Network_Screen_Revisions extends WP_Presence_Network_UnitTestCase 
 	}
 
 	/**
+	 * Core rewrites last_updated on every post publish, which isn't an edit to the Info screen.
+	 *
+	 * @covers ::wp_presence_on_update_site
+	 */
+	public function test_a_last_updated_change_does_not_bump_the_info_screen() {
+		$this->become_network_admin();
+		set_current_screen( 'site-info-network' );
+		$blog_id = $this->create_blog();
+
+		wpmu_update_blogs_date();
+		switch_to_blog( $blog_id );
+		wpmu_update_blogs_date();
+		restore_current_blog();
+
+		$this->assertNull( wp_presence_get_screen_revision( 'network/site-info/' . $blog_id ) );
+	}
+
+	/**
 	 * @covers ::wp_presence_on_site_allowed_themes_updated
 	 */
 	public function test_changing_a_sites_themes_bumps_its_themes_screen() {
