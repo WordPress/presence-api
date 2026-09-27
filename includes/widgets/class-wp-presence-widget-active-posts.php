@@ -268,9 +268,12 @@ class WP_Presence_Widget_Active_Posts {
 			$status  = $elapsed > wp_presence_idle_threshold() ? 'idle' : 'active';
 
 			if ( ! isset( $by_post[ $post_id ] ) ) {
+				// A new post holds core's "Auto Draft" placeholder until its first save.
+				$untitled = '' === $post->post_title || 'auto-draft' === $post->post_status;
+
 				$by_post[ $post_id ] = array(
 					'post_id'    => $post_id,
-					'post_title' => '' !== $post->post_title ? $post->post_title : __( '(no title)', 'presence-api' ),
+					'post_title' => $untitled ? __( '(no title)', 'presence-api' ) : $post->post_title,
 					'post_type'  => $post_type,
 					'edit_url'   => get_edit_post_link( $post_id, 'raw' ),
 					'editors'    => array(),
