@@ -62,6 +62,8 @@ class WP_Test_Presence_Plugin_Action_Links extends WP_UnitTestCase {
 
 		$this->assertStringStartsWith( admin_url( 'users.php' ), $href );
 		$this->assertStringContainsString( 'presence_status=online', $href );
+		// Without the nonce the filter is skipped and the list shows every user.
+		$this->assertStringContainsString( '_wpnonce=' . wp_create_nonce( 'presence_online_filter' ), $href );
 	}
 
 	/**

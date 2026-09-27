@@ -141,7 +141,7 @@ function wp_presence_deactivate( $network_wide = false ) {
 function wp_presence_plugin_action_links( $links ) {
 	$online_users_link = sprintf(
 		'<a href="%1$s">%2$s</a>',
-		esc_url( admin_url( 'users.php?presence_status=online' ) ),
+		esc_url( wp_nonce_url( admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' ) ),
 		esc_html__( 'View Online Users', 'presence-api' )
 	);
 
