@@ -77,3 +77,49 @@ function wp_presence_filter_online_users( $query ) {
 
 	$query->set( 'include', wp_presence_online_user_ids( $entries ) );
 }
+
+/**
+ * Sends fresh rows for the Online view of the users list, on a site or the network, with each heartbeat that asks.
+ *
+ * @since 0.10.0
+ *
+ * @param array $response Heartbeat response data.
+ * @param array $data     Data received from the client.
+ * @return array The Heartbeat response.
+ */
+function wp_presence_users_list_heartbeat_received( $response, $data ) {
+	$network = is_network_admin();
+	$allowed = $network
+		? current_user_can( 'manage_network_users' ) && current_user_can( wp_presence_network_capability() ) && wp_presence_network_aggregation_enabled()
+		: current_user_can( 'list_users' );
+
+	if ( ! $allowed || empty( $data['presence-users-list'] ) || ! is_string( $data['presence-users-list'] ) ) {
+		return $response;
+	}
+
+	parse_str( ltrim( $data['presence-users-list'], '?' ), $args );
+	if ( ( $args['presence_status'] ?? '' ) !== 'online' || ! is_string( $args['_wpnonce'] ?? null ) || ! wp_verify_nonce( $args['_wpnonce'], 'presence_online_filter' ) ) {
+		return $response;
+	}
+
+	// The list table and the online filters read the page's own request, so it stands in for this one.
+	$saved                  = array( $_REQUEST, $_GET, $_SERVER['REQUEST_URI'] ?? '' ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash
+	$_REQUEST               = wp_slash( $args );
+	$_GET                   = $_REQUEST;
+	$_SERVER['REQUEST_URI'] = wp_parse_url( $network ? network_admin_url( 'users.php' ) : admin_url( 'users.php' ), PHP_URL_PATH ) . '?' . http_build_query( $args );
+
+	$table = _get_list_table( $network ? 'WP_MS_Users_List_Table' : 'WP_Users_List_Table', array( 'screen' => $network ? 'users-network' : 'users' ) );
+	$table->prepare_items();
+	ob_start();
+	$table->display_rows_or_placeholder();
+	$rows = (string) ob_get_clean();
+
+	list( $_REQUEST, $_GET, $_SERVER['REQUEST_URI'] ) = $saved; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash
+
+	$response['presence-users-list'] = array(
+		'rows'  => $rows,
+		'count' => count( $network ? wp_presence_get_network_online_user_ids() : wp_presence_online_user_ids( wp_get_presence( wp_presence_admin_room() ) ) ),
+	);
+
+	return $response;
+}

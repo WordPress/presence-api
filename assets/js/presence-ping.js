@@ -21,6 +21,13 @@
 	const ttl = parseInt( config.ttl, 10 ) || 150;
 	const ttlMargin = parseInt( config.ttlMargin, 10 ) || 15;
 	const backoffEnabled = idleTicks > 0 && idleInterval > 0;
+	const usersList =
+		[ 'users', 'users-network' ].includes( window.pagenow ) &&
+		new URLSearchParams( window.location.search ).get(
+			'presence_status'
+		) === 'online'
+			? window.location.search
+			: '';
 
 	// Fired synchronously, ahead of Heartbeat's first tick, so a listener can
 	// tell "presence-api isn't here" apart from "here, no tick yet."
@@ -73,6 +80,7 @@
 			editorPostId,
 			pageTitle: ( pageContext && pageContext.title ) || '',
 			pagePostId: ( pageContext && pageContext.post_id ) || 0,
+			usersList,
 		} );
 
 	// Response keys other presence-api features read off heartbeat-tick.
@@ -89,6 +97,7 @@
 		'presence-heartbeat-room-list',
 		'presence-heartbeat-collaborators',
 		'presence-admin-bar',
+		'presence-users-list',
 	];
 
 	const tabCoordinator = window.wpPresenceCreateTabCoordinator(
@@ -131,6 +140,10 @@
 
 			if ( document.getElementById( 'wp-admin-bar-presence-online' ) ) {
 				data[ 'presence-admin-bar' ] = 1;
+			}
+
+			if ( usersList ) {
+				data[ 'presence-users-list' ] = usersList;
 			}
 
 			if ( editorPostId ) {
@@ -195,6 +208,36 @@
 						String( adminBarNode.classList.contains( 'hover' ) )
 					);
 			} ).observe( adminBarNode, { attributeFilter: [ 'class' ] } );
+		}
+
+		const usersTable = usersList && document.getElementById( 'the-list' );
+
+		if ( usersTable ) {
+			let lastRows = '';
+
+			$( document ).on( 'heartbeat-tick', function ( event, data ) {
+				const list = data[ 'presence-users-list' ];
+				if ( ! list ) {
+					return;
+				}
+				const count = document.querySelector(
+					'.subsubsub .presence_online .count'
+				);
+				if ( count ) {
+					count.textContent = '(' + list.count + ')';
+				}
+				// Swapping would drop a selection or keyboard focus; the next tick catches up.
+				if (
+					list.rows === lastRows ||
+					usersTable.matches( ':hover' ) ||
+					usersTable.contains( document.activeElement ) ||
+					usersTable.querySelector( 'input:checked' )
+				) {
+					return;
+				}
+				usersTable.innerHTML = list.rows;
+				lastRows = list.rows;
+			} );
 		}
 
 		if ( editorRoom ) {

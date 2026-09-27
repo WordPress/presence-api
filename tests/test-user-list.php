@@ -8,6 +8,7 @@
  *
  * @covers ::wp_presence_users_views
  * @covers ::wp_presence_filter_online_users
+ * @covers ::wp_presence_users_list_heartbeat_received
  */
 class WP_Test_Presence_User_List extends WP_Presence_UnitTestCase {
 
@@ -148,5 +149,37 @@ class WP_Test_Presence_User_List extends WP_Presence_UnitTestCase {
 		wp_presence_filter_online_users( $query );
 
 		$this->assertNull( $query->get( 'include' ) );
+	}
+
+	/**
+	 * Sends a heartbeat from the Online view as an administrator.
+	 *
+	 * @param string $nonce The nonce the view's URL carries.
+	 * @return array The Heartbeat response.
+	 */
+	private function tick_online_view( $nonce = null ) {
+		require_once ABSPATH . 'wp-admin/includes/admin.php';
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		set_current_screen( 'users' );
+
+		$query = '?presence_status=online&_wpnonce=' . ( $nonce ?? wp_create_nonce( 'presence_online_filter' ) );
+
+		return wp_presence_users_list_heartbeat_received( array(), array( 'presence-users-list' => $query ) );
+	}
+
+	public function test_the_online_view_gets_fresh_rows_each_heartbeat() {
+		wp_set_presence( wp_presence_admin_room(), 'client-1', array(), self::$editor_id );
+
+		$list = $this->tick_online_view()['presence-users-list'];
+
+		$this->assertStringContainsString( "id='user-" . self::$editor_id . "'", $list['rows'] );
+		$this->assertStringNotContainsString( "id='user-" . self::$subscriber_id . "'", $list['rows'] );
+		$this->assertStringContainsString( 'wp_http_referer=%2Fwp-admin%2Fusers.php%3Fpresence_status%3Donline', $list['rows'] );
+		$this->assertSame( 2, $list['count'] );
+		$this->assertArrayNotHasKey( 'presence_status', $_GET );
+	}
+
+	public function test_the_online_view_needs_its_nonce() {
+		$this->assertSame( array(), $this->tick_online_view( 'invalid' ) );
 	}
 }
