@@ -59,7 +59,7 @@ add_action(
 	body.is-embedded { overflow: hidden; }
 
 	table { border-collapse: collapse; width: 100%; table-layout: fixed; }
-	th { text-align: left; padding: 4px 6px; color: var(--wp-admin-muted, #a7aaad); font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; border-bottom: 1px solid var(--wp-admin-border, #f0f0f1); }
+	th { text-align: left; padding: 4px 6px; color: var(--wp-admin-muted, #646970); font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; border-bottom: 1px solid var(--wp-admin-border, #f0f0f1); }
 	td { padding: 3px 6px; border-bottom: 1px solid var(--wp-admin-border, #f0f0f1); white-space: nowrap; }
 	td:nth-child(3) { white-space: normal; word-break: break-word; }
 	tr:hover td { background: #f6f7f7; }
@@ -70,9 +70,9 @@ add_action(
 
 	tr.is-new td { background: #f0f6e8; }
 	tr.is-fresh td { color: var(--wp-admin-text-dark, #1d2327); }
-	tr.is-stale td { color: var(--wp-admin-muted, #a7aaad); }
+	tr.is-stale td { color: var(--wp-admin-muted, #646970); }
 
-	.empty { color: var(--wp-admin-muted, #a7aaad); padding: 12px 6px; }
+	.empty { color: var(--wp-admin-muted, #646970); padding: 12px 6px; }
 </style>
 </head>
 <body<?php echo $is_embedded ? ' class="is-embedded"' : ''; ?>>
@@ -115,8 +115,8 @@ add_action(
 </tbody>
 </table>
 			<?php if ( $is_embedded ) : ?>
-<p class="overflow-link" style="padding:6px;font-size:11px;color:#a7aaad;text-align:center;display:none;">
-	<a href="<?php echo esc_url( wp_nonce_url( home_url( '/?presence-db=1' ), 'wp_presence_db_viewer' ) ); ?>" target="_blank" rel="noopener noreferrer" style="color:var(--wp-admin-muted, #a7aaad);text-decoration:none;">
+<p class="overflow-link" style="padding:6px;font-size:11px;color:#646970;text-align:center;display:none;">
+	<a href="<?php echo esc_url( wp_nonce_url( home_url( '/?presence-db=1' ), 'wp_presence_db_viewer' ) ); ?>" target="_blank" rel="noopener noreferrer" style="color:var(--wp-admin-muted, #646970);text-decoration:none;">
 		<span class="overflow-count"></span> &#8599;
 	</a>
 </p>

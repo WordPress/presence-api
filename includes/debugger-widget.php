@@ -164,16 +164,16 @@ function wp_presence_heartbeat_widget_assets( $hook_suffix ) {
 		#presence-heartbeat-widget .presence-debugger-info .presence-heartbeat-users-label,
 		#presence-heartbeat-widget .presence-debugger-info .presence-heartbeat-last-beat-label,
 		#presence-heartbeat-widget .presence-debugger-info .presence-heartbeat-ttl-label { font-weight: 400; color: #646970; }
-		#presence-heartbeat-widget .presence-heartbeat-timing { display: block; font-weight: 400; color: #a7aaad; font-size: 11px; }
+		#presence-heartbeat-widget .presence-heartbeat-timing { display: block; font-weight: 400; color: #646970; font-size: 11px; }
 		#presence-heartbeat-widget .presence-heartbeat-rooms-list { margin: 0; padding: 0; }
 		#presence-heartbeat-widget .presence-heartbeat-room-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; font-size: 12px; color: #646970; border-bottom: 1px solid #f0f0f1; }
 		#presence-heartbeat-widget .presence-heartbeat-room-row:last-child { border-bottom: none; }
 		#presence-heartbeat-widget .presence-heartbeat-room-row code { background: #f0f0f1; padding: 1px 6px; border-radius: 3px; font-size: 11px; color: #1d2327; }
-		#presence-heartbeat-widget .presence-heartbeat-room-row span { font-size: 11px; color: #a7aaad; }
-		#presence-heartbeat-widget .presence-heartbeat-room-empty { color: #a7aaad; font-size: 13px; font-style: italic; padding: 8px 12px; }
+		#presence-heartbeat-widget .presence-heartbeat-room-row span { font-size: 11px; color: #646970; }
+		#presence-heartbeat-widget .presence-heartbeat-room-empty { color: #646970; font-size: 13px; font-style: italic; padding: 8px 12px; }
 		#presence-heartbeat-widget .presence-debugger-table { border-top: 1px solid #f0f0f1; }
 		#presence-heartbeat-widget .presence-debugger-table iframe { width: 100%; min-height: 60px; border: none; display: block; }
-		#presence-heartbeat-widget .presence-heartbeat-desc { margin: 0; font-size: 12px; color: #a7aaad; }
+		#presence-heartbeat-widget .presence-heartbeat-desc { margin: 0; font-size: 12px; color: #646970; }
 		#presence-heartbeat-widget .presence-heartbeat-desc a { color: #2271b1; text-decoration: none; }
 		#presence-heartbeat-widget .presence-heartbeat-desc a:hover { color: #135e96; text-decoration: underline; }
 		@keyframes presence-heart {
