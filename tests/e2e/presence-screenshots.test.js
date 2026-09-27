@@ -57,6 +57,20 @@ async function snapElement( page, selector, name ) {
 	}
 }
 
+async function connectHeartbeat( page ) {
+	const heartbeatResponse = page.waitForResponse( ( response ) => {
+		const request = response.request();
+		return (
+			response.url().includes( '/wp-admin/admin-ajax.php' ) &&
+			request.method() === 'POST' &&
+			new URLSearchParams( request.postData() ?? '' ).get( 'action' ) ===
+				'heartbeat'
+		);
+	} );
+	await page.evaluate( () => wp.heartbeat.connectNow() );
+	await heartbeatResponse;
+}
+
 const test = base.extend( {} );
 
 test.describe.serial( 'Presence Screenshots', () => {
@@ -72,8 +86,7 @@ test.describe.serial( 'Presence Screenshots', () => {
 	test( '01 — Empty state', async ( { admin, page } ) => {
 		wpCli( 'db query "TRUNCATE TABLE wp_presence"' );
 		await admin.visitAdminPage( '/' );
-		await page.evaluate( () => wp.heartbeat.connectNow() );
-		await page.waitForTimeout( 3000 );
+		await connectHeartbeat( page );
 
 		await snap( page, '01-empty-dashboard' );
 		await snapElement(
@@ -86,8 +99,7 @@ test.describe.serial( 'Presence Screenshots', () => {
 	test( '02 — Active users (5)', async ( { admin, page } ) => {
 		demoSeeder( 'wp_presence_demo_seed( 5 );' );
 		await admin.visitAdminPage( '/' );
-		await page.evaluate( () => wp.heartbeat.connectNow() );
-		await page.waitForTimeout( 3000 );
+		await connectHeartbeat( page );
 
 		await snap( page, '02-active-dashboard' );
 		await snapElement(
@@ -104,7 +116,9 @@ test.describe.serial( 'Presence Screenshots', () => {
 		const barNode = page.locator( '#wp-admin-bar-presence-online' );
 		if ( await barNode.isVisible().catch( () => false ) ) {
 			await barNode.hover();
-			await page.waitForTimeout( 500 );
+			await page
+				.locator( '#wp-admin-bar-presence-online .ab-sub-wrapper' )
+				.waitFor( { state: 'visible' } );
 			await snap( page, '02-active-admin-bar-dropdown' );
 		}
 	} );
@@ -114,8 +128,7 @@ test.describe.serial( 'Presence Screenshots', () => {
 		wpCli( 'db query "TRUNCATE TABLE wp_presence"' );
 		demoSeeder( 'wp_presence_demo_seed( 20 );' );
 		await admin.visitAdminPage( '/' );
-		await page.evaluate( () => wp.heartbeat.connectNow() );
-		await page.waitForTimeout( 3000 );
+		await connectHeartbeat( page );
 
 		await snap( page, '03-scale-dashboard' );
 		await snapElement(
@@ -127,21 +140,20 @@ test.describe.serial( 'Presence Screenshots', () => {
 
 	test( '04 — Post list editors column', async ( { admin, page } ) => {
 		await admin.visitAdminPage( 'edit.php' );
-		await page.waitForTimeout( 2000 );
+		await page.locator( '#the-list' ).waitFor();
 		await snap( page, '04-post-list' );
 	} );
 
 	test( '05 — Users list online filter', async ( { admin, page } ) => {
 		await admin.visitAdminPage( 'users.php?presence_status=online' );
-		await page.waitForTimeout( 2000 );
+		await page.locator( '#the-list' ).waitFor();
 		await snap( page, '05-users-online' );
 	} );
 
 	test( '06 — Idle state', async ( { admin, page } ) => {
 		await page.waitForTimeout( 35_000 );
 		await admin.visitAdminPage( '/' );
-		await page.evaluate( () => wp.heartbeat.connectNow() );
-		await page.waitForTimeout( 3000 );
+		await connectHeartbeat( page );
 
 		await snap( page, '06-idle-dashboard' );
 		await snapElement(
@@ -154,8 +166,7 @@ test.describe.serial( 'Presence Screenshots', () => {
 	test( '07 — Expired (back to empty)', async ( { admin, page } ) => {
 		await page.waitForTimeout( 30_000 );
 		await admin.visitAdminPage( '/' );
-		await page.evaluate( () => wp.heartbeat.connectNow() );
-		await page.waitForTimeout( 3000 );
+		await connectHeartbeat( page );
 
 		await snap( page, '07-expired-dashboard' );
 		demoSeeder( 'wp_presence_demo_cleanup();' );
