@@ -128,7 +128,9 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 			}
 			return current_user_can( 'read_post', $post_id ) ? array( $title, get_permalink( $post_id ) ) : array( '', '' );
 		} elseif ( $post_id && get_post_type( $post_id ) === $screen ) {
-			return array( get_the_title( $post_id ), (string) get_edit_post_link( $post_id, 'raw' ) );
+			return array( get_the_title( $post_id ), (string) get_edit_post_link( $post_id, 'raw' ), true );
+		} elseif ( 'profile' === $screen ) {
+			return array( $title, get_edit_user_link( (int) $entry->user_id ) );
 		} elseif ( 'dashboard' === $screen ) {
 			$path = '';
 		} elseif ( preg_match( '/_page_(.+)$/', $screen, $matches ) ) {
@@ -137,7 +139,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 			$path = 'edit.php?post_type=' . $type;
 		} elseif ( 0 === strpos( $screen, 'edit-' ) && taxonomy_exists( $type ) ) {
 			$path = 'edit-tags.php?taxonomy=' . $type;
-		} elseif ( ! in_array( $screen, array( 'post', 'comment', 'user-edit', 'term', 'media' ), true ) && file_exists( ABSPATH . 'wp-admin/' . $screen . '.php' ) ) {
+		} elseif ( ! in_array( $screen, array( 'post', 'post-new', 'comment', 'user-edit', 'term', 'media' ), true ) && file_exists( ABSPATH . 'wp-admin/' . $screen . '.php' ) ) {
 			$path = $screen . '.php';
 		}
 
@@ -151,13 +153,15 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 
 	$crowds = array_count_values( array_filter( array_column( $places, 0 ) ) );
 
-	// The busiest places come first, and anyone whose place is hidden goes last.
+	// Posts being edited are the places people share, so they come first, then the busiest screens, and hidden places last.
+	$rank = function ( $entry ) use ( $places, $crowds ) {
+		list( $label, , $editing ) = $places[ (int) $entry->user_id ] + array( '', '', false );
+		return array( ! $editing, -( $crowds[ $label ] ?? 0 ), $label );
+	};
 	usort(
 		$elsewhere,
-		function ( $a, $b ) use ( $places, $crowds, $by_name ) {
-			$place_a = $places[ (int) $a->user_id ][0];
-			$place_b = $places[ (int) $b->user_id ][0];
-			$order   = array( $crowds[ $place_b ] ?? 0, $place_a ) <=> array( $crowds[ $place_a ] ?? 0, $place_b );
+		function ( $a, $b ) use ( $rank, $by_name ) {
+			$order = $rank( $a ) <=> $rank( $b );
 			return $order ? $order : $by_name( $a, $b );
 		}
 	);
