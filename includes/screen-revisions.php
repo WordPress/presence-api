@@ -8,7 +8,7 @@
  * non-blocking notice prompting them to reload.
  *
  * Coverage: classic admin screens that submit via POST and redirect on
- * success — Settings → General/Writing/Reading/Discussion/Media/Permalinks/Privacy,
+ * success: Settings → General/Writing/Reading/Discussion/Media/Permalinks/Privacy,
  * Settings API pages whose menu slug is their option group, post edits
  * (post.php), user edits (user-edit.php, profile.php), term edits
  * (edit-tags.php), comment edits (comment.php), and on multisite Network
