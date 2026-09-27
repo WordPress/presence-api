@@ -400,10 +400,7 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 			$results = array();
 		}
 
-		$user_ids = wp_list_pluck( $results, 'user_id' );
-		if ( ! empty( $user_ids ) ) {
-			cache_users( $user_ids );
-		}
+		cache_users( wp_list_pluck( $results, 'user_id' ) );
 
 		foreach ( $results as $row ) {
 			$decoded   = json_decode( $row->data, true );
