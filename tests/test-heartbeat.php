@@ -218,6 +218,20 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * @covers ::wp_presence_online_hash_heartbeat_received
+	 */
+	public function test_the_online_hash_hides_where_a_hidden_user_moves() {
+		$other_id = self::factory()->user->create( array( 'role' => 'editor' ) );
+		wp_set_presence( wp_presence_admin_room(), 'user-' . $other_id, array( 'screen' => 'front', 'post_id' => 1 ), $other_id );
+		wp_set_current_user( self::$editor_id );
+
+		$hash = $this->hash_tick()['presence-online-hash'];
+		wp_set_presence( wp_presence_admin_room(), 'user-' . $other_id, array( 'screen' => 'front', 'post_id' => 2 ), $other_id );
+
+		$this->assertArrayHasKey( 'presence-online-unchanged', $this->hash_tick( $hash ) );
+	}
+
+	/**
 	 * Every tick rewrites the pinging user's timestamp, which wp_get_presence() orders by.
 	 *
 	 * @covers ::wp_presence_online_hash_heartbeat_received

@@ -548,6 +548,14 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$this->assertArrayNotHasKey( 'presence-admin-bar', $response );
 	}
 
+	public function test_a_refreshed_heartbeat_nonce_brings_a_fresh_screen_token() {
+		wp_set_current_user( self::$editor_id );
+		$fresh = apply_filters( 'wp_refresh_nonces', array(), array(), 'upload' )['presence-screen-token'];
+
+		$this->assertSame( 'upload', $fresh['screen'] );
+		$this->assertSame( 1, wp_verify_nonce( $fresh['token'], 'wp_presence_screen_upload' ) );
+	}
+
 	public function test_the_heartbeat_sends_no_node_unless_the_page_has_one() {
 		wp_set_current_user( self::$editor_id );
 		$response = wp_presence_admin_bar_heartbeat_received(

@@ -146,6 +146,13 @@
 			let lastAdminBar = '';
 
 			$( document ).on( 'heartbeat-tick', function ( event, data ) {
+				const minted = data[ 'presence-screen-token' ];
+				if (
+					minted &&
+					minted.screen === ( window.pagenow || 'front' )
+				) {
+					config.screenToken = minted.token;
+				}
 				const html = data[ 'presence-admin-bar' ];
 				if ( ! html || html === lastAdminBar ) {
 					return;

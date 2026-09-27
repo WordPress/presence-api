@@ -331,6 +331,7 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 				'screen'  => 'front',
 				'title'   => 'Hello world!',
 				'post_id' => 1,
+				'color'   => '#3858e9',
 			),
 			self::$editor_2_id
 		);
@@ -349,7 +350,7 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 		wp_set_current_user( self::$editor_id );
 		$seen = $screens();
 		$this->assertSame( 'dashboard', $seen[ self::$editor_id ]['screen'], 'Your own location is never hidden from you.' );
-		$this->assertSame( array(), $seen[ self::$editor_2_id ], 'A front-end title and post ID say where someone is as plainly as a screen.' );
+		$this->assertSame( array( 'color' => '#3858e9' ), $seen[ self::$editor_2_id ], 'A front-end title and post ID say where someone is as plainly as a screen.' );
 
 		wp_set_current_user( self::$admin_id );
 		$this->assertSame( 'Hello world!', $screens()[ self::$editor_2_id ]['title'] );

@@ -334,11 +334,31 @@ function wp_presence_admin_bar_heartbeat_received( $response, $data ) {
 
 	// The screen decides who is "On this page", so an unproven one would reveal where anyone is.
 	$screen = sanitize_text_field( $data['presence-ping']['screen'] );
-	if ( ! wp_verify_nonce( $data['presence-ping']['token'] ?? '', 'wp_presence_screen_' . $screen ) ) {
+	$token  = $data['presence-ping']['token'] ?? '';
+	if ( ! is_string( $token ) || ! wp_verify_nonce( $token, 'wp_presence_screen_' . $screen ) ) {
 		return $response;
 	}
 
 	$response['presence-admin-bar'] = wp_presence_admin_bar_node_markup( $screen );
+
+	return $response;
+}
+
+/**
+ * Sends a fresh screen token whenever core refreshes its Heartbeat nonce.
+ *
+ * @since 0.9.0
+ *
+ * @param array  $response  The Heartbeat response.
+ * @param array  $data      Data received from the client.
+ * @param string $screen_id The screen ID.
+ * @return array The Heartbeat response.
+ */
+function wp_presence_refresh_screen_token( $response, $data, $screen_id ) {
+	$response['presence-screen-token'] = array(
+		'screen' => $screen_id,
+		'token'  => wp_create_nonce( 'wp_presence_screen_' . $screen_id ),
+	);
 
 	return $response;
 }

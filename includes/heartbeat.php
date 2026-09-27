@@ -315,10 +315,11 @@ function wp_presence_online_hash_heartbeat_received( $response, $data ) {
 
 	$state = array();
 	foreach ( wp_get_presence( wp_presence_admin_room() ) as $entry ) {
+		$screen = wp_presence_get_entry_screen( $entry );
 		// Leaves out date_gmt, which moves on every tick while nothing else does.
-		$state[] = array(
+		$state[] = '' === $screen ? array( (int) $entry->user_id ) : array(
 			(int) $entry->user_id,
-			wp_presence_get_entry_screen( $entry ),
+			$screen,
 			isset( $entry->data['post_status'] ) ? $entry->data['post_status'] : '',
 			isset( $entry->data['title'] ) ? $entry->data['title'] : '',
 			isset( $entry->data['post_id'] ) ? (int) $entry->data['post_id'] : 0,

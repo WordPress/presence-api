@@ -52,6 +52,7 @@ add_action( 'admin_enqueue_scripts', 'wp_presence_admin_bar_assets' );
 add_action( 'wp_enqueue_scripts', 'wp_presence_admin_bar_assets' );
 // After the admin/online write at 9, so the node counts this tick.
 add_filter( 'heartbeat_received', 'wp_presence_admin_bar_heartbeat_received', 13, 2 );
+add_filter( 'wp_refresh_nonces', 'wp_presence_refresh_screen_token', 10, 3 );
 
 add_filter( 'views_users', 'wp_presence_users_views' );
 add_action( 'pre_get_users', 'wp_presence_filter_online_users' );
