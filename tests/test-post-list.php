@@ -10,6 +10,7 @@
  * @covers ::wp_presence_add_editors_column
  * @covers ::wp_presence_render_editors_column
  * @covers ::wp_presence_editors_column_css
+ * @covers ::wp_presence_editors_column_heartbeat_received
  */
 class WP_Test_Presence_Post_List extends WP_Presence_UnitTestCase {
 
@@ -36,9 +37,11 @@ class WP_Test_Presence_Post_List extends WP_Presence_UnitTestCase {
 	public function test_registers_columns_only_for_presence_supporting_post_types() {
 		// Public, but does not support presence: excluded by the in-loop check.
 		register_post_type( 'no_presence', array( 'public' => true ) );
-		// Not public: excluded before the loop even sees it, by get_post_types( array( 'public' => true ) ).
-		register_post_type( 'private_type', array( 'public' => false ) );
+		// Not public, but has a list screen, as core's list tables key off show_ui.
+		register_post_type( 'private_type', array( 'show_ui' => true ) );
 		add_post_type_support( 'private_type', 'presence' );
+		register_post_type( 'no_ui', array( 'show_ui' => false ) );
+		add_post_type_support( 'no_ui', 'presence' );
 
 		wp_set_current_user( self::$editor_id );
 		wp_presence_register_post_list_columns();
@@ -46,11 +49,13 @@ class WP_Test_Presence_Post_List extends WP_Presence_UnitTestCase {
 		$this->assertNotFalse( has_filter( 'manage_post_posts_columns', 'wp_presence_add_editors_column' ) );
 		$this->assertNotFalse( has_action( 'manage_post_posts_custom_column', 'wp_presence_render_editors_column' ) );
 		$this->assertFalse( has_filter( 'manage_no_presence_posts_columns', 'wp_presence_add_editors_column' ) );
-		$this->assertFalse( has_filter( 'manage_private_type_posts_columns', 'wp_presence_add_editors_column' ) );
+		$this->assertNotFalse( has_filter( 'manage_private_type_posts_columns', 'wp_presence_add_editors_column' ) );
+		$this->assertFalse( has_filter( 'manage_no_ui_posts_columns', 'wp_presence_add_editors_column' ) );
 		$this->assertNotFalse( has_action( 'admin_enqueue_scripts', 'wp_presence_editors_column_css' ) );
 
 		unregister_post_type( 'no_presence' );
 		unregister_post_type( 'private_type' );
+		unregister_post_type( 'no_ui' );
 	}
 
 	public function test_does_not_register_columns_without_edit_posts_capability() {
@@ -157,5 +162,31 @@ class WP_Test_Presence_Post_List extends WP_Presence_UnitTestCase {
 
 		wp_presence_editors_column_css( 'edit.php' );
 		$this->assertTrue( wp_style_is( 'presence-post-list', 'enqueued' ) );
+	}
+
+	public function test_each_heartbeat_sends_fresh_editors_cells_for_the_rows_on_screen() {
+		wp_set_current_user( self::$editor_id );
+
+		$page    = self::factory()->post->create( array( 'post_type' => 'page' ) );
+		$empty   = self::factory()->post->create();
+		register_post_type( 'no_presence', array( 'show_ui' => true ) );
+		$other = self::factory()->post->create( array( 'post_type' => 'no_presence' ) );
+
+		wp_set_presence( wp_presence_post_room( $page ), 'editor-1', array(), self::$editor_id );
+
+		$response = wp_presence_editors_column_heartbeat_received(
+			array(),
+			array( 'wp-check-locked-posts' => array( 'post-' . $page, 'post-' . $empty, 'post-' . $other, array( 'post-1' ) ) )
+		);
+		$cells    = $response['presence-editors'];
+
+		$this->assertSame( 1, substr_count( $cells[ 'post-' . $page ], '<img' ) );
+		$this->assertSame( '', $cells[ 'post-' . $empty ], 'An empty cell clears whoever left.' );
+		$this->assertArrayNotHasKey( 'post-' . $other, $cells );
+
+		wp_set_current_user( self::$subscriber_id );
+		$this->assertSame( array(), wp_presence_editors_column_heartbeat_received( array(), array( 'wp-check-locked-posts' => array( 'post-' . $page ) ) ) );
+
+		unregister_post_type( 'no_presence' );
 	}
 }

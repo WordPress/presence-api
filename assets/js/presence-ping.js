@@ -240,6 +240,23 @@
 			} );
 		}
 
+		if ( document.querySelector( '#the-list .column-presence_editors' ) ) {
+			const lastCells = {};
+
+			$( document ).on( 'heartbeat-tick', function ( event, data ) {
+				const cells = data[ 'presence-editors' ] || {};
+				Object.keys( cells ).forEach( function ( id ) {
+					const cell = document.querySelector(
+						'#' + CSS.escape( id ) + ' .column-presence_editors'
+					);
+					if ( cell && lastCells[ id ] !== cells[ id ] ) {
+						cell.innerHTML = cells[ id ];
+						lastCells[ id ] = cells[ id ];
+					}
+				} );
+			} );
+		}
+
 		if ( editorRoom ) {
 			$( document ).on( 'heartbeat-tick', function ( event, data ) {
 				if (
