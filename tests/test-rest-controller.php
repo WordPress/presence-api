@@ -317,6 +317,24 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Where people are is gated in the UI, so REST must not hand it to the same users.
+	 *
+	 * @covers ::wp_presence_map_meta_cap
+	 */
+	public function test_get_items_shows_screens_only_to_users_who_can_list_users() {
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_2_id, array( 'screen' => 'options-general' ), self::$editor_2_id );
+
+		$request = new WP_REST_Request( 'GET', '/wp-presence/v1/presence' );
+		$request->set_param( 'room', 'admin/online' );
+
+		wp_set_current_user( self::$editor_id );
+		$this->assertArrayNotHasKey( 'screen', rest_get_server()->dispatch( $request )->get_data()[0]['data'] );
+
+		wp_set_current_user( self::$admin_id );
+		$this->assertSame( 'options-general', rest_get_server()->dispatch( $request )->get_data()[0]['data']['screen'] );
+	}
+
+	/**
 	 * The custom validate_callback on screen_key replaces the default one, so the
 	 * schema's maxLength only applies if that callback delegates to it.
 	 *

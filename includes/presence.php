@@ -888,6 +888,25 @@ function wp_presence_parse_room( $room ) {
 }
 
 /**
+ * Maps the capability to see which screen other users are on.
+ *
+ * Mapped to `list_users` because where people are is user-directory information.
+ *
+ * @since 0.9.0
+ *
+ * @param string[] $caps Primitive capabilities the user must have.
+ * @param string   $cap  Capability being checked.
+ * @return string[] Primitive capabilities the user must have.
+ */
+function wp_presence_map_meta_cap( $caps, $cap ) {
+	if ( 'view_presence_locations' === $cap ) {
+		return array( 'list_users' );
+	}
+
+	return $caps;
+}
+
+/**
  * Checks if a user can access a presence room.
  *
  * @param string $room    The room identifier.

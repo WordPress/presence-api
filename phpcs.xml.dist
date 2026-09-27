@@ -23,6 +23,15 @@
 		<exclude name="Universal.Arrays.DisallowShortArraySyntax"/>
 	</rule>
 
+	<!-- Meta capability mapped in wp_presence_map_meta_cap(). -->
+	<rule ref="WordPress.WP.Capabilities">
+		<properties>
+			<property name="custom_capabilities" type="array">
+				<element value="view_presence_locations"/>
+			</property>
+		</properties>
+	</rule>
+
 	<!-- Check for PHP cross-version compatibility. -->
 	<config name="testVersion" value="7.4-"/>
 	<rule ref="PHPCompatibilityWP"/>

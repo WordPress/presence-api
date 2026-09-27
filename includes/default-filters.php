@@ -19,6 +19,7 @@ add_filter( 'wp_privacy_personal_data_exporters', 'wp_presence_register_personal
 add_filter( 'wp_privacy_personal_data_erasers', 'wp_presence_register_personal_data_eraser' );
 // phpcs:ignore WordPress.WP.CronInterval -- 60-second interval is intentional for presence cleanup.
 add_filter( 'cron_schedules', 'wp_presence_cron_schedules' );
+add_filter( 'map_meta_cap', 'wp_presence_map_meta_cap', 10, 2 );
 
 add_action( 'wp_login', 'wp_presence_on_login', 10, 2 );
 add_action( 'wp_logout', 'wp_presence_on_logout', 10, 1 );

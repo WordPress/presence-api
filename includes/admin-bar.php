@@ -225,10 +225,10 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 		}
 	}
 
-	// Where others are is for people who can browse the site's users; the rest see only who shares their page.
-	$can_list_users = current_user_can( 'list_users' );
+	// Without it, you see only who shares your page.
+	$can_see_locations = current_user_can( 'view_presence_locations' );
 
-	if ( $can_list_users && ! empty( $elsewhere ) ) {
+	if ( $can_see_locations && ! empty( $elsewhere ) ) {
 		$add_section( 'elsewhere', __( 'Elsewhere', 'presence-api' ) );
 
 		$shown = 0;
@@ -270,7 +270,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 		}
 	}
 
-	if ( ! $can_list_users ) {
+	if ( ! $can_see_locations ) {
 		return;
 	}
 
