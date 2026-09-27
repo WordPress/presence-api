@@ -127,23 +127,23 @@ const WP_PRESENCE_DEMO_LAST_NAMES = array(
 );
 
 /**
- * Admin screen slugs used when seeding presence entries.
+ * Admin screens used when seeding presence entries, keyed to the page title a real ping would send.
  *
  * @var array
  */
 const WP_PRESENCE_DEMO_SCREENS = array(
-	'dashboard',
-	'edit',
-	'post',
-	'post-new',
-	'upload',
-	'edit-comments',
-	'themes',
-	'plugins',
-	'users',
-	'profile',
-	'tools',
-	'options-general',
+	'dashboard'       => 'Dashboard',
+	'edit'            => 'Posts',
+	'post'            => 'Edit Post',
+	'post-new'        => 'Add New Post',
+	'upload'          => 'Media Library',
+	'edit-comments'   => 'Comments',
+	'themes'          => 'Themes',
+	'plugins'         => 'Plugins',
+	'users'           => 'Users',
+	'profile'         => 'Profile',
+	'tools'           => 'Tools',
+	'options-general' => 'General Settings',
 );
 
 /**
@@ -330,8 +330,11 @@ function wp_presence_demo_refresh( $user_ids ) {
 
 	foreach ( $user_ids as $uid ) {
 		// Guarantee at least one user is editing a post for the Active Posts widget.
-		$screen = $first_user ? 'post' : $screens[ array_rand( $screens ) ];
-		$state  = array( 'screen' => $screen );
+		$screen = $first_user ? 'post' : array_rand( $screens );
+		$state  = array(
+			'screen' => $screen,
+			'title'  => $screens[ $screen ],
+		);
 
 		if ( in_array( $screen, array( 'post', 'post-new' ), true ) ) {
 			$state['post_status'] = $post_statuses[ array_rand( $post_statuses ) ];
