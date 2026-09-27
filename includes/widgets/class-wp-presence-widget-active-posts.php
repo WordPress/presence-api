@@ -286,10 +286,10 @@ class WP_Presence_Widget_Active_Posts {
 			$editors = $post_data['editors'];
 			$parts   = array();
 
-			// Only the lock holder can change the post, so only they get core's editing label.
+			// Only the lock holder can change the post, so only they get core's wording for a lock.
 			if ( isset( $editors[ $holder ] ) ) {
 				/* translators: %s: User's display name. */
-				$parts[] = sprintf( __( '%s is currently editing', 'default' ), $editors[ $holder ]['display_name'] ); // phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- Reuses core's post lock string.
+				$parts[] = sprintf( __( '%s is currently editing', 'presence-api' ), $editors[ $holder ]['display_name'] );
 				$editors = array( $holder => $editors[ $holder ] ) + $editors;
 			}
 
