@@ -681,13 +681,30 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 	/**
 	 * @covers ::wp_presence_enqueue_stale_screen_banner
 	 */
-	public function test_a_user_without_edit_posts_gets_no_banner() {
+	public function test_a_user_who_cannot_reach_the_screen_gets_no_banner() {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
 		set_current_screen( 'options-general' );
 
 		$this->enqueue_banner();
 
 		$this->assertFalse( wp_script_is( 'wp-presence-stale-screen', 'enqueued' ) );
+	}
+
+	/**
+	 * @covers ::wp_presence_enqueue_stale_screen_banner
+	 */
+	public function test_a_role_that_edits_only_pages_gets_the_banner_on_a_page() {
+		$user = self::factory()->user->create_and_get( array( 'role' => 'subscriber' ) );
+		$user->add_cap( 'edit_pages' );
+		$user->add_cap( 'edit_others_pages' );
+		$user->add_cap( 'edit_published_pages' );
+		wp_set_current_user( $user->ID );
+		$GLOBALS['post'] = self::factory()->post->create_and_get( array( 'post_type' => 'page' ) );
+		set_current_screen( 'page' );
+
+		$this->enqueue_banner();
+
+		$this->assertSame( 'post/' . $GLOBALS['post']->ID, $this->banner_config()['screenKey'] );
 	}
 
 	/**

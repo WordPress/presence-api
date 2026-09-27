@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *                                   Default null.
  */
 function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
-	if ( ! is_user_logged_in() || ! current_user_can( 'edit_posts' ) ) {
+	if ( ! is_user_logged_in() || ! wp_presence_user_can_edit_any_post_type() ) {
 		return;
 	}
 
@@ -455,7 +455,7 @@ function wp_presence_admin_bar_node_markup( $screen ) {
  * @return array The Heartbeat response.
  */
 function wp_presence_admin_bar_heartbeat_received( $response, $data ) {
-	if ( ! wp_presence_fragment_request( $data, 'admin-bar' ) || empty( $data['presence-ping']['screen'] ) || ! current_user_can( 'edit_posts' ) ) {
+	if ( ! wp_presence_fragment_request( $data, 'admin-bar' ) || empty( $data['presence-ping']['screen'] ) || ! wp_presence_user_can_edit_any_post_type() ) {
 		return $response;
 	}
 
@@ -496,7 +496,7 @@ function wp_presence_refresh_screen_token( $response, $data, $screen_id ) {
  * @since 0.1.1
  */
 function wp_presence_admin_bar_assets() {
-	if ( ! is_user_logged_in() || ! is_admin_bar_showing() || ! current_user_can( 'edit_posts' ) ) {
+	if ( ! is_user_logged_in() || ! is_admin_bar_showing() || ! wp_presence_user_can_edit_any_post_type() ) {
 		return;
 	}
 

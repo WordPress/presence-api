@@ -25,7 +25,7 @@ class WP_Presence_Widget_Active_Posts {
 	 * @since 0.1.1
 	 */
 	public static function register() {
-		if ( ! current_user_can( 'edit_posts' ) ) {
+		if ( ! wp_presence_user_can_edit_any_post_type() ) {
 			return;
 		}
 
@@ -156,7 +156,7 @@ class WP_Presence_Widget_Active_Posts {
 			return $response;
 		}
 
-		if ( ! current_user_can( 'edit_posts' ) ) {
+		if ( ! wp_presence_user_can_edit_any_post_type() ) {
 			return $response;
 		}
 
@@ -219,7 +219,7 @@ class WP_Presence_Widget_Active_Posts {
 				continue;
 			}
 
-			// Rendering the widget only takes `edit_posts`, so without this a
+			// Rendering the widget only takes editing some post type, so without this a
 			// contributor would receive the title, edit link and editors of
 			// every post being worked on. Same check the REST controller
 			// applies to the room collection.

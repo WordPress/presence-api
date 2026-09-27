@@ -792,7 +792,7 @@ function wp_presence_current_user_can_access_screen( $screen_key ) {
 		if ( ! current_user_can( 'edit_comment', (int) $m[1] ) ) {
 			return false;
 		}
-	} elseif ( ! current_user_can( 'edit_posts' ) ) {
+	} elseif ( ! wp_presence_user_can_edit_any_post_type() ) {
 		return false;
 	}
 
@@ -869,12 +869,12 @@ function wp_presence_enqueue_stale_screen_banner() {
 	if ( ! is_admin() ) {
 		return;
 	}
-	if ( ! is_user_logged_in() || ! current_user_can( 'edit_posts' ) ) {
+	if ( ! is_user_logged_in() ) {
 		return;
 	}
 
 	$screen_key = wp_presence_current_screen_key();
-	if ( '' === $screen_key ) {
+	if ( '' === $screen_key || ! wp_presence_current_user_can_access_screen( $screen_key ) ) {
 		return;
 	}
 
