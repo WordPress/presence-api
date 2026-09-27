@@ -358,7 +358,26 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$rows = array_count_values( wp_list_pluck( array_filter( $nodes, fn( $n ) => 0 === strpos( $n->id, 'presence-user-' ) ), 'parent' ) );
 
 		$this->assertSame( array( 'presence-here' => 10, 'presence-elsewhere' => 10 ), $rows );
+		$this->assertSame( '2 more', $nodes['presence-more']->title );
+		$this->assertSame( 'presence-elsewhere', $nodes['presence-more']->parent );
 		$this->assertSame( wp_nonce_url( admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' ), $nodes['presence-view-all']->href );
+	}
+
+	/**
+	 * With no one elsewhere, the count closes the On this page group.
+	 */
+	public function test_the_count_of_those_left_out_can_close_on_this_page() {
+		$this->view_admin_page( 'upload.php', 'upload' );
+
+		for ( $i = 0; $i < 11; $i++ ) {
+			$this->put_user_on_screen( 'upload' );
+		}
+
+		wp_set_current_user( self::$editor_id );
+		$nodes = $this->render_nodes();
+
+		$this->assertSame( '1 more', $nodes['presence-more']->title );
+		$this->assertSame( 'presence-here', $nodes['presence-more']->parent );
 	}
 
 	/**

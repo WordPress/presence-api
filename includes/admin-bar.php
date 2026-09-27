@@ -198,10 +198,10 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 		}
 	}
 
+	$shown = 0;
+
 	if ( ! empty( $elsewhere ) ) {
 		$add_section( 'elsewhere', __( 'Elsewhere', 'presence-api' ) );
-
-		$shown = 0;
 
 		foreach ( $elsewhere as $entry ) {
 			if ( $shown >= $max_rows ) {
@@ -239,6 +239,21 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 			$row( 'elsewhere', $user, $screen_label, $screen_url ? $screen_url : false );
 			++$shown;
 		}
+	}
+
+	// Says how many the caps left out, so the rows never read as everyone online.
+	$more = max( 0, count( $here ) - $max_rows ) + max( 0, count( $elsewhere ) - $shown );
+	if ( $more ) {
+		$wp_admin_bar->add_node(
+			array(
+				'parent' => empty( $elsewhere ) ? 'presence-here' : 'presence-elsewhere',
+				'id'     => 'presence-more',
+				/* translators: %d: Number of online users the menu leaves out. */
+				'title'  => sprintf( _n( '%d more', '%d more', $more, 'presence-api' ), $more ),
+				'href'   => false,
+				'meta'   => array( 'class' => 'presence-bar-more' ),
+			)
+		);
 	}
 
 	// The footer links to the Users list.
@@ -339,11 +354,12 @@ function wp_presence_admin_bar_assets() {
 		#wp-admin-bar-presence-online .presence-bar-name, #wp-admin-bar-presence-online .presence-bar-screen { overflow: hidden; text-overflow: ellipsis; }
 		#wp-admin-bar-presence-online .presence-bar-name { flex: 0 0 auto; max-width: 60%; }
 		#wp-admin-bar-presence-online .presence-bar-screen { flex: 0 1 auto; min-width: 0; margin-inline-start: auto; padding-inline-start: 16px; color: #a7aaad; font-size: 11px; }
-		#wp-admin-bar-presence-online .presence-bar-group-header > .ab-item { color: #a7aaad !important; cursor: default; }
+		#wp-admin-bar-presence-online .presence-bar-group-header > .ab-item, #wp-admin-bar-presence-online .presence-bar-more > .ab-item { color: #a7aaad !important; cursor: default; }
 		#wp-admin-bar-presence-online .presence-bar-group-label { font-size: 11px; font-weight: 500; text-transform: uppercase; color: inherit; }
 		.admin-color-light #wpadminbar #wp-admin-bar-presence-online .presence-bar-count,
 		.admin-color-light #wpadminbar #wp-admin-bar-presence-online .presence-bar-screen,
-		.admin-color-light #wpadminbar #wp-admin-bar-presence-online .presence-bar-group-header > .ab-item { color: #50575e !important; }
+		.admin-color-light #wpadminbar #wp-admin-bar-presence-online .presence-bar-group-header > .ab-item,
+		.admin-color-light #wpadminbar #wp-admin-bar-presence-online .presence-bar-more > .ab-item { color: #50575e !important; }
 	';
 
 	// You wear the admin theme color, as in the block editor, so your ring never matches anyone on the page.
