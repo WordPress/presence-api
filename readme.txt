@@ -3,7 +3,7 @@ Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas,
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.1
-Stable tag: 0.10.0
+Stable tag: 0.11.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -65,6 +65,15 @@ For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/presence-api/blob/main/CHANGELOG.md
 
+= 0.11.0 =
+* Show presence on every post type edited in the admin ([#631](https://github.com/WordPress/presence-api/issues/631)).
+* Give presence to roles that edit only pages or a custom post type ([#637](https://github.com/WordPress/presence-api/issues/637)).
+* Join the post room for what the Site Editor has open ([#638](https://github.com/WordPress/presence-api/issues/638)).
+* Keep post locks in the presence table with recording off ([#644](https://github.com/WordPress/presence-api/issues/644)).
+* Name post types, untitled posts and sites in the dashboard widgets ([#634](https://github.com/WordPress/presence-api/issues/634)).
+* Stop labelling Active Posts as posts being edited ([#645](https://github.com/WordPress/presence-api/issues/645)).
+* Translate reused core strings under the plugin's text domain ([#646](https://github.com/WordPress/presence-api/issues/646)).
+
 = 0.10.0 =
 * Fold shared screens into one row in the admin bar menu ([#615](https://github.com/WordPress/presence-api/issues/615)).
 * List people editing posts first in the admin bar menu ([#603](https://github.com/WordPress/presence-api/issues/603)).
@@ -106,11 +115,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 * Stop the site TTL filter overriding an explicit $timeout ([#540](https://github.com/WordPress/presence-api/issues/540)).
 * Typos CI failure caused by changelog link label in `readme.txt` ([#527](https://github.com/WordPress/presence-api/issues/527)).
 * Decide redundant presence writes inside the upsert ([#542](https://github.com/WordPress/presence-api/issues/542)).
-
-= 0.6.0 =
-* Add Network Admin plugin action links ([#513](https://github.com/WordPress/presence-api/issues/513)).
-* Add wp_presence_is_available() for integrators ([#519](https://github.com/WordPress/presence-api/issues/519)).
-* Expose the room's collaborator count as JS hooks ([#503](https://github.com/WordPress/presence-api/issues/503)).
-* Centralize network site status filtering ([#453](https://github.com/WordPress/presence-api/issues/453)).
-* Keep a client that is still pinging out of the idle state ([#522](https://github.com/WordPress/presence-api/issues/522)).
-* Keep the collaboration edge state in the presence table ([#514](https://github.com/WordPress/presence-api/issues/514)).
