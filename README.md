@@ -271,6 +271,33 @@ wp.hooks.addAction( 'presence-api.collaborationEnded', 'my-plugin', ( room, coun
 } );
 ```
 
+#### `presence-api.surfaceUpdated`
+Fires after a live surface's markup is swapped for a fresh copy from Heartbeat. Swaps wait while the pointer or focus is inside the surface, or a checkbox in it is checked, and are skipped when the markup has not changed.
+```js
+wp.hooks.addAction( 'presence-api.surfaceUpdated', 'my-plugin', ( key, element ) => {
+    // key is 'admin-bar', 'users-list', 'active-posts', or one you registered.
+} );
+```
+
+### JS Filters
+
+#### `presence-api.liveSurfaces`
+The surfaces `presence-ping.js` keeps current. A surface asks Heartbeat for its key only while `target()` finds it on the page, and the server answers with HTML under the same key.
+```js
+wp.hooks.addFilter( 'presence-api.liveSurfaces', 'my-plugin', ( surfaces ) => [
+    ...surfaces,
+    { key: 'my-plugin-count', target: () => document.getElementById( 'my-plugin-count' ) },
+] );
+```
+```php
+add_filter( 'heartbeat_received', function( $response, $data ) {
+    if ( ! empty( $data['presence-fragments']['my-plugin-count'] ) && current_user_can( 'edit_posts' ) ) {
+        $response['presence-fragments']['my-plugin-count'] = esc_html( my_plugin_count() );
+    }
+    return $response;
+}, 10, 2 );
+```
+
 </details>
 
 ## REST API

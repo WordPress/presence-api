@@ -154,6 +154,13 @@
 	];
 
 	function liveSurfaces() {
+		/**
+		 * Filters the surfaces kept current over Heartbeat.
+		 *
+		 * @since 0.11.0
+		 *
+		 * @param {Object[]} surfaces Each with a `key`, a `target()` lookup, and an optional `request()` and `apply()`.
+		 */
 		return wp.hooks.applyFilters( 'presence-api.liveSurfaces', SURFACES );
 	}
 
@@ -183,6 +190,14 @@
 			element.innerHTML = html;
 		}
 		lastFragments[ slot ] = html;
+		/**
+		 * Fires after a live surface is swapped for fresh markup.
+		 *
+		 * @since 0.11.0
+		 *
+		 * @param {string}      key     The surface's key.
+		 * @param {HTMLElement} element The element that was swapped.
+		 */
 		wp.hooks.doAction(
 			'presence-api.surfaceUpdated',
 			surface.key,
