@@ -897,10 +897,32 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 					'readonly'    => true,
 				),
 				'data'         => array(
-					'description'          => __( 'Arbitrary presence state data. In the admin/online room, only the color is kept unless the current user can view that user\'s location.', 'presence-api' ),
+					'description'          => __( 'Presence state data. The plugin writes the keys listed below from Heartbeat; other plugins may store additional keys. In the admin/online room, only the color is kept unless the current user can view that user\'s location.', 'presence-api' ),
 					'type'                 => 'object',
 					'context'              => array( 'view', 'edit' ),
 					'additionalProperties' => true,
+					'properties'           => array(
+						'screen'      => array(
+							'description' => __( 'Current WordPress screen ID (for example dashboard or post).', 'presence-api' ),
+							'type'        => 'string',
+							'context'     => array( 'view', 'edit' ),
+						),
+						'post_id'     => array(
+							'description' => __( 'Related post ID when the user is on a post or a front-end permalink.', 'presence-api' ),
+							'type'        => 'integer',
+							'context'     => array( 'view', 'edit' ),
+						),
+						'post_status' => array(
+							'description' => __( 'Status of the related post when it is known (draft, publish, and so on).', 'presence-api' ),
+							'type'        => 'string',
+							'context'     => array( 'view', 'edit' ),
+						),
+						'title'       => array(
+							'description' => __( 'Document title carried for a front-end URL so it can appear in the admin bar.', 'presence-api' ),
+							'type'        => 'string',
+							'context'     => array( 'view', 'edit' ),
+						),
+					),
 				),
 				'color'        => array(
 					'description' => __( 'The color the user wears on every presence surface, from the block editor\'s collaborator palette.', 'presence-api' ),
