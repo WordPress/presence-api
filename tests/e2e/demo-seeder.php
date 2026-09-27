@@ -147,6 +147,50 @@ const WP_PRESENCE_DEMO_SCREENS = array(
 );
 
 /**
+ * How many demo users land on each screen, relative to the others, so most are writing and few are in settings.
+ */
+const WP_PRESENCE_DEMO_SCREEN_WEIGHTS = array(
+	'dashboard'       => 12,
+	'edit'            => 14,
+	'post'            => 30,
+	'post-new'        => 8,
+	'upload'          => 8,
+	'edit-comments'   => 10,
+	'themes'          => 1,
+	'plugins'         => 2,
+	'users'           => 3,
+	'profile'         => 5,
+	'tools'           => 1,
+	'options-general' => 2,
+);
+
+/**
+ * How many editors each demo post draws, relative to the others, in WP_PRESENCE_DEMO_POSTS order.
+ */
+const WP_PRESENCE_DEMO_POST_WEIGHTS = array( 10, 5, 4, 2, 1 );
+
+/**
+ * Picks a key at random, in proportion to its weight.
+ *
+ * @since 0.11.0
+ *
+ * @param array $weights Weights keyed by the value to return.
+ * @return int|string A key of `$weights`.
+ */
+function wp_presence_demo_pick( $weights ) {
+	$roll = wp_rand( 1, array_sum( $weights ) );
+
+	foreach ( $weights as $key => $weight ) {
+		$roll -= $weight;
+		if ( $roll <= 0 ) {
+			return $key;
+		}
+	}
+
+	return array_key_last( $weights );
+}
+
+/**
  * Returns the display name for a given demo user index.
  *
  * Uses coprime offset arithmetic to pair first and last names so that
@@ -330,7 +374,7 @@ function wp_presence_demo_refresh( $user_ids ) {
 
 	foreach ( $user_ids as $uid ) {
 		// Guarantee at least one user is editing a post for the Active Posts widget.
-		$screen = $first_user ? 'post' : array_rand( $screens );
+		$screen = $first_user ? 'post' : wp_presence_demo_pick( WP_PRESENCE_DEMO_SCREEN_WEIGHTS );
 		$state  = array(
 			'screen' => $screen,
 			'title'  => $screens[ $screen ],
@@ -343,7 +387,7 @@ function wp_presence_demo_refresh( $user_ids ) {
 		wp_set_presence( 'admin/online', 'user-' . $uid, $state, $uid );
 
 		if ( 'post' === $screen ) {
-			$post_id = $real_posts[ array_rand( $real_posts ) ];
+			$post_id = $real_posts[ wp_presence_demo_pick( array_slice( WP_PRESENCE_DEMO_POST_WEIGHTS, 0, count( $real_posts ) ) ) ];
 			wp_set_presence(
 				'postType/post:' . $post_id,
 				'editor-' . $uid,
