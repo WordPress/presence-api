@@ -1,6 +1,6 @@
 # Security Policy
 
-The Presence API is an experimental feature plugin. We take security reports seriously and ask that you give us a reasonable window to ship a fix before public discussion.
+The Presence API is a feature plugin. We take security reports seriously and ask that you give us a reasonable window to ship a fix before public discussion.
 
 ## Reporting a vulnerability
 

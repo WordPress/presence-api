@@ -33,7 +33,7 @@ PHP functions, REST endpoints, WP-CLI commands, filters, and room conventions ar
 
 = Background =
 
-An experimental feature plugin sponsored by the WordPress Core team, exploring what system-wide presence could look like for a future WordPress release. Follow development on [make.wordpress.org/core](https://make.wordpress.org/core/) with the tag `#presence-api`.
+A feature plugin sponsored by the WordPress Core team, exploring what system-wide presence could look like for a future WordPress release. Follow development on [make.wordpress.org/core](https://make.wordpress.org/core/) with the tag `#presence-api`.
 
 == Installation ==
 

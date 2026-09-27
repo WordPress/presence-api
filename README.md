@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/WordPress/presence-api/actions/workflows/ci.yml/badge.svg)](https://github.com/WordPress/presence-api/actions/workflows/ci.yml)
 
-> **Status:** Experimental feature plugin
+> **Status:** Feature plugin
 
 System-wide presence and awareness for WordPress.
 
