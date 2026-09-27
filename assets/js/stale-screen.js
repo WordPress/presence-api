@@ -3,9 +3,7 @@
  *
  * Pings the server with the current screen key on every Heartbeat tick and
  * renders a non-blocking warning notice when the server reports a revision
- * newer than this page's baseline. The baseline and current screen key are
- * passed in via `window.wpPresenceStaleScreen`, which the enqueue handler
- * emits as a `before` inline script.
+ * newer than this page's baseline, read from `window.wpPresenceStaleScreen`.
  *
  * @param {jQuery} $ The jQuery instance.
  * @package Presence_API
