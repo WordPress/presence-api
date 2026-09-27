@@ -870,4 +870,84 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 		$this->assertSame( '', $rev['time_ago'] );
 		$this->assertFalse( $rev['actor_is_me'] );
 	}
+
+	/**
+	 * A Settings API page whose slug is its option group keys to that group,
+	 * the same key its save bumps through option_page.
+	 *
+	 * @covers ::wp_presence_current_screen_key
+	 * @covers ::wp_presence_settings_page_option_group
+	 * @covers ::wp_presence_on_updated_option
+	 */
+	public function test_a_settings_api_page_keys_to_its_option_group() {
+		wp_set_current_user( self::$admin_id );
+		register_setting( 'example-plugin', 'example_plugin_options' );
+		add_option( 'example_plugin_options', 'initial' );
+		set_current_screen( 'settings_page_example-plugin' );
+
+		$key = wp_presence_current_screen_key();
+
+		$_POST['option_page'] = 'example-plugin';
+		update_option( 'example_plugin_options', 'saved' );
+		unregister_setting( 'example-plugin', 'example_plugin_options' );
+
+		$this->assertSame( 'options/example-plugin', $key );
+		$this->assertNotNull( wp_presence_get_screen_revision( $key ) );
+	}
+
+	/**
+	 * @covers ::wp_presence_current_screen_key
+	 * @covers ::wp_presence_settings_page_option_group
+	 */
+	public function test_a_top_level_settings_api_page_keys_to_its_option_group() {
+		wp_set_current_user( self::$admin_id );
+		register_setting( 'example-plugin', 'example_plugin_options' );
+		set_current_screen( 'toplevel_page_example-plugin' );
+
+		$key = wp_presence_current_screen_key();
+		unregister_setting( 'example-plugin', 'example_plugin_options' );
+
+		$this->assertSame( 'options/example-plugin', $key );
+	}
+
+	/**
+	 * Nothing says which group a page submits until its form prints it, so a
+	 * page whose slug isn't a registered group gets no key rather than a guess.
+	 *
+	 * @covers ::wp_presence_current_screen_key
+	 * @covers ::wp_presence_settings_page_option_group
+	 */
+	public function test_a_plugin_page_that_is_not_an_option_group_has_no_key() {
+		wp_set_current_user( self::$admin_id );
+		set_current_screen( 'settings_page_example-plugin' );
+
+		$this->assertSame( '', wp_presence_current_screen_key() );
+	}
+
+	/**
+	 * @covers ::wp_presence_current_screen_key
+	 * @covers ::wp_presence_on_privacy_policy_page_updated
+	 */
+	public function test_saving_the_privacy_page_bumps_its_screen() {
+		wp_set_current_user( self::$admin_id );
+		set_current_screen( 'options-privacy' );
+		$page_id = self::factory()->post->create( array( 'post_type' => 'page' ) );
+
+		update_option( 'wp_page_for_privacy_policy', $page_id );
+
+		$this->assertSame( 'options/privacy', wp_presence_current_screen_key() );
+		$this->assertSame( self::$admin_id, wp_presence_get_screen_revision( 'options/privacy' )['actor_id'] );
+	}
+
+	/**
+	 * @covers ::wp_presence_parse_screen_key_target
+	 */
+	public function test_the_privacy_page_gets_its_own_option() {
+		wp_set_current_user( self::$admin_id );
+
+		wp_presence_bump_screen_revision( 'options/privacy' );
+
+		$this->assertNotFalse( get_option( 'wp_presence_screen_rev_options_privacy' ) );
+		$this->assertArrayNotHasKey( 'options/privacy', wp_presence_get_screen_revisions() );
+	}
 }

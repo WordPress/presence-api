@@ -34,7 +34,7 @@ function wp_presence_uninstall_site() {
 	// Matches wp_presence_known_options_pages() in includes/screen-revisions.php.
 	// Not required here, since this file runs standalone without the rest of
 	// the plugin loaded.
-	foreach ( array( 'general', 'writing', 'reading', 'discussion', 'media', 'permalink' ) as $page ) {
+	foreach ( array( 'general', 'writing', 'reading', 'discussion', 'media', 'permalink', 'privacy' ) as $page ) {
 		delete_option( 'wp_presence_screen_rev_options_' . $page );
 	}
 
@@ -70,6 +70,7 @@ if ( is_multisite() ) {
 	$wpdb->query( "DROP TABLE IF EXISTS {$summary_table}" );
 
 	delete_site_option( 'wp_presence_network_recording' );
+	delete_site_option( 'wp_presence_network_screen_revisions' );
 	delete_site_option( 'wp_presence_network_summary_db_version' );
 	delete_site_option( 'wp_presence_network_summary_table.lock' );
 } else {
