@@ -295,4 +295,16 @@ class WP_Test_Network_Users_List extends WP_Presence_Network_UnitTestCase {
 		$this->assertStringContainsString( 'name="allusers[]" value="' . self::$editor_id . '"', $rows );
 		$this->assertStringNotContainsString( 'name="allusers[]" value="' . self::$subscriber_id . '"', $rows );
 	}
+
+	/**
+	 * @covers ::wp_presence_users_online_count_heartbeat_received
+	 */
+	public function test_the_network_users_views_get_a_fresh_online_count() {
+		$this->become_network_admin();
+		$this->set_presence_on_site( $this->create_blog(), self::$editor_id );
+
+		$response = wp_presence_users_online_count_heartbeat_received( array(), array( 'presence-fragments' => array( 'users-online-count' => true ) ), 'users-network' );
+
+		$this->assertSame( '(1)', $response['presence-fragments']['users-online-count'] );
+	}
 }

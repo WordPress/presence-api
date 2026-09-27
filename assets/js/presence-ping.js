@@ -128,6 +128,11 @@
 			request: () => usersList,
 		},
 		{
+			key: 'users-online-count',
+			target: () =>
+				document.querySelector( '.subsubsub .presence_online .count' ),
+		},
+		{
 			// Core's own lock check asks for these, from every tab, with the row IDs.
 			key: 'editors',
 			target: ( id ) =>

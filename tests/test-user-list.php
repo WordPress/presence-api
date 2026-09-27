@@ -178,6 +178,18 @@ class WP_Test_Presence_User_List extends WP_Presence_UnitTestCase {
 		$this->assertArrayNotHasKey( 'presence_status', $_GET );
 	}
 
+	/**
+	 * @covers ::wp_presence_users_online_count_heartbeat_received
+	 */
+	public function test_every_users_view_gets_a_fresh_online_count() {
+		wp_set_current_user( self::$editor_id );
+		wp_set_presence( wp_presence_admin_room(), 'client-1', array(), self::$editor_id );
+		$ask = array( 'presence-fragments' => array( 'users-online-count' => true ) );
+
+		$this->assertSame( '(1)', wp_presence_users_online_count_heartbeat_received( array(), $ask, 'users' )['presence-fragments']['users-online-count'] );
+		$this->assertSame( array(), wp_presence_users_online_count_heartbeat_received( array(), $ask, 'users-network' ) );
+	}
+
 	public function test_the_online_view_needs_its_nonce() {
 		$this->assertSame( array(), $this->tick_online_view( 'invalid' ) );
 	}

@@ -125,3 +125,35 @@ function wp_presence_users_list_heartbeat_received( $response, $data, $screen_id
 
 	return $response;
 }
+
+/**
+ * Sends a fresh count for the Online view link, on every view of a site or network users list that shows it.
+ *
+ * @since 0.11.0
+ *
+ * @param array  $response  Heartbeat response data.
+ * @param array  $data      Data received from the client.
+ * @param string $screen_id The screen ID the heartbeat came from.
+ * @return array The Heartbeat response.
+ */
+function wp_presence_users_online_count_heartbeat_received( $response, $data, $screen_id = '' ) {
+	if ( ! wp_presence_fragment_request( $data, 'users-online-count' ) ) {
+		return $response;
+	}
+
+	// The same checks that decide whether each screen shows the link at all.
+	if ( is_multisite() && 'users-network' === $screen_id ) {
+		if ( ! current_user_can( wp_presence_network_capability() ) || ! wp_presence_network_aggregation_enabled() ) {
+			return $response;
+		}
+		$count = count( wp_presence_get_network_online_user_ids() );
+	} elseif ( 'users' === $screen_id && current_user_can( 'edit_posts' ) ) {
+		$count = count( wp_presence_online_user_ids( wp_get_presence( wp_presence_admin_room() ) ) );
+	} else {
+		return $response;
+	}
+
+	$response['presence-fragments']['users-online-count'] = '(' . $count . ')';
+
+	return $response;
+}
