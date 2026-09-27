@@ -275,14 +275,23 @@ wp.hooks.addAction( 'presence-api.collaborationEnded', 'my-plugin', ( room, coun
 Fires after a live surface's markup is swapped for a fresh copy from Heartbeat. Swaps wait while the pointer or focus is inside the surface, or a checkbox in it is checked, and are skipped when the markup has not changed.
 ```js
 wp.hooks.addAction( 'presence-api.surfaceUpdated', 'my-plugin', ( key, element ) => {
-    // key is 'admin-bar', 'users-list', 'active-posts', or one you registered.
+    // key is 'admin-bar', 'users-list', 'users-online-count', 'editors', 'active-posts', 'network-widget', or one you registered.
 } );
 ```
 
 ### JS Filters
 
 #### `presence-api.liveSurfaces`
-The surfaces `presence-ping.js` keeps current. A surface asks Heartbeat for its key only while `target()` finds it on the page, and the server answers with HTML under the same key.
+The surfaces `presence-ping.js` keeps current. A surface asks Heartbeat for its key only while `target()` finds it on the page, and the server answers with HTML under the same key. The server's HTML goes into the page as is, so escape it in your `heartbeat_received` callback.
+
+| Property | Required | Description |
+| --- | --- | --- |
+| `key` | Yes | The key sent under `presence-fragments` and answered under the same key. |
+| `target( id )` | Yes | Returns the element to fill, or null when it is not on the page. |
+| `request()` | No | Returns what to send instead of `true`, such as row IDs; a falsy value skips the ask. |
+| `apply( element, html )` | No | Swaps the markup in, instead of setting `innerHTML`. |
+
+A response can also be an object of HTML keyed by ID, in which case each entry fills `target( id )`.
 ```js
 wp.hooks.addFilter( 'presence-api.liveSurfaces', 'my-plugin', ( surfaces ) => [
     ...surfaces,
