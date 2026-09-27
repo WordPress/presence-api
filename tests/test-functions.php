@@ -1567,6 +1567,10 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_refresh_cutoff
 	 */
 	public function test_skipped_write_does_not_announce_an_admin_room_change() {
+		if ( $GLOBALS['wpdb'] instanceof WP_SQLite_DB ) {
+			$this->markTestSkipped( 'The SQLite driver reports an unchanged upsert as one affected row, where MySQL reports none.' );
+		}
+
 		$room = wp_presence_admin_room();
 
 		wp_set_presence( $room, 'user-' . self::$editor_id, array( 'screen' => 'dashboard' ), self::$editor_id );
