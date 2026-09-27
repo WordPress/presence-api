@@ -173,7 +173,7 @@ class WP_Presence_Widget_Active_Posts {
 	 *
 	 * @since 0.1.1
 	 * @since 0.11.0 Adds the post type to each editor label and titles untitled posts "(no title)".
-	 * @since 0.11.0 Names the post's lock holder as editing and everyone else as viewing.
+	 * @since 0.11.0 Labels the post's lock holder with core's "is currently editing".
 	 *
 	 * @return array Array of post data with grouped editors.
 	 */
@@ -286,26 +286,28 @@ class WP_Presence_Widget_Active_Posts {
 			$editors = $post_data['editors'];
 			$parts   = array();
 
-			// Only the lock holder can change the post; anyone else with it open is reading.
+			// Only the lock holder can change the post, so only they get core's editing label.
 			if ( isset( $editors[ $holder ] ) ) {
-				/* translators: %s: Display name of the person editing the post. */
-				$parts[] = sprintf( __( '%s editing', 'presence-api' ), $editors[ $holder ]['display_name'] );
+				/* translators: %s: User's display name. */
+				$parts[] = sprintf( __( '%s is currently editing', 'default' ), $editors[ $holder ]['display_name'] ); // phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- Reuses core's post lock string.
 				$editors = array( $holder => $editors[ $holder ] ) + $editors;
 			}
 
-			$viewers = count( $editors ) - count( $parts );
+			$others = count( $editors ) - count( $parts );
 
-			if ( 1 === $viewers && ! $parts ) {
-				/* translators: %s: Display name of the person viewing the post. */
-				$parts[] = sprintf( __( '%s viewing', 'presence-api' ), reset( $editors )['display_name'] );
-			} elseif ( $viewers ) {
-				/* translators: %d: Number of people viewing the post. */
-				$parts[] = sprintf( _n( '%d viewing', '%d viewing', $viewers, 'presence-api' ), $viewers );
+			if ( $parts && $others ) {
+				/* translators: %d: Number of other people with the post open. */
+				$parts[] = sprintf( _n( '%d other', '%d others', $others, 'presence-api' ), $others );
+			} elseif ( 1 === $others ) {
+				$parts[] = reset( $editors )['display_name'];
+			} elseif ( $others ) {
+				/* translators: %d: Number of people with the post open. */
+				$parts[] = sprintf( _n( '%d person', '%d people', $others, 'presence-api' ), $others );
 			}
 
 			$by_post[ $index ]['editors']      = array_values( $editors );
 			$by_post[ $index ]['editor_label'] = sprintf(
-				/* translators: 1: Who is editing and viewing the post. 2: Singular post type name, such as Page. */
+				/* translators: 1: Who has the post open. 2: Singular post type name, such as Page. */
 				__( '%1$s · %2$s', 'presence-api' ),
 				implode( wp_get_list_item_separator(), $parts ),
 				get_post_type_object( $post_data['post_type'] )->labels->singular_name

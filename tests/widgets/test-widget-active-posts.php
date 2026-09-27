@@ -85,7 +85,7 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 
 		$html = $response['presence-fragments']['active-posts'];
 		$this->assertStringContainsString( '(no title)', $html );
-		$this->assertStringContainsString( esc_html( get_userdata( self::$editor_id )->display_name . ' viewing · Page' ), $html );
+		$this->assertStringContainsString( esc_html( get_userdata( self::$editor_id )->display_name . ' · Page' ), $html );
 	}
 
 	public function data_untitled_posts() {
@@ -399,14 +399,14 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 		WP_Presence_Widget_Active_Posts::render();
 		$html = ob_get_clean();
 
-		$this->assertStringContainsString( '2 viewing', $html );
+		$this->assertStringContainsString( '2 people', $html );
 		$this->assertStringContainsString( '<span class="presence-status-text">Idle</span>', $html );
 	}
 
 	/**
 	 * @covers WP_Presence_Widget_Active_Posts::build_active_posts_data
 	 */
-	public function test_only_the_lock_holder_is_editing() {
+	public function test_only_the_lock_holder_is_currently_editing() {
 		wp_set_current_user( self::$editor_id );
 
 		$room = wp_presence_post_room( self::$post_id );
@@ -416,7 +416,7 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 
 		$posts = $this->active_posts();
 
-		$this->assertSame( get_userdata( self::$editor_id )->display_name . ' editing, 1 viewing · Post', $posts[0]['editor_label'] );
+		$this->assertSame( get_userdata( self::$editor_id )->display_name . ' is currently editing, 1 other · Post', $posts[0]['editor_label'] );
 		$this->assertSame( self::$editor_id, $posts[0]['editors'][0]['user_id'] );
 	}
 }
