@@ -201,15 +201,17 @@ class WP_Test_Presence_Post_Lock_Bridge extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * @covers ::wp_presence_post_lock_room
 	 * @covers ::wp_presence_update_post_lock
 	 */
-	public function test_post_lock_stays_in_meta_when_recording_is_off() {
+	public function test_post_lock_stays_out_of_meta_when_recording_is_off() {
 		add_filter( 'wp_presence_recording_enabled', '__return_false' );
 		$post_id = self::factory()->post->create();
 
 		wp_set_current_user( self::$editor_id );
 		wp_set_post_lock( $post_id );
 
+		$this->assertNotEmpty( wp_presence_room_rows( 'postType/post:' . $post_id, null, wp_presence_post_lock_client_id() ) );
 		wp_set_current_user( self::$other_editor_id );
 		$this->assertSame( self::$editor_id, wp_check_post_lock( $post_id ) );
 	}
