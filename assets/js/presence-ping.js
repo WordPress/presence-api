@@ -90,6 +90,7 @@
 		'presence-heartbeat-ttl',
 		'presence-heartbeat-room-list',
 		'presence-heartbeat-collaborators',
+		'presence-admin-bar',
 	];
 
 	const tabCoordinator = window.wpPresenceCreateTabCoordinator(
@@ -127,10 +128,56 @@
 			}
 			data[ 'presence-ping' ] = ping;
 
+			if ( document.getElementById( 'wp-admin-bar-presence-online' ) ) {
+				data[ 'presence-admin-bar' ] = 1;
+			}
+
 			if ( editorPostId ) {
 				data[ 'presence-editor-ping' ] = { post_id: editorPostId };
 			}
 		} );
+
+		const adminBarNode = document.getElementById(
+			'wp-admin-bar-presence-online'
+		);
+
+		if ( adminBarNode ) {
+			let lastAdminBar = '';
+
+			$( document ).on( 'heartbeat-tick', function ( event, data ) {
+				const html = data[ 'presence-admin-bar' ];
+				if ( ! html || html === lastAdminBar ) {
+					return;
+				}
+				// Swapping an open menu would close it; the next tick catches up.
+				if (
+					adminBarNode.matches( ':hover' ) ||
+					adminBarNode.classList.contains( 'hover' ) ||
+					adminBarNode.contains( document.activeElement )
+				) {
+					return;
+				}
+				const template = document.createElement( 'template' );
+				template.innerHTML = html.trim();
+				const fresh = template.content.firstElementChild;
+				if ( ! fresh ) {
+					return;
+				}
+				// Keep the list item itself, which core's admin-bar.js bound its hover and Enter handlers to.
+				adminBarNode.className = fresh.className;
+				adminBarNode.innerHTML = fresh.innerHTML;
+				lastAdminBar = html;
+			} );
+
+			// Core binds Escape to each .ab-item at load, which the swapped rows no longer are.
+			adminBarNode.addEventListener( 'keydown', function ( event ) {
+				if ( event.key !== 'Escape' ) {
+					return;
+				}
+				adminBarNode.querySelector( '.ab-item' ).focus();
+				adminBarNode.classList.remove( 'hover' );
+			} );
+		}
 
 		if ( editorRoom ) {
 			$( document ).on( 'heartbeat-tick', function ( event, data ) {

@@ -8,6 +8,8 @@
  *
  * @covers ::wp_presence_admin_bar_node
  * @covers ::wp_presence_admin_bar_assets
+ * @covers ::wp_presence_admin_bar_node_markup
+ * @covers ::wp_presence_admin_bar_heartbeat_received
  */
 class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 
@@ -474,5 +476,37 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$this->assertArrayHasKey( 'presence-user-' . $here, $nodes );
 		$this->assertArrayNotHasKey( 'presence-user-' . $elsewhere, $nodes );
 		$this->assertArrayNotHasKey( 'presence-view-all', $nodes );
+	}
+
+	/**
+	 * The heartbeat runs from admin-ajax.php, so the node groups by the screen the ping reports.
+	 */
+	public function test_the_heartbeat_sends_the_node_for_the_screen_it_came_from() {
+		$here = get_userdata( $this->put_user_on_screen( 'upload' ) );
+		$this->put_user_on_screen( 'edit-comments' );
+
+		wp_set_current_user( self::$editor_id );
+		$response = wp_presence_admin_bar_heartbeat_received(
+			array(),
+			array(
+				'presence-ping'      => array( 'screen' => 'upload' ),
+				'presence-admin-bar' => 1,
+			)
+		);
+
+		$this->assertStringStartsWith( "<li role='group' id='wp-admin-bar-presence-online'", $response['presence-admin-bar'] );
+		$this->assertStringContainsString( 'id=\'wp-admin-bar-presence-user-' . $here->ID . '\'', $response['presence-admin-bar'] );
+		$this->assertStringContainsString( 'On this page', $response['presence-admin-bar'] );
+		$this->assertStringContainsString( '3 online', $response['presence-admin-bar'] );
+	}
+
+	public function test_the_heartbeat_sends_no_node_unless_the_page_has_one() {
+		wp_set_current_user( self::$editor_id );
+		$response = wp_presence_admin_bar_heartbeat_received(
+			array(),
+			array( 'presence-ping' => array( 'screen' => 'upload' ) )
+		);
+
+		$this->assertArrayNotHasKey( 'presence-admin-bar', $response );
 	}
 }
