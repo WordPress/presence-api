@@ -1544,6 +1544,8 @@ function wp_presence_assign_user_color( $user_id ) {
  *
  * @access private
  *
+ * @since 0.9.0
+ *
  * @param int   $user_id User ID.
  * @param int[] $counts  How many others wear each palette color, keyed by color.
  * @return string A hex color.
@@ -1560,6 +1562,8 @@ function wp_presence_pick_color( $user_id, $counts ) {
  * Lower user IDs keep the color they hold.
  *
  * @access private
+ *
+ * @since 0.9.0
  *
  * @param string[] $colors Hex colors keyed by user ID.
  * @return string[] Hex colors keyed by user ID.
