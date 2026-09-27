@@ -214,6 +214,41 @@ class WP_Test_Network_Screen_Revisions extends WP_Presence_Network_UnitTestCase 
 	}
 
 	/**
+	 * Core's row Remove link calls remove_user_from_blog() without a site ID, switched to the site.
+	 *
+	 * @covers ::wp_presence_on_site_users_changed
+	 */
+	public function test_removing_a_user_without_a_site_id_bumps_the_switched_sites_users_screen() {
+		$this->become_network_admin();
+		set_current_screen( 'site-users-network' );
+		$blog_id = $this->create_blog();
+		$user_id = self::factory()->user->create();
+		add_user_to_blog( $blog_id, $user_id, 'editor' );
+		delete_site_option( 'wp_presence_network_screen_revisions' );
+
+		switch_to_blog( $blog_id );
+		remove_user_from_blog( $user_id );
+		restore_current_blog();
+
+		$this->assertNotNull( wp_presence_get_screen_revision( 'network/site-users/' . $blog_id ) );
+	}
+
+	/**
+	 * @covers ::wp_presence_on_site_users_changed
+	 */
+	public function test_deleting_a_site_does_not_bump_its_users_screen() {
+		$this->become_network_admin();
+		set_current_screen( 'sites-network' );
+		$blog_id = $this->create_blog();
+		add_user_to_blog( $blog_id, self::factory()->user->create(), 'editor' );
+		delete_site_option( 'wp_presence_network_screen_revisions' );
+
+		wp_delete_site( $blog_id );
+
+		$this->assertNull( wp_presence_get_screen_revision( 'network/site-users/' . $blog_id ) );
+	}
+
+	/**
 	 * @covers ::wp_presence_on_site_users_changed
 	 */
 	public function test_changing_a_role_on_a_site_bumps_that_sites_users_screen() {

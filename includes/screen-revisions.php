@@ -726,7 +726,8 @@ function wp_presence_on_site_allowed_themes_updated() {
  * Bumps an Edit Site → Users screen's revision when the site's users change.
  *
  * Hooked to add_user_to_blog and remove_user_from_blog, which pass the site ID,
- * and set_user_role, which runs while switched to the site.
+ * and set_user_role, which runs while switched to the site. Skipped while a
+ * site is being deleted, which removes its users one at a time.
  *
  * @since 0.10.0
  *
@@ -736,13 +737,14 @@ function wp_presence_on_site_allowed_themes_updated() {
  */
 function wp_presence_on_site_users_changed( $user_id, $arg2 = null, $arg3 = null ) {
 	unset( $user_id );
-	if ( ! wp_presence_is_admin_screen_save() ) {
+	if ( ! wp_presence_is_admin_screen_save() || doing_action( 'wp_uninitialize_site' ) ) {
 		return;
 	}
 	if ( 'add_user_to_blog' === current_action() ) {
 		$site_id = (int) $arg3;
 	} elseif ( 'remove_user_from_blog' === current_action() ) {
-		$site_id = (int) $arg2;
+		// Core's row Remove link on Edit Site → Users passes no site ID but runs switched to the site.
+		$site_id = (int) $arg2 ? (int) $arg2 : get_current_blog_id();
 	} elseif ( $arg3 ) {
 		$site_id = get_current_blog_id();
 	} else {
