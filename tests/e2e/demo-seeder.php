@@ -182,11 +182,11 @@ function wp_presence_demo_name( $index ) {
  * Demo post titles created for realistic Active Posts widget content.
  */
 const WP_PRESENCE_DEMO_POSTS = array(
-	'Q3 Product Launch Announcement',
-	'How to Migrate to the New Theme',
-	'Weekly Team Standup Notes',
-	'Accessibility Audit Findings',
-	'Site Redesign: Homepage Wireframes',
+	'Live: Election Night Results',
+	'City Council Votes on Transit Budget',
+	'Storm Tracker: Coastal Flood Warnings',
+	'Opinion: Keep the Libraries Open Late',
+	'Weekend Arts Guide',
 );
 
 /**
@@ -376,10 +376,10 @@ function wp_presence_demo_refresh( $user_ids ) {
  * Post lock scenarios for the Posts screen: title, status, and how many demo users are on it.
  */
 const WP_PRESENCE_DEMO_LOCKS = array(
-	array( 'Spring Sale Landing Page', 'draft', 1 ),
-	array( 'Company Holiday Schedule', 'publish', 2 ),
-	array( 'Pricing Page Refresh', 'pending', 3 ),
-	array( 'Product Roadmap 2027', 'future', 1 ),
+	array( 'Breaking: Water Main Closes Downtown Streets', 'draft', 1 ),
+	array( 'Live Updates: Championship Parade', 'publish', 2 ),
+	array( 'Investigation: Where the Road Repair Money Went', 'pending', 3 ),
+	array( 'Tomorrow\'s Morning Briefing', 'future', 1 ),
 );
 
 /**
