@@ -693,18 +693,14 @@ function wp_presence_get_network_summary( array $args = array() ) {
  * @return mixed The held value.
  */
 function wp_presence_network_cached( $key, callable $build ) {
-	$group = wp_presence_network_cache_group();
-	$key   = $key . ':' . wp_cache_get_last_changed( $group );
-	$found = false;
-	$value = wp_cache_get( $key, $group, false, $found );
+	$group        = wp_presence_network_cache_group();
+	$last_changed = wp_cache_get_last_changed( $group );
+	$value        = wp_cache_get_salted( $key, $group, $last_changed );
 
-	if ( $found ) {
-		return $value;
+	if ( false === $value ) {
+		$value = $build();
+		wp_cache_set_salted( $key, $value, $group, $last_changed );
 	}
-
-	$value = $build();
-
-	wp_cache_set( $key, $value, $group );
 
 	return $value;
 }
