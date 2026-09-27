@@ -460,9 +460,9 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * Without list_users you see who shares your page, not where everyone else is.
+	 * Without list_users you still see who is online, just not where they are.
 	 */
-	public function test_elsewhere_needs_list_users() {
+	public function test_elsewhere_hides_locations_without_list_users() {
 		$this->view_admin_page( 'upload.php', 'upload' );
 
 		$here      = $this->put_user_on_screen( 'upload' );
@@ -472,7 +472,9 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$nodes = $this->render_nodes();
 
 		$this->assertArrayHasKey( 'presence-user-' . $here, $nodes );
-		$this->assertArrayNotHasKey( 'presence-user-' . $elsewhere, $nodes );
+		$this->assertArrayHasKey( 'presence-user-' . $elsewhere, $nodes );
+		$this->assertStringNotContainsString( 'presence-bar-screen', $nodes[ 'presence-user-' . $elsewhere ]->title );
+		$this->assertFalse( $nodes[ 'presence-user-' . $elsewhere ]->href );
 		$this->assertArrayNotHasKey( 'presence-view-all', $nodes );
 	}
 }
