@@ -173,6 +173,7 @@ class WP_Presence_Widget_Active_Posts {
 	 *
 	 * @since 0.1.1
 	 * @since 0.11.0 Adds the post type to each editor label and titles untitled posts "(no title)".
+	 * @since 0.11.0 Names the post's lock holder as editing and everyone else as viewing.
 	 *
 	 * @return array Array of post data with grouped editors.
 	 */
@@ -273,21 +274,40 @@ class WP_Presence_Widget_Active_Posts {
 			}
 		);
 
+		wp_presence_prime_post_locks( wp_list_pluck( $by_post, 'post_id' ) );
+
+		/** This filter is documented in wp-admin/includes/ajax-actions.php */
+		$window = (int) apply_filters( 'wp_check_post_lock_window', 150 );
+
 		// Keyed by user id above; hand back a list.
 		foreach ( $by_post as $index => $post_data ) {
-			$editors = array_values( $post_data['editors'] );
-			$count   = count( $editors );
+			$lock    = explode( ':', (string) get_post_meta( $post_data['post_id'], '_edit_lock', true ) );
+			$holder  = isset( $lock[1] ) && (int) $lock[0] > time() - $window ? (int) $lock[1] : 0;
+			$editors = $post_data['editors'];
+			$parts   = array();
 
-			$editor_label = 1 === $count
-				? $editors[0]['display_name']
-				/* translators: %d: Number of people with the post open. */
-				: sprintf( _n( '%d person', '%d people', $count, 'presence-api' ), $count );
+			// Only the lock holder can change the post; anyone else with it open is reading.
+			if ( isset( $editors[ $holder ] ) ) {
+				/* translators: %s: Display name of the person editing the post. */
+				$parts[] = sprintf( __( '%s editing', 'presence-api' ), $editors[ $holder ]['display_name'] );
+				$editors = array( $holder => $editors[ $holder ] ) + $editors;
+			}
 
-			$by_post[ $index ]['editors']      = $editors;
+			$viewers = count( $editors ) - count( $parts );
+
+			if ( 1 === $viewers && ! $parts ) {
+				/* translators: %s: Display name of the person viewing the post. */
+				$parts[] = sprintf( __( '%s viewing', 'presence-api' ), reset( $editors )['display_name'] );
+			} elseif ( $viewers ) {
+				/* translators: %d: Number of people viewing the post. */
+				$parts[] = sprintf( _n( '%d viewing', '%d viewing', $viewers, 'presence-api' ), $viewers );
+			}
+
+			$by_post[ $index ]['editors']      = array_values( $editors );
 			$by_post[ $index ]['editor_label'] = sprintf(
-				/* translators: 1: Who has the post open, a name or a count of people. 2: Singular post type name, such as Page. */
+				/* translators: 1: Who is editing and viewing the post. 2: Singular post type name, such as Page. */
 				__( '%1$s · %2$s', 'presence-api' ),
-				$editor_label,
+				implode( wp_get_list_item_separator(), $parts ),
 				get_post_type_object( $post_data['post_type'] )->labels->singular_name
 			);
 		}
