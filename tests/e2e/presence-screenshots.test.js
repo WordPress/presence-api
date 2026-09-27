@@ -41,6 +41,15 @@ function demoSeeder( php ) {
 }
 
 /**
+ * Empties the presence table under whatever prefix the site uses.
+ */
+function clearPresence() {
+	wpCli(
+		`eval 'global $wpdb; $wpdb->query( "TRUNCATE TABLE {$wpdb->presence}" );'`
+	);
+}
+
+/**
  * Ages the seeded editor rows one second past a threshold the plugin reports, as if they were last written then.
  *
  * @param {string} seconds PHP expression for the threshold, in seconds.
@@ -88,7 +97,7 @@ const test = base.extend( {} );
 test.describe.serial( 'Presence Screenshots', () => {
 	test.beforeAll( () => {
 		demoSeeder( 'wp_presence_demo_cleanup();' );
-		wpCli( 'db query "TRUNCATE TABLE wp_presence"' );
+		clearPresence();
 	} );
 
 	test.afterAll( () => {
@@ -96,7 +105,7 @@ test.describe.serial( 'Presence Screenshots', () => {
 	} );
 
 	test( '01 — Empty state', async ( { admin, page } ) => {
-		wpCli( 'db query "TRUNCATE TABLE wp_presence"' );
+		clearPresence();
 		await admin.visitAdminPage( '/' );
 		await connectHeartbeat( page );
 
@@ -137,7 +146,7 @@ test.describe.serial( 'Presence Screenshots', () => {
 
 	test( '03 — Active users (20)', async ( { admin, page } ) => {
 		demoSeeder( 'wp_presence_demo_cleanup();' );
-		wpCli( 'db query "TRUNCATE TABLE wp_presence"' );
+		clearPresence();
 		demoSeeder( 'wp_presence_demo_seed( 20 );' );
 		await admin.visitAdminPage( '/' );
 		await connectHeartbeat( page );
