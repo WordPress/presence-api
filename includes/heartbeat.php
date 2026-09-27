@@ -605,6 +605,10 @@ function wp_presence_check_collaboration_threshold( $room, $rows = null ) {
  * @param object|null $stored The room's existing state row, if any.
  */
 function wp_presence_store_collaboration_state( $room, $count, $stored ) {
+	if ( ! wp_presence_recording_enabled() ) {
+		return;
+	}
+
 	$threshold = wp_presence_refresh_threshold();
 	$unchanged = $stored && isset( $stored->data['count'] ) && (int) $stored->data['count'] === $count;
 	$age       = $stored ? time() - (int) strtotime( $stored->date_gmt . ' UTC' ) : 0;

@@ -98,8 +98,7 @@ function wp_presence_post_lock_room( $post_id, $meta_key ) {
 		return false;
 	}
 
-	// Recording off means wp_set_presence() writes nothing, so meta has to keep it.
-	if ( ! wp_presence_recording_enabled() || ! wp_presence_has_table() ) {
+	if ( ! wp_presence_has_table() ) {
 		return false;
 	}
 
@@ -206,14 +205,10 @@ function wp_presence_update_post_lock( $check, $post_id, $meta_key, $meta_value,
 
 	unset( $GLOBALS['_wp_presence_post_locks'][ $room ] );
 
-	return (bool) wp_set_presence(
-		$room,
-		wp_presence_post_lock_client_id(),
-		array(),
-		$user_id,
-		gmdate( 'Y-m-d H:i:s', $time ),
-		max( 1, $window )
-	);
+	$date_gmt = gmdate( 'Y-m-d H:i:s', min( $time, time() ) );
+
+	// Straight to the row, since a lock holds only what core's meta does and must outlast the recording setting.
+	return wp_presence_write_row( $room, wp_presence_post_lock_client_id(), $user_id, '[]', $date_gmt, wp_presence_expiry_for( $date_gmt, $window ) );
 }
 
 /**
