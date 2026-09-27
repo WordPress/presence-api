@@ -41,6 +41,7 @@ add_filter( 'delete_post_metadata', 'wp_presence_delete_post_lock', 10, 5 );
 add_filter( 'site_status_tests', 'wp_presence_site_status_tests' );
 
 add_action( 'admin_enqueue_scripts', 'wp_presence_enqueue_stale_screen_banner' );
+add_action( 'added_option', 'wp_presence_on_updated_option' );
 add_action( 'updated_option', 'wp_presence_on_updated_option' );
 add_action( 'update_option_wp_page_for_privacy_policy', 'wp_presence_on_privacy_policy_page_updated' );
 add_action( 'post_updated', 'wp_presence_on_post_updated', 10, 3 );

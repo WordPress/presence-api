@@ -882,7 +882,6 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 	public function test_a_settings_api_page_keys_to_its_option_group() {
 		wp_set_current_user( self::$admin_id );
 		register_setting( 'example-plugin', 'example_plugin_options' );
-		add_option( 'example_plugin_options', 'initial' );
 		set_current_screen( 'settings_page_example-plugin' );
 
 		$key = wp_presence_current_screen_key();
