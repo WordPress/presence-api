@@ -111,7 +111,15 @@ function wp_presence_get_heartbeat_idle_interval() {
  * @since 0.1.1
  */
 function wp_presence_enqueue_heartbeat_ping() {
-	if ( ! is_user_logged_in() || ! current_user_can( 'edit_posts' ) ) {
+	if ( ! is_user_logged_in() ) {
+		return;
+	}
+
+	if ( ! current_user_can( 'edit_posts' ) ) {
+		// The network screens' live surfaces answer to the network capability, so load the script without any presence to write.
+		if ( is_network_admin() && current_user_can( wp_presence_network_capability() ) ) {
+			wp_presence_enqueue_ping_script( array() );
+		}
 		return;
 	}
 

@@ -77,14 +77,22 @@ class WP_Test_Presence_Network_Widget_Whos_Online extends WP_Presence_Network_Un
 	}
 
 	/**
-	 * The network capability does not imply edit_posts, which the ping's own enqueue requires.
+	 * The network capability does not imply edit_posts, which the ping's presence writes require.
 	 *
+	 * @covers ::wp_presence_enqueue_heartbeat_ping
 	 * @covers ::wp_presence_enqueue_ping_script
 	 */
-	public function test_the_dashboard_loads_the_script_that_keeps_the_widget_current() {
+	public function test_the_network_dashboard_loads_the_script_that_keeps_the_widget_current() {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		set_current_screen( 'dashboard-network' );
+		wp_scripts()->queue = array();
 
-		WP_Presence_Network_Widget_Whos_Online::enqueue_scripts( 'index.php' );
+		wp_presence_enqueue_heartbeat_ping();
+
+		$this->assertFalse( wp_script_is( 'wp-presence-ping' ) );
+
+		wp_get_current_user()->add_cap( wp_presence_network_capability() );
+		wp_presence_enqueue_heartbeat_ping();
 
 		$this->assertTrue( wp_script_is( 'wp-presence-ping' ) );
 	}
