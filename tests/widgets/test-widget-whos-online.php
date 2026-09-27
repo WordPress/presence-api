@@ -351,8 +351,8 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 	 *
 	 * @return string The rendered markup.
 	 */
-	private function render() {
-		wp_set_current_user( self::$editor_id );
+	private function render( $user_id = 0 ) {
+		wp_set_current_user( $user_id ? $user_id : self::$editor_id );
 
 		ob_start();
 		WP_Presence_Widget_Whos_Online::render();
@@ -452,7 +452,7 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 	public function test_render_links_a_users_screen_to_the_matching_admin_page() {
 		$this->add_user_to_room( 'post-new', 0 );
 
-		$html = $this->render();
+		$html = $this->render( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 
 		$this->assertStringContainsString( esc_url( admin_url( 'post-new.php' ) ), $html );
 		// The verb leading a multi-word label is italicised.
@@ -469,7 +469,7 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 	public function test_render_names_an_unmapped_screen_without_linking_it() {
 		$this->add_user_to_room( 'site-health', 0 );
 
-		$html = $this->render();
+		$html = $this->render( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 
 		$this->assertStringContainsString( '<span class="presence-screen">', $html );
 		$this->assertStringNotContainsString( '<span class="presence-screen"><a', $html );
@@ -557,5 +557,24 @@ class WP_Test_Presence_Widget_Whos_Online extends WP_Presence_UnitTestCase {
 			'published page'  => array( 'page', 'publish', 'Editing page' ),
 			'unrelated screen' => array( 'upload', 'draft', 'Media' ),
 		);
+	}
+
+	/**
+	 * Without list_users you see who is online, not where they are.
+	 *
+	 * @covers WP_Presence_Widget_Whos_Online::render_user_row
+	 * @covers WP_Presence_Widget_Whos_Online::heartbeat_received
+	 */
+	public function test_locations_need_list_users() {
+		$other_id = $this->add_user_to_room( 'plugins', 0 );
+
+		$html = $this->render();
+
+		$this->assertStringContainsString( 'data-user-id="' . $other_id . '"', $html );
+		$this->assertStringNotContainsString( 'presence-screen', $html );
+
+		$entries = wp_list_pluck( $this->tick()['presence-online'], 'screen_label', 'user_id' );
+
+		$this->assertSame( '', $entries[ $other_id ] );
 	}
 }
