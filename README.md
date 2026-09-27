@@ -378,7 +378,7 @@ Keeps `_edit_lock` in the post room's `_lock` row instead of post meta, through 
 
 ## Capability
 
-Every feature is open to anyone who can edit at least one post type shown in the admin, so a role that edits only pages or a custom post type gets presence too.
+All features require editing at least one post type shown in the admin, so a role limited to pages or a custom post type is included.
 
 ## Stale-screen detection
 
