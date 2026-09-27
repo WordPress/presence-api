@@ -9,7 +9,7 @@
 
 	const config = window.wpPresenceConfig || {};
 	const entries = Array.isArray( config.entries ) ? config.entries : [];
-	const frontContext = config.frontContext || null;
+	const pageContext = config.pageContext || null;
 	const editorPostId = parseInt( config.editorPostId, 10 ) || 0;
 	const editorRoom = config.editorRoom || '';
 	const initialCollaboratorCount =
@@ -71,8 +71,8 @@
 			restUrl,
 			screen: window.pagenow || 'front',
 			editorPostId,
-			frontTitle: ( frontContext && frontContext.title ) || '',
-			frontPostId: ( frontContext && frontContext.post_id ) || 0,
+			pageTitle: ( pageContext && pageContext.title ) || '',
+			pagePostId: ( pageContext && pageContext.post_id ) || 0,
 		} );
 
 	// Response keys other presence-api features read off heartbeat-tick.
@@ -119,12 +119,12 @@
 				screen: window.pagenow || 'front',
 				token: config.screenToken || '',
 			};
-			if ( frontContext ) {
-				if ( frontContext.title ) {
-					ping.title = frontContext.title;
+			if ( pageContext ) {
+				if ( pageContext.title ) {
+					ping.title = pageContext.title;
 				}
-				if ( frontContext.post_id ) {
-					ping.post_id = frontContext.post_id;
+				if ( pageContext.post_id ) {
+					ping.post_id = pageContext.post_id;
 				}
 			}
 			data[ 'presence-ping' ] = ping;
@@ -185,6 +185,16 @@
 				adminBarNode.querySelector( '.ab-item' ).focus();
 				adminBarNode.classList.remove( 'hover' );
 			} );
+
+			// Core toggles aria-expanded on the first link inside, which is a row, not this toggle.
+			new window.MutationObserver( function () {
+				adminBarNode
+					.querySelector( ':scope > .ab-item' )
+					.setAttribute(
+						'aria-expanded',
+						String( adminBarNode.classList.contains( 'hover' ) )
+					);
+			} ).observe( adminBarNode, { attributeFilter: [ 'class' ] } );
 		}
 
 		if ( editorRoom ) {

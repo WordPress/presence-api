@@ -101,11 +101,11 @@ function wp_presence_enqueue_heartbeat_ping() {
 		),
 	);
 
-	// Carry a title for any frontend URL so it shows up in the admin bar
-	// (non-singular views — archives, search, the front page, taxonomies,
-	// 404s — are labeled too). is_singular() pages also carry the post id.
-	$front_context = null;
-	if ( ! is_admin() ) {
+	// Every page carries its title so others can see where someone is; singular front-end views also carry the post ID.
+	$page_context = null;
+	if ( is_admin() ) {
+		$page_context = array( 'title' => wp_strip_all_tags( get_admin_page_title() ) );
+	} else {
 		if ( is_front_page() ) {
 			$title = __( 'Home', 'presence-api' );
 		} else {
@@ -118,12 +118,12 @@ function wp_presence_enqueue_heartbeat_ping() {
 			remove_filter( 'document_title_parts', $strip_branding );
 		}
 
-		$front_context = array( 'title' => $title );
+		$page_context = array( 'title' => $title );
 
 		if ( is_singular() ) {
 			$queried = get_queried_object();
 			if ( $queried instanceof WP_Post ) {
-				$front_context['post_id'] = $queried->ID;
+				$page_context['post_id'] = $queried->ID;
 			}
 		}
 	}
@@ -156,12 +156,12 @@ function wp_presence_enqueue_heartbeat_ping() {
 		: 'front';
 
 	$admin_state = array( 'screen' => $screen_id );
-	if ( $front_context ) {
-		if ( ! empty( $front_context['title'] ) ) {
-			$admin_state['title'] = $front_context['title'];
+	if ( $page_context ) {
+		if ( ! empty( $page_context['title'] ) ) {
+			$admin_state['title'] = $page_context['title'];
 		}
-		if ( ! empty( $front_context['post_id'] ) ) {
-			$admin_state['post_id'] = $front_context['post_id'];
+		if ( ! empty( $page_context['post_id'] ) ) {
+			$admin_state['post_id'] = $page_context['post_id'];
 		}
 	}
 	$admin_state['color'] = wp_presence_assign_user_color( $user_id );
@@ -185,7 +185,7 @@ function wp_presence_enqueue_heartbeat_ping() {
 
 	$config = array(
 		'entries'                  => $entries,
-		'frontContext'             => $front_context,
+		'pageContext'              => $page_context,
 		'editorPostId'             => $editor_post_id,
 		// Lets presence-ping.js fire `presence-api.watchingRoom` without
 		// duplicating the postType/{type}:{id} grammar client-side.
@@ -273,13 +273,11 @@ function wp_presence_admin_heartbeat_received( $response, $data, $screen_id ) { 
 		$state['post_status'] = $post_status;
 	}
 
-	// Store the frontend page label whenever the ping is from the public site.
-	// title becomes the row's screen label in the admin bar; post_id is recorded
-	// when the ping carries one (singular views).
+	if ( ! empty( $data['presence-ping']['title'] ) ) {
+		$state['title'] = sanitize_text_field( $data['presence-ping']['title'] );
+	}
+
 	if ( 'front' === $screen ) {
-		if ( ! empty( $data['presence-ping']['title'] ) ) {
-			$state['title'] = sanitize_text_field( $data['presence-ping']['title'] );
-		}
 		$post_id = (int) ( $data['presence-ping']['post_id'] ?? 0 );
 		if ( $post_id > 0 ) {
 			$front_post = get_post( $post_id );
@@ -316,9 +314,11 @@ function wp_presence_online_hash_heartbeat_received( $response, $data ) {
 	$state = array();
 	foreach ( wp_get_presence( wp_presence_admin_room() ) as $entry ) {
 		$screen = wp_presence_get_entry_screen( $entry );
-		// Leaves out date_gmt, which moves on every tick while nothing else does.
-		$state[] = '' === $screen ? array( (int) $entry->user_id ) : array(
+		// Keeps only whether date_gmt has gone idle, since the timestamp itself moves every tick.
+		$idle    = time() - strtotime( $entry->date_gmt . ' +0000' ) > wp_presence_idle_threshold();
+		$state[] = '' === $screen ? array( (int) $entry->user_id, $idle ) : array(
 			(int) $entry->user_id,
+			$idle,
 			$screen,
 			isset( $entry->data['post_status'] ) ? $entry->data['post_status'] : '',
 			isset( $entry->data['title'] ) ? $entry->data['title'] : '',

@@ -96,19 +96,10 @@
 				} );
 			html += '</span>';
 			html += '<div class="presence-active-post-info">';
-			if ( post.editors.length === 1 ) {
-				html +=
-					'<div><span class="presence-editor-count">' +
-					esc( post.editors[ 0 ].display_name ) +
-					'</span></div>';
-			} else {
-				html +=
-					'<div><span class="presence-editor-count">' +
-					esc(
-						i18n.editorCount.replace( '%d', post.editors.length )
-					) +
-					'</span></div>';
-			}
+			html +=
+				'<div><span class="presence-editor-count">' +
+				esc( post.editor_label ) +
+				'</span></div>';
 			html +=
 				'<div><span class="presence-post-title"><a href="' +
 				esc( post.edit_url ) +

@@ -22,7 +22,7 @@ On a multisite network, Network Admin gets its own view of the same data: a Who'
 
 = Features =
 
-* Admin bar indicator showing who's online, grouped by who's on this page
+* Admin bar indicator showing who's online and who's on this page
 * Active Posts dashboard widget grouped by post
 * Editors column in the post list
 * Online filter in the Users list

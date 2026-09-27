@@ -116,10 +116,7 @@ class WP_Presence_Widget_Active_Posts {
 		return array(
 			'noPostsEdited'    => __( 'All quiet.', 'presence-api' ),
 			'postsBeingEdited' => __( 'Posts currently being edited', 'presence-api' ),
-			'statusEditing'    => __( 'Editing', 'presence-api' ),
 			'statusIdle'       => __( 'Idle', 'presence-api' ),
-			/* translators: %d: Number of editors. */
-			'editorCount'      => __( '%d editors', 'presence-api' ),
 		);
 	}
 
@@ -162,12 +159,7 @@ class WP_Presence_Widget_Active_Posts {
 				echo '</span>';
 
 				echo '<div class="presence-active-post-info">';
-				if ( 1 === count( $post_data['editors'] ) ) {
-					echo '<div><span class="presence-editor-count">' . esc_html( $post_data['editors'][0]['display_name'] ) . '</span></div>';
-				} else {
-					/* translators: %d: Number of editors. */
-					echo '<div><span class="presence-editor-count">' . esc_html( sprintf( __( '%d editors', 'presence-api' ), count( $post_data['editors'] ) ) ) . '</span></div>';
-				}
+				echo '<div><span class="presence-editor-count">' . esc_html( $post_data['editor_label'] ) . '</span></div>';
 				echo '<div><span class="presence-post-title"><a href="' . esc_url( $post_data['edit_url'] ) . '">' . esc_html( $post_data['post_title'] ) . '</a></span></div>';
 				echo '</div>';
 
@@ -311,7 +303,14 @@ class WP_Presence_Widget_Active_Posts {
 
 		// Keyed by user id above; the response is JSON, so hand back a list.
 		foreach ( $by_post as $index => $post_data ) {
-			$by_post[ $index ]['editors'] = array_values( $post_data['editors'] );
+			$editors = array_values( $post_data['editors'] );
+			$count   = count( $editors );
+
+			$by_post[ $index ]['editors']      = $editors;
+			$by_post[ $index ]['editor_label'] = 1 === $count
+				? $editors[0]['display_name']
+				/* translators: %d: Number of people editing the post. */
+				: sprintf( _n( '%d person', '%d people', $count, 'presence-api' ), $count );
 		}
 
 		return array_values( $by_post );

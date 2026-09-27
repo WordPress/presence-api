@@ -334,7 +334,7 @@ Gutenberg's [`__unstable_wp_sync_storage`](https://github.com/WordPress/gutenber
 
 No room mapping sits between the two sides: both use `postType/{type}:{id}`, the grammar Gutenberg's `WP_Sync_Config::parse_room()` defines and [`wp_presence_post_room()`](#php-api) already returns. Inside that shared room the `client_id` prefix keeps the rows apart. An editor plugin writes and reads only its own (`gse-{id}`, say), leaving this plugin's `editor-{user_id}` rows untouched.
 
-That leaves the split: awareness and cursors inside the editor go through that plugin; room membership everywhere else in wp-admin — plus the post-lock bridge below — stays this plugin's. Where an editor plugin uses this table, someone editing a post also shows up in Who's Online and the post list.
+That leaves the split: awareness and cursors inside the editor go through that plugin; room membership everywhere else in wp-admin, plus the post-lock bridge below, stays this plugin's. Where an editor plugin uses this table, someone editing a post also shows up in the admin bar and the post list.
 
 The JS actions above exist for that same relationship. A consumer like Gutenberg's sync poll loop ([presence-api#444](https://github.com/WordPress/presence-api/issues/444)) can wait for `presence-api.collaborationStarted` instead of polling to find out whether anyone else is in the room.
 

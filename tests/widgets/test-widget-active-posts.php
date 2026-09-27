@@ -473,7 +473,7 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 		WP_Presence_Widget_Active_Posts::render();
 		$html = ob_get_clean();
 
-		$this->assertStringContainsString( '2 editors', $html );
+		$this->assertStringContainsString( '2 people', $html );
 		$this->assertStringContainsString( '<span class="presence-status-text">Idle</span>', $html );
 	}
 }

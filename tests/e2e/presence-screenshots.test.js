@@ -31,12 +31,7 @@ const SEEDER_PATH =
 	'/var/www/html/wp-content/plugins/presence-api/tests/e2e/demo-seeder.php';
 
 /**
- * Calls a demo-seeder function inside the container.
- *
- * The `wp presence demo` subcommand this file used to call was removed in
- * a1ed56a, because registering it meant the plugin required a file under
- * `tests/`. The seeder functions survived, so load the file and call them
- * directly, the same way the Playground blueprint does.
+ * Calls a demo-seeder function inside the container, as the Playground blueprint does.
  *
  * @param {string} php Statement to run after the seeder is loaded.
  */

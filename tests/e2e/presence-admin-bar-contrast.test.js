@@ -96,18 +96,11 @@ test.describe.serial( 'Presence admin bar contrast', () => {
 		await expect( barNode ).toBeVisible();
 		await barNode.hover();
 
-		const text = [
-			page.locator( '.presence-bar-count' ).first(),
-			page.locator( '.presence-bar-screen' ).first(),
-			page.locator( '.presence-bar-group-label' ).first(),
-		];
-
-		for ( const element of text ) {
-			await expect( element ).toBeVisible();
-			const { foreground, background } = await computedColors( element );
-			expect(
-				contrastRatio( foreground, background )
-			).toBeGreaterThanOrEqual( 4.5 );
-		}
+		const count = page.locator( '.presence-bar-count' ).first();
+		await expect( count ).toBeVisible();
+		const { foreground, background } = await computedColors( count );
+		expect(
+			contrastRatio( foreground, background )
+		).toBeGreaterThanOrEqual( 4.5 );
 	} );
 } );

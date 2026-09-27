@@ -14,13 +14,11 @@
 class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 
 	private static $editor_id;
-	private static $contributor_id;
 	private static $post_id;
 
 	public static function wpSetUpBeforeClass( WP_UnitTest_Factory $factory ) {
-		self::$editor_id      = $factory->user->create( array( 'role' => 'editor' ) );
-		self::$contributor_id = $factory->user->create( array( 'role' => 'contributor' ) );
-		self::$post_id        = $factory->post->create(
+		self::$editor_id = $factory->user->create( array( 'role' => 'editor' ) );
+		self::$post_id   = $factory->post->create(
 			array(
 				'post_title'  => 'Secret Draft',
 				'post_status' => 'draft',
@@ -79,23 +77,6 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * Renders the node and returns every node title and link as one string.
-	 *
-	 * @return string Concatenated node titles and hrefs.
-	 */
-	private function render_node_markup() {
-		$markup = '';
-		foreach ( $this->render_nodes() as $node ) {
-			$markup .= $node->title;
-			if ( is_string( $node->href ) ) {
-				$markup .= $node->href;
-			}
-		}
-
-		return $markup;
-	}
-
-	/**
 	 * Renders the node and returns the admin bar's nodes, keyed by id.
 	 *
 	 * @return array Node objects.
@@ -146,76 +127,6 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * The menu labels each online user with the post they are editing. A
-	 * contributor has `edit_posts`, which is all the node itself requires, but
-	 * must not learn the title of a draft they cannot edit.
-	 */
-	public function test_hides_post_titles_the_user_cannot_edit() {
-		$this->put_editor_on_post( self::$post_id );
-
-		wp_set_current_user( self::$contributor_id );
-		$markup = $this->render_node_markup();
-
-		$this->assertStringNotContainsString( 'Secret Draft', $markup );
-		$this->assertStringNotContainsString( 'post=' . self::$post_id, $markup );
-	}
-
-	/**
-	 * The user is still listed, only the post they are on is withheld.
-	 */
-	public function test_still_lists_the_user_without_the_post_title() {
-		$this->put_editor_on_post( self::$post_id );
-
-		wp_set_current_user( self::$contributor_id );
-		$this->let_current_user_list_users();
-		$markup = $this->render_node_markup();
-
-		$editor = get_userdata( self::$editor_id );
-		$this->assertStringContainsString( $editor->display_name, $markup );
-	}
-
-	/**
-	 * A user who can edit the post still sees its title.
-	 */
-	public function test_shows_post_titles_the_user_can_edit() {
-		$this->put_editor_on_post( self::$post_id );
-
-		$other_editor_id = self::factory()->user->create( array( 'role' => 'editor' ) );
-		wp_set_current_user( $other_editor_id );
-		$this->let_current_user_list_users();
-		$markup = $this->render_node_markup();
-
-		$this->assertStringContainsString( 'Secret Draft', $markup );
-	}
-
-	/**
-	 * WP_Admin_Bar only renders a `tabindex` attribute on a non-link node
-	 * when `meta.tabindex` is explicitly set — otherwise it's a `<div>`
-	 * outside the tab order entirely.
-	 */
-	public function test_non_link_nodes_are_keyboard_reachable() {
-		$this->put_editor_on_post( self::$post_id );
-
-		wp_set_current_user( self::$contributor_id );
-
-		$bar = new WP_Admin_Bar();
-		wp_presence_admin_bar_node( $bar );
-
-		foreach ( $bar->get_nodes() as $node ) {
-			// Groups and their headers are structure, not controls.
-			if ( ! empty( $node->href ) || ! empty( $node->group ) || 'presence-bar-group-header' === ( $node->meta['class'] ?? '' ) ) {
-				continue;
-			}
-
-			$this->assertSame(
-				0,
-				$node->meta['tabindex'] ?? null,
-				"Node '{$node->id}' has no href and needs meta.tabindex => 0 to stay reachable by Tab."
-			);
-		}
-	}
-
-	/**
 	 * Alone, the node still shows, so the bar does not shift when someone arrives.
 	 */
 	public function test_the_node_stays_when_you_are_alone() {
@@ -225,7 +136,7 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$nodes = $this->render_nodes();
 
 		$this->assertStringContainsString( 'Just you', $nodes['presence-online']->title );
-		$this->assertSame( 'Only you are online', $nodes['presence-online']->meta['aria-label'] );
+		$this->assertStringContainsString( '<span class="screen-reader-text">Only you are online</span>', $nodes['presence-online']->title );
 	}
 
 	public function test_no_indicator_for_a_user_without_edit_posts() {
@@ -248,28 +159,119 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$GLOBALS['pagenow'] = $pagenow;
 	}
 
-	public function test_users_on_the_same_admin_page_are_grouped_here() {
+	public function test_people_on_this_page_come_first_with_faces() {
 		$this->view_admin_page( 'upload.php', 'upload' );
 
 		$here      = get_userdata( $this->put_user_on_screen( 'upload' ) );
-		$elsewhere = $this->put_user_on_screen( 'edit-comments' );
+		$elsewhere = $this->put_user_on_screen( 'edit-comments', array( 'title' => 'Comments' ) );
 
 		wp_set_current_user( self::$editor_id );
-		$this->let_current_user_list_users();
 		$nodes = $this->render_nodes();
 
-		$this->assertArrayHasKey( 'presence-group-here', $nodes );
-		$this->assertArrayHasKey( 'presence-group-elsewhere', $nodes );
-		$this->assertArrayHasKey( 'presence-user-' . $here->ID, $nodes );
-		// Only people on this page wear their color.
 		$this->assertStringContainsString( 'outline-color:', $nodes[ 'presence-user-' . $here->ID ]->title );
-		$this->assertStringNotContainsString( 'outline-color:', $nodes[ 'presence-user-' . $elsewhere ]->title );
+		// Without view_presence_location, everyone else is a name with no place or link.
+		$this->assertSame( 'presence-elsewhere', $nodes[ 'presence-user-' . $elsewhere ]->parent );
+		$this->assertSame( esc_html( get_userdata( $elsewhere )->display_name ), $nodes[ 'presence-user-' . $elsewhere ]->title );
+		$this->assertFalse( $nodes[ 'presence-user-' . $elsewhere ]->href );
 		// The faces are the others on this page; you are already in My Account.
 		$this->assertStringContainsString( 'alt="' . esc_attr( $here->display_name ) . '"', $nodes['presence-online']->title );
 		$this->assertStringNotContainsString(
 			'alt="' . esc_attr( get_userdata( self::$editor_id )->display_name ) . '"',
 			$nodes['presence-online']->title
 		);
+	}
+
+	/**
+	 * @dataProvider data_elsewhere_links
+	 */
+	public function test_people_elsewhere_link_to_where_they_are( $screen, $path ) {
+		$user_id = $this->put_user_on_screen( $screen, array( 'title' => 'Somewhere' ) );
+
+		wp_set_current_user( self::$editor_id );
+		$this->let_current_user_list_users();
+		$row = $this->render_nodes()[ 'presence-user-' . $user_id ];
+
+		$this->assertSame( null === $path ? false : admin_url( $path ), $row->href );
+		$this->assertSame( '../wp-login' !== $screen, str_contains( $row->title, '>Somewhere</span>' ) );
+	}
+
+	public function data_elsewhere_links() {
+		return array(
+			'core screen'      => array( 'edit-comments', 'edit-comments.php' ),
+			'post type list'   => array( 'edit-page', 'edit.php?post_type=page' ),
+			'taxonomy list'    => array( 'edit-category', 'edit-tags.php?taxonomy=category' ),
+			'plugin page'      => array( 'settings_page_presence-api', 'admin.php?page=presence-api' ),
+			'needs an ID'      => array( 'user-edit', null ),
+			'forged path'      => array( '../wp-login', null ),
+		);
+	}
+
+	public function test_someone_editing_a_post_links_to_it() {
+		$this->put_editor_on_post( self::$post_id );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$row = $this->render_nodes()[ 'presence-user-' . self::$editor_id ];
+
+		$this->assertSame( get_edit_post_link( self::$post_id, 'raw' ), $row->href );
+		$this->assertStringContainsString( '>Secret Draft</span>', $row->title );
+	}
+
+	public function test_people_on_this_page_show_when_they_are_idle() {
+		$this->view_admin_page( 'upload.php', 'upload' );
+
+		$active = $this->put_user_on_screen( 'upload' );
+		$idle   = $this->put_user_on_screen( 'upload' );
+		$this->age_entry( $idle, wp_presence_idle_threshold() + 1 );
+
+		wp_set_current_user( self::$editor_id );
+		$nodes = $this->render_nodes();
+
+		$this->assertStringNotContainsString( 'Idle', $nodes[ 'presence-user-' . $active ]->title );
+		$this->assertStringContainsString( '>Idle</span>', $nodes[ 'presence-user-' . $idle ]->title );
+	}
+
+	/**
+	 * Every post editor shares one screen ID, so the post decides who is on this page.
+	 */
+	public function test_editors_of_another_post_are_not_on_this_page() {
+		$other_post = self::factory()->post->create( array( 'post_author' => self::$editor_id ) );
+		$this->view_admin_page( 'post.php', 'post' );
+		$this->put_editor_on_post( self::$post_id );
+
+		$me = self::factory()->user->create( array( 'role' => 'editor' ) );
+		wp_set_current_user( $me );
+		wp_set_presence( 'admin/online', 'user-' . $me, array( 'screen' => 'post' ), $me );
+		wp_set_presence( wp_presence_post_room( $other_post ), 'lock-' . $me, array(), $me );
+
+		$this->assertSame( 'presence-elsewhere', $this->render_nodes()[ 'presence-user-' . self::$editor_id ]->parent );
+
+		wp_set_presence( wp_presence_post_room( self::$post_id ), 'lock-' . $me, array(), $me );
+		wp_remove_presence( wp_presence_post_room( $other_post ), 'lock-' . $me );
+
+		$this->assertSame( 'presence-online', $this->render_nodes()[ 'presence-user-' . self::$editor_id ]->parent );
+	}
+
+	public function test_readers_of_another_page_are_not_on_this_page() {
+		$there = $this->put_user_on_screen( 'front', array( 'post_id' => self::$post_id + 1 ) );
+		$here  = $this->put_user_on_screen( 'front', array( 'post_id' => self::$post_id ) );
+
+		wp_set_current_user( self::$editor_id );
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'front', 'post_id' => self::$post_id ), self::$editor_id );
+		$nodes = $this->render_nodes();
+
+		$this->assertSame( 'presence-online', $nodes[ 'presence-user-' . $here ]->parent );
+		$this->assertSame( 'presence-elsewhere', $nodes[ 'presence-user-' . $there ]->parent );
+	}
+
+	public function test_rows_are_not_links() {
+		$this->view_admin_page( 'upload.php', 'upload' );
+		$user_id = $this->put_user_on_screen( 'upload' );
+
+		wp_set_current_user( self::$editor_id );
+		$row = $this->render_nodes()[ 'presence-user-' . $user_id ];
+
+		$this->assertFalse( $row->href );
+		$this->assertArrayNotHasKey( 'tabindex', $row->meta );
 	}
 
 	/**
@@ -286,7 +288,7 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$nodes = $this->render_nodes();
 
 		$this->assertStringContainsString( '3 online', $nodes['presence-online']->title );
-		$this->assertSame( '3 users online', $nodes['presence-online']->meta['aria-label'] );
+		$this->assertStringContainsString( '<span class="screen-reader-text">3 users online</span>', $nodes['presence-online']->title );
 	}
 
 	/**
@@ -336,31 +338,6 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$nodes = $this->render_nodes();
 
 		$this->assertArrayHasKey( 'presence-user-' . $user_id, $nodes );
-		$this->assertArrayNotHasKey( 'presence-group-elsewhere', $nodes );
-	}
-
-	/**
-	 * Both groups are capped so a busy site cannot grow the dropdown past the
-	 * height of the screen.
-	 */
-	public function test_each_group_is_capped_at_ten() {
-		$this->view_admin_page( 'upload.php', 'upload' );
-
-		for ( $i = 0; $i < 11; $i++ ) {
-			$this->put_user_on_screen( 'upload' );
-			$this->put_user_on_screen( 'edit-comments' );
-		}
-
-		wp_set_current_user( self::$editor_id );
-		$this->let_current_user_list_users();
-		$nodes = $this->render_nodes();
-
-		$rows = array_count_values( wp_list_pluck( array_filter( $nodes, fn( $n ) => 0 === strpos( $n->id, 'presence-user-' ) ), 'parent' ) );
-
-		$this->assertSame( array( 'presence-here' => 10, 'presence-elsewhere' => 10 ), $rows );
-		$this->assertSame( '2 more', $nodes['presence-more']->title );
-		$this->assertSame( 'presence-elsewhere', $nodes['presence-more']->parent );
-		$this->assertSame( wp_nonce_url( admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' ), $nodes['presence-view-all']->href );
 	}
 
 	public function test_people_on_this_page_never_share_a_ring_color() {
@@ -377,62 +354,23 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * With no one elsewhere, the count closes the On this page group.
+	 * The cap bounds the markup every Heartbeat tick resends.
 	 */
-	public function test_the_count_of_those_left_out_can_close_on_this_page() {
+	public function test_this_page_is_capped_at_fifty() {
 		$this->view_admin_page( 'upload.php', 'upload' );
 
-		for ( $i = 0; $i < 11; $i++ ) {
+		for ( $i = 0; $i < 51; $i++ ) {
 			$this->put_user_on_screen( 'upload' );
 		}
 
 		wp_set_current_user( self::$editor_id );
+		$this->let_current_user_list_users();
 		$nodes = $this->render_nodes();
 
+		$this->assertCount( 50, array_filter( $nodes, fn( $n ) => 0 === strpos( $n->id, 'presence-user-' ) ) );
 		$this->assertSame( '1 more', $nodes['presence-more']->title );
-		$this->assertSame( 'presence-here', $nodes['presence-more']->parent );
-	}
-
-	/**
-	 * Someone reading the site is shown the page they are on, linked to it,
-	 * rather than the generic "Front end" label.
-	 */
-	public function test_a_user_reading_the_site_is_shown_the_page_they_are_on() {
-		$this->view_admin_page( 'upload.php', 'upload' );
-
-		$user_id = $this->put_user_on_screen(
-			'front',
-			array(
-				'title'   => 'Hello World',
-				'post_id' => self::$post_id,
-			)
-		);
-
-		wp_set_current_user( self::$editor_id );
-		$this->let_current_user_list_users();
-		$nodes = $this->render_nodes();
-
-		$node = $nodes[ 'presence-user-' . $user_id ];
-		$this->assertStringContainsString( 'Hello World', $node->title );
-		$this->assertSame( get_permalink( self::$post_id ), $node->href );
-	}
-
-	/**
-	 * The label's leading verb is italicised to separate it from the object it
-	 * acts on, which leaves nothing to italicise in a one-word label.
-	 */
-	public function test_a_one_word_screen_label_is_left_unstyled() {
-		$this->view_admin_page( 'upload.php', 'upload' );
-
-		$user_id = $this->put_user_on_screen( 'plugins' );
-
-		wp_set_current_user( self::$editor_id );
-		$this->let_current_user_list_users();
-		$nodes = $this->render_nodes();
-
-		$title = $nodes[ 'presence-user-' . $user_id ]->title;
-		$this->assertStringContainsString( 'Plugins', $title );
-		$this->assertStringNotContainsString( '<em>', $title );
+		$this->assertSame( 8, substr_count( $nodes['presence-online']->title, '<img' ) );
+		$this->assertSame( wp_nonce_url( admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' ), $nodes['presence-online']->href );
 	}
 
 	/**
@@ -486,22 +424,14 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * Without list_users you still see who is online, just not where they are.
+	 * WP_Admin_Bar renders a node without a link as a div, outside the tab order unless given a tabindex.
 	 */
-	public function test_elsewhere_hides_locations_without_list_users() {
-		$this->view_admin_page( 'upload.php', 'upload' );
-
-		$here      = $this->put_user_on_screen( 'upload' );
-		$elsewhere = $this->put_user_on_screen( 'edit-comments' );
-
+	public function test_the_menu_opens_by_keyboard_without_list_users() {
 		wp_set_current_user( self::$editor_id );
-		$nodes = $this->render_nodes();
+		$node = $this->render_nodes()['presence-online'];
 
-		$this->assertArrayHasKey( 'presence-user-' . $here, $nodes );
-		$this->assertArrayHasKey( 'presence-user-' . $elsewhere, $nodes );
-		$this->assertStringNotContainsString( 'presence-bar-screen', $nodes[ 'presence-user-' . $elsewhere ]->title );
-		$this->assertFalse( $nodes[ 'presence-user-' . $elsewhere ]->href );
-		$this->assertArrayNotHasKey( 'presence-view-all', $nodes );
+		$this->assertFalse( $node->href );
+		$this->assertSame( 0, $node->meta['tabindex'] );
 	}
 
 	/**
@@ -525,7 +455,6 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 
 		$this->assertStringStartsWith( "<li role='group' id='wp-admin-bar-presence-online'", $response['presence-admin-bar'] );
 		$this->assertStringContainsString( 'id=\'wp-admin-bar-presence-user-' . $here->ID . '\'', $response['presence-admin-bar'] );
-		$this->assertStringContainsString( 'On this page', $response['presence-admin-bar'] );
 		$this->assertStringContainsString( '3 online', $response['presence-admin-bar'] );
 	}
 
@@ -564,41 +493,5 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		);
 
 		$this->assertArrayNotHasKey( 'presence-admin-bar', $response );
-	}
-
-	/**
-	 * @dataProvider data_rich_screen_labels
-	 *
-	 * @covers ::wp_presence_get_rich_screen_label
-	 * @covers ::wp_presence_get_screen_label
-	 * @covers ::wp_presence_get_screen_labels
-	 *
-	 * @param string $screen      The pagenow slug.
-	 * @param string $post_status The post status recorded alongside it.
-	 * @param string $expected    The label the pair should produce.
-	 */
-	public function test_a_post_status_sharpens_the_screen_label( $screen, $post_status, $expected ) {
-		$this->assertSame( $expected, wp_presence_get_rich_screen_label( $screen, $post_status ) );
-	}
-
-	public function data_rich_screen_labels() {
-		return array(
-			'draft post'       => array( 'post', 'draft', 'Drafting post' ),
-			'auto-draft page'  => array( 'page', 'auto-draft', 'Drafting page' ),
-			'pending post'     => array( 'edit-post', 'pending', 'Pending post' ),
-			'private page'     => array( 'page', 'private', 'Editing private page' ),
-			'scheduled post'   => array( 'post', 'future', 'Editing scheduled post' ),
-			'published page'   => array( 'page', 'publish', 'Editing page' ),
-			'unrelated screen' => array( 'upload', 'draft', 'Media' ),
-			'unmapped screen'  => array( 'site-health', '', 'Site Health' ),
-		);
-	}
-
-	/**
-	 * @covers ::wp_presence_get_screen_url
-	 */
-	public function test_only_mapped_screens_link_to_an_admin_page() {
-		$this->assertSame( admin_url( 'post-new.php' ), wp_presence_get_screen_url( 'post-new' ) );
-		$this->assertFalse( wp_presence_get_screen_url( 'site-health' ) );
 	}
 }
