@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Handles the "Active Posts" dashboard widget with Heartbeat integration.
  *
- * Shows which posts are currently being edited, grouped by post with
+ * Shows which posts people have open, grouped by post with
  * an avatar stack of editors.
  *
  * @since 0.1.1

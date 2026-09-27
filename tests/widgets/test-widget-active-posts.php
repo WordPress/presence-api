@@ -30,7 +30,7 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 	/**
 	 * Runs the widget's data query.
 	 *
-	 * @return array The posts being edited, as the widget draws them.
+	 * @return array The posts people have open, as the widget draws them.
 	 */
 	private function active_posts() {
 		$method = new ReflectionMethod( WP_Presence_Widget_Active_Posts::class, 'build_active_posts_data' );
