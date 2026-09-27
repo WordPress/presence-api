@@ -135,6 +135,7 @@ const WP_PRESENCE_DEMO_SCREENS = array(
 	'dashboard'       => 'Dashboard',
 	'edit'            => 'Posts',
 	'post'            => 'Edit Post',
+	'page'            => 'Edit Page',
 	'post-new'        => 'Add New Post',
 	'upload'          => 'Media Library',
 	'edit-comments'   => 'Comments',
@@ -150,16 +151,17 @@ const WP_PRESENCE_DEMO_SCREENS = array(
  * How many demo users land on each screen, relative to the others, so most are writing and few are in settings.
  */
 const WP_PRESENCE_DEMO_SCREEN_WEIGHTS = array(
-	'dashboard'       => 12,
-	'edit'            => 14,
-	'post'            => 30,
-	'post-new'        => 8,
-	'upload'          => 8,
-	'edit-comments'   => 10,
+	'dashboard'       => 2,
+	'edit'            => 4,
+	'post'            => 10,
+	'page'            => 6,
+	'post-new'        => 5,
+	'upload'          => 6,
+	'edit-comments'   => 6,
 	'themes'          => 1,
 	'plugins'         => 2,
 	'users'           => 3,
-	'profile'         => 5,
+	'profile'         => 3,
 	'tools'           => 1,
 	'options-general' => 2,
 );
@@ -167,7 +169,7 @@ const WP_PRESENCE_DEMO_SCREEN_WEIGHTS = array(
 /**
  * How many editors each demo post draws, relative to the others, in WP_PRESENCE_DEMO_POSTS order.
  */
-const WP_PRESENCE_DEMO_POST_WEIGHTS = array( 10, 5, 4, 2, 1 );
+const WP_PRESENCE_DEMO_POST_WEIGHTS = array( 1, 1, 1, 1, 1 );
 
 /**
  * Picks a key at random, in proportion to its weight.
@@ -234,19 +236,31 @@ const WP_PRESENCE_DEMO_POSTS = array(
 );
 
 /**
+ * Demo page titles, so editors show up on pages as well as posts.
+ */
+const WP_PRESENCE_DEMO_PAGES = array(
+	'About',
+	'Contact',
+	'Events Calendar',
+);
+
+/**
  * Ensures demo posts exist and returns their IDs.
  *
  * @since 7.1.0
+ * @since 0.11.0 Added the `$post_type` and `$titles` parameters.
  *
+ * @param string   $post_type The post type to create.
+ * @param string[] $titles    The titles to ensure.
  * @return array Array of post IDs.
  */
-function wp_presence_demo_ensure_posts() {
+function wp_presence_demo_ensure_posts( $post_type = 'post', $titles = WP_PRESENCE_DEMO_POSTS ) {
 	$post_ids = array();
 
-	foreach ( WP_PRESENCE_DEMO_POSTS as $title ) {
+	foreach ( $titles as $title ) {
 		$query = new WP_Query(
 			array(
-				'post_type'              => 'post',
+				'post_type'              => $post_type,
 				'title'                  => $title,
 				'posts_per_page'         => 1,
 				'no_found_rows'          => true,
@@ -262,7 +276,7 @@ function wp_presence_demo_ensure_posts() {
 				array(
 					'post_title'  => $title,
 					'post_status' => 'draft',
-					'post_type'   => 'post',
+					'post_type'   => $post_type,
 				)
 			);
 
@@ -363,6 +377,8 @@ function wp_presence_demo_refresh( $user_ids ) {
 		$real_posts = array( 1 );
 	}
 
+	$real_pages = wp_presence_demo_ensure_posts( 'page', WP_PRESENCE_DEMO_PAGES );
+
 	if ( $has_cli ) {
 		$progress = WP_CLI\Utils\make_progress_bar(
 			sprintf( 'Seeding %d presence entries', count( $user_ids ) ),
@@ -380,7 +396,7 @@ function wp_presence_demo_refresh( $user_ids ) {
 			'title'  => $screens[ $screen ],
 		);
 
-		if ( in_array( $screen, array( 'post', 'post-new' ), true ) ) {
+		if ( in_array( $screen, array( 'post', 'page', 'post-new' ), true ) ) {
 			$state['post_status'] = $post_statuses[ array_rand( $post_statuses ) ];
 		}
 
@@ -388,12 +404,19 @@ function wp_presence_demo_refresh( $user_ids ) {
 
 		if ( 'post' === $screen ) {
 			$post_id = $real_posts[ wp_presence_demo_pick( array_slice( WP_PRESENCE_DEMO_POST_WEIGHTS, 0, count( $real_posts ) ) ) ];
+		} elseif ( 'page' === $screen && $real_pages ) {
+			$post_id = $real_pages[ array_rand( $real_pages ) ];
+		} else {
+			$post_id = 0;
+		}
+
+		if ( $post_id ) {
 			wp_set_presence(
-				'postType/post:' . $post_id,
+				'postType/' . $screen . ':' . $post_id,
 				'editor-' . $uid,
 				array(
 					'action' => 'editing',
-					'screen' => 'post',
+					'screen' => $screen,
 				),
 				$uid
 			);
