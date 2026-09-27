@@ -158,8 +158,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 			return current_user_can( 'read_post', $post_id ) ? array( $title, get_permalink( $post_id ) ) : array( '', '' );
 		} elseif ( $post_id && ( 'site-editor' === $screen || get_post_type( $post_id ) === $screen ) ) {
 			$post_title = get_the_title( $post_id );
-			// phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- Reuses core's string, as _draft_or_post_title() does.
-			return array( '' !== $post_title ? $post_title : __( '(no title)', 'default' ), (string) get_edit_post_link( $post_id, 'raw' ), true );
+			return array( '' !== $post_title ? $post_title : __( '(no title)', 'presence-api' ), (string) get_edit_post_link( $post_id, 'raw' ), true );
 		} elseif ( $object_id && 'comment' === $screen ) {
 			return array( $title, (string) get_edit_comment_link( $object_id, 'url' ) );
 		} elseif ( $object_id && 'user-edit' === $screen ) {
@@ -170,8 +169,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 			return array( get_term( $object_id, $type )->name, (string) get_edit_term_link( $object_id, $type ) );
 		} elseif ( ! empty( $entry->data['object_id'] ) ) {
 			// The user editor's title names the user, so it is only shown to people who can edit them.
-			// phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- Reuses core's string.
-			return array( in_array( $screen, array( 'user-edit', 'user-edit-network' ), true ) ? __( 'Edit User', 'default' ) : $title, '' );
+			return array( in_array( $screen, array( 'user-edit', 'user-edit-network' ), true ) ? __( 'Edit User', 'presence-api' ) : $title, '' );
 		} elseif ( 'dashboard' === $base ) {
 			$path = '';
 		} elseif ( preg_match( '/_page_(.+)$/', $base, $matches ) ) {
