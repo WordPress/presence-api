@@ -68,9 +68,8 @@ describe( "Network Who's Online widget focus handling", () => {
 		tick( $, [
 			{
 				blog_id: 1,
-				url: 'https://a.example',
-				domain: 'a.example',
-				path: '/',
+				name: 'a.example',
+				edit_url: 'https://a.example/wp-admin/network/site-info.php',
 				user_count: 2,
 				users: [],
 			},
@@ -80,9 +79,8 @@ describe( "Network Who's Online widget focus handling", () => {
 		tick( $, [
 			{
 				blog_id: 1,
-				url: 'https://a.example',
-				domain: 'a.example',
-				path: '/',
+				name: 'a.example',
+				edit_url: 'https://a.example/wp-admin/network/site-info.php',
 				user_count: 3,
 				users: [],
 			},
@@ -101,9 +99,9 @@ describe( "Network Who's Online widget focus handling", () => {
 			[
 				{
 					blog_id: 1,
-					url: 'https://a.example',
-					domain: 'a.example',
-					path: '/',
+					name: 'a.example',
+					edit_url:
+						'https://a.example/wp-admin/network/site-info.php',
 					user_count: 2,
 					users: [],
 				},
@@ -117,9 +115,9 @@ describe( "Network Who's Online widget focus handling", () => {
 			[
 				{
 					blog_id: 1,
-					url: 'https://a.example',
-					domain: 'a.example',
-					path: '/',
+					name: 'a.example',
+					edit_url:
+						'https://a.example/wp-admin/network/site-info.php',
 					user_count: 3,
 					users: [],
 				},
@@ -141,9 +139,8 @@ describe( "Network Who's Online widget focus handling", () => {
 		tick( $, [
 			{
 				blog_id: 1,
-				url: 'https://a.example',
-				domain: 'a.example',
-				path: '/',
+				name: 'a.example',
+				edit_url: 'https://a.example/wp-admin/network/site-info.php',
 				user_count: 2,
 				users: [],
 			},
@@ -158,9 +155,8 @@ describe( "Network Who's Online widget focus handling", () => {
 		tick( $, [
 			{
 				blog_id: 1,
-				url: 'https://a.example',
-				domain: 'a.example',
-				path: '/',
+				name: 'a.example',
+				edit_url: 'https://a.example/wp-admin/network/site-info.php',
 				user_count: 2,
 				users: [],
 			},
@@ -170,9 +166,8 @@ describe( "Network Who's Online widget focus handling", () => {
 		tick( $, [
 			{
 				blog_id: 2,
-				url: 'https://b.example',
-				domain: 'b.example',
-				path: '/',
+				name: 'b.example',
+				edit_url: 'https://b.example/wp-admin/network/site-info.php',
 				user_count: 1,
 				users: [],
 			},
