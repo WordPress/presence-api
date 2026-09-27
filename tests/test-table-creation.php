@@ -175,13 +175,13 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 	 * a second, overlapping dbDelta().
 	 *
 	 * @covers ::wp_maybe_create_presence_table
-	 * @covers ::wp_presence_create_lock
 	 */
 	public function test_a_locked_request_does_not_run_the_schema_change() {
 		$this->drop_presence_table();
 
 		// Stand in for the request that got there first and is still working.
-		$this->assertTrue( wp_presence_create_lock( 'wp_presence_table' ), 'Precondition: the lock starts free.' );
+		require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+		$this->assertTrue( WP_Upgrader::create_lock( 'wp_presence_table' ), 'Precondition: the lock starts free.' );
 
 		wp_maybe_create_presence_table();
 
@@ -194,7 +194,6 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 	 * request, which is a worse failure than the race it guards against.
 	 *
 	 * @covers ::wp_maybe_create_presence_table
-	 * @covers ::wp_presence_release_lock
 	 */
 	public function test_provisioning_releases_the_lock_for_the_next_request() {
 		$this->drop_presence_table();
@@ -213,7 +212,6 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 	 * on age for the same reason.
 	 *
 	 * @covers ::wp_maybe_create_presence_table
-	 * @covers ::wp_presence_create_lock
 	 */
 	public function test_an_abandoned_lock_stops_blocking_once_it_ages_out() {
 		$this->drop_presence_table();
@@ -224,21 +222,6 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 		wp_maybe_create_presence_table();
 
 		$this->assertTrue( $this->presence_table_exists(), 'An expired lock should be reclaimed, not respected forever.' );
-	}
-
-	/**
-	 * The lock has to be exclusive, or it is not a lock.
-	 *
-	 * @covers ::wp_presence_create_lock
-	 * @covers ::wp_presence_release_lock
-	 */
-	public function test_only_one_caller_holds_the_lock_at_a_time() {
-		$this->assertTrue( wp_presence_create_lock( 'wp_presence_table' ), 'The first caller should take the lock.' );
-		$this->assertFalse( wp_presence_create_lock( 'wp_presence_table' ), 'The second should be refused while it is held.' );
-
-		wp_presence_release_lock( 'wp_presence_table' );
-
-		$this->assertTrue( wp_presence_create_lock( 'wp_presence_table' ), 'And it should be free again once released.' );
 	}
 
 	/**
@@ -365,24 +348,6 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 			$this->assertTrue( $exists, "Site {$blog_id} should have been given its own presence table." );
 			$this->assertNotFalse( $scheduled, "Site {$blog_id} should have cleanup scheduled." );
 		}
-	}
-
-	/**
-	 * A failed insert with no lock row behind it is refused, not taken as the lock.
-	 *
-	 * @covers ::wp_presence_create_lock
-	 */
-	public function test_a_lock_insert_that_fails_for_another_reason_is_refused() {
-		global $wpdb;
-
-		$fail_insert = static function ( $query ) use ( $wpdb ) {
-			return false !== strpos( $query, '/* LOCK */' ) ? "SELECT 1 FROM {$wpdb->options} WHERE 1 = 0" : $query;
-		};
-		add_filter( 'query', $fail_insert );
-		$taken = wp_presence_create_lock( 'wp_presence_table' );
-		remove_filter( 'query', $fail_insert );
-
-		$this->assertFalse( $taken );
 	}
 
 	/**
