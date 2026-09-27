@@ -208,8 +208,8 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 
 	/**
 	 * A request that dies between taking the lock and releasing it would
-	 * otherwise leave the site unprovisionable. This also fails if the lock
-	 * falls back to core's one-hour timeout.
+	 * otherwise leave the site unprovisionable, and core's default hour is too
+	 * long to wait.
 	 *
 	 * @covers ::wp_maybe_create_presence_table
 	 */

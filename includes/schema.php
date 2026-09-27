@@ -99,7 +99,7 @@ function wp_maybe_create_presence_table() {
 	// winner finish; the next request repairs anything left over.
 	require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 
-	// dbDelta() on one table takes seconds, so core's hour would leave a lost request blocking provisioning far too long.
+	// One table's dbDelta() takes seconds, so core's default hour would block provisioning too long after a lost request.
 	if ( ! WP_Upgrader::create_lock( 'wp_presence_table', MINUTE_IN_SECONDS ) ) {
 		return;
 	}
