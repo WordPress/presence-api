@@ -59,6 +59,7 @@ add_action( 'pre_get_users', 'wp_presence_filter_online_users' );
 add_filter( 'heartbeat_received', 'wp_presence_users_list_heartbeat_received', 13, 2 );
 
 add_action( 'admin_init', 'wp_presence_register_post_list_columns' );
+add_filter( 'heartbeat_received', 'wp_presence_editors_column_heartbeat_received', 13, 2 );
 
 add_action( 'wp_dashboard_setup', array( 'WP_Presence_Widget_Active_Posts', 'register' ) );
 add_filter( 'heartbeat_received', array( 'WP_Presence_Widget_Active_Posts', 'heartbeat_received' ), 10, 3 );
