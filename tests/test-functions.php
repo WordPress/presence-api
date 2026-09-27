@@ -828,11 +828,12 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
 
-		$expiry = $wpdb->get_var( "SELECT expires_gmt FROM {$wpdb->presence} WHERE client_id = 'client-1'" );
+		$row    = $wpdb->get_row( "SELECT date_gmt, expires_gmt FROM {$wpdb->presence} WHERE client_id = 'client-1'" );
+		$expiry = $row->expires_gmt;
 
 		$this->assertSame(
 			WP_PRESENCE_DEFAULT_TTL * 2,
-			strtotime( $expiry . ' UTC' ) - time(),
+			strtotime( $expiry . ' UTC' ) - strtotime( $row->date_gmt . ' UTC' ),
 			'The filter sets the window a row is written with.'
 		);
 
@@ -1339,9 +1340,12 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 		wp_set_presence( 'test/room', 'relay-1', array(), self::$editor_id, null, WEEK_IN_SECONDS );
 
+		global $wpdb;
+		$date_gmt = $wpdb->get_var( "SELECT date_gmt FROM {$wpdb->presence} WHERE client_id = 'relay-1'" );
+
 		$this->assertSame(
 			MINUTE_IN_SECONDS,
-			strtotime( $this->stored_expires_gmt( 'test/room', 'relay-1' ) . ' UTC' ) - time(),
+			strtotime( $this->stored_expires_gmt( 'test/room', 'relay-1' ) . ' UTC' ) - strtotime( $date_gmt . ' UTC' ),
 			'A window beyond the ceiling is trimmed to it.'
 		);
 	}
