@@ -695,6 +695,7 @@ function wp_presence_max_expires_in() {
  *
  * @since 0.6.0
  * @since 0.7.0 Added the `$expires_gmt` and `$refresh_cutoff` parameters.
+ * @since 0.11.0 No longer checks whether recording is on, so post locks can bypass it.
  *
  * @global wpdb $wpdb WordPress database abstraction object.
  *
@@ -712,8 +713,7 @@ function wp_presence_max_expires_in() {
 function wp_presence_write_row( $room, $client_id, $user_id, $data_json, $date_gmt, $expires_gmt = null, $refresh_cutoff = '' ) {
 	global $wpdb;
 
-	// Repeated from wp_set_presence() for the callers that come here directly.
-	if ( ! wp_presence_recording_enabled() || ! wp_presence_has_table() ) {
+	if ( ! wp_presence_has_table() ) {
 		return false;
 	}
 
