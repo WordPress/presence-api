@@ -86,7 +86,6 @@ require_once WP_PRESENCE_PLUGIN_DIR . 'includes/avatar-stack.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/admin-bar.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/user-list.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/post-list.php';
-require_once WP_PRESENCE_PLUGIN_DIR . 'includes/widgets/class-wp-presence-widget-whos-online.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/widgets/class-wp-presence-widget-active-posts.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/default-filters.php';
 

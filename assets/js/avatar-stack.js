@@ -1,9 +1,9 @@
 /**
  * Overlapping avatar stack, client side.
  *
- * The counterpart to wp_presence_render_avatar_stack(). Both "Who's Online"
- * widgets paint the stack server-side and then repaint it from a Heartbeat
- * tick, so the two renderers have to emit the same markup.
+ * The counterpart to wp_presence_render_avatar_stack(). The network "Who's
+ * Online" widget paints the stack server-side and then repaints it from a
+ * Heartbeat tick, so the two renderers have to emit the same markup.
  *
  * @package Presence_API
  */

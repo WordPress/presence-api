@@ -215,8 +215,8 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 			// Everyone sees the name; the location needs view_presence_location.
 			$screen       = wp_presence_get_entry_screen( $entry );
 			$entry_ps     = isset( $entry->data['post_status'] ) ? $entry->data['post_status'] : '';
-			$screen_label = $screen ? WP_Presence_Widget_Whos_Online::get_rich_screen_label( $screen, $entry_ps ) : '';
-			$screen_url   = $screen ? WP_Presence_Widget_Whos_Online::get_screen_url( $screen ) : false;
+			$screen_label = $screen ? wp_presence_get_rich_screen_label( $screen, $entry_ps ) : '';
+			$screen_url   = $screen ? wp_presence_get_screen_url( $screen ) : false;
 
 			// If user is editing a specific post, show the post title and link to it.
 			if ( in_array( $screen, array( 'post', 'edit-post' ), true ) && isset( $user_editing_post[ (int) $entry->user_id ] ) ) {
@@ -352,4 +352,139 @@ function wp_presence_admin_bar_assets() {
 	wp_register_style( 'presence-admin-bar', false, array(), WP_PRESENCE_VERSION );
 	wp_enqueue_style( 'presence-admin-bar' );
 	wp_add_inline_style( 'presence-admin-bar', $css );
+}
+
+/**
+ * Returns a map of pagenow slugs to translatable screen labels.
+ *
+ * @since 0.9.0
+ *
+ * @return array Associative array of slug => label.
+ */
+function wp_presence_get_screen_labels() {
+	return array(
+		'dashboard'          => __( 'Dashboard', 'presence-api' ),
+		'edit'               => __( 'Posts', 'presence-api' ),
+		'post'               => __( 'Editing post', 'presence-api' ),
+		'edit-post'          => __( 'Editing post', 'presence-api' ),
+		'post-new'           => __( 'Writing post', 'presence-api' ),
+		'edit-page'          => __( 'Pages', 'presence-api' ),
+		'page'               => __( 'Editing page', 'presence-api' ),
+		'upload'             => __( 'Media', 'presence-api' ),
+		'media'              => __( 'Media', 'presence-api' ),
+		'edit-comments'      => __( 'Comments', 'presence-api' ),
+		'comment'            => __( 'Comments', 'presence-api' ),
+		'themes'             => __( 'Themes', 'presence-api' ),
+		'widgets'            => __( 'Widgets', 'presence-api' ),
+		'nav-menus'          => __( 'Menus', 'presence-api' ),
+		'plugins'            => __( 'Plugins', 'presence-api' ),
+		'users'              => __( 'Users', 'presence-api' ),
+		'profile'            => __( 'Profile', 'presence-api' ),
+		'user-edit'          => __( 'Users', 'presence-api' ),
+		'tools'              => __( 'Tools', 'presence-api' ),
+		'import'             => __( 'Import', 'presence-api' ),
+		'export'             => __( 'Export', 'presence-api' ),
+		'options-general'    => __( 'Settings', 'presence-api' ),
+		'options-writing'    => __( 'Settings', 'presence-api' ),
+		'options-reading'    => __( 'Settings', 'presence-api' ),
+		'options-discussion' => __( 'Settings', 'presence-api' ),
+		'options-media'      => __( 'Settings', 'presence-api' ),
+		'options-permalink'  => __( 'Settings', 'presence-api' ),
+		'front'              => __( 'Viewing site', 'presence-api' ),
+		'login'              => __( 'Logging in', 'presence-api' ),
+	);
+}
+
+/**
+ * Returns the admin URL for a pagenow screen slug, if linkable.
+ *
+ * @since 0.9.0
+ *
+ * @param string $screen The pagenow slug.
+ * @return string|false The admin URL, or false if not linkable.
+ */
+function wp_presence_get_screen_url( $screen ) {
+	$map = array(
+		'dashboard'          => '',
+		'edit'               => 'edit.php',
+		'post'               => 'edit.php',
+		'edit-post'          => 'edit.php',
+		'post-new'           => 'post-new.php',
+		'edit-page'          => 'edit.php?post_type=page',
+		'page'               => 'edit.php?post_type=page',
+		'upload'             => 'upload.php',
+		'media'              => 'upload.php',
+		'edit-comments'      => 'edit-comments.php',
+		'comment'            => 'edit-comments.php',
+		'themes'             => 'themes.php',
+		'widgets'            => 'widgets.php',
+		'nav-menus'          => 'nav-menus.php',
+		'plugins'            => 'plugins.php',
+		'users'              => 'users.php',
+		'profile'            => 'profile.php',
+		'user-edit'          => 'users.php',
+		'tools'              => 'tools.php',
+		'import'             => 'import.php',
+		'export'             => 'export.php',
+		'options-general'    => 'options-general.php',
+		'options-writing'    => 'options-writing.php',
+		'options-reading'    => 'options-reading.php',
+		'options-discussion' => 'options-discussion.php',
+		'options-media'      => 'options-media.php',
+		'options-permalink'  => 'options-permalink.php',
+	);
+
+	if ( isset( $map[ $screen ] ) ) {
+		return admin_url( $map[ $screen ] );
+	}
+
+	return false;
+}
+
+/**
+ * Returns a context-aware screen label using post status when available.
+ *
+ * @since 0.9.0
+ *
+ * @param string $screen      The pagenow slug.
+ * @param string $post_status Optional. The post status (draft, publish, etc.).
+ * @return string The friendly label.
+ */
+function wp_presence_get_rich_screen_label( $screen, $post_status = '' ) {
+	if ( $post_status && in_array( $screen, array( 'post', 'edit-post', 'page' ), true ) ) {
+		$type = in_array( $screen, array( 'page' ), true ) ? 'page' : 'post';
+		switch ( $post_status ) {
+			case 'draft':
+			case 'auto-draft':
+				return 'page' === $type ? __( 'Drafting page', 'presence-api' ) : __( 'Drafting post', 'presence-api' );
+			case 'pending':
+				return 'page' === $type ? __( 'Pending page', 'presence-api' ) : __( 'Pending post', 'presence-api' );
+			case 'private':
+				return 'page' === $type ? __( 'Editing private page', 'presence-api' ) : __( 'Editing private post', 'presence-api' );
+			case 'future':
+				return 'page' === $type ? __( 'Editing scheduled page', 'presence-api' ) : __( 'Editing scheduled post', 'presence-api' );
+			default:
+				return 'page' === $type ? __( 'Editing page', 'presence-api' ) : __( 'Editing post', 'presence-api' );
+		}
+	}
+
+	return wp_presence_get_screen_label( $screen );
+}
+
+/**
+ * Returns a human-readable label for a pagenow screen slug.
+ *
+ * @since 0.9.0
+ *
+ * @param string $screen The pagenow slug.
+ * @return string The friendly label.
+ */
+function wp_presence_get_screen_label( $screen ) {
+	$labels = wp_presence_get_screen_labels();
+	if ( isset( $labels[ $screen ] ) ) {
+		return $labels[ $screen ];
+	}
+
+	// Fallback: title-case and strip hyphens.
+	return ucwords( str_replace( array( '-', '_' ), ' ', $screen ) );
 }

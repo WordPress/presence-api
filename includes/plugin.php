@@ -101,7 +101,7 @@ function wp_presence_default_widget_order( $result ) {
 		return $result;
 	}
 	return array(
-		'normal' => 'presence_whos_online,presence_active_posts,dashboard_right_now,dashboard_activity',
+		'normal' => 'presence_active_posts,dashboard_right_now,dashboard_activity',
 		'side'   => 'dashboard_quick_press,dashboard_primary',
 	);
 }

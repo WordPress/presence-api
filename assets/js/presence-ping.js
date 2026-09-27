@@ -80,8 +80,6 @@
 	// includes the backoff's own hash/unchanged fields, so followers count
 	// idle ticks and widen their own interval in step with the leader.
 	const RELAYED_TICK_KEYS = [
-		'presence-online',
-		'presence-online-total',
 		'presence-online-hash',
 		'presence-online-unchanged',
 		'presence-heartbeat-users',
@@ -209,8 +207,7 @@
 		}
 
 		if ( backoffEnabled ) {
-			// Reuses the Who's Online widget's hash exchange on every screen,
-			// not just the Dashboard, to learn whether the room changed.
+			// The server answers with a new hash only when the room changed.
 			$( document ).on( 'heartbeat-send', function ( event, data ) {
 				if ( lastOnlineHash ) {
 					data[ 'presence-online-hash' ] = lastOnlineHash;
@@ -227,8 +224,6 @@
 				}
 				if ( data[ 'presence-online-hash' ] ) {
 					lastOnlineHash = data[ 'presence-online-hash' ];
-				}
-				if ( data[ 'presence-online' ] ) {
 					resetBackoff();
 				}
 			} );

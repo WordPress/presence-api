@@ -21,7 +21,7 @@ class WP_Test_Presence_Dashboard_Widget_Order extends WP_UnitTestCase {
 		$result = wp_presence_default_widget_order( false );
 
 		$this->assertIsArray( $result );
-		$this->assertStringStartsWith( 'presence_whos_online,presence_active_posts', $result['normal'] );
+		$this->assertStringStartsWith( 'presence_active_posts,dashboard_right_now', $result['normal'] );
 	}
 
 	/**
@@ -47,7 +47,7 @@ class WP_Test_Presence_Dashboard_Widget_Order extends WP_UnitTestCase {
 		$order = get_user_option( 'meta-box-order_dashboard', self::$admin_id );
 
 		$this->assertIsArray( $order );
-		$this->assertStringStartsWith( 'presence_whos_online,presence_active_posts', $order['normal'] );
+		$this->assertStringStartsWith( 'presence_active_posts,dashboard_right_now', $order['normal'] );
 	}
 
 	/**

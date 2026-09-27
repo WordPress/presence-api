@@ -163,15 +163,83 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * The write must land before any widget reads the room on the same filter.
+	 * The write must land before the hash reads the room on the same filter.
 	 *
 	 * @covers ::wp_presence_admin_heartbeat_received
 	 */
-	public function test_admin_heartbeat_runs_before_widget_read() {
+	public function test_admin_heartbeat_runs_before_the_online_hash() {
 		$this->assertLessThan(
-			has_filter( 'heartbeat_received', array( 'WP_Presence_Widget_Whos_Online', 'heartbeat_received' ) ),
+			has_filter( 'heartbeat_received', 'wp_presence_online_hash_heartbeat_received' ),
 			has_filter( 'heartbeat_received', 'wp_presence_admin_heartbeat_received' )
 		);
+	}
+
+	/**
+	 * Writes a ping and returns the hash handler's reply, as heartbeat_received does.
+	 *
+	 * @param string $hash The hash the client last saw.
+	 * @return array The Heartbeat response.
+	 */
+	private function hash_tick( $hash = '' ) {
+		$data = array( 'presence-ping' => array( 'screen' => 'dashboard' ) );
+		if ( $hash ) {
+			$data['presence-online-hash'] = $hash;
+		}
+
+		wp_presence_admin_heartbeat_received( array(), $data, 'dashboard' );
+
+		return wp_presence_online_hash_heartbeat_received( array(), $data );
+	}
+
+	/**
+	 * @covers ::wp_presence_online_hash_heartbeat_received
+	 */
+	public function test_the_online_hash_reports_unchanged_until_the_room_changes() {
+		$other_id = self::factory()->user->create( array( 'role' => 'editor' ) );
+		wp_set_presence( wp_presence_admin_room(), 'user-' . $other_id, array( 'screen' => 'edit' ), $other_id );
+		wp_set_current_user( self::$editor_id );
+
+		$hash = $this->hash_tick()['presence-online-hash'];
+
+		$this->assertSame( array( 'presence-online-unchanged' => true ), $this->hash_tick( $hash ) );
+
+		wp_remove_presence( wp_presence_admin_room(), 'user-' . $other_id );
+
+		$this->assertNotSame( $hash, $this->hash_tick( $hash )['presence-online-hash'] );
+	}
+
+	/**
+	 * Every tick rewrites the pinging user's timestamp, which wp_get_presence() orders by.
+	 *
+	 * @covers ::wp_presence_online_hash_heartbeat_received
+	 */
+	public function test_the_online_hash_ignores_timestamps() {
+		global $wpdb;
+
+		$other_id = self::factory()->user->create( array( 'role' => 'editor' ) );
+		wp_set_presence( wp_presence_admin_room(), 'user-' . $other_id, array( 'screen' => 'edit' ), $other_id );
+		wp_set_current_user( self::$editor_id );
+
+		$hash = $this->hash_tick()['presence-online-hash'];
+
+		$wpdb->update( $wpdb->presence, array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() + 5 ) ), array( 'client_id' => 'user-' . $other_id ) );
+
+		$this->assertArrayHasKey( 'presence-online-unchanged', $this->hash_tick( $hash ) );
+	}
+
+	/**
+	 * @covers ::wp_presence_online_hash_heartbeat_received
+	 */
+	public function test_the_online_hash_skips_moves_the_viewer_cannot_see() {
+		$other_id = self::factory()->user->create( array( 'role' => 'editor' ) );
+		wp_set_presence( wp_presence_admin_room(), 'user-' . $other_id, array( 'screen' => 'edit' ), $other_id );
+		wp_set_current_user( self::$editor_id );
+
+		$hash = $this->hash_tick()['presence-online-hash'];
+
+		wp_set_presence( wp_presence_admin_room(), 'user-' . $other_id, array( 'screen' => 'upload' ), $other_id );
+
+		$this->assertArrayHasKey( 'presence-online-unchanged', $this->hash_tick( $hash ) );
 	}
 
 	/**

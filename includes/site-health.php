@@ -34,7 +34,7 @@ function wp_presence_site_status_tests( $tests ) {
  * Tests whether Heartbeat refreshes presence rows before they expire.
  *
  * Only a page load writes presence without Heartbeat, so a user who stays on
- * one screen past the TTL drops out of Who's Online while still there.
+ * one screen past the TTL drops out of the admin bar while still there.
  *
  * @access private
  *

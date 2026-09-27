@@ -83,11 +83,6 @@ test.describe.serial( 'Presence Screenshots', () => {
 		await snap( page, '01-empty-dashboard' );
 		await snapElement(
 			page,
-			'#presence-whos-online-list',
-			'01-empty-whos-online'
-		);
-		await snapElement(
-			page,
 			'#presence-active-posts-list',
 			'01-empty-active-posts'
 		);
@@ -100,11 +95,6 @@ test.describe.serial( 'Presence Screenshots', () => {
 		await page.waitForTimeout( 3000 );
 
 		await snap( page, '02-active-dashboard' );
-		await snapElement(
-			page,
-			'#presence-whos-online-list',
-			'02-active-whos-online'
-		);
 		await snapElement(
 			page,
 			'#presence-active-posts-list',
@@ -135,11 +125,6 @@ test.describe.serial( 'Presence Screenshots', () => {
 		await snap( page, '03-scale-dashboard' );
 		await snapElement(
 			page,
-			'#presence-whos-online-list',
-			'03-scale-whos-online'
-		);
-		await snapElement(
-			page,
 			'#presence-active-posts-list',
 			'03-scale-active-posts'
 		);
@@ -164,11 +149,6 @@ test.describe.serial( 'Presence Screenshots', () => {
 		await page.waitForTimeout( 3000 );
 
 		await snap( page, '06-idle-dashboard' );
-		await snapElement(
-			page,
-			'#presence-whos-online-list',
-			'06-idle-whos-online'
-		);
 		await snapElement(
 			page,
 			'#presence-active-posts-list',

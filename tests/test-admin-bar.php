@@ -310,7 +310,6 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 	 * assembles its own set, so a fix to any single one can drift from the rest.
 	 *
 	 * @covers ::wp_presence_users_views
-	 * @covers WP_Presence_Widget_Whos_Online::render
 	 */
 	public function test_every_surface_reports_the_same_number_when_your_row_is_absent() {
 		$this->put_user_on_screen( 'dashboard' );
@@ -319,16 +318,10 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		wp_set_current_user( self::$editor_id );
 
 		$nodes = $this->render_nodes();
-
-		ob_start();
-		WP_Presence_Widget_Whos_Online::render();
-		$widget = ob_get_clean();
-
 		$views = wp_presence_users_views( array() );
 
 		$this->assertStringContainsString( '3 online', $nodes['presence-online']->title );
 		$this->assertStringContainsString( '(3)', $views['presence_online'] );
-		$this->assertSame( 3, substr_count( $widget, 'class="presence-user-item"' ) );
 	}
 
 	/**
@@ -509,5 +502,40 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		);
 
 		$this->assertArrayNotHasKey( 'presence-admin-bar', $response );
+	}
+
+	/**
+	 * @dataProvider data_rich_screen_labels
+	 *
+	 * @covers ::wp_presence_get_rich_screen_label
+	 * @covers ::wp_presence_get_screen_label
+	 *
+	 * @param string $screen      The pagenow slug.
+	 * @param string $post_status The post status recorded alongside it.
+	 * @param string $expected    The label the pair should produce.
+	 */
+	public function test_a_post_status_sharpens_the_screen_label( $screen, $post_status, $expected ) {
+		$this->assertSame( $expected, wp_presence_get_rich_screen_label( $screen, $post_status ) );
+	}
+
+	public function data_rich_screen_labels() {
+		return array(
+			'draft post'       => array( 'post', 'draft', 'Drafting post' ),
+			'auto-draft page'  => array( 'page', 'auto-draft', 'Drafting page' ),
+			'pending post'     => array( 'edit-post', 'pending', 'Pending post' ),
+			'private page'     => array( 'page', 'private', 'Editing private page' ),
+			'scheduled post'   => array( 'post', 'future', 'Editing scheduled post' ),
+			'published page'   => array( 'page', 'publish', 'Editing page' ),
+			'unrelated screen' => array( 'upload', 'draft', 'Media' ),
+			'unmapped screen'  => array( 'site-health', '', 'Site Health' ),
+		);
+	}
+
+	/**
+	 * @covers ::wp_presence_get_screen_url
+	 */
+	public function test_only_mapped_screens_link_to_an_admin_page() {
+		$this->assertSame( admin_url( 'post-new.php' ), wp_presence_get_screen_url( 'post-new' ) );
+		$this->assertFalse( wp_presence_get_screen_url( 'site-health' ) );
 	}
 }

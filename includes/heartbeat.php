@@ -97,8 +97,8 @@ function wp_presence_enqueue_heartbeat_ping() {
 		),
 	);
 
-	// Carry a title for any frontend URL so it shows up in the Who's Online
-	// widget (non-singular views — archives, search, the front page, taxonomies,
+	// Carry a title for any frontend URL so it shows up in the admin bar
+	// (non-singular views — archives, search, the front page, taxonomies,
 	// 404s — are labeled too). is_singular() pages also carry the post id.
 	$front_context = null;
 	if ( ! is_admin() ) {
@@ -267,7 +267,7 @@ function wp_presence_admin_heartbeat_received( $response, $data, $screen_id ) { 
 	}
 
 	// Store the frontend page label whenever the ping is from the public site.
-	// title becomes the row's screen label in Who's Online; post_id is recorded
+	// title becomes the row's screen label in the admin bar; post_id is recorded
 	// when the ping carries one (singular views).
 	if ( 'front' === $screen ) {
 		if ( ! empty( $data['presence-ping']['title'] ) ) {
@@ -286,6 +286,47 @@ function wp_presence_admin_heartbeat_received( $response, $data, $screen_id ) { 
 	$state['color'] = wp_presence_assign_user_color( $user_id );
 
 	wp_set_presence( wp_presence_admin_room(), 'user-' . $user_id, $state, $user_id );
+
+	return $response;
+}
+
+/**
+ * Tells a pinging client whether anyone online arrived, left, or moved.
+ *
+ * The ping script widens the heartbeat interval after a run of unchanged ticks.
+ *
+ * @since 0.9.0
+ *
+ * @param array $response The Heartbeat response.
+ * @param array $data     The $_POST data sent.
+ * @return array The Heartbeat response.
+ */
+function wp_presence_online_hash_heartbeat_received( $response, $data ) {
+	if ( empty( $data['presence-ping'] ) || ! current_user_can( 'edit_posts' ) ) {
+		return $response;
+	}
+
+	$state = array();
+	foreach ( wp_get_presence( wp_presence_admin_room() ) as $entry ) {
+		// Leaves out date_gmt, which moves on every tick while nothing else does.
+		$state[] = array(
+			(int) $entry->user_id,
+			wp_presence_get_entry_screen( $entry ),
+			isset( $entry->data['post_status'] ) ? $entry->data['post_status'] : '',
+			isset( $entry->data['title'] ) ? $entry->data['title'] : '',
+			isset( $entry->data['post_id'] ) ? (int) $entry->data['post_id'] : 0,
+		);
+	}
+
+	// wp_get_presence() orders by date_gmt, which reshuffles as clients ping.
+	sort( $state );
+	$hash = md5( (string) wp_json_encode( $state ) );
+
+	if ( isset( $data['presence-online-hash'] ) && $data['presence-online-hash'] === $hash ) {
+		$response['presence-online-unchanged'] = true;
+	} else {
+		$response['presence-online-hash'] = $hash;
+	}
 
 	return $response;
 }

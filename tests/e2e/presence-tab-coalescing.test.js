@@ -95,7 +95,7 @@ function waitForOnlineDataTick( page, timeoutMs = 8000 ) {
 			function handler( event, data ) {
 				if (
 					data &&
-					( data[ 'presence-online' ] ||
+					( data[ 'presence-online-hash' ] ||
 						data[ 'presence-online-unchanged' ] )
 				) {
 					clearTimeout( timer );
@@ -174,7 +174,7 @@ test.describe( 'Presence Tab Coalescing', () => {
 		] );
 
 		expect(
-			relayed[ 'presence-online' ] ||
+			relayed[ 'presence-online-hash' ] ||
 				relayed[ 'presence-online-unchanged' ]
 		).toBeTruthy();
 
