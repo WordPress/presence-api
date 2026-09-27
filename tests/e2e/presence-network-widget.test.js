@@ -92,8 +92,9 @@ test.describe( "Network Who's Online widget", () => {
 		await expect(
 			team.locator( '.presence-avatar-stack img' )
 		).toHaveAttribute( 'alt', NETWORK_USERS.a.displayName );
+		// The title scripts/start-multisite-env.sh gives the site.
 		await expect( team.locator( '.presence-site-info a' ) ).toHaveText(
-			SITE_SLUG
+			'Team'
 		);
 		await expect( team.locator( '.presence-site-info a' ) ).toHaveAttribute(
 			'href',
