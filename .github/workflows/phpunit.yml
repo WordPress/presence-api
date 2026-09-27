@@ -103,3 +103,46 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage-multisite.xml
           flags: multisite
+
+  # Single site only, since the multisite fixtures rely on MySQL keeping DDL and auto-increment counters outside the per-test rollback.
+  sqlite:
+    name: SQLite
+    if: ${{ inputs.should-run }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.3'
+          tools: composer
+      - run: npm ci
+      - name: Authenticate composer to GitHub
+        run: composer config --global --auth github-oauth.github.com '${{ secrets.GITHUB_TOKEN }}'
+      - name: Install Composer dependencies
+        run: composer install --no-interaction
+      - name: Start wp-env (retry on transient failures)
+        run: |
+          for attempt in 1 2 3; do
+            if npx wp-env start; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              exit 1
+            fi
+            npx wp-env destroy || true
+            echo "wp-env start failed on attempt $attempt, retrying..."
+          done
+        env:
+          WP_ENV_PHP_VERSION: '8.3'
+      # Same drop-in setup as the SQLite integration's own wp-setup.sh, which is what Playground runs on.
+      - name: Swap the test database for SQLite
+        run: |
+          npx wp-env run tests-cli -- wp plugin install sqlite-database-integration
+          npx wp-env run tests-cli -- sh -c "sed -e \"s#'{SQLITE_IMPLEMENTATION_FOLDER_PATH}'#__DIR__ . '/plugins/sqlite-database-integration'#\" -e 's#{SQLITE_PLUGIN}#sqlite-database-integration/load.php#g' wp-content/plugins/sqlite-database-integration/db.copy > wp-content/db.php"
+      - run: npx wp-env run tests-cli --env-cwd='wp-content/plugins/presence-api' -- ./vendor/bin/phpunit
