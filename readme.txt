@@ -3,7 +3,7 @@ Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas,
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.1
-Stable tag: 0.8.0
+Stable tag: 0.9.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -65,6 +65,27 @@ For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/presence-api/blob/main/CHANGELOG.md
 
+= 0.9.0 =
+* Gate where people are behind a per-user view_presence_location meta cap ([#571](https://github.com/WordPress/presence-api/issues/571)).
+* Give each user a room-assigned color from Gutenberg's palette ([#574](https://github.com/WordPress/presence-api/issues/574)).
+* Give each user one lasting color from their ID.
+* Give the admin bar menu roomier rows and real section headers.
+* Keep post locks in the presence table instead of post meta.
+* Keep the admin bar presence node in sync on each heartbeat ([#589](https://github.com/WordPress/presence-api/issues/589)).
+* Pick each user's color from Gutenberg's seven plus fifteen between them.
+* Retire the site Who's Online dashboard widget ([#591](https://github.com/WordPress/presence-api/issues/591)).
+* Ring each admin bar face in its block editor collaborator color.
+* Say how many people the admin bar menu leaves out ([#594](https://github.com/WordPress/presence-api/issues/594)).
+* Seat the admin bar faces beside My Account and build the menu from core groups ([#565](https://github.com/WordPress/presence-api/issues/565)).
+* Show whole faces in the admin bar and beside each name in its menu.
+* Tune the admin bar presence menu 💅🏻 ([#597](https://github.com/WordPress/presence-api/issues/597)).
+* Carry the filter nonce on the Plugins screen's online users link ([#569](https://github.com/WordPress/presence-api/issues/569)).
+* Close the remaining location leaks and refresh the screen token ([#600](https://github.com/WordPress/presence-api/issues/600)).
+* Keep presence markup and location to the people allowed them ([#596](https://github.com/WordPress/presence-api/issues/596)).
+* List everyone online in the admin bar and keep only their location behind the cap ([#590](https://github.com/WordPress/presence-api/issues/590)).
+* Skip an unchanged editor tick's presence write ([#553](https://github.com/WordPress/presence-api/issues/553)).
+* Store the recording option so reading it costs no query ([#552](https://github.com/WordPress/presence-api/issues/552)).
+
 = 0.8.0 =
 * Add wp_presence_exchange() and wp_presence_leave() ([#546](https://github.com/WordPress/presence-api/issues/546)).
 * Say when Heartbeat cannot keep presence current ([#544](https://github.com/WordPress/presence-api/issues/544)).
@@ -90,10 +111,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 * Bypass the redundant-write guard and validate $date_gmt on wp_set_presence().
 * Request a retina-sharp avatar resolution across the presence surfaces.
 * Stop PHPStan's bootstrap from silently exiting before analysis.
-
-= 0.4.0 =
-* Carry the room's editor count on the editor heartbeat response.
-* Gate the network column renderers on the network capability.
-* Pin the patched bullseye apt sources to the image's own frozen snapshot.
-* Public surface read constants.
-* Skip presence writes that would only move the timestamp.
