@@ -11,6 +11,7 @@
  * @since 7.1.0
  */
 import { test as base } from '@wordpress/e2e-test-utils-playwright';
+import { expect } from '@playwright/test';
 import { execSync } from 'node:child_process';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -151,9 +152,14 @@ test.describe.serial( 'Presence Screenshots', () => {
 	} );
 
 	test( '06 — Idle state', async ( { admin, page } ) => {
-		await page.waitForTimeout( 35_000 );
+		wpCli(
+			"db query \"UPDATE wp_presence SET date_gmt = DATE_SUB( UTC_TIMESTAMP(), INTERVAL 76 SECOND ) WHERE room LIKE 'postType/%' AND client_id LIKE 'editor-%'\""
+		);
 		await admin.visitAdminPage( '/' );
 		await connectHeartbeat( page );
+		await expect(
+			page.locator( '#presence-active-posts-list' )
+		).toContainText( 'Idle' );
 
 		await snap( page, '06-idle-dashboard' );
 		await snapElement(
@@ -164,7 +170,9 @@ test.describe.serial( 'Presence Screenshots', () => {
 	} );
 
 	test( '07 — Expired (back to empty)', async ( { admin, page } ) => {
-		await page.waitForTimeout( 30_000 );
+		wpCli(
+			"db query \"UPDATE wp_presence SET date_gmt = DATE_SUB( UTC_TIMESTAMP(), INTERVAL 151 SECOND ) WHERE room LIKE 'postType/%' AND client_id LIKE 'editor-%'\""
+		);
 		await admin.visitAdminPage( '/' );
 		await connectHeartbeat( page );
 
