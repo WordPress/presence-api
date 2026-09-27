@@ -1,6 +1,6 @@
 <?php
 /**
- * Stale-screen detection demo helper.
+ * Playground demo helpers for stale-screen detection and post locks.
  *
  * Loaded as a must-use plugin by the Playground demo blueprint. Renders
  * a "pretend another user just saved this screen" button bar on every
@@ -137,3 +137,16 @@ function presence_demo_handle_bump() {
 	wp_send_json_success();
 }
 add_action( 'wp_ajax_presence_demo_bump_screen', 'presence_demo_handle_bump' );
+
+/**
+ * Keeps the demo post locks fresh so the Posts screen always shows some.
+ */
+function presence_demo_refresh_locks() {
+	$seeder = WP_PLUGIN_DIR . '/presence-api/demo-seeder.php';
+	if ( ! function_exists( 'wp_presence_post_room' ) || ! file_exists( $seeder ) ) {
+		return;
+	}
+	require_once $seeder;
+	wp_presence_demo_seed_locks();
+}
+add_action( 'load-edit.php', 'presence_demo_refresh_locks' );

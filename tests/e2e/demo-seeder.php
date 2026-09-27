@@ -373,6 +373,59 @@ function wp_presence_demo_refresh( $user_ids ) {
 }
 
 /**
+ * Post lock scenarios for the Posts screen: title, status, and how many demo users are on it.
+ */
+const WP_PRESENCE_DEMO_LOCKS = array(
+	array( 'Spring Sale Landing Page', 'draft', 1 ),
+	array( 'Company Holiday Schedule', 'publish', 2 ),
+	array( 'Pricing Page Refresh', 'pending', 3 ),
+	array( 'Product Roadmap 2027', 'future', 1 ),
+);
+
+/**
+ * Locks a post for each scenario, held by the first of its demo users.
+ *
+ * Core only honours a lock for 150 seconds, so the Playground calls this on every Posts screen load.
+ *
+ * @since 0.9.0
+ */
+function wp_presence_demo_seed_locks() {
+	// presence-demo-1 is already editing a post from wp_presence_demo_seed().
+	$user_index = 1;
+
+	foreach ( WP_PRESENCE_DEMO_LOCKS as list( $title, $status, $people ) ) {
+		$posts   = get_posts(
+			array(
+				'title'       => $title,
+				'post_status' => 'any',
+				'numberposts' => 1,
+				'fields'      => 'ids',
+			)
+		);
+		$post_id = $posts ? $posts[0] : wp_insert_post(
+			array(
+				'post_title'  => $title,
+				'post_status' => $status,
+				'post_author' => (int) username_exists( 'presence-demo-' . ( $user_index + 1 ) ),
+				'post_date'   => 'future' === $status ? gmdate( 'Y-m-d H:i:s', strtotime( '+1 week' ) ) : '',
+			)
+		);
+
+		for ( $i = 0; $i < $people; $i++ ) {
+			$user = get_user_by( 'login', 'presence-demo-' . ( ++$user_index ) );
+			if ( ! $user || ! $post_id ) {
+				continue;
+			}
+			if ( 0 === $i ) {
+				update_post_meta( $post_id, '_edit_lock', time() . ':' . $user->ID );
+			}
+			wp_set_presence( 'admin/online', 'user-' . $user->ID, array( 'screen' => 'post' ), $user->ID );
+			wp_set_presence( wp_presence_post_room( $post_id ), 'editor-' . $user->ID, wp_presence_editor_state( 'post', 0 === $i ), $user->ID );
+		}
+	}
+}
+
+/**
  * Removes all demo users and their presence entries.
  *
  * @since 7.1.0
