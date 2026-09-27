@@ -50,7 +50,7 @@ Only Heartbeat refreshes a row between page loads. With its script removed, or i
 | `admin/online`         | All admin pages    |
 | `postType/{type}:{id}` | `postType/post:42` |
 
-Post types opt in via `add_post_type_support( 'post', 'presence' )`.
+Every post type edited in the admin gets a room; see [Post Type Support](#post-type-support).
 
 ### Client IDs
 
@@ -154,18 +154,14 @@ wp_presence_network_aggregation_enabled();
 ## Extension Points
 
 ### Post Type Support
-A post type opts in to per-post presence rooms by declaring `presence` support. `post` and `page` are registered by the plugin; any other post type must opt in itself, either during registration or afterwards:
+The plugin adds `presence` support to every post type with `show_ui` and `editor` support, including ones registered after it loads. To leave one out, remove support once it is registered:
 ```php
-// During registration:
-register_post_type( 'my-post-type', array(
-    'supports' => array( 'title', 'editor', 'presence' ),
-) );
-
-// Or afterwards, on a post type someone else registered:
-add_post_type_support( 'my-post-type', 'presence' );
+add_action( 'init', function () {
+    remove_post_type_support( 'my-post-type', 'presence' );
+}, 11 );
 ```
 
-Without support, `wp_presence_post_room()` returns `false` for that post type and no per-post room is created.
+Without support, `wp_presence_post_room()` returns `false` for that post type and no per-post room is created. Its post locks still move out of post meta.
 
 <details>
 <summary>Filters and actions</summary>
