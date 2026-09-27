@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/WordPress/presence-api/actions/workflows/ci.yml/badge.svg)](https://github.com/WordPress/presence-api/actions/workflows/ci.yml)
 
-> **Status:** Feature plugin
+A feature plugin for system-wide presence and awareness in WordPress.
 
-System-wide presence and awareness for WordPress.
+![The dashboard with the admin bar's presence menu open, listing who is online and where](.wordpress-org/screenshot-1.png)
 
 > [!IMPORTANT]
 > **Built for the lowest common denominator of environments.** No object cache, no WebSockets, no extra services — a dedicated table with a TTL is the only moving part. Anything a managed host offers on top is a bonus, never a dependency.
