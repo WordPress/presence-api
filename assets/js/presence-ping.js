@@ -161,7 +161,11 @@
 		 *
 		 * @param {Object[]} surfaces Each with a `key`, a `target()` lookup, and an optional `request()` and `apply()`.
 		 */
-		return wp.hooks.applyFilters( 'presence-api.liveSurfaces', SURFACES );
+		// A copy, since this runs every tick and a callback may push onto what it is given.
+		return wp.hooks.applyFilters(
+			'presence-api.liveSurfaces',
+			SURFACES.slice()
+		);
 	}
 
 	const lastFragments = {};

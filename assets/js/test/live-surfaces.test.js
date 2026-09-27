@@ -144,4 +144,19 @@ describe( 'live surfaces', () => {
 			'3 online'
 		);
 	} );
+
+	it( 'hands each filter run a fresh list, so a callback that pushes does not pile up', () => {
+		const hooks = loadPing();
+		const lengths = [];
+		hooks.addFilter( 'presence-api.liveSurfaces', 'test', ( surfaces ) => {
+			lengths.push( surfaces.length );
+			surfaces.push( { key: 'pushed', target: () => null } );
+			return surfaces;
+		} );
+
+		send();
+		send();
+
+		expect( lengths[ 0 ] ).toBe( lengths[ 1 ] );
+	} );
 } );
