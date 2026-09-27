@@ -279,14 +279,19 @@ function wp_presence_heartbeat_widget_assets( $hook_suffix ) {
 				var listEl = document.querySelector("#presence-heartbeat-widget .presence-heartbeat-rooms-list");
 				if (listEl) {
 					var rooms = data["presence-heartbeat-room-list"];
-					if (rooms.length <= 1) {
-						listEl.innerHTML = "";
-					} else {
-						var html = "";
+					listEl.textContent = "";
+					if (rooms.length > 1) {
 						for (var i = 0; i < rooms.length; i++) {
-							html += "<div class=\"presence-heartbeat-room-row\"><code>" + rooms[i].prefix + "</code><span>" + rooms[i].entries + " " + (rooms[i].entries === 1 ? i18n.entry : i18n.entries) + ", " + rooms[i].users + " " + (rooms[i].users === 1 ? i18n.user : i18n.users) + "</span></div>";
+							var row = document.createElement("div");
+							var code = document.createElement("code");
+							var counts = document.createElement("span");
+							row.className = "presence-heartbeat-room-row";
+							code.textContent = rooms[i].prefix;
+							counts.textContent = rooms[i].entries + " " + (rooms[i].entries === 1 ? i18n.entry : i18n.entries) + ", " + rooms[i].users + " " + (rooms[i].users === 1 ? i18n.user : i18n.users);
+							row.appendChild(code);
+							row.appendChild(counts);
+							listEl.appendChild(row);
 						}
-						listEl.innerHTML = html;
 					}
 				}
 			}
