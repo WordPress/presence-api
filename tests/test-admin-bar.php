@@ -182,6 +182,24 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Returns the place heading a person is listed under, or null.
+	 *
+	 * @param array $nodes   Rendered nodes.
+	 * @param int   $user_id The person.
+	 * @return object|null
+	 */
+	private function place_of( $nodes, $user_id ) {
+		$place = null;
+		foreach ( wp_list_filter( $nodes, array( 'parent' => 'presence-elsewhere' ) ) as $id => $node ) {
+			if ( 'presence-user-' . $user_id === $id ) {
+				return $place;
+			}
+			$place = 0 === strpos( $id, 'presence-place-' ) ? $node : $place;
+		}
+		return null;
+	}
+
+	/**
 	 * @dataProvider data_elsewhere_links
 	 */
 	public function test_people_elsewhere_link_to_where_they_are( $screen, $path ) {
@@ -189,10 +207,17 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 
 		wp_set_current_user( self::$editor_id );
 		$this->let_current_user_list_users();
-		$row = $this->render_nodes()[ 'presence-user-' . $user_id ];
+		$nodes = $this->render_nodes();
+		$place = $this->place_of( $nodes, $user_id );
 
-		$this->assertSame( null === $path ? false : admin_url( $path ), $row->href );
-		$this->assertSame( '../wp-login' !== $screen, str_contains( $row->title, '>Somewhere</span>' ) );
+		$this->assertFalse( $nodes[ 'presence-user-' . $user_id ]->href );
+		if ( '../wp-login' === $screen ) {
+			$this->assertNull( $place );
+			return;
+		}
+		$this->assertSame( null === $path ? false : admin_url( $path ), $place->href );
+		$this->assertSame( 'Somewhere', $place->title );
+		$this->assertStringContainsString( '<span class="screen-reader-text">, on Somewhere</span>', $nodes[ 'presence-user-' . $user_id ]->title );
 	}
 
 	public function data_elsewhere_links() {
@@ -218,21 +243,25 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		);
 
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
-		$rows = array_keys( wp_list_filter( $this->render_nodes(), array( 'parent' => 'presence-elsewhere' ) ) );
+		$nodes = wp_list_filter( $this->render_nodes(), array( 'parent' => 'presence-elsewhere' ) );
+		$rows  = array_map(
+			fn( $node ) => 0 === strpos( $node->id, 'presence-place-' ) ? $node->title : (int) substr( $node->id, 14 ),
+			array_values( $nodes )
+		);
 
-		$this->assertSame( 'presence-user-' . self::$editor_id, $rows[0] );
-		$this->assertEqualSets( array( 'presence-user-' . $pair[0], 'presence-user-' . $pair[1] ), array_slice( $rows, 1, 2 ) );
-		$this->assertSame( array( 'presence-user-' . $alone, 'presence-user-' . $hidden ), array_slice( $rows, 3 ) );
+		$this->assertSame( array( 'Secret Draft', self::$editor_id, 'Users' ), array_slice( $rows, 0, 3 ) );
+		$this->assertEqualSets( $pair, array_slice( $rows, 3, 2 ) );
+		$this->assertSame( array( 'Comments', $alone, $hidden ), array_slice( $rows, 5 ) );
 	}
 
 	public function test_someone_editing_a_post_links_to_it() {
 		$this->put_editor_on_post( self::$post_id );
 
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
-		$row = $this->render_nodes()[ 'presence-user-' . self::$editor_id ];
+		$place = $this->place_of( $this->render_nodes(), self::$editor_id );
 
-		$this->assertSame( get_edit_post_link( self::$post_id, 'raw' ), $row->href );
-		$this->assertStringContainsString( '>Secret Draft</span>', $row->title );
+		$this->assertSame( get_edit_post_link( self::$post_id, 'raw' ), $place->href );
+		$this->assertSame( 'Secret Draft', $place->title );
 	}
 
 	public function test_people_on_this_page_show_when_they_are_idle() {
@@ -370,6 +399,21 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 
 		$this->assertStringContainsString( 'outline-color:#6F42C1', $nodes[ 'presence-user-' . $first ]->title );
 		$this->assertStringNotContainsString( 'outline-color:#6F42C1', $nodes[ 'presence-user-' . $second ]->title );
+	}
+
+	public function test_a_place_is_never_left_without_anyone_under_it() {
+		$this->view_admin_page( 'upload.php', 'upload' );
+
+		for ( $i = 0; $i < 49; $i++ ) {
+			$this->put_user_on_screen( 'upload' );
+		}
+		$this->put_user_on_screen( 'users', array( 'title' => 'Users' ) );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$nodes = $this->render_nodes();
+
+		$this->assertEmpty( wp_list_filter( $nodes, array( 'parent' => 'presence-elsewhere' ) ) );
+		$this->assertSame( '1 more', $nodes['presence-more']->title );
 	}
 
 	/**

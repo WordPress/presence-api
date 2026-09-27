@@ -129,8 +129,6 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 			return current_user_can( 'read_post', $post_id ) ? array( $title, get_permalink( $post_id ) ) : array( '', '' );
 		} elseif ( $post_id && get_post_type( $post_id ) === $screen ) {
 			return array( get_the_title( $post_id ), (string) get_edit_post_link( $post_id, 'raw' ), true );
-		} elseif ( 'profile' === $screen ) {
-			return array( $title, get_edit_user_link( (int) $entry->user_id ) );
 		} elseif ( 'dashboard' === $screen ) {
 			$path = '';
 		} elseif ( preg_match( '/_page_(.+)$/', $screen, $matches ) ) {
@@ -139,7 +137,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 			$path = 'edit.php?post_type=' . $type;
 		} elseif ( 0 === strpos( $screen, 'edit-' ) && taxonomy_exists( $type ) ) {
 			$path = 'edit-tags.php?taxonomy=' . $type;
-		} elseif ( ! in_array( $screen, array( 'post', 'post-new', 'comment', 'user-edit', 'term', 'media' ), true ) && file_exists( ABSPATH . 'wp-admin/' . $screen . '.php' ) ) {
+		} elseif ( ! in_array( $screen, array( 'post', 'post-new', 'profile', 'comment', 'user-edit', 'term', 'media' ), true ) && file_exists( ABSPATH . 'wp-admin/' . $screen . '.php' ) ) {
 			$path = $screen . '.php';
 		}
 
@@ -151,12 +149,15 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 		$places[ (int) $entry->user_id ] = $where( $entry );
 	}
 
-	$crowds = array_count_values( array_filter( array_column( $places, 0 ) ) );
+	$key    = function ( $place ) {
+		return '' === $place[0] ? '' : $place[0] . "\0" . $place[1];
+	};
+	$crowds = array_count_values( array_filter( array_map( $key, $places ) ) );
 
 	// Posts being edited are the places people share, so they come first, then the busiest screens, and hidden places last.
-	$rank = function ( $entry ) use ( $places, $crowds ) {
-		list( $label, , $editing ) = $places[ (int) $entry->user_id ] + array( '', '', false );
-		return array( ! $editing, -( $crowds[ $label ] ?? 0 ), $label );
+	$rank = function ( $entry ) use ( $places, $crowds, $key ) {
+		$place = $places[ (int) $entry->user_id ];
+		return array( empty( $place[2] ), -( $crowds[ $key( $place ) ] ?? 0 ), $key( $place ) );
 	};
 	usort(
 		$elsewhere,
@@ -242,8 +243,24 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 		);
 	}
 
-	$elsewhere_rows = array_slice( $elsewhere, 0, max( 0, $max_rows - count( $here ) ) );
-	if ( $elsewhere_rows ) {
+	$budget = max( 0, $max_rows - count( $here ) );
+	$rows   = array();
+	$last   = '';
+	foreach ( $elsewhere as $entry ) {
+		$place = $places[ (int) $entry->user_id ];
+		// Each place heads the people on it, and is never left without one.
+		$heads = '' !== $key( $place ) && $key( $place ) !== $last;
+		if ( count( $rows ) + ( $heads ? 2 : 1 ) > $budget ) {
+			break;
+		}
+		if ( $heads ) {
+			$rows[] = $place;
+		}
+		$rows[] = $entry;
+		$last   = $key( $place );
+	}
+
+	if ( $rows ) {
 		$wp_admin_bar->add_group(
 			array(
 				'parent' => 'presence-online',
@@ -253,28 +270,45 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 		);
 	}
 
-	foreach ( $elsewhere_rows as $entry ) {
-		$user = get_userdata( $entry->user_id );
+	$shown = 0;
+	foreach ( $rows as $i => $row ) {
+		if ( is_array( $row ) ) {
+			$wp_admin_bar->add_node(
+				array(
+					'parent' => 'presence-elsewhere',
+					'id'     => 'presence-place-' . $i,
+					'title'  => esc_html( $row[0] ),
+					'href'   => '' !== $row[1] ? $row[1] : false,
+					'meta'   => array(
+						'class' => 'presence-bar-place',
+						'title' => $row[0],
+					),
+				)
+			);
+			continue;
+		}
+		++$shown;
+		$user = get_userdata( $row->user_id );
 		if ( ! $user ) {
 			continue;
 		}
-		list( $label, $url ) = $places[ $user->ID ];
+		$label = $places[ $user->ID ][0];
 		$wp_admin_bar->add_node(
 			array(
 				'parent' => 'presence-elsewhere',
 				'id'     => 'presence-user-' . $user->ID,
-				'title'  => esc_html( $user->display_name ) . ( '' !== $label ? '<span class="presence-bar-place">' . esc_html( $label ) . '</span>' : '' ),
-				'href'   => '' !== $url ? $url : false,
+				/* translators: %s: Where the person is, such as a post title or an admin screen. */
+				'title'  => esc_html( $user->display_name ) . ( '' !== $label ? '<span class="screen-reader-text">, ' . esc_html( sprintf( __( 'on %s', 'presence-api' ), $label ) ) . '</span>' : '' ),
+				'meta'   => '' !== $label ? array( 'class' => 'presence-bar-there' ) : array(),
 			)
 		);
 	}
 
-	$total = count( $here ) + count( $elsewhere );
-	if ( $total > $max_rows ) {
-		$more = $total - $max_rows;
+	$more = count( $here ) + count( $elsewhere ) - min( count( $here ), $max_rows ) - $shown;
+	if ( $more > 0 ) {
 		$wp_admin_bar->add_node(
 			array(
-				'parent' => $elsewhere_rows ? 'presence-elsewhere' : 'presence-online',
+				'parent' => $rows ? 'presence-elsewhere' : 'presence-online',
 				'id'     => 'presence-more',
 				/* translators: %d: Number of people online the menu leaves out. */
 				'title'  => sprintf( _n( '%d more', '%d more', $more, 'presence-api' ), $more ),
@@ -389,11 +423,12 @@ function wp_presence_admin_bar_assets() {
 		.admin-color-light #wp-admin-bar-presence-online .ab-sub-wrapper { color-scheme: light; }
 		#wp-admin-bar-presence-online .ab-submenu .ab-item { display: flex !important; align-items: center; gap: 8px; }
 		#wp-admin-bar-presence-online .ab-submenu .presence-bar-avatar { width: 18px !important; height: 18px !important; flex: none; outline-offset: 0; }
-		#wp-admin-bar-presence-online :is(.presence-bar-idle, .presence-bar-place) { margin-inline-start: auto; padding-inline-start: 16px; }
-		#wp-admin-bar-presence-online .presence-bar-place { max-width: 16em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+		#wp-admin-bar-presence-online .presence-bar-idle { margin-inline-start: auto; padding-inline-start: 16px; }
+		#wp-admin-bar-presence-online .presence-bar-place > .ab-item { display: block !important; max-width: 20em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+		#wp-admin-bar-presence-online .presence-bar-there > .ab-item { padding-inline-start: 24px; }
 		#wp-admin-bar-presence-online .ab-submenu div.ab-item { cursor: default; }
-		#wp-admin-bar-presence-online :is(.presence-bar-idle, .presence-bar-place, .presence-bar-more > .ab-item) { opacity: .8; }
-		.admin-color-light #wp-admin-bar-presence-online :is(.presence-bar-idle, .presence-bar-place, .presence-bar-more > .ab-item) { opacity: 1; }
+		#wp-admin-bar-presence-online :is(.presence-bar-idle, .presence-bar-more > .ab-item) { opacity: .8; }
+		.admin-color-light #wp-admin-bar-presence-online :is(.presence-bar-idle, .presence-bar-more > .ab-item) { opacity: 1; }
 		.admin-color-light #wpadminbar #wp-admin-bar-presence-online .presence-bar-count { color: #50575e !important; }
 	';
 
