@@ -106,8 +106,11 @@ $entries = wp_presence_leave( $room, $client_id, $timeout = null, $client_prefix
 // Remove all presence entries for a user across all rooms.
 wp_remove_user_presence( $user_id );
 
-// Check whether a user can access a room (requires edit_posts).
+// Check whether a user can access a room (edit_post for a post's room, otherwise any post type).
 wp_can_access_presence_room( $room, $user_id = 0 );
+
+// Check whether a user can edit any post type shown in the admin.
+wp_presence_user_can_edit_any_post_type( $user = 0 );
 
 // Return the canonical room string for a post, or false if the post type
 // does not support presence.
@@ -302,7 +305,7 @@ wp.hooks.addFilter( 'presence-api.liveSurfaces', 'my-plugin', ( surfaces ) => [
 ```
 ```php
 add_filter( 'heartbeat_received', function( $response, $data ) {
-    if ( ! empty( $data['presence-fragments']['my-plugin-count'] ) && current_user_can( 'edit_posts' ) ) {
+    if ( ! empty( $data['presence-fragments']['my-plugin-count'] ) && wp_presence_user_can_edit_any_post_type() ) {
         $response['presence-fragments']['my-plugin-count'] = esc_html( my_plugin_count() );
     }
     return $response;
@@ -313,7 +316,7 @@ add_filter( 'heartbeat_received', function( $response, $data ) {
 
 ## REST API
 
-All endpoints require `edit_posts`. Responses include `Cache-Control: no-store`.
+All endpoints require editing at least one post type. Responses include `Cache-Control: no-store`.
 
 <details>
 <summary>Endpoints</summary>
@@ -378,7 +381,7 @@ Keeps `_edit_lock` in the post room's `_lock` row instead of post meta, through 
 
 ## Capability
 
-All features require `edit_posts`.
+Every feature is open to anyone who can edit at least one post type shown in the admin, so a role that edits only pages or a custom post type gets presence too.
 
 ## Stale-screen detection
 
