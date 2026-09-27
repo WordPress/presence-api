@@ -753,7 +753,11 @@ function wp_presence_on_site_users_changed( $user_id, $arg2 = null, $arg3 = null
  * @return bool
  */
 function wp_presence_current_user_can_access_screen( $screen_key ) {
-	if ( 0 === strpos( $screen_key, 'options/' ) ) {
+	if ( 'options/privacy' === $screen_key ) {
+		if ( ! current_user_can( 'manage_privacy_options' ) ) {
+			return false;
+		}
+	} elseif ( 0 === strpos( $screen_key, 'options/' ) ) {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return false;
 		}

@@ -940,6 +940,17 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Settings → Privacy needs manage_privacy_options, which a multisite site admin lacks, so this holds false there.
+	 *
+	 * @covers ::wp_presence_current_user_can_access_screen
+	 */
+	public function test_the_privacy_screen_requires_manage_privacy_options() {
+		wp_set_current_user( self::$admin_id );
+
+		$this->assertSame( current_user_can( 'manage_privacy_options' ), wp_presence_current_user_can_access_screen( 'options/privacy' ) );
+	}
+
+	/**
 	 * @covers ::wp_presence_parse_screen_key_target
 	 */
 	public function test_the_privacy_page_gets_its_own_option() {
