@@ -132,7 +132,9 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 			}
 			return current_user_can( 'read_post', $post_id ) ? array( $title, get_permalink( $post_id ) ) : array( '', '' );
 		} elseif ( $post_id && get_post_type( $post_id ) === $screen ) {
-			return array( get_the_title( $post_id ), (string) get_edit_post_link( $post_id, 'raw' ), true );
+			$post_title = get_the_title( $post_id );
+			// phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- Reuses core's string, as _draft_or_post_title() does.
+			return array( '' !== $post_title ? $post_title : __( '(no title)', 'default' ), (string) get_edit_post_link( $post_id, 'raw' ), true );
 		} elseif ( $object_id && 'comment' === $screen ) {
 			return array( $title, (string) get_edit_comment_link( $object_id, 'url' ) );
 		} elseif ( $object_id && 'user-edit' === $screen ) {

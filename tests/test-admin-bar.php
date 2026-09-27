@@ -289,6 +289,14 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$this->assertSame( 'Secret Draft', $place->title );
 	}
 
+	public function test_someone_editing_an_untitled_draft_is_on_no_title() {
+		$this->put_editor_on_post( self::factory()->post->create( array( 'post_title' => '', 'post_status' => 'draft', 'post_author' => self::$editor_id ) ) );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+
+		$this->assertSame( '(no title)', $this->place_of( $this->render_nodes(), self::$editor_id )->title );
+	}
+
 	/**
 	 * @dataProvider data_objects_being_edited
 	 */
