@@ -112,7 +112,8 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_admin_heartbeat_received
 	 */
 	public function test_admin_heartbeat_records_post_status() {
-		$post_id = self::factory()->post->create( array( 'post_status' => 'draft' ) );
+		register_post_type( 'book', array( 'show_ui' => true ) );
+		$post_id = self::factory()->post->create( array( 'post_type' => 'book', 'post_status' => 'draft' ) );
 
 		wp_set_current_user( self::$editor_id );
 
@@ -120,19 +121,21 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 			array(),
 			array(
 				'presence-ping'        => array(
-					'screen' => 'post',
+					'screen' => 'book',
 				),
 				'wp-refresh-post-lock' => array(
 					'post_id' => $post_id,
 				),
 			),
-			'post'
+			'book'
 		);
 
 		$entries = wp_get_presence( 'admin/online' );
 
 		$this->assertCount( 1, $entries );
 		$this->assertSame( 'draft', $entries[0]->data['post_status'] );
+
+		unregister_post_type( 'book' );
 	}
 
 	/**

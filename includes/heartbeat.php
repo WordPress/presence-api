@@ -299,7 +299,7 @@ function wp_presence_admin_heartbeat_received( $response, $data, $screen_id ) { 
 
 	// Enrich post-editing screens with the post status.
 	$post_status = '';
-	if ( in_array( $screen, array( 'post', 'edit-post', 'page' ), true ) ) {
+	if ( post_type_exists( $screen ) ) {
 		// The editor heartbeat includes the post ID in wp-refresh-post-lock.
 		$post_id = 0;
 		if ( ! empty( $data['wp-refresh-post-lock']['post_id'] ) ) {

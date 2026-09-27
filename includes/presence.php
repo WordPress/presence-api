@@ -965,7 +965,7 @@ function wp_can_access_presence_room( $room, $user_id = 0 ) {
 
 	$parsed = wp_presence_parse_room( $room );
 	if ( $parsed ) {
-		return user_can( $user_id, 'edit_post', $parsed['post_id'] );
+		return get_post_type( $parsed['post_id'] ) === $parsed['post_type'] && user_can( $user_id, 'edit_post', $parsed['post_id'] );
 	}
 
 	return user_can( $user_id, 'edit_posts' );
@@ -1448,16 +1448,59 @@ function wp_presence_hydrate_room_users( $rooms, $timeout = null ) {
 }
 
 /**
- * Registers presence support for core post types.
+ * Registers presence support for every post type edited in the admin, including ones registered later.
  *
- * Plugins can opt in their own post types with:
- *     add_post_type_support( 'product', 'presence' );
+ * Sites opt a type out with `remove_post_type_support( $post_type, 'presence' )`
+ * after it is registered, on `init` at priority 11 or later.
  *
  * @since 0.1.1
+ * @since 0.11.0 Covers every `show_ui` post type that supports the editor, not only posts and pages.
  */
 function wp_presence_register_post_type_support() {
-	add_post_type_support( 'post', 'presence' );
-	add_post_type_support( 'page', 'presence' );
+	foreach ( get_post_types( array( 'show_ui' => true ), 'objects' ) as $post_type => $post_type_object ) {
+		wp_presence_add_post_type_support( $post_type, $post_type_object );
+	}
+
+	add_action( 'registered_post_type', 'wp_presence_add_post_type_support', 10, 2 );
+	add_action( 'unregistered_post_type', 'wp_presence_forget_post_type' );
+}
+
+/**
+ * Adds presence support to a post type edited in the admin.
+ *
+ * @access private
+ *
+ * @since 0.11.0
+ *
+ * @param string       $post_type        The post type.
+ * @param WP_Post_Type $post_type_object The post type object.
+ */
+function wp_presence_add_post_type_support( $post_type, $post_type_object ) {
+	global $_wp_presence_post_types_seen;
+
+	// Core re-registers its types on every locale switch, which would undo a site's opt-out.
+	if ( isset( $_wp_presence_post_types_seen[ $post_type ] ) ) {
+		return;
+	}
+
+	$_wp_presence_post_types_seen[ $post_type ] = true;
+
+	if ( $post_type_object->show_ui && post_type_supports( $post_type, 'editor' ) ) {
+		add_post_type_support( $post_type, 'presence' );
+	}
+}
+
+/**
+ * Lets a post type registered again after being unregistered get presence support afresh.
+ *
+ * @access private
+ *
+ * @since 0.11.0
+ *
+ * @param string $post_type The post type.
+ */
+function wp_presence_forget_post_type( $post_type ) {
+	unset( $GLOBALS['_wp_presence_post_types_seen'][ $post_type ] );
 }
 
 /**

@@ -403,6 +403,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		$this->assertTrue( wp_can_access_presence_room( $room, $author_1 ) );
 		$this->assertFalse( wp_can_access_presence_room( $room, $author_2 ) );
 		$this->assertTrue( wp_can_access_presence_room( $room, self::$editor_id ) );
+		$this->assertFalse( wp_can_access_presence_room( 'postType/page:' . $post_id, self::$editor_id ), 'The room has to name the post\'s own type.' );
 	}
 
 	/**
@@ -688,7 +689,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_post_room
 	 */
 	public function test_presence_post_room_unsupported_post_type() {
-		register_post_type( 'no_presence', array( 'public' => true ) );
+		register_post_type( 'no_presence', array( 'public' => true, 'supports' => array( 'title' ) ) );
 		$post_id = self::factory()->post->create( array( 'post_type' => 'no_presence' ) );
 
 		$this->assertFalse( wp_presence_post_room( $post_id ) );
@@ -1017,18 +1018,45 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * Posts and pages get presence without a plugin opting them in.
-	 *
 	 * @covers ::wp_presence_register_post_type_support
+	 * @covers ::wp_presence_add_post_type_support
 	 */
-	public function test_posts_and_pages_support_presence() {
+	public function test_every_post_type_edited_in_the_admin_supports_presence() {
+		$GLOBALS['_wp_presence_post_types_seen'] = array();
 		remove_post_type_support( 'post', 'presence' );
 		remove_post_type_support( 'page', 'presence' );
 
 		wp_presence_register_post_type_support();
+		register_post_type( 'book', array( 'show_ui' => true ) );
+		register_post_type( 'no_editor', array( 'show_ui' => true, 'supports' => array( 'title' ) ) );
 
 		$this->assertTrue( post_type_supports( 'post', 'presence' ) );
 		$this->assertTrue( post_type_supports( 'page', 'presence' ) );
+		$this->assertTrue( post_type_supports( 'book', 'presence' ), 'A type registered after init is covered too.' );
+		$this->assertFalse( post_type_supports( 'no_editor', 'presence' ) );
+		$this->assertFalse( post_type_supports( 'attachment', 'presence' ) );
+
+		unregister_post_type( 'book' );
+		unregister_post_type( 'no_editor' );
+	}
+
+	/**
+	 * @covers ::wp_presence_add_post_type_support
+	 * @covers ::wp_presence_forget_post_type
+	 */
+	public function test_an_opt_out_survives_the_type_being_registered_again() {
+		register_post_type( 'book', array( 'show_ui' => true ) );
+		remove_post_type_support( 'book', 'presence' );
+
+		// Core does this to its own types on every locale switch.
+		register_post_type( 'book', array( 'show_ui' => true ) );
+		$this->assertFalse( post_type_supports( 'book', 'presence' ) );
+
+		unregister_post_type( 'book' );
+		register_post_type( 'book', array( 'show_ui' => true ) );
+		$this->assertTrue( post_type_supports( 'book', 'presence' ), 'A type unregistered in between starts afresh.' );
+
+		unregister_post_type( 'book' );
 	}
 
 	/**

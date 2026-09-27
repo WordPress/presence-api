@@ -166,6 +166,23 @@ class WP_Test_Presence_Post_Lock_Bridge extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * @covers ::wp_presence_post_lock_room
+	 */
+	public function test_a_type_without_presence_still_keeps_its_lock_out_of_meta() {
+		register_post_type( 'no_presence', array( 'show_ui' => true, 'supports' => array( 'title' ) ) );
+		$post_id = self::factory()->post->create( array( 'post_type' => 'no_presence' ) );
+
+		wp_set_current_user( self::$editor_id );
+		wp_set_post_lock( $post_id );
+
+		$this->assertNotEmpty( wp_presence_room_rows( 'postType/no_presence:' . $post_id, null, wp_presence_post_lock_client_id() ) );
+		wp_set_current_user( self::$other_editor_id );
+		$this->assertSame( self::$editor_id, wp_check_post_lock( $post_id ) );
+
+		unregister_post_type( 'no_presence' );
+	}
+
+	/**
 	 * Core releases a lock on unload only if it still holds it, by passing it as $prev_value.
 	 *
 	 * @covers ::wp_presence_update_post_lock
