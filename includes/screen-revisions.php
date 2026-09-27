@@ -236,8 +236,9 @@ function wp_presence_get_screen_revision( $screen_key ) {
 function wp_presence_advance_screen_revision_map( $map, $screen_key, $actor_id ) {
 	$previous = isset( $map[ $screen_key ]['rev'] ) ? (int) $map[ $screen_key ]['rev'] : 0;
 
+	// Seeded from the clock so a key evicted by the trim below never restarts below a viewer's baseline.
 	$map[ $screen_key ] = array(
-		'rev'      => $previous + 1,
+		'rev'      => max( $previous + 1, time() ),
 		'actor_id' => (int) $actor_id,
 		'time'     => time(),
 	);

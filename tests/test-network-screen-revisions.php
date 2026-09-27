@@ -132,6 +132,35 @@ class WP_Test_Network_Screen_Revisions extends WP_Presence_Network_UnitTestCase 
 	}
 
 	/**
+	 * A key trimmed from the map must come back above any baseline a viewer loaded before the trim.
+	 *
+	 * @covers ::wp_presence_advance_screen_revision_map
+	 */
+	public function test_an_evicted_key_comes_back_above_its_old_revision() {
+		$this->become_network_admin();
+		$key = 'network/site-info/2';
+		update_site_option(
+			'wp_presence_network_screen_revisions',
+			array(
+				$key => array(
+					'rev'      => 7,
+					'actor_id' => 0,
+					'time'     => 1,
+				),
+			)
+		);
+
+		for ( $i = 0; $i < WP_PRESENCE_SCREEN_REV_LIMIT; $i++ ) {
+			wp_presence_bump_screen_revision( 'network/site-users/' . ( 1000 + $i ) );
+		}
+		$evicted = null === wp_presence_get_screen_revision( $key );
+		wp_presence_bump_screen_revision( $key );
+
+		$this->assertTrue( $evicted );
+		$this->assertGreaterThan( 7, wp_presence_get_screen_revision( $key )['rev'] );
+	}
+
+	/**
 	 * @covers ::wp_presence_on_site_allowed_themes_updated
 	 */
 	public function test_changing_a_sites_themes_bumps_its_themes_screen() {
@@ -212,7 +241,7 @@ class WP_Test_Network_Screen_Revisions extends WP_Presence_Network_UnitTestCase 
 			'settings-network'
 		);
 
-		$this->assertSame( 1, $response['presence-screen-rev']['rev'] );
+		$this->assertSame( wp_presence_get_screen_revision( 'network/settings' )['rev'], $response['presence-screen-rev']['rev'] );
 		$this->assertTrue( $response['presence-screen-rev']['actor_is_me'] );
 	}
 }
