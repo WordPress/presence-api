@@ -69,9 +69,8 @@ rm -f presence-api.php.bak readme.txt.bak "${BLUEPRINT}.bak"
 # Skips the Dependencies subsection, strips GitHub commit links, deduplicates bullets.
 #
 # WordPress.org truncates long readmes and readers only ever care about recent
-# releases (the same reasoning sync-storage's sync-versions.sh uses), so only
-# the newest README_CHANGELOG_RELEASES versions are kept here; CHANGELOG.md
-# remains the complete history.
+# releases, so only the newest README_CHANGELOG_RELEASES versions are kept
+# here; CHANGELOG.md remains the complete history.
 python3 - <<'PYTHON'
 import re, sys
 
