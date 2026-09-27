@@ -52,6 +52,8 @@ jobs:
           set -euo pipefail
           mkdir -p build/presence-api
           rsync -a --exclude-from='.distignore' --exclude='build' ./ build/presence-api/
+          # Previews run with WP_DEBUG, so ship the debug-only tools that releases leave out.
+          cp includes/debugger-widget.php includes/db-viewer.php build/presence-api/includes/
           (cd build && zip -qr presence-api.zip presence-api/)
 
       # Cheap smoke test: parse every PHP file in the staged plugin and
