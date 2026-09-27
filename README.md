@@ -37,9 +37,9 @@ No install needed — launch a scratch site straight from `main`.
 
 1. Browser sends `presence-ping` via Heartbeat
 2. Server upserts into `wp_presence`
-3. Server reads the room and returns entries in the heartbeat response
-4. Client diffs a signature of user IDs and swaps HTML when content changes
-5. Client-side interval re-evaluates idle state every 5s between heartbeat ticks
+3. Server answers with the admin bar node's markup, the Active Posts list, and a hash of the `admin/online` room
+4. The admin bar swaps its node when the markup changes, unless its menu is open, and Active Posts redraws when its posts change
+5. After a run of ticks with an unchanged hash, the ping widens the Heartbeat interval; a new hash snaps it back
 
 Only Heartbeat refreshes a row between page loads. With its script removed, or its interval above the TTL less 15 seconds (135 by default), someone who stays on one screen drops out of the room while still there. Site Health reports both.
 

@@ -3,8 +3,7 @@
  *
  * Asserts presence-ping.js elects one tab per screen/post context to send
  * presence-ping, siblings stay silent, closing the leader promotes a
- * sibling, and the leader's Who's Online response relays over
- * BroadcastChannel.
+ * sibling, and the leader's online hash relays over BroadcastChannel.
  *
  * Uses two pages in one browser context, not two Playwright contexts —
  * Web Locks and BroadcastChannel are scoped per storage partition, so
@@ -77,7 +76,7 @@ async function waitForLeaderPing( page, maxAttempts = 20 ) {
 }
 
 /**
- * Waits for a heartbeat-tick carrying Who's Online data, ignoring any
+ * Waits for a heartbeat-tick carrying the online hash, ignoring any
  * unrelated ticks that arrive first (e.g. this tab's own post-lock tick).
  *
  * @param {import('@playwright/test').Page} page
@@ -157,7 +156,7 @@ test.describe( 'Presence Tab Coalescing', () => {
 		await sibling.close();
 	} );
 
-	test( "relays the leader's Who's Online data to a sibling tab", async ( {
+	test( "relays the leader's online hash to a sibling tab", async ( {
 		page,
 	} ) => {
 		await page.goto( '/wp-admin/' );
