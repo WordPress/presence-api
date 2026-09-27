@@ -135,8 +135,8 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 
 		$nodes = $this->render_nodes();
 
-		$this->assertStringContainsString( 'Just you', $nodes['presence-online']->title );
-		$this->assertStringContainsString( '<span class="screen-reader-text">Only you are online</span>', $nodes['presence-online']->title );
+		$this->assertStringContainsString( '>1 online<', $nodes['presence-online']->title );
+		$this->assertStringContainsString( '<span class="screen-reader-text">1 user online</span>', $nodes['presence-online']->title );
 	}
 
 	public function test_no_indicator_for_a_user_without_edit_posts() {
@@ -208,16 +208,22 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		wp_set_current_user( self::$editor_id );
 		$this->let_current_user_list_users();
 		$nodes = $this->render_nodes();
-		$place = $this->place_of( $nodes, $user_id );
 
-		$this->assertFalse( $nodes[ 'presence-user-' . $user_id ]->href );
 		if ( '../wp-login' === $screen ) {
-			$this->assertNull( $place );
+			$this->assertFalse( $nodes[ 'presence-user-' . $user_id ]->href );
+			$this->assertNull( $this->place_of( $nodes, $user_id ) );
 			return;
 		}
-		$this->assertSame( null === $path ? false : admin_url( $path ), $place->href );
-		$this->assertSame( 'Somewhere', $place->title );
-		$this->assertStringContainsString( '<span class="screen-reader-text">, on Somewhere</span>', $nodes[ 'presence-user-' . $user_id ]->title );
+		if ( null === $path ) {
+			$this->assertFalse( $this->place_of( $nodes, $user_id )->href );
+			$this->assertSame( 'Somewhere', $this->place_of( $nodes, $user_id )->title, 'A screen each person has to themselves is never counted as one place.' );
+			return;
+		}
+		$this->assertArrayNotHasKey( 'presence-user-' . $user_id, $nodes, 'A shared screen folds its people into its own row.' );
+		$row = $nodes['presence-place-0'];
+		$this->assertSame( admin_url( $path ), $row->href );
+		$this->assertStringContainsString( '>Somewhere</span>', $row->title );
+		$this->assertStringContainsString( '<span class="screen-reader-text">, ' . esc_html( get_userdata( $user_id )->display_name ) . '</span>', $row->title );
 	}
 
 	public function data_elsewhere_links() {
@@ -237,21 +243,25 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$this->put_editor_on_post( self::$post_id );
 		$hidden = $this->put_user_on_screen( '../wp-login' );
 		$alone  = $this->put_user_on_screen( 'edit-comments', array( 'title' => 'Comments' ) );
-		$pair   = array(
-			$this->put_user_on_screen( 'users', array( 'title' => 'Users' ) ),
-			$this->put_user_on_screen( 'users', array( 'title' => 'Users' ) ),
+		$this->put_user_on_screen( 'users', array( 'title' => 'Users' ) );
+		$this->put_user_on_screen( 'users', array( 'title' => 'Users' ) );
+		$own = array(
+			$this->put_user_on_screen( 'profile', array( 'title' => 'Profile' ) ),
+			$this->put_user_on_screen( 'profile', array( 'title' => 'Profile' ) ),
 		);
 
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 		$nodes = wp_list_filter( $this->render_nodes(), array( 'parent' => 'presence-elsewhere' ) );
 		$rows  = array_map(
-			fn( $node ) => 0 === strpos( $node->id, 'presence-place-' ) ? $node->title : (int) substr( $node->id, 14 ),
+			fn( $node ) => 0 === strpos( $node->id, 'presence-place-' ) ? wp_strip_all_tags( preg_replace( '/<span class="presence-bar-crowd".*/s', '', $node->title ) ) : (int) substr( $node->id, 14 ),
 			array_values( $nodes )
 		);
 
-		$this->assertSame( array( 'Secret Draft', self::$editor_id, 'Users' ), array_slice( $rows, 0, 3 ) );
-		$this->assertEqualSets( $pair, array_slice( $rows, 3, 2 ) );
-		$this->assertSame( array( 'Comments', $alone, $hidden ), array_slice( $rows, 5 ) );
+		$this->assertSame( array( 'Secret Draft', self::$editor_id, 'Users', 'Comments', 'Profile' ), array_slice( $rows, 0, 5 ) );
+		$this->assertEqualSets( $own, array_slice( $rows, 5, 2 ) );
+		$this->assertSame( array( $hidden ), array_slice( $rows, 7 ) );
+		$this->assertStringContainsString( '<span class="presence-bar-crowd" aria-hidden="true">2</span>', $nodes['presence-place-2']->title );
+		$this->assertStringContainsString( esc_html( get_userdata( $alone )->display_name ), $nodes['presence-place-3']->title );
 	}
 
 	public function test_someone_editing_a_post_links_to_it() {
@@ -404,34 +414,37 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 	public function test_a_place_is_never_left_without_anyone_under_it() {
 		$this->view_admin_page( 'upload.php', 'upload' );
 
-		for ( $i = 0; $i < 49; $i++ ) {
+		for ( $i = 0; $i < 99; $i++ ) {
 			$this->put_user_on_screen( 'upload' );
 		}
-		$this->put_user_on_screen( 'users', array( 'title' => 'Users' ) );
+		$this->put_editor_on_post( self::$post_id );
 
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 		$nodes = $this->render_nodes();
 
 		$this->assertEmpty( wp_list_filter( $nodes, array( 'parent' => 'presence-elsewhere' ) ) );
-		$this->assertSame( '1 more', $nodes['presence-more']->title );
+		$this->assertArrayHasKey( 'presence-more', $nodes );
 	}
 
 	/**
 	 * The cap bounds the markup every Heartbeat tick resends.
 	 */
-	public function test_this_page_is_capped_at_fifty() {
+	public function test_this_page_is_capped_at_a_hundred() {
 		$this->view_admin_page( 'upload.php', 'upload' );
 
-		for ( $i = 0; $i < 51; $i++ ) {
+		for ( $i = 0; $i < 101; $i++ ) {
 			$this->put_user_on_screen( 'upload' );
 		}
 
 		wp_set_current_user( self::$editor_id );
+		$this->assertSame( '1 more', $this->render_nodes()['presence-more']->title, 'Without the Online list to open, the row says how many it leaves out.' );
+
 		$this->let_current_user_list_users();
 		$nodes = $this->render_nodes();
 
-		$this->assertCount( 50, array_filter( $nodes, fn( $n ) => 0 === strpos( $n->id, 'presence-user-' ) ) );
-		$this->assertSame( '1 more', $nodes['presence-more']->title );
+		$this->assertCount( 100, array_filter( $nodes, fn( $n ) => 0 === strpos( $n->id, 'presence-user-' ) ) );
+		$this->assertSame( 'See everyone online', $nodes['presence-more']->title );
+		$this->assertSame( $nodes['presence-online']->href, $nodes['presence-more']->href );
 		$this->assertSame( 8, substr_count( $nodes['presence-online']->title, '<img' ) );
 		$this->assertSame( wp_nonce_url( admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' ), $nodes['presence-online']->href );
 	}

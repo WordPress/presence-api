@@ -154,10 +154,10 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	};
 	$crowds = array_count_values( array_filter( array_map( $key, $places ) ) );
 
-	// Posts being edited are the places people share, so they come first, then the busiest screens, and hidden places last.
+	// Posts being edited come first, then the busiest shared screens, then screens each person has to themselves, and hidden places last.
 	$rank = function ( $entry ) use ( $places, $crowds, $key ) {
 		$place = $places[ (int) $entry->user_id ];
-		return array( empty( $place[2] ), -( $crowds[ $key( $place ) ] ?? 0 ), $key( $place ) );
+		return array( empty( $place[2] ), '' === $place[1], -( $crowds[ $key( $place ) ] ?? 0 ), $key( $place ) );
 	};
 	usort(
 		$elsewhere,
@@ -204,11 +204,6 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	/* translators: %d: Number of users currently online. */
 	$sr_label = sprintf( _n( '%d user online', '%d users online', $online_count, 'presence-api' ), $online_count );
 
-	if ( empty( $others ) ) {
-		$label    = __( 'Just you', 'presence-api' );
-		$sr_label = __( 'Only you are online', 'presence-api' );
-	}
-
 	$users_url = current_user_can( 'list_users' ) ? wp_nonce_url( admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' ) : false;
 
 	$wp_admin_bar->add_node(
@@ -226,7 +221,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	);
 
 	// The menu scrolls, so the cap only bounds the markup every Heartbeat tick resends.
-	$max_rows = 50;
+	$max_rows = 100;
 
 	foreach ( array_slice( $here, 0, $max_rows ) as $entry ) {
 		$user = get_userdata( $entry->user_id );
@@ -248,7 +243,19 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	$last   = '';
 	foreach ( $elsewhere as $entry ) {
 		$place = $places[ (int) $entry->user_id ];
-		// Each place heads the people on it, and is never left without one.
+		// People on a shared screen fold into one row with a count; unlinked screens like Profile are each person's own.
+		if ( '' !== $place[1] && empty( $place[2] ) ) {
+			if ( $key( $place ) !== $last ) {
+				if ( count( $rows ) + 1 > $budget ) {
+					break;
+				}
+				$rows[] = array( $place[0], $place[1], false, array() );
+			}
+			$rows[ count( $rows ) - 1 ][3][] = get_userdata( $entry->user_id );
+			$last                            = $key( $place );
+			continue;
+		}
+		// Each post heads the people on it, and is never left without one.
 		$heads = '' !== $key( $place ) && $key( $place ) !== $last;
 		if ( count( $rows ) + ( $heads ? 2 : 1 ) > $budget ) {
 			break;
@@ -272,6 +279,24 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 
 	$shown = 0;
 	foreach ( $rows as $i => $row ) {
+		if ( is_array( $row ) && isset( $row[3] ) ) {
+			$people = array_filter( $row[3] );
+			$names  = wp_sprintf( '%l', wp_list_pluck( $people, 'display_name' ) );
+			$shown += count( $row[3] );
+			$wp_admin_bar->add_node(
+				array(
+					'parent' => 'presence-elsewhere',
+					'id'     => 'presence-place-' . $i,
+					'title'  => '<span class="presence-bar-label">' . esc_html( $row[0] ) . '</span><span class="presence-bar-crowd" aria-hidden="true">' . count( $row[3] ) . '</span><span class="screen-reader-text">, ' . esc_html( $names ) . '</span>',
+					'href'   => '' !== $row[1] ? $row[1] : false,
+					'meta'   => array(
+						'class' => 'presence-bar-screen',
+						'title' => $names,
+					),
+				)
+			);
+			continue;
+		}
 		if ( is_array( $row ) ) {
 			$wp_admin_bar->add_node(
 				array(
@@ -310,8 +335,11 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 			array(
 				'parent' => $rows ? 'presence-elsewhere' : 'presence-online',
 				'id'     => 'presence-more',
-				/* translators: %d: Number of people online the menu leaves out. */
-				'title'  => sprintf( _n( '%d more', '%d more', $more, 'presence-api' ), $more ),
+				'title'  => $users_url
+					? __( 'See everyone online', 'presence-api' )
+					/* translators: %d: Number of people online the menu leaves out. */
+					: sprintf( _n( '%d more', '%d more', $more, 'presence-api' ), $more ),
+				'href'   => $users_url,
 				'meta'   => array( 'class' => 'presence-bar-more' ),
 			)
 		);
@@ -426,9 +454,12 @@ function wp_presence_admin_bar_assets() {
 		#wp-admin-bar-presence-online .presence-bar-idle { margin-inline-start: auto; padding-inline-start: 16px; }
 		#wp-admin-bar-presence-online .presence-bar-place > .ab-item { display: block !important; max-width: 20em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 		#wp-admin-bar-presence-online .presence-bar-there > .ab-item { padding-inline-start: 24px; }
+		#wp-admin-bar-presence-online .presence-bar-screen > .ab-item { max-width: 24em; }
+		#wp-admin-bar-presence-online .presence-bar-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+		#wp-admin-bar-presence-online .presence-bar-crowd { margin-inline-start: auto; padding-inline-start: 16px; }
 		#wp-admin-bar-presence-online .ab-submenu div.ab-item { cursor: default; }
-		#wp-admin-bar-presence-online :is(.presence-bar-idle, .presence-bar-more > .ab-item) { opacity: .8; }
-		.admin-color-light #wp-admin-bar-presence-online :is(.presence-bar-idle, .presence-bar-more > .ab-item) { opacity: 1; }
+		#wp-admin-bar-presence-online :is(.presence-bar-idle, .presence-bar-crowd, .presence-bar-more > .ab-item) { opacity: .8; }
+		.admin-color-light #wp-admin-bar-presence-online :is(.presence-bar-idle, .presence-bar-crowd, .presence-bar-more > .ab-item) { opacity: 1; }
 		.admin-color-light #wpadminbar #wp-admin-bar-presence-online .presence-bar-count { color: #50575e !important; }
 	';
 
