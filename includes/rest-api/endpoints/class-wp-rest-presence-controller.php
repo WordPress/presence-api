@@ -670,7 +670,7 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 	 * @return true|WP_Error True if the request has access, WP_Error otherwise.
 	 */
 	public function get_rooms_permissions_check( $request ) {
-		if ( ! wp_presence_user_can_edit_any_post_type() ) {
+		if ( ! wp_can_access_presence_room( wp_presence_admin_room() ) ) {
 			return new WP_Error(
 				'rest_forbidden',
 				__( 'Sorry, you are not allowed to view presence rooms.', 'presence-api' ),

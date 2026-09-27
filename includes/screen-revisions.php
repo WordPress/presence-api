@@ -792,7 +792,7 @@ function wp_presence_current_user_can_access_screen( $screen_key ) {
 		if ( ! current_user_can( 'edit_comment', (int) $m[1] ) ) {
 			return false;
 		}
-	} elseif ( ! wp_presence_user_can_edit_any_post_type() ) {
+	} elseif ( ! wp_can_access_presence_room( wp_presence_admin_room() ) ) {
 		return false;
 	}
 

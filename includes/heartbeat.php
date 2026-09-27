@@ -115,7 +115,7 @@ function wp_presence_enqueue_heartbeat_ping() {
 		return;
 	}
 
-	if ( ! wp_presence_user_can_edit_any_post_type() ) {
+	if ( ! wp_can_access_presence_room( wp_presence_admin_room() ) ) {
 		// The network screens' live surfaces answer to the network capability, so load the script without any presence to write.
 		if ( is_network_admin() && current_user_can( wp_presence_network_capability() ) ) {
 			wp_presence_enqueue_ping_script( array() );
@@ -310,7 +310,7 @@ function wp_presence_admin_heartbeat_received( $response, $data, $screen_id ) { 
 		return $response;
 	}
 
-	if ( ! wp_presence_user_can_edit_any_post_type() ) {
+	if ( ! wp_can_access_presence_room( wp_presence_admin_room() ) ) {
 		return $response;
 	}
 
@@ -379,7 +379,7 @@ function wp_presence_admin_heartbeat_received( $response, $data, $screen_id ) { 
  * @return array The Heartbeat response.
  */
 function wp_presence_online_hash_heartbeat_received( $response, $data ) {
-	if ( empty( $data['presence-ping'] ) || ! wp_presence_user_can_edit_any_post_type() ) {
+	if ( empty( $data['presence-ping'] ) || ! wp_can_access_presence_room( wp_presence_admin_room() ) ) {
 		return $response;
 	}
 

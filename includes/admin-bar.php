@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *                                   Default null.
  */
 function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
-	if ( ! is_user_logged_in() || ! wp_presence_user_can_edit_any_post_type() ) {
+	if ( ! is_user_logged_in() || ! wp_can_access_presence_room( wp_presence_admin_room() ) ) {
 		return;
 	}
 
@@ -455,7 +455,7 @@ function wp_presence_admin_bar_node_markup( $screen ) {
  * @return array The Heartbeat response.
  */
 function wp_presence_admin_bar_heartbeat_received( $response, $data ) {
-	if ( ! wp_presence_fragment_request( $data, 'admin-bar' ) || empty( $data['presence-ping']['screen'] ) || ! wp_presence_user_can_edit_any_post_type() ) {
+	if ( ! wp_presence_fragment_request( $data, 'admin-bar' ) || empty( $data['presence-ping']['screen'] ) || ! wp_can_access_presence_room( wp_presence_admin_room() ) ) {
 		return $response;
 	}
 
@@ -496,7 +496,7 @@ function wp_presence_refresh_screen_token( $response, $data, $screen_id ) {
  * @since 0.1.1
  */
 function wp_presence_admin_bar_assets() {
-	if ( ! is_user_logged_in() || ! is_admin_bar_showing() || ! wp_presence_user_can_edit_any_post_type() ) {
+	if ( ! is_user_logged_in() || ! is_admin_bar_showing() || ! wp_can_access_presence_room( wp_presence_admin_room() ) ) {
 		return;
 	}
 

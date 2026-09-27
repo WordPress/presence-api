@@ -382,7 +382,6 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers ::wp_can_access_presence_room
-	 * @covers ::wp_presence_user_can_edit_any_post_type
 	 */
 	public function test_a_role_that_edits_only_a_custom_post_type_can_access_room() {
 		register_post_type(

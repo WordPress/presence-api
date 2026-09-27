@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @param WP_User $user       User object.
  */
 function wp_presence_on_login( $user_login, $user ) {
-	if ( ! wp_presence_user_can_edit_any_post_type( $user ) ) {
+	if ( ! wp_can_access_presence_room( wp_presence_admin_room(), $user->ID ) ) {
 		return;
 	}
 
@@ -41,7 +41,7 @@ function wp_presence_on_login( $user_login, $user ) {
  * @param int $user_id The ID of the user who just logged out.
  */
 function wp_presence_on_logout( $user_id ) {
-	if ( $user_id && wp_presence_user_can_edit_any_post_type( $user_id ) ) {
+	if ( $user_id && wp_can_access_presence_room( wp_presence_admin_room(), $user_id ) ) {
 		wp_remove_user_presence( $user_id );
 	}
 }

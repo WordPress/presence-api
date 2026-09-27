@@ -25,7 +25,7 @@ class WP_Presence_Widget_Active_Posts {
 	 * @since 0.1.1
 	 */
 	public static function register() {
-		if ( ! wp_presence_user_can_edit_any_post_type() ) {
+		if ( ! wp_can_access_presence_room( wp_presence_admin_room() ) ) {
 			return;
 		}
 
@@ -156,7 +156,7 @@ class WP_Presence_Widget_Active_Posts {
 			return $response;
 		}
 
-		if ( ! wp_presence_user_can_edit_any_post_type() ) {
+		if ( ! wp_can_access_presence_room( wp_presence_admin_room() ) ) {
 			return $response;
 		}
 

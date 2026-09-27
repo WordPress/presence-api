@@ -968,27 +968,9 @@ function wp_can_access_presence_room( $room, $user_id = 0 ) {
 		return get_post_type( $parsed['post_id'] ) === $parsed['post_type'] && user_can( $user_id, 'edit_post', $parsed['post_id'] );
 	}
 
-	return wp_presence_user_can_edit_any_post_type( $user_id );
-}
-
-/**
- * Checks whether a user can edit any post type shown in the admin.
- *
- * A role that edits only pages, or only a custom post type with its own
- * capabilities, lacks the primitive `edit_posts` but still works in the admin.
- *
- * @since 0.11.0
- *
- * @param int|WP_User $user Optional. The user ID or object. Default 0 (current user).
- * @return bool True if the user can edit at least one post type, false otherwise.
- */
-function wp_presence_user_can_edit_any_post_type( $user = 0 ) {
-	if ( ! $user ) {
-		$user = get_current_user_id();
-	}
-
+	// Any post type shown in the admin will do, so a role that edits only pages or a custom post type is included.
 	foreach ( get_post_types( array( 'show_ui' => true ), 'objects' ) as $post_type ) {
-		if ( user_can( $user, $post_type->cap->edit_posts ) ) {
+		if ( user_can( $user_id, $post_type->cap->edit_posts ) ) {
 			return true;
 		}
 	}

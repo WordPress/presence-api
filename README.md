@@ -109,9 +109,6 @@ wp_remove_user_presence( $user_id );
 // Check whether a user can access a room (edit_post for a post's room, otherwise any post type).
 wp_can_access_presence_room( $room, $user_id = 0 );
 
-// Check whether a user can edit any post type shown in the admin.
-wp_presence_user_can_edit_any_post_type( $user = 0 );
-
 // Return the canonical room string for a post, or false if the post type
 // does not support presence.
 $room = wp_presence_post_room( $post );
@@ -305,7 +302,7 @@ wp.hooks.addFilter( 'presence-api.liveSurfaces', 'my-plugin', ( surfaces ) => [
 ```
 ```php
 add_filter( 'heartbeat_received', function( $response, $data ) {
-    if ( ! empty( $data['presence-fragments']['my-plugin-count'] ) && wp_presence_user_can_edit_any_post_type() ) {
+    if ( ! empty( $data['presence-fragments']['my-plugin-count'] ) && wp_can_access_presence_room( wp_presence_admin_room() ) ) {
         $response['presence-fragments']['my-plugin-count'] = esc_html( my_plugin_count() );
     }
     return $response;

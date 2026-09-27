@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @since 0.1.1
  */
 function wp_presence_register_post_list_columns() {
-	if ( ! wp_presence_user_can_edit_any_post_type() ) {
+	if ( ! wp_can_access_presence_room( wp_presence_admin_room() ) ) {
 		return;
 	}
 
