@@ -206,6 +206,22 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		);
 	}
 
+	public function test_the_busiest_places_come_first() {
+		$hidden = $this->put_user_on_screen( '../wp-login' );
+		$alone  = $this->put_user_on_screen( 'edit-comments', array( 'title' => 'Comments' ) );
+		$pair   = array(
+			$this->put_user_on_screen( 'users', array( 'title' => 'Users' ) ),
+			$this->put_user_on_screen( 'users', array( 'title' => 'Users' ) ),
+		);
+
+		wp_set_current_user( self::$editor_id );
+		$this->let_current_user_list_users();
+		$rows = array_keys( wp_list_filter( $this->render_nodes(), array( 'parent' => 'presence-elsewhere' ) ) );
+
+		$this->assertEqualSets( array( 'presence-user-' . $pair[0], 'presence-user-' . $pair[1] ), array_slice( $rows, 0, 2 ) );
+		$this->assertSame( array( 'presence-user-' . $alone, 'presence-user-' . $hidden ), array_slice( $rows, 2 ) );
+	}
+
 	public function test_someone_editing_a_post_links_to_it() {
 		$this->put_editor_on_post( self::$post_id );
 

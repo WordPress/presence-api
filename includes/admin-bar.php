@@ -108,7 +108,6 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 		return strcasecmp( $user_a ? $user_a->display_name : '', $user_b ? $user_b->display_name : '' );
 	};
 	usort( $here, $by_name );
-	usort( $elsewhere, $by_name );
 
 	// Links are derived from the screen, never taken from the ping, so a row can only lead somewhere the admin already routes.
 	$where = function ( $entry ) use ( $user_editing_post ) {
@@ -144,6 +143,24 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 
 		return array( $title, null === $path ? '' : admin_url( $path ) );
 	};
+
+	$places = array();
+	foreach ( $elsewhere as $entry ) {
+		$places[ (int) $entry->user_id ] = $where( $entry );
+	}
+
+	$crowds = array_count_values( array_filter( array_column( $places, 0 ) ) );
+
+	// The busiest places come first, and anyone whose place is hidden goes last.
+	usort(
+		$elsewhere,
+		function ( $a, $b ) use ( $places, $crowds, $by_name ) {
+			$place_a = $places[ (int) $a->user_id ][0];
+			$place_b = $places[ (int) $b->user_id ][0];
+			$order   = array( $crowds[ $place_b ] ?? 0, $place_a ) <=> array( $crowds[ $place_a ] ?? 0, $place_b );
+			return $order ? $order : $by_name( $a, $b );
+		}
+	);
 
 	// My Account already shows the current user, so the faces are only the others on this page.
 	$here_ids  = array_unique( array_map( 'intval', wp_list_pluck( $here, 'user_id' ) ) );
@@ -237,7 +254,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 		if ( ! $user ) {
 			continue;
 		}
-		list( $label, $url ) = $where( $entry );
+		list( $label, $url ) = $places[ $user->ID ];
 		$wp_admin_bar->add_node(
 			array(
 				'parent' => 'presence-elsewhere',
