@@ -52,12 +52,6 @@ jobs:
           persist-credentials: false
           ref: ${{ fromJSON(needs.release-please.outputs.pr).headBranchName }}
       - run: bash scripts/sync-versions.sh
-      # Merging a pull request produces two commits carrying the same
-      # conventional prefix, so release-please writes every change to the
-      # changelog twice. See the header of the script for why this is cleaned
-      # up after the fact rather than prevented. release-please rewrites this
-      # branch on every run, which drops the fix, so this re-runs alongside it.
-      - run: node .github/scripts/dedupe-changelog.js CHANGELOG.md
       - name: Sync contributors from release props
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
