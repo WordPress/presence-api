@@ -14,9 +14,9 @@ tests
 artifacts
 build
 blueprint.json
-blueprint-40.json
+blueprint-100.json
 blueprint-multisite.json
-blueprint-multisite-40.json
+blueprint-multisite-100.json
 AGENTS.md
 CHANGELOG.md
 README.md
