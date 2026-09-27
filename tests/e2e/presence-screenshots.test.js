@@ -182,6 +182,11 @@ test.describe.serial( 'Presence Screenshots', () => {
 		backdateEditors( 'wp_presence_get_timeout()' );
 		await admin.visitAdminPage( '/' );
 		await connectHeartbeat( page );
+		await expect(
+			page.locator(
+				'#presence-active-posts-list .presence-active-post-item'
+			)
+		).toHaveCount( 0 );
 
 		await snap( page, '07-expired-dashboard' );
 		demoSeeder( 'wp_presence_demo_cleanup();' );
