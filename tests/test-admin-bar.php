@@ -242,6 +242,7 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 	public function test_posts_being_edited_come_first_then_the_busiest_places() {
 		$this->put_editor_on_post( self::$post_id );
 		$hidden = $this->put_user_on_screen( '../wp-login' );
+		$untitled = $this->put_user_on_screen( 'edit-comments' );
 		$alone  = $this->put_user_on_screen( 'edit-comments', array( 'title' => 'Comments' ) );
 		$this->put_user_on_screen( 'users', array( 'title' => 'Users' ) );
 		$this->put_user_on_screen( 'users', array( 'title' => 'Users' ) );
@@ -259,7 +260,7 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 
 		$this->assertSame( array( 'Secret Draft', self::$editor_id, 'Users', 'Comments', 'Profile' ), array_slice( $rows, 0, 5 ) );
 		$this->assertEqualSets( $own, array_slice( $rows, 5, 2 ) );
-		$this->assertSame( array( $hidden ), array_slice( $rows, 7 ) );
+		$this->assertEqualSets( array( $untitled, $hidden ), array_slice( $rows, 7 ) );
 		$this->assertStringContainsString( '<span class="presence-bar-crowd" aria-hidden="true">2</span>', $nodes['presence-place-2']->title );
 		$this->assertStringContainsString( esc_html( get_userdata( $alone )->display_name ), $nodes['presence-place-3']->title );
 	}

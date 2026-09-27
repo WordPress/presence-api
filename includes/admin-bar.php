@@ -157,7 +157,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	// Posts being edited come first, then the busiest shared screens, then screens each person has to themselves, and hidden places last.
 	$rank = function ( $entry ) use ( $places, $crowds, $key ) {
 		$place = $places[ (int) $entry->user_id ];
-		return array( empty( $place[2] ), '' === $place[1], -( $crowds[ $key( $place ) ] ?? 0 ), $key( $place ) );
+		return array( empty( $place[2] ), '' === $key( $place ), '' === $place[1], -( $crowds[ $key( $place ) ] ?? 0 ), $key( $place ) );
 	};
 	usort(
 		$elsewhere,
@@ -244,7 +244,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	foreach ( $elsewhere as $entry ) {
 		$place = $places[ (int) $entry->user_id ];
 		// People on a shared screen fold into one row with a count; unlinked screens like Profile are each person's own.
-		if ( '' !== $place[1] && empty( $place[2] ) ) {
+		if ( '' !== $key( $place ) && '' !== $place[1] && empty( $place[2] ) ) {
 			if ( $key( $place ) !== $last ) {
 				if ( count( $rows ) + 1 > $budget ) {
 					break;
