@@ -1,9 +1,9 @@
 === Presence API ===
-Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas, aldorza, bejignesh, stfulldev, obenland, moriikuri, ishitaj34, theaminuldev, muneebashraf, mindctrl, zahidui, mitgiselle, jaredrethman
+Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas, aldorza, bejignesh, stfulldev, obenland, moriikuri, ishitaj34, theaminuldev, muneebashraf, mindctrl, zahidui, mitgiselle, jaredrethman, jooahmed
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.1
-Stable tag: 0.9.0
+Stable tag: 0.10.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -65,6 +65,19 @@ For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/presence-api/blob/main/CHANGELOG.md
 
+= 0.10.0 =
+* Fold shared screens into one row in the admin bar menu ([#615](https://github.com/WordPress/presence-api/issues/615)).
+* List people editing posts first in the admin bar menu ([#603](https://github.com/WordPress/presence-api/issues/603)).
+* Refresh the Editors column on each heartbeat ([#606](https://github.com/WordPress/presence-api/issues/606)).
+* Refresh the Online users list on each heartbeat ([#604](https://github.com/WordPress/presence-api/issues/604)).
+* Show the stale-screen banner on Settings API, Privacy and Network Admin screens ([#619](https://github.com/WordPress/presence-api/issues/619)).
+* Bump the right Users screen on a row Remove and skip bumps while deleting a site ([#628](https://github.com/WordPress/presence-api/issues/628)).
+* Link admin bar rows to the comment, user or term being edited ([#617](https://github.com/WordPress/presence-api/issues/617)).
+* Link Network Admin rows and count the network in the admin bar ([#618](https://github.com/WordPress/presence-api/issues/618)).
+* Read the network Online view from the heartbeat's screen ([#622](https://github.com/WordPress/presence-api/issues/622)).
+* Refresh presence rows on SQLite with CASE instead of IF() ([#623](https://github.com/WordPress/presence-api/issues/623)).
+* Cut e2e runtime with backdated fixtures and readiness waits ([#621](https://github.com/WordPress/presence-api/issues/621)).
+
 = 0.9.0 =
 * Gate where people are behind a per-user view_presence_location meta cap ([#571](https://github.com/WordPress/presence-api/issues/571)).
 * Give each user a room-assigned color from Gutenberg's palette ([#574](https://github.com/WordPress/presence-api/issues/574)).
@@ -101,10 +114,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 * Centralize network site status filtering ([#453](https://github.com/WordPress/presence-api/issues/453)).
 * Keep a client that is still pinging out of the idle state ([#522](https://github.com/WordPress/presence-api/issues/522)).
 * Keep the collaboration edge state in the presence table ([#514](https://github.com/WordPress/presence-api/issues/514)).
-
-= 0.5.0 =
-* Add a Settings link to the plugin row actions ([ba04159](https://github.com/WordPress/presence-api/commit/ba04159d8e780936ee8e25100d7b23e239fd8cab)), closes [#484](https://github.com/WordPress/presence-api/issues/484).
-* Let wp_set_presence() accept an explicit GMT timestamp.
-* Bypass the redundant-write guard and validate $date_gmt on wp_set_presence().
-* Request a retina-sharp avatar resolution across the presence surfaces.
-* Stop PHPStan's bootstrap from silently exiting before analysis.
