@@ -160,6 +160,7 @@ function wp_presence_enqueue_heartbeat_ping() {
 			$admin_state['post_id'] = $front_context['post_id'];
 		}
 	}
+	$admin_state['color'] = wp_presence_assign_user_color( $user_id );
 	wp_set_presence( wp_presence_admin_room(), 'user-' . $user_id, $admin_state, $user_id );
 
 	$initial_collaborator_count = 0;
@@ -280,6 +281,9 @@ function wp_presence_admin_heartbeat_received( $response, $data, $screen_id ) { 
 			}
 		}
 	}
+
+	// Held for the session, so everyone online sees one color per person.
+	$state['color'] = wp_presence_assign_user_color( $user_id );
 
 	wp_set_presence( wp_presence_admin_room(), 'user-' . $user_id, $state, $user_id );
 

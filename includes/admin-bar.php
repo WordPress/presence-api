@@ -128,9 +128,14 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 	// Others on this page only; your own face is already in My Account beside it. Five whole faces fit.
 	$stack_ids = array_slice( array_unique( array_map( 'intval', wp_list_pluck( $here, 'user_id' ) ) ), 0, 5 );
 
+	$colors = array();
+	foreach ( $entries as $entry ) {
+		$colors[ (int) $entry->user_id ] = wp_presence_entry_color( $entry );
+	}
+
 	// Only people on this page wear their color; it pairs them with what they do on the screen you share.
-	$avatar = function ( $user, $size, $alt = '', $ring = true ) {
-		$color = $ring ? ' style="outline-color:' . esc_attr( wp_presence_avatar_border_color( $user->ID ) ) . '"' : '';
+	$avatar = function ( $user, $size, $alt = '', $ring = true ) use ( $colors ) {
+		$color = $ring ? ' style="outline-color:' . esc_attr( $colors[ $user->ID ] ?? wp_presence_default_user_color( $user->ID ) ) . '"' : '';
 		return '<img class="presence-bar-avatar' . ( $ring ? '' : ' presence-bar-avatar-plain' ) . '" src="' . esc_url( get_avatar_url( $user->ID, array( 'size' => wp_presence_get_avatar_fetch_size( $size ) ) ) ) . '" width="' . (int) $size . '" height="' . (int) $size . '"' . $color . ' alt="' . esc_attr( $alt ) . '" />';
 	};
 
@@ -284,21 +289,6 @@ function wp_presence_admin_bar_node( $wp_admin_bar ) {
 			'href'   => wp_nonce_url( admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' ),
 		)
 	);
-}
-
-/**
- * Returns the color a user wears on every presence surface.
- *
- * Gutenberg's collaborator colors in its order, so a user wears the same color in the editor.
- *
- * @access private
- *
- * @param int $user_id User ID.
- * @return string A hex color.
- */
-function wp_presence_avatar_border_color( $user_id ) {
-	$colors = array( '#6F42C1', '#D94145', '#FBBF24', '#FF35EE', '#879F11', '#0F766E', '#00CFFF' );
-	return $colors[ absint( $user_id ) % count( $colors ) ];
 }
 
 /**

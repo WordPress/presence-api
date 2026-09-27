@@ -746,6 +746,10 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 			$data['data'] = $item->data;
 		}
 
+		if ( rest_is_field_included( 'color', $fields ) ) {
+			$data['color'] = wp_presence_admin_room() === $item->room ? wp_presence_entry_color( $item ) : wp_presence_get_user_color( $item->user_id );
+		}
+
 		if ( rest_is_field_included( 'date_gmt', $fields ) ) {
 			$data['date_gmt'] = $item->date_gmt;
 		}
@@ -855,6 +859,12 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 					'type'                 => 'object',
 					'context'              => array( 'view', 'edit' ),
 					'additionalProperties' => true,
+				),
+				'color'        => array(
+					'description' => __( 'The color the user wears on every presence surface, from the block editor\'s collaborator palette.', 'presence-api' ),
+					'type'        => 'string',
+					'context'     => array( 'view' ),
+					'readonly'    => true,
 				),
 				'date_gmt'     => array(
 					'description' => __( 'The date the presence was last updated, in GMT.', 'presence-api' ),
