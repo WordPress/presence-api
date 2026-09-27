@@ -37,11 +37,14 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	// The ping reports window.pagenow, which core prints from the current screen's ID.
 	if ( null !== $screen ) {
 		$current_screen = $screen;
+		$in_network     = '-network' === substr( $screen, -8 );
 	} elseif ( ! is_admin() ) {
 		$current_screen = 'front';
+		$in_network     = false;
 	} else {
 		$wp_screen      = get_current_screen();
 		$current_screen = $wp_screen ? $wp_screen->id : 'unknown';
+		$in_network     = $wp_screen && $wp_screen->in_admin( 'network' );
 	}
 
 	$editing  = array();
@@ -241,7 +244,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	$users_url  = current_user_can( 'list_users' ) ? wp_nonce_url( admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' ) : false;
 
 	// Network screens count and link the network Online view, which reads empty when the network does not aggregate.
-	if ( is_multisite() && '-network' === substr( $current_screen, -8 ) && current_user_can( 'manage_network_users' ) && current_user_can( wp_presence_network_capability() ) ) {
+	if ( is_multisite() && $in_network && current_user_can( 'manage_network_users' ) && current_user_can( wp_presence_network_capability() ) ) {
 		$network_ids = wp_presence_get_network_online_user_ids();
 		if ( $network_ids ) {
 			$online_ids = $network_ids;

@@ -22,6 +22,11 @@ class WP_Test_Network_Admin_Bar extends WP_Presence_Network_UnitTestCase {
 		$this->set_network_summary_row( $this->create_blog(), self::factory()->user->create_many( 2 ) );
 	}
 
+	public function tear_down() {
+		unset( $GLOBALS['hook_suffix'], $GLOBALS['current_screen'] );
+		parent::tear_down();
+	}
+
 	/**
 	 * Renders the node for a screen and returns it.
 	 *
@@ -42,8 +47,27 @@ class WP_Test_Network_Admin_Bar extends WP_Presence_Network_UnitTestCase {
 		$this->assertSame( wp_nonce_url( network_admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' ), $node->href );
 	}
 
+	public function test_the_current_network_screen_counts_the_network() {
+		set_current_screen( 'users-network' );
+
+		$bar = new WP_Admin_Bar();
+		wp_presence_admin_bar_node( $bar );
+
+		$this->assertStringContainsString( '3 online', $bar->get_node( 'presence-online' )->title );
+	}
+
 	public function test_a_site_screen_counts_the_site() {
 		$this->assertStringContainsString( '1 online', $this->render_node( 'users' )->title );
+	}
+
+	public function test_a_site_plugin_page_named_like_a_network_screen_counts_the_site() {
+		$GLOBALS['hook_suffix'] = 'toplevel_page_social-network';
+		set_current_screen();
+
+		$bar = new WP_Admin_Bar();
+		wp_presence_admin_bar_node( $bar );
+
+		$this->assertStringContainsString( '1 online', $bar->get_node( 'presence-online' )->title );
 	}
 
 	public function test_a_network_screen_counts_the_site_without_the_network_capability() {
