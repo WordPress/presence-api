@@ -194,6 +194,15 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	/**
 	 * @covers ::wp_presence_online_hash_heartbeat_received
 	 */
+	public function test_the_online_hash_skips_subscribers() {
+		wp_set_current_user( self::$subscriber_id );
+
+		$this->assertSame( array(), $this->hash_tick() );
+	}
+
+	/**
+	 * @covers ::wp_presence_online_hash_heartbeat_received
+	 */
 	public function test_the_online_hash_reports_unchanged_until_the_room_changes() {
 		$other_id = self::factory()->user->create( array( 'role' => 'editor' ) );
 		wp_set_presence( wp_presence_admin_room(), 'user-' . $other_id, array( 'screen' => 'edit' ), $other_id );

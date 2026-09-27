@@ -509,6 +509,7 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 	 *
 	 * @covers ::wp_presence_get_rich_screen_label
 	 * @covers ::wp_presence_get_screen_label
+	 * @covers ::wp_presence_get_screen_labels
 	 *
 	 * @param string $screen      The pagenow slug.
 	 * @param string $post_status The post status recorded alongside it.
