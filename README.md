@@ -374,7 +374,7 @@ The JS actions above exist for that same relationship. A consumer like Gutenberg
 
 ## Post-lock bridge
 
-Keeps `_edit_lock` in the post room's `_lock` row instead of post meta, through the `get_post_metadata`, `update_post_metadata` and `delete_post_metadata` short-circuits, so refreshing a lock no longer makes every cached post query stale. `wp_check_post_lock()` and every other caller work unchanged. Post types without `presence` support, and sites with recording turned off, keep the lock in meta.
+Keeps `_edit_lock` in the post room's `_lock` row instead of post meta, through the `get_post_metadata`, `update_post_metadata` and `delete_post_metadata` short-circuits, so refreshing a lock no longer makes every cached post query stale. `wp_check_post_lock()` and every other caller work unchanged. Every post type keeps its lock there, even with recording turned off, since the row holds only the time and user ID the meta did.
 
 ## Capability
 
