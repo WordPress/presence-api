@@ -169,7 +169,7 @@ class WP_Presence_Widget_Active_Posts {
 	 * Builds active posts data grouped by post.
 	 *
 	 * Returns an array of posts, each with an 'editors' array containing
-	 * the users currently editing that post.
+	 * the users who have that post open.
 	 *
 	 * @since 0.1.1
 	 * @since 0.11.0 Adds the post type to each editor label and titles untitled posts "(no title)".
@@ -280,12 +280,12 @@ class WP_Presence_Widget_Active_Posts {
 
 			$editor_label = 1 === $count
 				? $editors[0]['display_name']
-				/* translators: %d: Number of people editing the post. */
+				/* translators: %d: Number of people with the post open. */
 				: sprintf( _n( '%d person', '%d people', $count, 'presence-api' ), $count );
 
 			$by_post[ $index ]['editors']      = $editors;
 			$by_post[ $index ]['editor_label'] = sprintf(
-				/* translators: 1: Who is editing, a name or a count of people. 2: Singular post type name, such as Page. */
+				/* translators: 1: Who has the post open, a name or a count of people. 2: Singular post type name, such as Page. */
 				__( '%1$s · %2$s', 'presence-api' ),
 				$editor_label,
 				get_post_type_object( $post_data['post_type'] )->labels->singular_name
