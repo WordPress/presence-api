@@ -175,9 +175,9 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$this->assertSame( esc_html( get_userdata( $elsewhere )->display_name ), $nodes[ 'presence-user-' . $elsewhere ]->title );
 		$this->assertFalse( $nodes[ 'presence-user-' . $elsewhere ]->href );
 		// The faces are the others on this page; you are already in My Account.
-		$this->assertStringContainsString( 'alt="' . esc_attr( $here->display_name ) . '"', $nodes['presence-online']->title );
+		$this->assertStringContainsString( "alt='" . esc_attr( $here->display_name ) . "'", $nodes['presence-online']->title );
 		$this->assertStringNotContainsString(
-			'alt="' . esc_attr( get_userdata( self::$editor_id )->display_name ) . '"',
+			"alt='" . esc_attr( get_userdata( self::$editor_id )->display_name ) . "'",
 			$nodes['presence-online']->title
 		);
 	}

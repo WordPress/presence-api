@@ -222,9 +222,22 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	// Seven colors cannot go round a busy site, so people on this page trade a clash for a free one.
 	$colors = wp_presence_spread_colors( array_intersect_key( $colors, array_flip( $here_ids ) ) ) + $colors;
 
-	$avatar = function ( $user, $size, $alt = '' ) use ( $colors ) {
-		$color = ' style="outline-color:' . esc_attr( $colors[ $user->ID ] ?? wp_presence_default_user_color( $user->ID ) ) . '"';
-		return '<img class="presence-bar-avatar" src="' . esc_url( get_avatar_url( $user->ID, array( 'size' => wp_presence_get_avatar_fetch_size( $size ) ) ) ) . '" width="' . (int) $size . '" height="' . (int) $size . '"' . $color . ' alt="' . esc_attr( $alt ) . '" />';
+	$avatar = function ( $user, $size, $alt = '', $title = '' ) use ( $colors ) {
+		$extra_attr = 'style="outline-color:' . esc_attr( $colors[ $user->ID ] ?? wp_presence_default_user_color( $user->ID ) ) . '"';
+		if ( '' !== $title ) {
+			$extra_attr .= ' title="' . esc_attr( $title ) . '"';
+		}
+		return (string) get_avatar(
+			$user->ID,
+			$size,
+			'',
+			$alt,
+			array(
+				'class'      => 'presence-bar-avatar',
+				'extra_attr' => $extra_attr,
+				'loading'    => false,
+			)
+		);
 	};
 
 	$stack_html = '';
@@ -234,7 +247,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 		if ( ! $user ) {
 			continue;
 		}
-		$stack_html .= str_replace( ' />', ' title="' . esc_attr( $user->display_name ) . '" />', $avatar( $user, 20, $user->display_name ) );
+		$stack_html .= $avatar( $user, 20, $user->display_name, $user->display_name );
 	}
 
 	// Core drops a node's aria-label, so the spoken label rides in the title and the faces stay quiet.
