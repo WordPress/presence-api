@@ -222,10 +222,10 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	// Seven colors cannot go round a busy site, so people on this page trade a clash for a free one.
 	$colors = wp_presence_spread_colors( array_intersect_key( $colors, array_flip( $here_ids ) ) ) + $colors;
 
-	$avatar = function ( $user, $size, $alt = '', $title = '' ) use ( $colors ) {
+	$avatar = function ( $user, $size, $alt = '' ) use ( $colors ) {
 		$extra_attr = 'style="outline-color:' . esc_attr( $colors[ $user->ID ] ?? wp_presence_default_user_color( $user->ID ) ) . '"';
-		if ( '' !== $title ) {
-			$extra_attr .= ' title="' . esc_attr( $title ) . '"';
+		if ( '' !== $alt ) {
+			$extra_attr .= ' title="' . esc_attr( $alt ) . '"';
 		}
 		return (string) get_avatar(
 			$user->ID,
@@ -247,7 +247,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 		if ( ! $user ) {
 			continue;
 		}
-		$stack_html .= $avatar( $user, 20, $user->display_name, $user->display_name );
+		$stack_html .= $avatar( $user, 20, $user->display_name );
 	}
 
 	// Core drops a node's aria-label, so the spoken label rides in the title and the faces stay quiet.
