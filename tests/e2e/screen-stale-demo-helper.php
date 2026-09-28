@@ -139,7 +139,7 @@ function presence_demo_handle_bump() {
 add_action( 'wp_ajax_presence_demo_bump_screen', 'presence_demo_handle_bump' );
 
 /**
- * Refreshes the demo post locks, which core honours for only 150 seconds by default.
+ * Refreshes the demo post locks before core's lock window expires them.
  */
 function presence_demo_refresh_locks() {
 	$seeder = WP_PLUGIN_DIR . '/presence-api/demo-seeder.php';
