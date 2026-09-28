@@ -252,14 +252,14 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	$stack_html = '' !== $stack_html ? '<span class="presence-bar-avatars" aria-hidden="true">' . $stack_html . '</span>' : '';
 
 	$online_ids = wp_presence_online_user_ids( $entries );
-	$users_url  = current_user_can( 'list_users' ) ? wp_nonce_url( admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' ) : false;
+	$users_url  = current_user_can( 'list_users' ) ? wp_presence_online_users_url() : false;
 
 	// Network screens count and link the network Online view, which reads empty when the network does not aggregate.
 	if ( is_multisite() && $in_network && current_user_can( 'manage_network_users' ) && current_user_can( wp_presence_network_capability() ) ) {
 		$network_ids = wp_presence_get_network_online_user_ids();
 		if ( $network_ids ) {
 			$online_ids = $network_ids;
-			$users_url  = wp_nonce_url( network_admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' );
+			$users_url  = wp_presence_online_users_url( true );
 		}
 	}
 

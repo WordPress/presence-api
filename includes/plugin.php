@@ -155,7 +155,7 @@ function wp_presence_deactivate( $network_wide = false ) {
 function wp_presence_plugin_action_links( $links ) {
 	$online_users_link = sprintf(
 		'<a href="%1$s">%2$s</a>',
-		esc_url( wp_nonce_url( admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' ) ),
+		esc_url( wp_presence_online_users_url() ),
 		esc_html__( 'View Online Users', 'presence-api' )
 	);
 
@@ -194,7 +194,7 @@ function wp_presence_network_plugin_action_links( $links ) {
 	if ( current_user_can( wp_presence_network_capability() ) ) {
 		$our_links[] = sprintf(
 			'<a href="%1$s">%2$s</a>',
-			esc_url( wp_nonce_url( network_admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' ) ),
+			esc_url( wp_presence_online_users_url( true ) ),
 			esc_html__( 'View Online Users', 'presence-api' )
 		);
 	}

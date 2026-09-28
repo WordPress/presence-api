@@ -99,6 +99,7 @@ class WP_Test_Presence_Network_Plugin_Action_Links extends WP_UnitTestCase {
 	 * presence_online_filter nonce, so a link without one would list every user.
 	 *
 	 * @covers ::wp_presence_network_plugin_action_links
+	 * @covers ::wp_presence_online_users_url
 	 */
 	public function test_online_users_link_carries_a_nonce_the_filter_accepts() {
 		$links = wp_presence_network_plugin_action_links( array() );

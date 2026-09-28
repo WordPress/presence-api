@@ -37,7 +37,7 @@ function wp_presence_network_users_views( $views ) {
 	$is_current   = isset( $_GET['presence_status'] ) && 'online' === $_GET['presence_status']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 	$class = $is_current ? 'current' : '';
-	$url   = wp_nonce_url( network_admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' );
+	$url   = wp_presence_online_users_url( true );
 
 	$views['presence_online'] = sprintf(
 		'<a href="%s" class="%s">%s <span class="count">(%d)</span></a>',

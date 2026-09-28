@@ -8,6 +8,7 @@
  * @group ms-required
  *
  * @covers ::wp_presence_admin_bar_node
+ * @covers ::wp_presence_online_users_url
  */
 class WP_Test_Network_Admin_Bar extends WP_Presence_Network_UnitTestCase {
 
@@ -44,7 +45,7 @@ class WP_Test_Network_Admin_Bar extends WP_Presence_Network_UnitTestCase {
 		$node = $this->render_node( 'users-network' );
 
 		$this->assertStringContainsString( '3 online', $node->title );
-		$this->assertSame( wp_nonce_url( network_admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' ), $node->href );
+		$this->assertSame( wp_presence_online_users_url( true ), $node->href );
 	}
 
 	public function test_the_current_network_screen_counts_the_network() {
@@ -81,7 +82,7 @@ class WP_Test_Network_Admin_Bar extends WP_Presence_Network_UnitTestCase {
 		$node = $this->render_node( 'users-network' );
 
 		$this->assertStringContainsString( '1 online', $node->title );
-		$this->assertSame( wp_nonce_url( admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' ), $node->href );
+		$this->assertSame( wp_presence_online_users_url(), $node->href );
 	}
 
 	public function test_a_network_screen_counts_the_site_without_manage_network_users() {

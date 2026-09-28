@@ -138,6 +138,29 @@ class WP_Test_Network_Users_List extends WP_Presence_Network_UnitTestCase {
 	}
 
 	/**
+	 * The network variant of the helper has to open the network Online view,
+	 * filtered, not the site's.
+	 *
+	 * @covers ::wp_presence_online_users_url
+	 * @covers ::wp_presence_filter_network_online_users
+	 */
+	public function test_network_online_users_url_opens_the_filtered_view() {
+		$this->become_network_admin();
+		set_current_screen( 'users-network' );
+
+		$blog_id = $this->create_blog();
+		$this->set_presence_on_site( $blog_id, self::$editor_id );
+
+		$url = wp_presence_online_users_url( true );
+		wp_parse_str( (string) wp_parse_url( $url, PHP_URL_QUERY ), $_GET );
+
+		$args = wp_presence_filter_network_online_users( array( 'number' => 10 ) );
+
+		$this->assertStringStartsWith( network_admin_url( 'users.php?' ), $url );
+		$this->assertSame( array( self::$editor_id ), $args['include'] );
+	}
+
+	/**
 	 * WP_User_Query treats an empty "include" as no restriction at all, which
 	 * would silently fall through to every network user instead of none.
 	 *

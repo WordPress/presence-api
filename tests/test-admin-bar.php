@@ -11,6 +11,7 @@
  * @covers ::wp_presence_admin_bar_node_markup
  * @covers ::wp_presence_admin_bar_heartbeat_received
  * @covers ::wp_presence_screen_object_id
+ * @covers ::wp_presence_online_users_url
  */
 class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 
@@ -601,7 +602,7 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$this->assertSame( 'See everyone online', $nodes['presence-more']->title );
 		$this->assertSame( $nodes['presence-online']->href, $nodes['presence-more']->href );
 		$this->assertSame( 8, substr_count( $nodes['presence-online']->title, '<img' ) );
-		$this->assertSame( wp_nonce_url( admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' ), $nodes['presence-online']->href );
+		$this->assertSame( wp_presence_online_users_url(), $nodes['presence-online']->href );
 	}
 
 	/**

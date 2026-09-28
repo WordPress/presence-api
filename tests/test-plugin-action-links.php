@@ -52,6 +52,7 @@ class WP_Test_Presence_Plugin_Action_Links extends WP_UnitTestCase {
 
 	/**
 	 * @covers ::wp_presence_plugin_action_links
+	 * @covers ::wp_presence_online_users_url
 	 */
 	public function test_link_points_at_the_online_users_filter() {
 		$links = wp_presence_plugin_action_links( array() );

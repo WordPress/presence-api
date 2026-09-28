@@ -9,6 +9,7 @@
  * @covers ::wp_presence_users_views
  * @covers ::wp_presence_filter_online_users
  * @covers ::wp_presence_users_list_heartbeat_received
+ * @covers ::wp_presence_online_users_url
  */
 class WP_Test_Presence_User_List extends WP_Presence_UnitTestCase {
 
@@ -192,5 +193,33 @@ class WP_Test_Presence_User_List extends WP_Presence_UnitTestCase {
 
 	public function test_the_online_view_needs_its_nonce() {
 		$this->assertSame( array(), $this->tick_online_view( 'invalid' ) );
+	}
+
+	/**
+	 * Every link to the Online view is built by the helper, so a URL from it
+	 * has to open the filtered list rather than every user.
+	 */
+	public function test_online_users_url_opens_the_filtered_view() {
+		wp_set_current_user( self::$editor_id );
+		set_current_screen( 'users' );
+
+		$other_id = self::factory()->user->create( array( 'role' => 'editor' ) );
+		wp_set_presence( wp_presence_admin_room(), 'client-1', array(), $other_id );
+
+		$url = wp_presence_online_users_url();
+		wp_parse_str( (string) wp_parse_url( $url, PHP_URL_QUERY ), $_GET );
+
+		$query = new WP_User_Query();
+		wp_presence_filter_online_users( $query );
+
+		$this->assertStringStartsWith( admin_url( 'users.php?' ), $url );
+		$this->assertEqualsCanonicalizing( array( $other_id, self::$editor_id ), $query->get( 'include' ) );
+	}
+
+	/**
+	 * Callers escape the URL on output, so the helper hands it back raw.
+	 */
+	public function test_online_users_url_is_unescaped() {
+		$this->assertStringNotContainsString( '&amp;', wp_presence_online_users_url() );
 	}
 }

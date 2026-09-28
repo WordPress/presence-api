@@ -10,6 +10,27 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Returns the URL of the Users list filtered to the people online, on the site or the network.
+ *
+ * The filter only applies to a request carrying this nonce, so every link to the view is built here.
+ *
+ * @since 0.11.1
+ * @access private
+ *
+ * @param bool $network Whether to link the Network Admin Users list instead of the site's.
+ * @return string The URL, unescaped.
+ */
+function wp_presence_online_users_url( $network = false ) {
+	return add_query_arg(
+		array(
+			'presence_status' => 'online',
+			'_wpnonce'        => wp_create_nonce( 'presence_online_filter' ),
+		),
+		$network ? network_admin_url( 'users.php' ) : admin_url( 'users.php' )
+	);
+}
+
+/**
  * Adds an "Online" view to the users list table.
  *
  * Displays a tab alongside the role-based views (All | Administrator | Editor | etc.)
@@ -30,7 +51,7 @@ function wp_presence_users_views( $views ) {
 	$is_current   = isset( $_GET['presence_status'] ) && 'online' === $_GET['presence_status']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 	$class = $is_current ? 'current' : '';
-	$url   = wp_nonce_url( admin_url( 'users.php?presence_status=online' ), 'presence_online_filter' );
+	$url   = wp_presence_online_users_url();
 
 	$views['presence_online'] = sprintf(
 		'<a href="%s" class="%s">%s <span class="count">(%d)</span></a>',
