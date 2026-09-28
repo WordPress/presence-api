@@ -114,11 +114,21 @@ class WP_Test_Presence_Post_List extends WP_Presence_UnitTestCase {
 				'display_name' => 'Bob "><script>alert(1)</script>',
 			)
 		);
-		$deleted_id  = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$deleted_id = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$agent_id   = self::factory()->user->create( array( 'role' => 'editor' ) );
+		add_filter(
+			'wp_presence_is_agent_user',
+			static function ( $is_agent, $user_id ) use ( $agent_id ) {
+				return $agent_id === $user_id ? true : $is_agent;
+			},
+			10,
+			2
+		);
 
 		wp_set_presence( wp_presence_post_room( $post_one ), 'lock-1', array(), self::$editor_id );
 		wp_set_presence( wp_presence_post_room( $post_many ), 'lock-1', array(), self::$editor_id );
 		wp_set_presence( wp_presence_post_room( $post_many ), 'lock-2', array(), $editor_2_id );
+		wp_set_presence( wp_presence_post_room( $post_one ), 'agent-' . $agent_id, array(), $agent_id, null, 60 );
 		wp_set_presence( wp_presence_post_room( $post_deleted ), 'lock-3', array(), $deleted_id );
 
 		// Matches the postType/ prefix query but not the room format, so it is
@@ -137,8 +147,11 @@ class WP_Test_Presence_Post_List extends WP_Presence_UnitTestCase {
 
 		$this->assertSame( '', $this->render_column( $post_none ) );
 
+		$agent = get_userdata( $agent_id );
+
 		$one_output = $this->render_column( $post_one );
-		$this->assertSame( 1, substr_count( $one_output, '<img' ) );
+		$this->assertSame( 2, substr_count( $one_output, '<img' ) );
+		$this->assertStringContainsString( 'title="' . esc_attr( $agent->display_name ) . ' (agent)"', $one_output );
 
 		$many_output = $this->render_column( $post_many );
 		$this->assertSame( 2, substr_count( $many_output, '<img' ) );

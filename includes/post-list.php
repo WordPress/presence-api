@@ -140,9 +140,13 @@ function wp_presence_editors_stack( $editors ) {
 			continue;
 		}
 
-		$z      = $count - $index;
+		$z     = $count - $index;
+		$title = wp_presence_is_agent_user( $user->ID )
+			/* translators: %s: Display name. */
+			? sprintf( __( '%s (agent)', 'presence-api' ), $user->display_name )
+			: $user->display_name;
 		$avatar = get_avatar( $user->ID, 24, '', $user->display_name );
-		$avatar = str_replace( '<img ', '<img style="z-index:' . $z . '" title="' . esc_attr( $user->display_name ) . '" ', $avatar );
+		$avatar = str_replace( '<img ', '<img style="z-index:' . $z . '" title="' . esc_attr( $title ) . '" ', $avatar );
 		$html  .= wp_kses_post( $avatar );
 		++$index;
 	}
