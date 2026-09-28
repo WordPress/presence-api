@@ -1102,10 +1102,11 @@ add_filter( 'wp_presence_is_agent_user', 'wp_presence_is_agent_user_via_wpai', 1
  * reads; only agent users absent from it are backfilled from a post room,
  * so an agent that does run Heartbeat is never listed twice.
  *
- * The post room's screen is reported as `edit-post`, which is what a human
- * editor's Heartbeat reports on `post.php`, so an agent's row groups with
- * theirs under "On this page" and picks up the same post title lookup the
- * admin bar already does for that screen.
+ * The post room's screen is reported as the post's own post type, which is
+ * what a human editor's Heartbeat reports on `post.php` (the screen ID
+ * `post.php` renders under is the post type itself), so an agent's row
+ * groups with theirs under "On this page" and picks up the same post title
+ * lookup the admin bar already does for that screen.
  *
  * @access private
  *
@@ -1134,7 +1135,7 @@ function wp_presence_admin_room_entries( $timeout = null ) {
 			'user_id'   => (string) $user_id,
 			'date_gmt'  => $row->date_gmt,
 			'data'      => array(
-				'screen'   => 'edit-post',
+				'screen'   => $parsed ? $parsed['post_type'] : '',
 				'post_id'  => $parsed ? $parsed['post_id'] : 0,
 				'is_agent' => true,
 			),

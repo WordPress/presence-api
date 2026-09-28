@@ -725,4 +725,35 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 
 		$this->assertArrayNotHasKey( 'presence-fragments', $response );
 	}
+
+	/**
+	 * An agent runs no Heartbeat and writes only the post room it edits, so the
+	 * bar has to backfill its row from there rather than from `admin/online`.
+	 *
+	 * @covers ::wp_presence_admin_bar_node
+	 * @covers ::wp_presence_admin_room_entries
+	 */
+	public function test_an_agent_editing_a_post_is_shown_and_labelled() {
+		$agent_id = self::factory()->user->create( array( 'role' => 'editor' ) );
+		add_filter(
+			'wp_presence_is_agent_user',
+			static function ( $is_agent, $user_id ) use ( $agent_id ) {
+				return $agent_id === $user_id ? true : $is_agent;
+			},
+			10,
+			2
+		);
+
+		wp_set_presence( wp_presence_post_room( self::$post_id ), 'agent-' . $agent_id, array(), $agent_id, null, 60 );
+
+		wp_set_current_user( self::$editor_id );
+		$this->let_current_user_list_users();
+		$nodes = $this->render_nodes();
+
+		$agent = get_userdata( $agent_id );
+		$this->assertArrayHasKey( 'presence-user-' . $agent_id, $nodes );
+		$title = $nodes[ 'presence-user-' . $agent_id ]->title;
+		$this->assertStringContainsString( $agent->display_name, $title );
+		$this->assertStringContainsString( 'presence-agent-badge', $title );
+	}
 }

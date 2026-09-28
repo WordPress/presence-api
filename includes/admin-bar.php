@@ -23,7 +23,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 		return;
 	}
 
-	$entries     = wp_get_presence( wp_presence_admin_room() );
+	$entries     = wp_presence_admin_room_entries();
 	$current_uid = get_current_user_id();
 
 	// The node stays put when the current user is alone, so the bar never shifts and presence always shows it is on.
@@ -297,7 +297,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 			array(
 				'parent' => 'presence-online',
 				'id'     => 'presence-user-' . $user->ID,
-				'title'  => $avatar( $user, 18 ) . esc_html( $user->display_name ) . ( $idle ? '<span class="presence-bar-idle">' . esc_html__( 'Idle', 'presence-api' ) . '</span>' : '' ),
+				'title'  => $avatar( $user, 18 ) . esc_html( $user->display_name ) . wp_presence_render_agent_badge( $entry->user_id ) . ( $idle ? '<span class="presence-bar-idle">' . esc_html__( 'Idle', 'presence-api' ) . '</span>' : '' ),
 			)
 		);
 	}
@@ -344,7 +344,16 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	$shown = 0;
 	foreach ( $rows as $i => $row ) {
 		if ( is_array( $row ) && isset( $row[3] ) ) {
-			$people = wp_list_pluck( array_filter( $row[3] ), 'display_name' );
+			// An agent's name in a crowd's tooltip is the only place it appears at all, since the row itself shows a count rather than a list.
+			$people = array_map(
+				function ( $person ) {
+					return wp_presence_is_agent_user( $person->ID )
+						/* translators: %s: Display name. */
+						? sprintf( __( '%s (agent)', 'presence-api' ), $person->display_name )
+						: $person->display_name;
+				},
+				array_filter( $row[3] )
+			);
 			// Only a few names are spelled out, so a crowded screen cannot grow the markup every Heartbeat tick resends.
 			$names = array_slice( $people, 0, 10 );
 			if ( count( $people ) > 10 ) {
@@ -393,7 +402,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 				'parent' => 'presence-elsewhere',
 				'id'     => 'presence-user-' . $user->ID,
 				/* translators: %s: Where the person is, such as a post title or an admin screen. */
-				'title'  => esc_html( $user->display_name ) . ( '' !== $label ? '<span class="screen-reader-text">, ' . esc_html( sprintf( __( 'on %s', 'presence-api' ), $label ) ) . '</span>' : '' ),
+				'title'  => esc_html( $user->display_name ) . wp_presence_render_agent_badge( $user->ID ) . ( '' !== $label ? '<span class="screen-reader-text">, ' . esc_html( sprintf( __( 'on %s', 'presence-api' ), $label ) ) . '</span>' : '' ),
 				'meta'   => '' !== $label ? array( 'class' => 'presence-bar-there' ) : array(),
 			)
 		);
@@ -531,6 +540,7 @@ function wp_presence_admin_bar_assets() {
 		#wp-admin-bar-presence-online :is(.presence-bar-idle, .presence-bar-crowd, .presence-bar-more > .ab-item) { opacity: .8; }
 		.admin-color-light #wp-admin-bar-presence-online :is(.presence-bar-idle, .presence-bar-crowd, .presence-bar-more > .ab-item) { opacity: 1; }
 		.admin-color-light #wpadminbar #wp-admin-bar-presence-online .presence-bar-count { color: #50575e !important; }
+		#wp-admin-bar-presence-online .presence-agent-badge { display: inline-block; opacity: .8; border: 1px solid currentColor; border-radius: 3px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; padding: 1px 4px; margin-inline-start: 4px; vertical-align: middle; }
 	';
 
 	// The current user wears the admin theme color, as in the block editor, so it never matches a ring on the page.
