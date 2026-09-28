@@ -11,6 +11,32 @@
  * @covers ::wp_presence_parse_room
  * @covers ::wp_presence_admin_room
  */
+
+/**
+ * Stands in for the Agent Users plugin's wpai_is_agent_user(), which
+ * wp_presence_is_agent_user_via_wpai() defers to when it is loaded.
+ *
+ * @param int|null $user_id The user ID to report as an agent, or null to
+ *                          report nobody as an agent.
+ */
+function wp_presence_test_wpai_is_agent_user_stub( $user_id ) {
+	global $wp_presence_test_wpai_agent_id;
+	$wp_presence_test_wpai_agent_id = $user_id;
+}
+
+if ( ! function_exists( 'wpai_is_agent_user' ) ) {
+	/**
+	 * Test stub for the Agent Users plugin's wpai_is_agent_user().
+	 *
+	 * @param int $user_id The user ID.
+	 * @return bool Whether wp_presence_test_wpai_is_agent_user_stub() named this user.
+	 */
+	function wpai_is_agent_user( $user_id ) {
+		global $wp_presence_test_wpai_agent_id;
+		return null !== $wp_presence_test_wpai_agent_id && $user_id === $wp_presence_test_wpai_agent_id;
+	}
+}
+
 class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 	private static $editor_id;
@@ -1862,5 +1888,148 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		);
 
 		$this->assertSame( wp_presence_max_staleness() + 90, wp_presence_idle_threshold(), 'A client told to back off further has to stay active for longer before it counts as idle.' );
+	}
+
+	/**
+	 * @covers ::wp_presence_is_agent_user
+	 */
+	public function test_is_agent_user_defaults_to_false() {
+		$this->assertFalse( wp_presence_is_agent_user( self::$editor_id ), 'With nothing marking a user as an agent, everyone is a person.' );
+	}
+
+	/**
+	 * @covers ::wp_presence_is_agent_user
+	 */
+	public function test_is_agent_user_reads_the_filter() {
+		$mark_agent = static function ( $is_agent, $user_id ) {
+			return self::$editor_id === $user_id ? true : $is_agent;
+		};
+		add_filter( 'wp_presence_is_agent_user', $mark_agent, 10, 2 );
+
+		$this->assertTrue( wp_presence_is_agent_user( self::$editor_id ) );
+		$this->assertFalse( wp_presence_is_agent_user( self::$subscriber_id ) );
+
+		remove_filter( 'wp_presence_is_agent_user', $mark_agent, 10 );
+	}
+
+	/**
+	 * @covers ::wp_presence_is_agent_user
+	 * @covers ::wp_presence_is_agent_user_via_wpai
+	 */
+	public function test_is_agent_user_defers_to_wpai_is_agent_user_when_it_exists() {
+		wp_presence_test_wpai_is_agent_user_stub( self::$editor_id );
+
+		$this->assertTrue( wp_presence_is_agent_user( self::$editor_id ) );
+		$this->assertFalse( wp_presence_is_agent_user( self::$subscriber_id ) );
+
+		wp_presence_test_wpai_is_agent_user_stub( null );
+	}
+
+	/**
+	 * Agents write only the post room they are editing, never `admin/online`
+	 * itself, so Who's Online and the admin bar have to backfill an agent's
+	 * row from there.
+	 *
+	 * @covers ::wp_presence_admin_room_entries
+	 */
+	public function test_admin_room_entries_merges_an_agent_row_from_a_post_room() {
+		$agent_id = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$this->mark_as_agent( $agent_id );
+
+		wp_set_presence( 'postType/post:42', 'agent-' . $agent_id, array(), $agent_id, null, 60 );
+
+		$entries  = wp_presence_admin_room_entries();
+		$user_ids = wp_list_pluck( $entries, 'user_id' );
+
+		$this->assertContains( (string) $agent_id, $user_ids );
+
+		foreach ( $entries as $entry ) {
+			if ( (int) $entry->user_id === $agent_id ) {
+				$this->assertTrue( $entry->data['is_agent'] );
+				$this->assertSame( 42, $entry->data['post_id'] );
+			}
+		}
+	}
+
+	/**
+	 * A human editor's post-room row (from the post lock bridge, or from a
+	 * plugin relaying awareness) must not spill into the admin room's list —
+	 * only an agent's is backfilled, since a person already has their own
+	 * `admin/online` row from Heartbeat.
+	 *
+	 * @covers ::wp_presence_admin_room_entries
+	 */
+	public function test_admin_room_entries_does_not_merge_a_non_agent_post_room_row() {
+		wp_set_presence( 'postType/post:42', 'editor-' . self::$editor_id, array(), self::$editor_id );
+
+		$entries  = wp_presence_admin_room_entries();
+		$user_ids = wp_list_pluck( $entries, 'user_id' );
+
+		$this->assertNotContains( (string) self::$editor_id, $user_ids );
+	}
+
+	/**
+	 * An agent that also runs Heartbeat, or is otherwise already present in
+	 * `admin/online`, must not be listed twice.
+	 *
+	 * @covers ::wp_presence_admin_room_entries
+	 */
+	public function test_admin_room_entries_does_not_duplicate_an_agent_already_in_the_admin_room() {
+		$agent_id = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$this->mark_as_agent( $agent_id );
+
+		wp_set_presence( 'admin/online', 'user-' . $agent_id, array( 'screen' => 'dashboard' ), $agent_id );
+		wp_set_presence( 'postType/post:42', 'agent-' . $agent_id, array(), $agent_id, null, 60 );
+
+		$entries  = wp_presence_admin_room_entries();
+		$user_ids = wp_list_pluck( $entries, 'user_id' );
+
+		$this->assertCount( 1, array_keys( $user_ids, (string) $agent_id, true ) );
+	}
+
+	/**
+	 * An agent runs no Heartbeat, so its own `$expires_in` is the only thing
+	 * that ever removes its row — there is no pagehide handler to rely on.
+	 *
+	 * @covers ::wp_presence_admin_room_entries
+	 * @covers ::wp_set_presence
+	 */
+	public function test_an_agent_row_expires_on_its_own_expires_in_with_no_heartbeat() {
+		$agent_id = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$this->mark_as_agent( $agent_id );
+
+		wp_set_presence( 'postType/post:42', 'agent-' . $agent_id, array(), $agent_id, null, 60 );
+
+		$user_ids = wp_list_pluck( wp_presence_admin_room_entries(), 'user_id' );
+		$this->assertContains( (string) $agent_id, $user_ids, 'The agent shows up labelled while its 60-second window is still open.' );
+
+		global $wpdb;
+		$wpdb->update(
+			$wpdb->presence,
+			array( 'expires_gmt' => gmdate( 'Y-m-d H:i:s', time() - 1 ) ),
+			array( 'client_id' => 'agent-' . $agent_id ),
+			array( '%s' ),
+			array( '%s' )
+		);
+
+		$user_ids = wp_list_pluck( wp_presence_admin_room_entries(), 'user_id' );
+		$this->assertNotContains( (string) $agent_id, $user_ids, 'Once its window has passed, the row is gone with nothing else having to remove it.' );
+	}
+
+	/**
+	 * Marks a user as an agent for the current test, through the same filter
+	 * a real Agent Users integration would use.
+	 *
+	 * @param int $user_id The user ID to mark as an agent.
+	 */
+	private function mark_as_agent( $user_id ) {
+		add_filter(
+			'wp_presence_is_agent_user',
+			static function ( $is_agent, $filtered_user_id ) use ( $user_id ) {
+				return $user_id === $filtered_user_id ? true : $is_agent;
+			},
+			10,
+			2
+		);
 	}
 }

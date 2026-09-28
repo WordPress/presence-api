@@ -14,6 +14,7 @@
  *   wp_presence_admin_room()
  *   wp_presence_recording_enabled()
  *   wp_presence_is_available()
+ *   wp_presence_is_agent_user()
  *
  * @package Presence_API
  */
@@ -1036,6 +1037,115 @@ function wp_presence_get_user_color( $user_id ) {
 	return wp_presence_default_user_color( $user_id );
 }
 
+/**
+ * Whether a presence row's user is an AI agent rather than a person.
+ *
+ * A row already carries `user_id`, so telling an agent from a person is a
+ * lookup rather than a schema change. Nothing here decides who counts as an
+ * agent: that question belongs to whichever plugin marks the `WP_User`, most
+ * likely the Agent Users work from the WordPress AI team
+ * (https://github.com/WordPress/ai/pull/961), reached here through
+ * `wpai_is_agent_user()` when it is loaded. No default, so a site with no
+ * such plugin never labels anyone as an agent.
+ *
+ * @since 0.9.0
+ *
+ * @param int $user_id The user ID.
+ * @return bool Whether the user is an agent.
+ */
+function wp_presence_is_agent_user( $user_id ) {
+	/**
+	 * Filters whether a user is an AI agent, for labelling its presence rows.
+	 *
+	 * Every column a presence row's `user_id` might have come from — the
+	 * database, JSON, this function's own callers — reads back as a string,
+	 * so it is cast to an int before it ever reaches a filter, and a filter
+	 * can compare against a plain int without tripping over the difference.
+	 *
+	 * @since 0.9.0
+	 *
+	 * @param bool $is_agent Whether the user is an agent. Default false.
+	 * @param int  $user_id  The user ID.
+	 */
+	return (bool) apply_filters( 'wp_presence_is_agent_user', false, (int) $user_id );
+}
+
+/**
+ * Bridges wp_presence_is_agent_user() to the Agent Users plugin, when loaded.
+ *
+ * A separate function, rather than an inline closure, so it shows up by name
+ * in a debugger or a `has_filter()` check.
+ *
+ * @access private
+ *
+ * @since 0.9.0
+ *
+ * @param bool $is_agent Whether the user is already known to be an agent.
+ * @param int  $user_id  The user ID.
+ * @return bool Whether the user is an agent.
+ */
+function wp_presence_is_agent_user_via_wpai( $is_agent, $user_id ) {
+	return function_exists( 'wpai_is_agent_user' ) ? wpai_is_agent_user( $user_id ) : $is_agent;
+}
+add_filter( 'wp_presence_is_agent_user', 'wp_presence_is_agent_user_via_wpai', 10, 2 );
+
+/**
+ * Returns the admin room's entries, agent rows from post rooms merged in.
+ *
+ * An agent runs no Heartbeat and joins no `admin/online` room of its own; it
+ * writes only the post room it is editing (see the "Agents" section of the
+ * README). Rather than have it write a second room, Who's Online and the
+ * admin bar both call this instead of `wp_get_presence( wp_presence_admin_room() )`
+ * directly, so an agent's row is picked up from wherever it already is.
+ *
+ * An agent user with a row of its own in `admin/online` is left as that row
+ * reads; only agent users absent from it are backfilled from a post room,
+ * so an agent that does run Heartbeat is never listed twice.
+ *
+ * The post room's screen is reported as `edit-post`, which is what a human
+ * editor's Heartbeat reports on `post.php`, so an agent's row groups with
+ * theirs under "On this page" and picks up the same post title lookup the
+ * admin bar already does for that screen.
+ *
+ * @access private
+ *
+ * @since 0.9.0
+ *
+ * @param int|null $timeout Optional. Timeout in seconds. Default null, the site's filtered TTL.
+ * @return array Array of presence entry objects, as returned by wp_get_presence().
+ */
+function wp_presence_admin_room_entries( $timeout = null ) {
+	$entries = wp_get_presence( wp_presence_admin_room(), $timeout );
+
+	$known_user_ids = array_map( 'intval', wp_list_pluck( $entries, 'user_id' ) );
+
+	foreach ( wp_get_presence_by_room_prefix( 'postType/', $timeout ) as $row ) {
+		$user_id = (int) $row->user_id;
+
+		if ( in_array( $user_id, $known_user_ids, true ) || ! wp_presence_is_agent_user( $user_id ) ) {
+			continue;
+		}
+
+		$parsed = wp_presence_parse_room( $row->room );
+
+		$entries[] = (object) array(
+			'room'      => $row->room,
+			'client_id' => $row->client_id,
+			'user_id'   => (string) $user_id,
+			'date_gmt'  => $row->date_gmt,
+			'data'      => array(
+				'screen'   => 'edit-post',
+				'post_id'  => $parsed ? $parsed['post_id'] : 0,
+				'is_agent' => true,
+			),
+		);
+
+		$known_user_ids[] = $user_id;
+	}
+
+	return $entries;
+}
+
 /*
  *
  * The following functions are used by the plugin's widgets, CLI, REST
@@ -1450,6 +1560,28 @@ function wp_presence_hydrate_room_users( $rooms, $timeout = null ) {
 	}
 
 	return $rooms;
+}
+
+/**
+ * Renders the small "Agent" badge shown next to an agent's presence row.
+ *
+ * Shared across every surface that lists a presence row by user — Who's
+ * Online, the admin bar, the Active Posts widget and the post list's
+ * Editors column — so an agent reads the same way wherever it shows up.
+ *
+ * @access private
+ *
+ * @since 0.9.0
+ *
+ * @param int $user_id The user ID the row belongs to.
+ * @return string HTML markup, or an empty string for a user who isn't an agent.
+ */
+function wp_presence_render_agent_badge( $user_id ) {
+	if ( ! wp_presence_is_agent_user( $user_id ) ) {
+		return '';
+	}
+
+	return ' <span class="presence-agent-badge">' . esc_html__( 'Agent', 'presence-api' ) . '</span>';
 }
 
 /**
