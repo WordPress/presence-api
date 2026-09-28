@@ -139,7 +139,7 @@ function presence_demo_handle_bump() {
 add_action( 'wp_ajax_presence_demo_bump_screen', 'presence_demo_handle_bump' );
 
 /**
- * Keeps the demo post locks fresh so the Posts screen always shows some.
+ * Keeps the demo post locks fresh so the Posts screen and Active Posts widget always show some.
  */
 function presence_demo_refresh_locks() {
 	$seeder = WP_PLUGIN_DIR . '/presence-api/demo-seeder.php';
@@ -150,3 +150,4 @@ function presence_demo_refresh_locks() {
 	wp_presence_demo_seed_locks();
 }
 add_action( 'load-edit.php', 'presence_demo_refresh_locks' );
+add_action( 'load-index.php', 'presence_demo_refresh_locks' );
