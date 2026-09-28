@@ -64,6 +64,50 @@ A leading `_` is reserved for this plugin's own bookkeeping rows, which are not 
 
 The `editor-` prefix is load-bearing rather than cosmetic: `includes/heartbeat.php` counts the editors in a post room with `str_starts_with( $entry->client_id, 'editor-' )`, so a colliding prefix inflates that count.
 
+## Agents
+
+An AI agent editing WordPress over REST or MCP runs no Heartbeat, so it never picks up an `admin/online` row on its own and, without more, is invisible to a person watching the same post. It does not need one: it writes its own row in the post room it is editing, with its own expiry, and that is enough for Who's Online, the admin bar and the post list's Editors column to show it, labelled, alongside everyone else.
+
+```php
+// Join: write a row that expires in 60 seconds if nothing renews it.
+wp_set_presence( 'postType/post:42', 'agent-' . $user_id, array(), $user_id, null, 60 );
+
+// While still working, write again before the window runs out, to stay
+// present. A single long $expires_in is not the way — see below.
+wp_set_presence( 'postType/post:42', 'agent-' . $user_id, array(), $user_id, null, 60 );
+
+// Leave, once done. Otherwise the row simply expires on its own.
+wp_remove_presence( 'postType/post:42', 'agent-' . $user_id );
+```
+
+```mermaid
+sequenceDiagram
+  participant A as Agent
+  participant P as Presence table
+  participant E as Person in the editor
+  A->>P: Writes its row, 60s
+  E->>P: Heartbeat reads the room
+  P-->>E: The agent's row, labelled as an agent
+  A->>P: Removes its row
+  Note over P: Or the row expires on its own
+```
+
+Write a short row again rather than one long `$expires_in`: `wp_presence_is_idle()`'s reader-facing threshold is `wp_presence_max_staleness() + ` the Heartbeat interval — well under an hour — so a row left untouched for the whole of a long window reads as idle long before it expires. `$expires_in` is capped by the [`wp_presence_max_expires_in`](#wp_presence_max_expires_in) filter (default one hour) regardless.
+
+An agent's `client_id` needs no reserved prefix of its own; `agent-{user_id}` is a convention, not a requirement enforced anywhere. What does matter is `$user_id`: a row with no `user_id`, or one belonging to a person, is never labelled.
+
+Who counts as an agent is not this plugin's call — that belongs to whichever plugin marks the `WP_User`, such as [Agent Users](https://github.com/WordPress/ai/pull/961). `wp_presence_is_agent_user( $user_id )` is a plain filter, `false` by default, so a site with no such plugin never labels anyone as an agent:
+
+```php
+add_filter( 'wp_presence_is_agent_user', function ( $is_agent, $user_id ) {
+    return function_exists( 'wpai_is_agent_user' ) ? wpai_is_agent_user( $user_id ) : $is_agent;
+}, 10, 2 );
+```
+
+This plugin already registers that exact filter, so nothing further is needed once `wpai_is_agent_user()` is loaded.
+
+An agent is labelled wherever a presence row is listed by user — Who's Online, the admin bar and the post list's Editors column — but is not counted by [`wp_presence_collaboration_started`](#wp_presence_collaboration_started): that action watches `editor-` rows specifically, and an agent's row does not use that prefix.
+
 ## PHP API
 
 <details>
@@ -214,6 +258,9 @@ add_filter( 'wp_presence_recording_enabled', '__return_false' );
 Because the checkbox is only the filter's default, a filter always has the last word over whatever an administrator has chosen.
 
 On multisite, `wp_presence_network_recording_enabled` does the same for every site at once, defaulting to the **Presence** checkbox on Network Admin > Settings. It is consulted only once the site-level filter has allowed recording, so either switch turning off wins and neither can turn the other back on.
+
+#### `wp_presence_is_agent_user`
+Filters whether a user is an AI agent, for labelling its presence rows. Default: `false`, deferred to `wpai_is_agent_user()` when it is loaded (see [Agents](#agents)).
 
 #### `wp_presence_network_aggregation_enabled`
 Filters whether a network assembles its sites' rows into the network-wide view behind Network Admin. Default: `true` below [`wp_is_large_network()`](https://developer.wordpress.org/reference/functions/wp_is_large_network/), which answers write concentration rather than policy. Independent of recording: a network can go on recording site by site and still switch the aggregate off.
