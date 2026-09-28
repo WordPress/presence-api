@@ -443,7 +443,7 @@ function wp_presence_demo_refresh( $user_ids ) {
 }
 
 /**
- * Post lock scenarios for the Posts screen and Dashboard: title, status, and how many demo users are on it.
+ * Post lock scenarios: title, status, and how many demo users are on it.
  */
 const WP_PRESENCE_DEMO_LOCKS = array(
 	array( 'Breaking: Water Main Closes Downtown Streets', 'draft', 1 ),
@@ -454,8 +454,6 @@ const WP_PRESENCE_DEMO_LOCKS = array(
 
 /**
  * Locks a post for each scenario, held by the first of its demo users.
- *
- * Core only honours a lock for 150 seconds, so the Playground calls this on every Posts screen and Dashboard load.
  *
  * @since 0.9.0
  */
