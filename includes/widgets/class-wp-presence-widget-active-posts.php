@@ -74,6 +74,7 @@ class WP_Presence_Widget_Active_Posts {
 			#presence-active-posts-list .presence-active-post-info { flex: 1; min-width: 0; }
 			#presence-active-posts-list .presence-post-title a { text-decoration: none; font-weight: 400; }
 			#presence-active-posts-list .presence-editor-count { color: #646970; font-size: 13px; }
+			#presence-active-posts-list .presence-agent-badge { display: inline-block; color: #50575e; border: 1px solid #dcdcde; border-radius: 3px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; padding: 1px 4px; vertical-align: middle; margin-left: 4px; }
 			#presence-active-posts-list .presence-editor-stack { display: flex; align-items: center; }
 			#presence-active-posts-list .presence-editor-stack img { border-radius: 50%; width: 24px; height: 24px; margin-inline-start: -6px; box-shadow: 0 0 0 2px #fff; position: relative; }
 			#presence-active-posts-list .presence-editor-stack img:first-child { margin-inline-start: 0; }
@@ -125,7 +126,8 @@ class WP_Presence_Widget_Active_Posts {
 			$stack_max = min( count( $post_data['editors'] ), 4 );
 			foreach ( array_slice( $post_data['editors'], 0, $stack_max ) as $index => $editor ) {
 				$z     = $stack_max - $index;
-				$html .= '<img src="' . esc_url( $editor['avatar_url'] ) . '" width="24" height="24" style="z-index:' . (int) $z . '" alt="' . esc_attr( $editor['display_name'] ) . '" />';
+				$title = $editor['is_agent'] ? self::agent_label( $editor['display_name'] ) : $editor['display_name'];
+				$html .= '<img src="' . esc_url( $editor['avatar_url'] ) . '" width="24" height="24" style="z-index:' . (int) $z . '" alt="' . esc_attr( $editor['display_name'] ) . '" title="' . esc_attr( $title ) . '" />';
 			}
 			$html .= '</span>';
 
@@ -139,6 +141,22 @@ class WP_Presence_Widget_Active_Posts {
 		}
 
 		return $html . '</ul>';
+	}
+
+	/**
+	 * Suffixes a display name to mark it as an agent's, everywhere this widget
+	 * names one in plain text rather than through wp_presence_render_agent_badge()
+	 * — every editor_label string is passed through esc_html(), which would
+	 * strip that badge's markup.
+	 *
+	 * @since 0.9.0
+	 *
+	 * @param string $display_name The agent's display name.
+	 * @return string The name, suffixed to mark it as an agent's.
+	 */
+	private static function agent_label( $display_name ) {
+		/* translators: %s: Display name. */
+		return sprintf( __( '%s (agent)', 'presence-api' ), $display_name );
 	}
 
 	/**
@@ -263,6 +281,7 @@ class WP_Presence_Widget_Active_Posts {
 				'display_name' => $user->display_name,
 				'avatar_url'   => get_avatar_url( $user->ID, array( 'size' => wp_presence_get_avatar_fetch_size( 24 ) ) ),
 				'status'       => $status,
+				'is_agent'     => wp_presence_is_agent_user( $editor_id ),
 			);
 		}
 
@@ -288,8 +307,9 @@ class WP_Presence_Widget_Active_Posts {
 
 			// Only the lock holder can change the post, so only they get core's wording for a lock.
 			if ( isset( $editors[ $holder ] ) ) {
+				$holder_name = $editors[ $holder ]['is_agent'] ? self::agent_label( $editors[ $holder ]['display_name'] ) : $editors[ $holder ]['display_name'];
 				/* translators: %s: User's display name. */
-				$parts[] = sprintf( __( '%s is currently editing', 'presence-api' ), $editors[ $holder ]['display_name'] );
+				$parts[] = sprintf( __( '%s is currently editing', 'presence-api' ), $holder_name );
 				$editors = array( $holder => $editors[ $holder ] ) + $editors;
 			}
 
@@ -299,7 +319,8 @@ class WP_Presence_Widget_Active_Posts {
 				/* translators: %d: Number of other people with the post open. */
 				$parts[] = sprintf( _n( '%d other', '%d others', $others, 'presence-api' ), $others );
 			} elseif ( 1 === $others ) {
-				$parts[] = reset( $editors )['display_name'];
+				$only_editor = reset( $editors );
+				$parts[]     = $only_editor['is_agent'] ? self::agent_label( $only_editor['display_name'] ) : $only_editor['display_name'];
 			} elseif ( $others ) {
 				/* translators: %d: Number of people with the post open. */
 				$parts[] = sprintf( _n( '%d person', '%d people', $others, 'presence-api' ), $others );

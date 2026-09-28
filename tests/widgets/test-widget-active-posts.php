@@ -419,4 +419,53 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 		$this->assertSame( get_userdata( self::$editor_id )->display_name . ' is currently editing, 1 other · Post', $posts[0]['editor_label'] );
 		$this->assertSame( self::$editor_id, $posts[0]['editors'][0]['user_id'] );
 	}
+
+	/**
+	 * An agent's row already surfaces here, since the widget reads every
+	 * `postType/*` room directly; it only had to start labelling it. Its name
+	 * is escaped plain text throughout — the lock holder's wording, the
+	 * lone-editor wording, and the avatar's title attribute — rather than the
+	 * shared badge markup, since editor_label is passed through esc_html().
+	 *
+	 * @covers WP_Presence_Widget_Active_Posts::build_active_posts_data
+	 * @covers WP_Presence_Widget_Active_Posts::render
+	 * @covers WP_Presence_Widget_Active_Posts::heartbeat_received
+	 */
+	public function test_an_agents_row_is_labelled() {
+		$agent_id = self::factory()->user->create( array( 'role' => 'editor' ) );
+		add_filter(
+			'wp_presence_is_agent_user',
+			static function ( $is_agent, $user_id ) use ( $agent_id ) {
+				return $agent_id === $user_id ? true : $is_agent;
+			},
+			10,
+			2
+		);
+
+		$room = wp_presence_post_room( self::$post_id );
+		wp_set_presence( $room, 'agent-' . $agent_id, array(), $agent_id, null, 60 );
+
+		wp_set_current_user( self::$editor_id );
+
+		$posts = $this->active_posts();
+		$agent = get_userdata( $agent_id );
+
+		$this->assertTrue( $posts[0]['editors'][0]['is_agent'] );
+		$this->assertStringContainsString( $agent->display_name . ' (agent)', $posts[0]['editor_label'] );
+
+		ob_start();
+		WP_Presence_Widget_Active_Posts::render();
+		$html = ob_get_clean();
+
+		$this->assertStringContainsString( esc_html( $agent->display_name ) . ' (agent)', $html );
+		$this->assertStringContainsString( 'title="' . esc_attr( $agent->display_name ) . ' (agent)"', $html );
+
+		$response = WP_Presence_Widget_Active_Posts::heartbeat_received(
+			array(),
+			array( 'presence-fragments' => array( 'active-posts' => true ) ),
+			'dashboard'
+		);
+
+		$this->assertStringContainsString( $agent->display_name . ' (agent)', $response['presence-fragments']['active-posts'] );
+	}
 }
