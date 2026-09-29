@@ -186,20 +186,10 @@ describe( 'wpPresenceCreateTabCoordinator', () => {
 			};
 
 			global.navigator.locks = {
-				request: ( name, options, callback ) =>
-					new Promise( ( resolve, reject ) => {
+				request: ( name, callback ) =>
+					new Promise( () => {
 						queues[ name ] = queues[ name ] || [];
-						const entry = { callback, granted: false };
-						queues[ name ].push( entry );
-						options.signal.addEventListener( 'abort', () => {
-							if ( ! entry.granted ) {
-								queues[ name ].splice(
-									queues[ name ].indexOf( entry ),
-									1
-								);
-								reject( new Error( 'AbortError' ) );
-							}
-						} );
+						queues[ name ].push( { callback, granted: false } );
 						grantNext( name );
 					} ),
 			};

@@ -30,9 +30,7 @@
 		const scope =
 			typeof window.ajaxurl === 'string'
 				? window.ajaxurl
-				: ( window.heartbeatSettings &&
-						window.heartbeatSettings.ajaxurl ) ||
-				  '';
+				: window.heartbeatSettings?.ajaxurl || '';
 		const scopedKey = scope + '|' + key;
 
 		const channel =
@@ -47,49 +45,37 @@
 		}
 
 		if ( hasLocks ) {
-			// Only visible tabs queue for the lock; a tab that takes over on becoming visible connects at once so followers don't wait an interval.
+			// Only visible tabs queue; one that takes over on becoming visible connects at once so followers don't wait an interval.
 			let pending = null;
 			let release = null;
 
 			const requestLeadership = function ( connectOnGrant ) {
-				if ( pending || release ) {
-					return;
-				}
-				const controller = new AbortController();
-				pending = controller;
+				const request = {};
+				pending = request;
 				navigator.locks
-					.request(
-						scopedKey,
-						{ signal: controller.signal },
-						function () {
-							// Resigned after the grant but before this ran; returning releases the lock.
-							if ( pending !== controller ) {
-								return;
-							}
-							pending = null;
-							isPingLeader = true;
-							if (
-								connectOnGrant &&
-								window.wp &&
-								window.wp.heartbeat &&
-								typeof window.wp.heartbeat.connectNow ===
-									'function'
-							) {
-								window.wp.heartbeat.connectNow();
-							}
-							return new Promise( function ( resolve ) {
-								release = resolve;
-							} );
+					.request( scopedKey, function () {
+						// Resigned or requested again since queuing; returning releases the lock.
+						if ( pending !== request ) {
+							return;
 						}
-					)
+						pending = null;
+						isPingLeader = true;
+						if (
+							connectOnGrant &&
+							typeof window.wp?.heartbeat?.connectNow ===
+								'function'
+						) {
+							window.wp.heartbeat.connectNow();
+						}
+						return new Promise( function ( resolve ) {
+							release = resolve;
+						} );
+					} )
 					.catch( function () {} );
 			};
 
 			const resignLeadership = function () {
-				if ( pending ) {
-					pending.abort();
-					pending = null;
-				}
+				pending = null;
 				if ( release ) {
 					release();
 					release = null;
