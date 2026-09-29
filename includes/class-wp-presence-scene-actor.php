@@ -60,7 +60,6 @@ final class WP_Presence_Scene_Actor {
 	 */
 	public function enter( $screen, $post_id = 0 ) {
 		$titles = array(
-			'dashboard' => __( 'Dashboard', 'presence-api' ),
 			'edit-post' => __( 'Posts', 'presence-api' ),
 			'post'      => __( 'Edit Post', 'presence-api' ),
 		);
