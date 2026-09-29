@@ -130,13 +130,19 @@ function wp_presence_debugger_admin_bar_node( $wp_admin_bar ) {
 				)
 			);
 		}
-		if ( count( $rows ) > 20 ) {
+		$overflow = count( $rows ) - 20;
+		if ( $overflow > 0 ) {
 			$wp_admin_bar->add_node(
 				array(
 					'parent' => 'presence-debug-rooms',
 					'id'     => $group . '-more',
-					/* translators: %s: Number of clients not listed. */
-					'title'  => esc_html( sprintf( __( '+%s more', 'presence-api' ), number_format_i18n( count( $rows ) - 20 ) ) ),
+					'title'  => esc_html(
+						sprintf(
+							/* translators: %s: Number of clients not listed. */
+							_n( '+%s more', '+%s more', $overflow, 'presence-api' ),
+							number_format_i18n( $overflow )
+						)
+					),
 					'meta'   => array( 'class' => 'presence-debug-more' ),
 				)
 			);
@@ -235,17 +241,27 @@ function wp_presence_debugger_admin_bar_assets() {
 		'lost'       => __( 'Connection lost', 'presence-api' ),
 	);
 
-	// Intl spells out the units and plurals in the page's own language.
+	// Register the plural string for POT extraction and translation tooling.
+	/* translators: %s: Number of seconds. */
+	_n_noop( '%ss', '%ss', 'presence-api' );
+
 	$js = sprintf(
 		'( function ( $ ) {
 			const node = document.getElementById( "wp-admin-bar-presence-debug" );
-			if ( ! node || ! window.wp || ! wp.heartbeat ) {
+			if ( ! node || ! window.wp || ! wp.heartbeat || ! wp.i18n ) {
 				return;
 			}
 			const i18n = %s;
-			const lang = document.documentElement.lang || undefined;
-			const seconds = new Intl.NumberFormat( lang, { style: "unit", unit: "second", unitDisplay: "narrow" } );
+			const { _n, sprintf } = wp.i18n;
 			let lastSend = Date.now();
+
+			function formatSeconds( count ) {
+				return sprintf(
+					/* translators: %s: Number of seconds. */
+					_n( "%ss", "%ss", count, "presence-api" ),
+					count
+				);
+			}
 
 			function render() {
 				// Core waits 120 seconds between beats while the window is in the background or the user is idle.
@@ -256,19 +272,19 @@ function wp_presence_debugger_admin_bar_assets() {
 				// Only a suspended Heartbeat stops sending; a lost connection keeps retrying on schedule.
 				const state = left < -10 ? "suspended" : ( wp.heartbeat.hasConnectionError() ? "lost" : "" );
 				node.classList.toggle( "is-lost", "lost" === state );
-				node.querySelector( ".presence-debug-countdown" ).textContent = state ? i18n[ state ] : seconds.format( Math.max( 0, left ) );
+				node.querySelector( ".presence-debug-countdown" ).textContent = state ? i18n[ state ] : formatSeconds( Math.max( 0, left ) );
 				node.querySelectorAll( "[data-presence-debug]" ).forEach( function ( el ) {
 					const key = el.dataset.presenceDebug;
 					if ( "interval" === key ) {
 						const mode = focused ? ( 5 === period ? i18n.fast : "" ) : i18n.background;
-						el.textContent = seconds.format( period ) + ( mode ? " (" + mode + ")" : "" );
+						el.textContent = formatSeconds( period ) + ( mode ? " (" + mode + ")" : "" );
 					} else if ( el.dataset.presenceDebugSeconds ) {
-						el.textContent = seconds.format( +el.dataset.presenceDebugSeconds );
+						el.textContent = formatSeconds( +el.dataset.presenceDebugSeconds );
 					}
 				} );
 				node.querySelectorAll( "[data-presence-debug-age]" ).forEach( function ( el ) {
 					el.dataset.presenceDebugT0 = el.dataset.presenceDebugT0 || Date.now();
-					el.textContent = seconds.format( Math.round( +el.dataset.presenceDebugAge + ( Date.now() - el.dataset.presenceDebugT0 ) / 1000 ) );
+					el.textContent = formatSeconds( Math.round( +el.dataset.presenceDebugAge + ( Date.now() - el.dataset.presenceDebugT0 ) / 1000 ) );
 				} );
 			}
 
@@ -383,7 +399,8 @@ function wp_presence_debugger_admin_bar_assets() {
 	wp_enqueue_style( 'presence-debugger-admin-bar' );
 	wp_add_inline_style( 'presence-debugger-admin-bar', $css );
 
-	wp_register_script( 'presence-debugger-admin-bar', false, array( 'jquery', 'heartbeat', 'wp-hooks' ), WP_PRESENCE_VERSION, true );
+	wp_register_script( 'presence-debugger-admin-bar', false, array( 'jquery', 'heartbeat', 'wp-hooks', 'wp-i18n' ), WP_PRESENCE_VERSION, true );
 	wp_enqueue_script( 'presence-debugger-admin-bar' );
+	wp_set_script_translations( 'presence-debugger-admin-bar', 'presence-api' );
 	wp_add_inline_script( 'presence-debugger-admin-bar', $js );
 }

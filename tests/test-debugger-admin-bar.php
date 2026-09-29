@@ -65,4 +65,49 @@ class WP_Test_Presence_Debugger_Admin_Bar extends WP_Presence_UnitTestCase {
 
 		$this->assertStringContainsString( 'beside-me', $markup );
 	}
+
+	/**
+	 * @covers ::wp_presence_debugger_admin_bar_node
+	 */
+	public function test_renders_more_link_with_pluralization() {
+		$admin = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $admin );
+		$room = 'postType/post:999';
+
+		wp_set_presence( $room, 'client-0', array(), $admin );
+		foreach ( self::factory()->user->create_many( 20 ) as $i => $user_id ) {
+			wp_set_presence( $room, 'client-' . ( $i + 1 ), array(), $user_id );
+		}
+
+		// 21 clients total in room -> 1 beyond 20.
+		$markup = wp_presence_debugger_admin_bar_markup();
+		$this->assertStringContainsString( '+1 more', $markup, 'Singular overflow (+1 more) should render.' );
+
+		// Add 4 more -> 25 clients total -> 5 beyond 20.
+		foreach ( self::factory()->user->create_many( 4 ) as $i => $user_id ) {
+			wp_set_presence( $room, 'client-extra-' . $i, array(), $user_id );
+		}
+		$markup = wp_presence_debugger_admin_bar_markup();
+		$this->assertStringContainsString( '+5 more', $markup, 'Plural overflow (+5 more) should render.' );
+	}
+
+	/**
+	 * @covers ::wp_presence_debugger_admin_bar_assets
+	 */
+	public function test_admin_bar_assets_enqueues_with_i18n() {
+		$admin = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $admin );
+
+		wp_presence_debugger_admin_bar_assets();
+
+		$scripts = wp_scripts();
+		$this->assertTrue( isset( $scripts->registered['presence-debugger-admin-bar'] ) );
+		$this->assertContains( 'wp-i18n', $scripts->registered['presence-debugger-admin-bar']->deps );
+
+		$inline_scripts = $scripts->get_data( 'presence-debugger-admin-bar', 'after' );
+		$inline_js      = is_array( $inline_scripts ) ? implode( "\n", $inline_scripts ) : (string) $inline_scripts;
+		$this->assertStringContainsString( 'formatSeconds', $inline_js );
+		$this->assertStringContainsString( '_n', $inline_js );
+		$this->assertStringNotContainsString( 'Intl.NumberFormat', $inline_js );
+	}
 }
