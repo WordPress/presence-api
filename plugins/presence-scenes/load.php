@@ -27,5 +27,6 @@ add_action(
 		}
 
 		require_once __DIR__ . '/scenes.php';
+		require_once __DIR__ . '/class-wp-presence-scene-actor.php';
 	}
 );

@@ -390,3 +390,30 @@ function wp_presence_scene_actor_name( $i ) {
 	/* translators: %d: Actor number. */
 	return sprintf( __( 'Actor %d', 'presence-scenes' ), $i + 1 );
 }
+
+/**
+ * Adds a note to the running scene's report, once per distinct problem.
+ *
+ * @since 0.1.0
+ *
+ * @access private
+ *
+ * @param array  $run     The running scene.
+ * @param string $level   One of pass, fail, warning or info.
+ * @param string $message The note.
+ */
+function wp_presence_scene_note( array &$run, $level, $message ) {
+	if ( 'fail' === $level || 'warning' === $level ) {
+		foreach ( $run['notes'] as $note ) {
+			if ( $note['level'] === $level && $note['message'] === $message ) {
+				return;
+			}
+		}
+	}
+
+	$run['notes'][] = array(
+		't'       => max( 0, time() - $run['started'] ),
+		'level'   => $level,
+		'message' => $message,
+	);
+}
