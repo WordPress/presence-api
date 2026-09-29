@@ -314,4 +314,11 @@ class WP_Test_Presence_Scenes extends WP_Presence_UnitTestCase {
 		$this->assertWPError( wp_presence_scene_authenticate( get_userdata( $run['cast'][0] ) ) );
 		$this->assertInstanceOf( WP_User::class, wp_presence_scene_authenticate( get_userdata( self::factory()->user->create() ) ) );
 	}
+
+	/**
+	 * @covers ::wp_presence_scene_casting
+	 */
+	public function test_casting_names_each_role_once() {
+		$this->assertSame( 'Author and Editor', wp_presence_scene_casting( array( 'cast' => array( 'author', 'editor', 'author' ) ) ) );
+	}
 }
