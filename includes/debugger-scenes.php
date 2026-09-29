@@ -33,6 +33,9 @@ function wp_presence_scene_places() {
  * A scene is data only: every cue is an action from a fixed list, acted
  * through WP_Presence_Scene_Actor on posts the scene writes itself.
  *
+ * Experimental: this exists only in development checkouts with WP_DEBUG on,
+ * never in the plugin's release zip, and may change without notice.
+ *
  * @since 0.12.0
  *
  * @param string|array $scene Path to a scene.json file, or the same shape as an array. See schemas/scene.json.
@@ -370,6 +373,8 @@ function wp_get_presence_scenes() {
 
 		/**
 		 * Fires when the debugger first needs its scenes, for wp_register_presence_scene() calls.
+		 *
+		 * Experimental, and missing from the plugin's release zip, like the function.
 		 *
 		 * @since 0.12.0
 		 */

@@ -127,7 +127,6 @@ if ( file_exists( WP_PRESENCE_PLUGIN_DIR . 'includes/debugger-scenes.php' ) ) {
 
 	if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 		add_action( 'wp_presence_scenes_init', 'wp_presence_register_default_scenes' );
-		add_action( 'wp_presence_debugger_menu', 'wp_presence_scene_admin_bar_nodes' );
 		add_action( 'admin_post_presence_scene', 'wp_presence_scene_admin_post' );
 		add_filter( 'heartbeat_received', 'wp_presence_scene_heartbeat_received', 12, 2 );
 		add_action( 'admin_enqueue_scripts', 'wp_presence_scene_assets', 11 );

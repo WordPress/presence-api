@@ -143,14 +143,9 @@ function wp_presence_debugger_admin_bar_node( $wp_admin_bar ) {
 		}
 	}
 
-	/**
-	 * Fires after the debugger's own rows, for sections such as scenes.
-	 *
-	 * @since 0.12.0
-	 *
-	 * @param WP_Admin_Bar $wp_admin_bar The admin bar instance.
-	 */
-	do_action( 'wp_presence_debugger_menu', $wp_admin_bar );
+	if ( function_exists( 'wp_presence_scene_admin_bar_nodes' ) ) {
+		wp_presence_scene_admin_bar_nodes( $wp_admin_bar );
+	}
 }
 
 /**
