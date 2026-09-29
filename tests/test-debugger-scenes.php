@@ -136,6 +136,7 @@ class WP_Test_Presence_Debugger_Scenes extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_scene_direct
 	 * @covers ::wp_presence_scene_play
 	 * @covers ::wp_presence_scene_strike
+	 * @covers ::wp_presence_scene_problems
 	 * @covers ::wp_presence_scene_delete_users
 	 */
 	public function test_stopping_a_scene_leaves_nothing_behind() {

@@ -420,6 +420,25 @@ function wp_presence_scene_note( array &$run, $level, $message ) {
 }
 
 /**
+ * Picks the failures and warnings out of a scene's notes.
+ *
+ * @since 0.12.0
+ *
+ * @access private
+ *
+ * @param array[] $notes Notes from wp_presence_scene_note().
+ * @return array[] The notes that are problems.
+ */
+function wp_presence_scene_problems( array $notes ) {
+	return array_filter(
+		$notes,
+		function ( $note ) {
+			return 'fail' === $note['level'] || 'warning' === $note['level'];
+		}
+	);
+}
+
+/**
  * Returns how long a scene's cast may exist, leaving time for a closed tab's run to be swept.
  *
  * @since 0.12.0
@@ -732,14 +751,7 @@ function wp_presence_scene_strike( array $run ) {
 		}
 	}
 
-	$problems = count(
-		array_filter(
-			$run['notes'],
-			function ( $note ) {
-				return 'fail' === $note['level'] || 'warning' === $note['level'];
-			}
-		)
-	);
+	$problems = count( wp_presence_scene_problems( $run['notes'] ) );
 
 	$played = number_format_i18n( count( $run['done'] ) );
 	$total  = number_format_i18n( count( $run['scene']['cues'] ) );
@@ -1079,12 +1091,7 @@ function wp_presence_scene_admin_bar_nodes( $wp_admin_bar ) {
 			$value = ( $paused ? '<span class="screen-reader-text">' . esc_html__( 'Paused:', 'presence-api' ) . ' </span>' : '<span class="presence-debug-scene-busy" aria-hidden="true"></span>' ) . esc_html( sprintf( __( '%1$s / %2$s', 'presence-api' ), number_format_i18n( count( $run['done'] ) ), number_format_i18n( count( $scene['cues'] ) ) ) );
 		} elseif ( $result ) {
 			// The last note is the summary, which only counts the others.
-			$problems = array_filter(
-				array_slice( $result['notes'], 0, -1 ),
-				function ( $note ) {
-					return 'fail' === $note['level'] || 'warning' === $note['level'];
-				}
-			);
+			$problems = wp_presence_scene_problems( array_slice( $result['notes'], 0, -1 ) );
 			if ( $problems ) {
 				/* translators: %s: Number of problems. */
 				$value = '<span class="presence-debug-scene-result" aria-hidden="true"></span>' . esc_html( number_format_i18n( count( $problems ) ) ) . '<span class="screen-reader-text">' . esc_html( sprintf( _n( '%s problem', '%s problems', count( $problems ), 'presence-api' ), number_format_i18n( count( $problems ) ) ) ) . '</span>';
