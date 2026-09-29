@@ -621,14 +621,14 @@ function wp_presence_scene_direct() {
 		}
 	}
 
-	WP_Upgrader::release_lock( 'wp_presence_scene' );
-
 	if ( count( $run['done'] ) === count( $scene['cues'] ) ) {
 		wp_presence_scene_strike( $run );
+		WP_Upgrader::release_lock( 'wp_presence_scene' );
 		return null;
 	}
 
 	update_option( 'wp_presence_scene', $run, false );
+	WP_Upgrader::release_lock( 'wp_presence_scene' );
 
 	return $run;
 }
