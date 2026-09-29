@@ -11,6 +11,12 @@
 	},
 	"steps": [
 		{
+			"step": "defineWpConfigConsts",
+			"consts": {
+				"WP_DEBUG": true
+			}
+		},
+		{
 			"step": "installPlugin",
 			"pluginData": {
 				"resource": "wordpress.org/plugins",
@@ -18,6 +24,14 @@
 			},
 			"options": {
 				"activate": true
+			}
+		},
+		{
+			"step": "writeFile",
+			"path": "/wordpress/wp-content/plugins/presence-api/includes/debugger-admin-bar.php",
+			"data": {
+				"resource": "url",
+				"url": "https://raw.githubusercontent.com/WordPress/presence-api/v0.12.1/plugins/presence-api/includes/debugger-admin-bar.php"
 			}
 		},
 		{

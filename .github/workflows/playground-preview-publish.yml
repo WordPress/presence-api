@@ -161,11 +161,10 @@ jobs:
 
           # writeFile steps are matched by trailing path component so the
           # seeder and helper get distinct URLs without depending on the
-          # order they appear in the blueprint. WP_DEBUG goes first so
-          # reviewers see notices and the debug-only tools.
+          # order they appear in the blueprint.
           transform() {
             jq --arg plugin "$1" --arg seeder "$2" --arg helper "$3" '
-              .steps |= [ { "step": "defineWpConfigConsts", "consts": { "WP_DEBUG": true } } ] + map(
+              .steps |= map(
                 if .step == "installPlugin" and (.pluginData.resource == "url") then
                   .pluginData.url = $plugin
                 elif .step == "writeFile" and (.data.resource == "url") then

@@ -41,6 +41,8 @@ jobs:
           mkdir -p build/presence-api
           rsync -a --exclude-from='plugins/presence-api/.distignore' plugins/presence-api/ build/presence-api/
           cp LICENSE build/presence-api/
+          # The blueprints run with WP_DEBUG, so ship the debug-only tools that releases leave out.
+          cp plugins/presence-api/includes/debugger-admin-bar.php plugins/presence-api/includes/db-viewer.php build/presence-api/includes/
           (cd build && zip -qr presence-api.zip presence-api/)
 
       # Same guard as the PR preview: a `.distignore` that drifts out of
