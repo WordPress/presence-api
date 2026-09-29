@@ -1,13 +1,12 @@
 {
 	"core": null,
-	"plugins": [ "./plugins/presence-api", "https://downloads.wordpress.org/plugin/classic-editor.zip" ],
+	"plugins": [ "./plugins/presence-api", "./plugins/presence-scenes", "https://downloads.wordpress.org/plugin/classic-editor.zip" ],
 	"config": {
 		"WP_DEBUG": true,
 		"WP_DEBUG_LOG": true,
 		"WP_TESTS_PHPUNIT_POLYFILLS_PATH": "/var/www/html/presence-api/vendor/yoast/phpunit-polyfills"
 	},
 	"mappings": {
-		"presence-api": ".",
-		"wp-content/plugins/presence-scenes": "./plugins/presence-scenes"
+		"presence-api": "."
 	}
 }
