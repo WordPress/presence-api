@@ -434,6 +434,24 @@ function wp_presence_scene_lifetime( array $scene ) {
 }
 
 /**
+ * Moves the sweep and every cast member's expiry to when the scene expires.
+ *
+ * @since 0.12.0
+ *
+ * @access private
+ *
+ * @param array $run The running scene.
+ */
+function wp_presence_scene_schedule_sweep( array $run ) {
+	foreach ( $run['cast'] as $user_id ) {
+		update_user_meta( $user_id, '_wp_presence_scene', $run['expires'] );
+	}
+
+	wp_clear_scheduled_hook( 'wp_presence_scene_sweep' );
+	wp_schedule_single_event( $run['expires'], 'wp_presence_scene_sweep' );
+}
+
+/**
  * Takes the lock that casting or playing a scene needs, so two requests cannot do either twice.
  *
  * @since 0.12.0
@@ -568,7 +586,7 @@ function wp_presence_scene_start( $name ) {
 	}
 
 	// Strikes the scene if its tab closes before the last cue.
-	wp_schedule_single_event( $run['expires'], 'wp_presence_scene_sweep' );
+	wp_presence_scene_schedule_sweep( $run );
 
 	wp_presence_scene_direct();
 
@@ -910,11 +928,7 @@ function wp_presence_scene_admin_post() {
 						$run['expires'] += $paused - HOUR_IN_SECONDS;
 						unset( $run['paused'] );
 					}
-					foreach ( $run['cast'] as $user_id ) {
-						update_user_meta( $user_id, '_wp_presence_scene', $run['expires'] );
-					}
-					wp_clear_scheduled_hook( 'wp_presence_scene_sweep' );
-					wp_schedule_single_event( $run['expires'], 'wp_presence_scene_sweep' );
+					wp_presence_scene_schedule_sweep( $run );
 					update_option( 'wp_presence_scene', $run, false );
 				}
 			},
