@@ -831,7 +831,7 @@ function wp_presence_scene_actor_name( $i ) {
 }
 
 /**
- * Lists the users a scene creates, such as "Actor 1 and Actor 2 as Editor".
+ * Lists the users a scene creates, one per line, such as "• Actor 1 (Editor)".
  *
  * @since 0.12.0
  *
@@ -840,18 +840,13 @@ function wp_presence_scene_actor_name( $i ) {
  */
 function wp_presence_scene_casting( array $scene ) {
 	$role_names = wp_roles()->role_names;
-	$roles      = array();
+	$lines      = array();
 	foreach ( array_values( $scene['cast'] ) as $i => $part ) {
-		$roles[ $part['role'] ][] = wp_presence_scene_actor_name( $i );
+		/* translators: 1: Actor, 2: Role. */
+		$lines[] = '• ' . sprintf( __( '%1$s (%2$s)', 'presence-api' ), wp_presence_scene_actor_name( $i ), translate_user_role( $role_names[ $part['role'] ] ?? $part['role'] ) );
 	}
 
-	$parts = array();
-	foreach ( $roles as $role => $people ) {
-		/* translators: 1: Actors, 2: Role. */
-		$parts[] = sprintf( __( '%1$s as %2$s', 'presence-api' ), wp_sprintf( '%l', $people ), translate_user_role( $role_names[ $role ] ?? $role ) );
-	}
-
-	return implode( ', ', $parts );
+	return implode( "\n", $lines );
 }
 
 /**
@@ -927,10 +922,11 @@ function wp_presence_scene_admin_bar_nodes( $wp_admin_bar ) {
 		}
 
 		/* translators: %s: Scene label. */
-		$plan = sprintf( __( 'Run "%s"?', 'presence-api' ), $scene['label'] ) . "\n\n"
-			/* translators: 1: Number of users, 2: Actors and their roles. */
-			. sprintf( _n( 'Creates %1$s user: %2$s.', 'Creates %1$s users: %2$s.', count( $scene['cast'] ), 'presence-api' ), number_format_i18n( count( $scene['cast'] ) ), wp_presence_scene_casting( $scene ) ) . "\n\n"
-			. __( 'Deletes them and their posts when it ends.', 'presence-api' );
+		$plan = sprintf( __( 'Run “%s”?', 'presence-api' ), $scene['label'] ) . "\n\n"
+			/* translators: %s: Number of users. */
+			. sprintf( _n( 'Creates %s user:', 'Creates %s users:', count( $scene['cast'] ), 'presence-api' ), number_format_i18n( count( $scene['cast'] ) ) ) . "\n"
+			. wp_presence_scene_casting( $scene ) . "\n\n"
+			. __( 'Deletes them and their posts when the scene ends.', 'presence-api' );
 
 		$url     = function ( $args ) {
 			return esc_url( wp_nonce_url( add_query_arg( array( 'action' => 'presence_scene' ) + $args, admin_url( 'admin-post.php' ) ), 'wp_presence_scene' ) );
