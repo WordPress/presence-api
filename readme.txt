@@ -26,6 +26,7 @@ On a multisite network, Network Admin gets its own view of the same data: a Who'
 * Active Posts dashboard widget grouped by post
 * Editors column in the post list
 * Online filter in the Users list
+* AI agents labelled in Who's Online, the admin bar, and the Editors column, once a plugin such as Agent Users marks them
 
 = For Developers =
 
