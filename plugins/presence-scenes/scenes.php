@@ -463,6 +463,29 @@ function wp_presence_scene_problems( array $notes ) {
 }
 
 /**
+ * Returns how long the parts of a run take.
+ *
+ * @since 0.1.0
+ *
+ * @access private
+ *
+ * @return int[] {
+ *     @type int $beat      Seconds between each actor's Heartbeats.
+ *     @type int $abandoned Seconds a run can go unplayed, or its lock held, before its command is taken to have died.
+ *     @type int $wait      Seconds a command waits for another to release the lock.
+ *     @type int $grace     Seconds past its last step before a run expires.
+ * }
+ */
+function wp_presence_scene_timings() {
+	return array(
+		'beat'      => 15,
+		'abandoned' => 30,
+		'wait'      => 5,
+		'grace'     => 10 * MINUTE_IN_SECONDS,
+	);
+}
+
+/**
  * Takes the lock that casting or playing a scene needs, so two commands cannot do either twice.
  *
  * @since 0.1.0
@@ -476,11 +499,11 @@ function wp_presence_scene_lock( $wait = 0 ) {
 	require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 
 	$until = microtime( true ) + $wait;
-	while ( ! WP_Upgrader::create_lock( 'wp_presence_scene', 30 ) ) {
+	while ( ! WP_Upgrader::create_lock( 'wp_presence_scene', wp_presence_scene_timings()['abandoned'] ) ) {
 		if ( microtime( true ) >= $until ) {
 			return false;
 		}
-		usleep( 250000 );
+		sleep( 1 );
 	}
 
 	return true;
@@ -522,7 +545,7 @@ function wp_presence_scene_locked( callable $callback, $wait = 0 ) {
  * @return array|WP_Error The running scene, or the error that stopped a user being created.
  */
 function wp_presence_scene_cast( array $scene ) {
-	$number = (int) get_option( 'wp_presence_scene_runs', 1000 ) + 1;
+	$number = (int) get_option( 'wp_presence_scene_runs', 0 ) + 1;
 	update_option( 'wp_presence_scene_runs', $number, false );
 
 	$run = array(
@@ -532,8 +555,7 @@ function wp_presence_scene_cast( array $scene ) {
 		'scene'   => $scene,
 		'run'     => $number,
 		'started' => time(),
-		// Leaves time for a dead command's run to be swept.
-		'expires' => time() + $scene['duration'] + 10 * MINUTE_IN_SECONDS,
+		'expires' => time() + $scene['duration'] + wp_presence_scene_timings()['grace'],
 		'cast'    => array(),
 		'posts'   => array(),
 		'done'    => array(),
@@ -549,7 +571,7 @@ function wp_presence_scene_cast( array $scene ) {
 			array(
 				'user_login'   => $login,
 				'user_email'   => $login . '@example.com',
-				'user_pass'    => wp_generate_password( 24 ),
+				'user_pass'    => wp_generate_password(),
 				'display_name' => wp_presence_scene_actor_name( $i ),
 				'first_name'   => wp_presence_scene_actor_name( $i ),
 				'role'         => $role,
@@ -666,8 +688,7 @@ function wp_presence_scene_play( array $run, $now = null ) {
 		}
 	}
 
-	// Matches core's steady Heartbeat interval, so every actor stays well inside the timeout.
-	if ( $now - $run['beat'] >= 15 ) {
+	if ( $now - $run['beat'] >= wp_presence_scene_timings()['beat'] ) {
 		$run['beat'] = $now;
 		foreach ( $cast as $actor ) {
 			try {
@@ -748,9 +769,10 @@ function wp_presence_scene_strike( array $run ) {
  * @param bool $all Optional. Strike everything regardless of expiry. Default false.
  */
 function wp_presence_scene_sweep( $all = false ) {
-	$due = function ( $run ) use ( $all ) {
-		// A run nobody has played for 30 seconds lost its command, such as to Ctrl+C.
-		return is_array( $run ) && ( $all || $run['expires'] <= time() || $run['ticked'] < time() - 30 );
+	$timings = wp_presence_scene_timings();
+	$due     = function ( $run ) use ( $all, $timings ) {
+		// A run nobody is playing lost its command, such as to Ctrl+C.
+		return is_array( $run ) && ( $all || $run['expires'] <= time() || $run['ticked'] < time() - $timings['abandoned'] );
 	};
 
 	if ( $due( get_option( 'wp_presence_scene' ) ) ) {
@@ -761,7 +783,7 @@ function wp_presence_scene_sweep( $all = false ) {
 					wp_presence_scene_strike( $run );
 				}
 			},
-			5
+			$timings['wait']
 		);
 	}
 
@@ -791,7 +813,7 @@ function wp_presence_scene_actors( $all = false ) {
 	$query['fields'] = array( 'ID', 'user_login' );
 	$user_ids        = array();
 	foreach ( get_users( $query ) as $user ) {
-		if ( preg_match( '/^actor[1-7]run\d+$/', $user->user_login ) ) {
+		if ( preg_match( '/^actor\d+run\d+$/', $user->user_login ) ) {
 			$user_ids[] = (int) $user->ID;
 		}
 	}
