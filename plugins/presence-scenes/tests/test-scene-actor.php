@@ -60,13 +60,16 @@ class WP_Test_Presence_Scene_Actor extends WP_Presence_UnitTestCase {
 		$actor->visit( 'posts' );
 		$actor->check_online();
 		$actor->write( 'Draft' );
-		$actor->type( $run['posts'][0], 'A second paragraph.' );
-		$actor->close( $run['posts'][0] );
+		$actor->type( $run['posts'][0], 'Saved to C:\\drafts.' );
+		$actor->write( 'Another draft' );
+		$this->assertSame( '', get_post_meta( $run['posts'][0], '_edit_lock', true ) );
+		$actor->close( $run['posts'][1] );
 		$actor->leave();
 		$actor->check_offline();
 
-		$this->assertStringContainsString( 'A second paragraph.', get_post( $run['posts'][0] )->post_content );
-		$this->assertSame( '', get_post_meta( $run['posts'][0], '_edit_lock', true ) );
+		$this->assertStringContainsString( 'Saved to C:\\drafts.', get_post( $run['posts'][0] )->post_content );
+		$this->assertSame( '', get_post_meta( $run['posts'][1], '_edit_lock', true ) );
+		$this->assertSame( 0, get_current_user_id() );
 	}
 
 	/**

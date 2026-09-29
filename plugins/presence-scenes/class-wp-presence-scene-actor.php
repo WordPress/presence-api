@@ -81,11 +81,13 @@ final class WP_Presence_Scene_Actor {
 		$post_id = $this->act(
 			function () use ( $title ) {
 				return wp_insert_post(
-					array(
-						'post_title'   => $title,
-						'post_content' => self::paragraph( $title ),
-						'post_status'  => 'draft',
-						'post_author'  => $this->ID,
+					wp_slash(
+						array(
+							'post_title'   => $title,
+							'post_content' => self::paragraph( $title ),
+							'post_status'  => 'draft',
+							'post_author'  => $this->ID,
+						)
 					),
 					true
 				);
@@ -140,9 +142,11 @@ final class WP_Presence_Scene_Actor {
 		$result = $this->act(
 			function () use ( $post, $text ) {
 				return wp_update_post(
-					array(
-						'ID'           => $post->ID,
-						'post_content' => $post->post_content . "\n\n" . self::paragraph( $text ),
+					wp_slash(
+						array(
+							'ID'           => $post->ID,
+							'post_content' => $post->post_content . "\n\n" . self::paragraph( $text ),
+						)
 					),
 					true
 				);
@@ -285,6 +289,10 @@ final class WP_Presence_Scene_Actor {
 	 * @param bool    $lock Whether to take its lock.
 	 */
 	private function edit( WP_Post $post, $lock ) {
+		if ( (int) ( $this->run['clients'][ $this->ID ]['post'] ?? 0 ) !== $post->ID ) {
+			$this->leave_editor();
+		}
+
 		if ( $lock ) {
 			$this->lock( $post->ID );
 		}
