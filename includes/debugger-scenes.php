@@ -14,6 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 0.12.0
  *
+ * @access private
+ *
  * @return array[] Places keyed by the name a scene uses.
  */
 function wp_presence_scene_places() {
@@ -39,7 +41,7 @@ function wp_presence_scene_places() {
  * @since 0.12.0
  *
  * @param string|array $scene Path to a scene.json file, or the same shape as an array. See schemas/scene.json.
- * @return bool Whether the scene was registered.
+ * @return array|false The registered scene, or false when it was refused.
  */
 function wp_register_presence_scene( $scene ) {
 	global $wp_presence_scenes;
@@ -72,7 +74,7 @@ function wp_register_presence_scene( $scene ) {
 
 	$wp_presence_scenes[ $prepared['name'] ] = $prepared;
 
-	return true;
+	return $prepared;
 }
 
 /**
@@ -81,6 +83,8 @@ function wp_register_presence_scene( $scene ) {
  * The action name maps to the WP_Presence_Scene_Actor method that plays it, so takeOver plays take_over().
  *
  * @since 0.12.0
+ *
+ * @access private
  *
  * @return array[] Actions keyed by name.
  */
@@ -416,6 +420,8 @@ function wp_presence_scene_note( array &$run, $level, $message ) {
  *
  * @since 0.12.0
  *
+ * @access private
+ *
  * @param array $scene A registered scene.
  * @return int Seconds.
  */
@@ -451,6 +457,8 @@ function wp_presence_scene_lock( $wait = 0 ) {
  * Casts a scene and plays its opening cues.
  *
  * @since 0.12.0
+ *
+ * @access private
  *
  * @param string $name Scene name.
  * @return bool Whether the scene started.
@@ -530,6 +538,8 @@ function wp_presence_scene_start( $name ) {
  * Plays every cue that is due, keeps the cast beating, and strikes a finished scene.
  *
  * @since 0.12.0
+ *
+ * @access private
  *
  * @return array|null The running scene, or null when none is running.
  */
@@ -628,6 +638,8 @@ function wp_presence_scene_direct() {
  *
  * @since 0.12.0
  *
+ * @access private
+ *
  * @param array $run The running scene.
  */
 function wp_presence_scene_strike( array $run ) {
@@ -687,6 +699,8 @@ function wp_presence_scene_strike( array $run ) {
  * Strikes an abandoned scene and deletes any cast member past their expiry.
  *
  * @since 0.12.0
+ *
+ * @access private
  *
  * @param bool $all Optional. Strike everything regardless of expiry. Default false.
  */
@@ -769,6 +783,8 @@ function wp_presence_scene_delete_users( array $user_ids ) {
  *
  * @since 0.12.0
  *
+ * @access private
+ *
  * @return bool Whether the current user can direct scenes.
  */
 function wp_presence_scene_user_can_direct() {
@@ -779,6 +795,8 @@ function wp_presence_scene_user_can_direct() {
  * Refuses to log in as an actor.
  *
  * @since 0.12.0
+ *
+ * @access private
  *
  * @param WP_User|WP_Error $user The user logging in.
  * @return WP_User|WP_Error The user, or an error for an actor.
@@ -795,6 +813,8 @@ function wp_presence_scene_authenticate( $user ) {
  * Handles the debugger's start, pause, resume and cut links.
  *
  * @since 0.12.0
+ *
+ * @access private
  */
 function wp_presence_scene_admin_post() {
 	if ( ! wp_presence_scene_user_can_direct() ) {
@@ -841,6 +861,8 @@ function wp_presence_scene_admin_post() {
  *
  * @since 0.12.0
  *
+ * @access private
+ *
  * @param array $response Heartbeat response data.
  * @param array $data     Data received from the client.
  * @return array The Heartbeat response.
@@ -881,6 +903,8 @@ function wp_presence_scene_heartbeat_received( $response, $data ) {
  *
  * @since 0.12.0
  *
+ * @access private
+ *
  * @param int $i Zero-based index of the part.
  * @return string
  */
@@ -893,6 +917,8 @@ function wp_presence_scene_actor_name( $i ) {
  * Lists the users a scene creates, one per line, such as "• Actor 1 (Editor)".
  *
  * @since 0.12.0
+ *
+ * @access private
  *
  * @param array $scene A registered scene.
  * @return string
@@ -912,6 +938,8 @@ function wp_presence_scene_casting( array $scene ) {
  * Adds a Scenes section to the debugger menu, listing every step a scene will take before it can run.
  *
  * @since 0.12.0
+ *
+ * @access private
  *
  * @param WP_Admin_Bar $wp_admin_bar The admin bar instance.
  */
@@ -1052,6 +1080,8 @@ function wp_presence_scene_admin_bar_nodes( $wp_admin_bar ) {
  * Adds the scene styles, controls and console report to the debugger's assets.
  *
  * @since 0.12.0
+ *
+ * @access private
  */
 function wp_presence_scene_assets() {
 	if ( ! wp_script_is( 'presence-debugger-admin-bar' ) ) {
@@ -1277,6 +1307,8 @@ JS
  * Registers the built-in scenes.
  *
  * @since 0.12.0
+ *
+ * @access private
  */
 function wp_presence_register_default_scenes() {
 	foreach ( (array) glob( dirname( __DIR__ ) . '/scenes/*.json' ) as $file ) {
@@ -1288,6 +1320,8 @@ function wp_presence_register_default_scenes() {
  * Strikes every scene and cast member, for plugin deactivation.
  *
  * @since 0.12.0
+ *
+ * @access private
  */
 function wp_presence_scene_sweep_all() {
 	wp_presence_scene_sweep( true );

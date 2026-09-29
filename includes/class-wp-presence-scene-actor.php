@@ -13,6 +13,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * One cast member, acting as their own user through core APIs.
  *
  * @since 0.12.0
+ *
+ * @access private
  */
 final class WP_Presence_Scene_Actor {
 
