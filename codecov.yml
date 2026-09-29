@@ -44,7 +44,10 @@ ignore:
   # Only register hooks, and run during bootstrap before coverage starts.
   - "plugins/presence-api/includes/default-filters.php"
   - "plugins/presence-api/includes/ms-default-filters.php"
+  - "plugins/presence-scenes/load.php"
+  - "plugins/presence-scenes/uninstall.php"
   - "plugins/presence-api/tests/**"
+  - "plugins/presence-scenes/tests/**"
   - "tests/**"
   - "plugins/presence-api/assets/**"
   - "blueprint.json"

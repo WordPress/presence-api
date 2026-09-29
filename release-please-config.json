@@ -19,7 +19,8 @@
 	],
 	"packages": {
 		".": {
-			"package-name": "presence-api"
+			"package-name": "presence-api",
+			"exclude-paths": [ "plugins/presence-scenes" ]
 		}
 	}
 }

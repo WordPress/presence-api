@@ -16,10 +16,14 @@
 			<exclude>plugins/presence-api/tests/class-wp-presence-unittestcase.php</exclude>
 			<exclude>plugins/presence-api/tests/class-wp-presence-network-unittestcase.php</exclude>
 		</testsuite>
+		<testsuite name="presence-scenes">
+			<directory prefix="test-" suffix=".php">plugins/presence-scenes/</directory>
+		</testsuite>
 	</testsuites>
 	<coverage>
 		<include>
 			<directory suffix=".php">plugins/presence-api/includes/</directory>
+			<directory suffix=".php">plugins/presence-scenes/</directory>
 		</include>
 		<exclude>
 			<!--
@@ -33,6 +37,9 @@
 			<!-- Only register hooks, and run during bootstrap before coverage starts. -->
 			<file>plugins/presence-api/includes/default-filters.php</file>
 			<file>plugins/presence-api/includes/ms-default-filters.php</file>
+			<file>plugins/presence-scenes/load.php</file>
+			<file>plugins/presence-scenes/uninstall.php</file>
+			<directory>plugins/presence-scenes/tests/</directory>
 		</exclude>
 	</coverage>
 </phpunit>

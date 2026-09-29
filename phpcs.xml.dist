@@ -11,6 +11,7 @@
 	<file>plugins/presence-api/presence-api.php</file>
 	<file>plugins/presence-api/includes/</file>
 	<file>plugins/presence-api/uninstall.php</file>
+	<file>plugins/presence-scenes/</file>
 
 	<!-- Exclude test and demo files from coding standards. -->
 	<exclude-pattern>tests/</exclude-pattern>
@@ -37,7 +38,14 @@
 	<rule ref="PHPCompatibilityWP"/>
 
 	<!-- Verify text domain. -->
-	<config name="text_domain" value="presence-api"/>
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="presence-api"/>
+				<element value="presence-scenes"/>
+			</property>
+		</properties>
+	</rule>
 
 	<!-- Set minimum supported WP version for deprecated function checks. -->
 	<config name="minimum_wp_version" value="7.0"/>
