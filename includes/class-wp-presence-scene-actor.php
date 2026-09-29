@@ -120,7 +120,7 @@ final class WP_Presence_Scene_Actor {
 				return wp_insert_post(
 					array(
 						'post_title'   => $title,
-						'post_content' => "<!-- wp:paragraph -->\n<p>" . esc_html( $title ) . "</p>\n<!-- /wp:paragraph -->",
+						'post_content' => get_comment_delimited_block_content( 'core/paragraph', array(), '<p>' . esc_html( $title ) . '</p>' ),
 						'post_status'  => 'draft',
 						'post_author'  => $this->ID,
 					),
@@ -199,7 +199,7 @@ final class WP_Presence_Scene_Actor {
 				return wp_update_post(
 					array(
 						'ID'           => $post->ID,
-						'post_content' => $post->post_content . "\n\n<!-- wp:paragraph -->\n<p>" . esc_html( $text ) . "</p>\n<!-- /wp:paragraph -->",
+						'post_content' => $post->post_content . "\n\n" . get_comment_delimited_block_content( 'core/paragraph', array(), '<p>' . esc_html( $text ) . '</p>' ),
 					),
 					true
 				);
