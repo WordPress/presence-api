@@ -3,7 +3,7 @@ Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas,
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.1
-Stable tag: 0.12.0
+Stable tag: 0.12.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -66,6 +66,9 @@ For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/presence-api/blob/main/CHANGELOG.md
 
+= 0.12.1 =
+* Translate Heartbeat debugger plurals and units ([#660](https://github.com/WordPress/presence-api/issues/660)).
+
 = 0.12.0 =
 * Add an admin bar debugger and remove the Dashboard widget ([#652](https://github.com/WordPress/presence-api/issues/652)).
 * Label agent presence rows across the admin UI ([#653](https://github.com/WordPress/presence-api/issues/653)).
@@ -111,7 +114,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 * List everyone online in the admin bar and keep only their location behind the cap ([#590](https://github.com/WordPress/presence-api/issues/590)).
 * Skip an unchanged editor tick's presence write ([#553](https://github.com/WordPress/presence-api/issues/553)).
 * Store the recording option so reading it costs no query ([#552](https://github.com/WordPress/presence-api/issues/552)).
-
-= 0.8.0 =
-* Add wp_presence_exchange() and wp_presence_leave() ([#546](https://github.com/WordPress/presence-api/issues/546)).
-* Say when Heartbeat cannot keep presence current ([#544](https://github.com/WordPress/presence-api/issues/544)).
