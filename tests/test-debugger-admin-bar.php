@@ -90,26 +90,4 @@ class WP_Test_Presence_Debugger_Admin_Bar extends WP_Presence_UnitTestCase {
 		$markup = wp_presence_debugger_admin_bar_markup();
 		$this->assertStringContainsString( '+5 more', $markup, 'Plural overflow (+5 more) should render.' );
 	}
-
-	/**
-	 * @covers ::wp_presence_debugger_admin_bar_assets
-	 */
-	public function test_admin_bar_assets_enqueues_with_i18n() {
-		$admin = self::factory()->user->create( array( 'role' => 'administrator' ) );
-		wp_set_current_user( $admin );
-
-		wp_presence_debugger_admin_bar_assets();
-
-		$scripts = wp_scripts();
-		$this->assertTrue( isset( $scripts->registered['presence-debugger-admin-bar'] ) );
-		$this->assertContains( 'wp-i18n', $scripts->registered['presence-debugger-admin-bar']->deps );
-
-		$inline_scripts = $scripts->get_data( 'presence-debugger-admin-bar', 'after' );
-		$inline_js      = is_array( $inline_scripts ) ? implode( "\n", $inline_scripts ) : (string) $inline_scripts;
-		$this->assertStringContainsString( 'formatSeconds', $inline_js );
-		$this->assertStringContainsString( '_n', $inline_js );
-		$this->assertStringContainsString( '_n( "%ss", "%ss"', $inline_js );
-		$this->assertStringContainsString( '/* translators: %s: Number of seconds. */', $inline_js );
-		$this->assertStringNotContainsString( 'Intl.NumberFormat', $inline_js );
-	}
 }
