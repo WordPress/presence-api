@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.12.0](https://github.com/WordPress/presence-api/compare/v0.11.0...v0.12.0) (2026-09-29)
+
+
+### Features
+
+* add an admin bar debugger and remove the Dashboard widget ([#652](https://github.com/WordPress/presence-api/issues/652)) ([e58c54c](https://github.com/WordPress/presence-api/commit/e58c54ce212e5051ff4a9b361c7317be2407298a))
+* label agent presence rows across the admin UI ([#653](https://github.com/WordPress/presence-api/issues/653)) ([ff02bf0](https://github.com/WordPress/presence-api/commit/ff02bf0243b7290be78d4c62f4b55d11b7d31d0a))
+* let plugins add rows and indicators to the debugger ([#666](https://github.com/WordPress/presence-api/issues/666)) ([40d36a2](https://github.com/WordPress/presence-api/commit/40d36a237c1ca2460e15b7ef1d2044ac118d56bc))
+
+
+### Bug Fixes
+
+* give the debugger and DB viewer's muted text AA contrast ([#648](https://github.com/WordPress/presence-api/issues/648)) ([ed2e7af](https://github.com/WordPress/presence-api/commit/ed2e7af0c4c3f17eefc1d6b8d70dc697767bf3f9))
+
 ## [0.11.0](https://github.com/WordPress/presence-api/compare/v0.10.0...v0.11.0) (2026-09-27)
 
 
