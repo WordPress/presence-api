@@ -183,7 +183,7 @@ function wp_presence_scene_prepare( $scene ) {
 		return $invalid( __( 'A scene has only $schema, apiVersion, name, title, cast and cues.', 'presence-api' ) );
 	}
 
-	if ( 1 !== ( $scene['apiVersion'] ?? 1 ) ) {
+	if ( 1 !== ( $scene['apiVersion'] ?? null ) ) {
 		return $invalid( __( 'This version of the plugin reads apiVersion 1 only.', 'presence-api' ) );
 	}
 
@@ -573,6 +573,10 @@ function wp_presence_scene_direct() {
 		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_set_error_handler -- Collects the cue's warnings for the report.
 		set_error_handler(
 			function ( $errno, $errstr, $file, $line ) use ( &$warnings ) {
+				// Respects @ and error_reporting(), as PHP's own handler would.
+				if ( ! ( error_reporting() & $errno ) ) { // phpcs:ignore WordPress.PHP.DevelopmentFunctions.prevent_path_disclosure_error_reporting, WordPress.PHP.DiscouragedPHPFunctions.runtime_configuration_error_reporting -- Only reads the level.
+					return false;
+				}
 				$warnings[] = sprintf( '%s (%s:%d)', $errstr, wp_basename( $file ), $line );
 				return true;
 			}
@@ -1203,7 +1207,7 @@ JS
  * @since 0.12.0
  */
 function wp_presence_register_default_scenes() {
-	foreach ( glob( dirname( __DIR__ ) . '/scenes/*.json' ) as $file ) {
+	foreach ( (array) glob( dirname( __DIR__ ) . '/scenes/*.json' ) as $file ) {
 		wp_register_presence_scene( $file );
 	}
 }

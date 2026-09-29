@@ -146,12 +146,12 @@ final class WP_Presence_Scene_Actor {
 		$post = $this->scene_post( $post_id );
 		$this->enter( $post->post_type, $post->ID );
 
-		$locked = ! $this->sees_lock( $post->ID );
-		if ( $locked ) {
+		$takes_lock = ! $this->sees_lock( $post->ID );
+		if ( $takes_lock ) {
 			$this->lock( $post->ID );
 		}
 
-		$this->beat( wp_presence_post_room( $post ), 'editor-' . $this->ID, wp_presence_editor_state( $post->post_type, $locked ), $locked ? $post->ID : 0 );
+		$this->beat( wp_presence_post_room( $post ), 'editor-' . $this->ID, wp_presence_editor_state( $post->post_type, $takes_lock ), $takes_lock ? $post->ID : 0 );
 	}
 
 	/**

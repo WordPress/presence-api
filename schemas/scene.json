@@ -1,10 +1,11 @@
 {
 	"$schema": "http://json-schema.org/draft-07/schema#",
 	"title": "Presence API scene",
-	"description": "A scene the admin bar debugger directs with WP_DEBUG on. Every cue is an action from a fixed list, acted by users the scene casts on posts it writes itself.",
+	"description": "Experimental, and may change without notice. A scene the admin bar debugger directs with WP_DEBUG on. Every cue is an action from a fixed list, acted by users the scene casts on posts it writes itself.",
 	"type": "object",
 	"additionalProperties": false,
 	"required": [
+		"apiVersion",
 		"name",
 		"title",
 		"cast",
@@ -114,6 +115,7 @@
 							]
 						},
 						"action": {
+							"description": "Goes to an admin screen, closing any editor they had open.",
 							"const": "visit"
 						},
 						"place": {
@@ -134,6 +136,7 @@
 							"$ref": "#/definitions/actor"
 						},
 						"action": {
+							"description": "Writes a draft of their own and opens it in the editor.",
 							"const": "write"
 						},
 						"title": {
@@ -154,6 +157,7 @@
 							"$ref": "#/definitions/actor"
 						},
 						"action": {
+							"description": "open: opens a post in the editor, taking the lock when nobody holds it. takeOver: takes the lock from whoever holds it. close: leaves the editor for the posts list, releasing their lock.",
 							"enum": [
 								"open",
 								"takeOver",
@@ -178,6 +182,7 @@
 							"$ref": "#/definitions/actor"
 						},
 						"action": {
+							"description": "Adds a paragraph to a post and saves it, failing while someone else holds the lock.",
 							"const": "type"
 						},
 						"post": {
@@ -208,6 +213,7 @@
 							]
 						},
 						"action": {
+							"description": "drop: stops beating without saying goodbye, like a closed laptop. leave: logs out. checkOnline and checkOffline: fail unless the online list does or does not show them.",
 							"enum": [
 								"drop",
 								"leave",
@@ -227,6 +233,7 @@
 							"$ref": "#/definitions/actor"
 						},
 						"action": {
+							"description": "Fails unless someone else does (checkLocked) or nobody else does (checkUnlocked) hold the post's lock.",
 							"enum": [
 								"checkLocked",
 								"checkUnlocked"
