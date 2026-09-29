@@ -68,7 +68,7 @@ function wp_register_presence_scene( $scene ) {
 
 	if ( isset( $wp_presence_scenes[ $prepared['name'] ] ) ) {
 		/* translators: %s: Scene name. */
-		_doing_it_wrong( __FUNCTION__, esc_html( sprintf( __( 'Scene "%s" is already registered.', 'presence-api' ), $prepared['name'] ) ), '0.12.0' );
+		_doing_it_wrong( __FUNCTION__, esc_html( sprintf( __( 'Scene “%s” is already registered.', 'presence-api' ), $prepared['name'] ) ), '0.12.0' );
 		return false;
 	}
 
@@ -102,31 +102,31 @@ function wp_presence_scene_actions() {
 			'fields' => array( 'title' ),
 			'cast'   => false,
 			/* translators: 1: Actor, 2: Post title. */
-			'label'  => __( '%1$s writes "%2$s"', 'presence-api' ),
+			'label'  => __( '%1$s writes “%2$s”', 'presence-api' ),
 		),
 		'open'          => array(
 			'fields' => array( 'post' ),
 			'cast'   => false,
 			/* translators: 1: Actor, 2: Post title. */
-			'label'  => __( '%1$s opens "%2$s"', 'presence-api' ),
+			'label'  => __( '%1$s opens “%2$s”', 'presence-api' ),
 		),
 		'takeOver'      => array(
 			'fields' => array( 'post' ),
 			'cast'   => false,
 			/* translators: 1: Actor, 2: Post title. */
-			'label'  => __( '%1$s takes over "%2$s"', 'presence-api' ),
+			'label'  => __( '%1$s takes over “%2$s”', 'presence-api' ),
 		),
 		'type'          => array(
 			'fields' => array( 'post', 'text' ),
 			'cast'   => false,
 			/* translators: 1: Actor, 2: Post title. */
-			'label'  => __( '%1$s edits "%2$s"', 'presence-api' ),
+			'label'  => __( '%1$s edits “%2$s”', 'presence-api' ),
 		),
 		'close'         => array(
 			'fields' => array( 'post' ),
 			'cast'   => false,
 			/* translators: 1: Actor, 2: Post title. */
-			'label'  => __( '%1$s closes "%2$s"', 'presence-api' ),
+			'label'  => __( '%1$s closes “%2$s”', 'presence-api' ),
 		),
 		'drop'          => array(
 			'fields' => array(),
@@ -156,13 +156,13 @@ function wp_presence_scene_actions() {
 			'fields' => array( 'post' ),
 			'cast'   => false,
 			/* translators: 1: Actor, 2: Post title. */
-			'label'  => __( '%1$s finds "%2$s" locked', 'presence-api' ),
+			'label'  => __( '%1$s finds “%2$s” locked', 'presence-api' ),
 		),
 		'checkUnlocked' => array(
 			'fields' => array( 'post' ),
 			'cast'   => false,
 			/* translators: 1: Actor, 2: Post title. */
-			'label'  => __( '%1$s finds "%2$s" free', 'presence-api' ),
+			'label'  => __( '%1$s finds “%2$s” free', 'presence-api' ),
 		),
 	);
 }
@@ -1025,14 +1025,14 @@ function wp_presence_scene_admin_bar_nodes( $wp_admin_bar ) {
 				? '<a class="presence-debug-scene-button is-resume" href="' . $url( array( 'do' => 'resume' ) ) . '"><span class="screen-reader-text">' . esc_html__( 'Resume', 'presence-api' ) . '</span></a>'
 				: '<a class="presence-debug-scene-button is-pause" href="' . $url( array( 'do' => 'pause' ) ) . '"><span class="screen-reader-text">' . esc_html__( 'Pause', 'presence-api' ) . '</span></a>';
 			/* translators: %s: Scene label. */
-			$buttons .= '<a class="presence-debug-scene-button is-stop" href="' . $url( array( 'do' => 'cut' ) ) . '"><span class="screen-reader-text">' . esc_html( sprintf( __( 'Stop "%s"', 'presence-api' ), $scene['label'] ) ) . '</span></a>';
+			$buttons .= '<a class="presence-debug-scene-button is-stop" href="' . $url( array( 'do' => 'cut' ) ) . '"><span class="screen-reader-text">' . esc_html( sprintf( __( 'Stop “%s”', 'presence-api' ), $scene['label'] ) ) . '</span></a>';
 		} elseif ( ! is_array( $run ) ) {
 			$buttons .= '<a class="presence-debug-scene-button is-start" href="' . $url(
 				array(
 					'do'    => 'start',
 					'scene' => $name,
 				)
-			) . '"><span class="screen-reader-text">' . esc_html( sprintf( /* translators: %s: Scene label. */ __( 'Run "%s"', 'presence-api' ), $scene['label'] ) ) . '</span><span class="presence-debug-scene-plan" hidden>' . esc_html( $plan ) . '</span></a>';
+			) . '"><span class="screen-reader-text">' . esc_html( sprintf( /* translators: %s: Scene label. */ __( 'Run “%s”', 'presence-api' ), $scene['label'] ) ) . '</span><span class="presence-debug-scene-plan" hidden>' . esc_html( $plan ) . '</span></a>';
 		}
 
 		$wp_admin_bar->add_node(

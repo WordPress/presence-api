@@ -420,7 +420,7 @@ final class WP_Presence_Scene_Actor {
 
 		if ( ! user_can( $this->ID, 'edit_post', $post->ID ) ) {
 			/* translators: %s: Post title. */
-			throw new RuntimeException( sprintf( __( 'Their role cannot edit "%s".', 'presence-api' ), $post->post_title ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Printed as text.
+			throw new RuntimeException( sprintf( __( 'Their role cannot edit “%s”.', 'presence-api' ), $post->post_title ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Printed as text.
 		}
 
 		return $post;
