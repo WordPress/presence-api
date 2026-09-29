@@ -105,6 +105,7 @@ class WP_Test_Presence_Debugger_Scenes extends WP_Presence_UnitTestCase {
 	/**
 	 * @covers ::wp_presence_scene_start
 	 * @covers ::wp_presence_scene_lock
+	 * @covers ::wp_presence_scene_locked
 	 */
 	public function test_start_waits_for_the_lock() {
 		$this->direct();
@@ -115,8 +116,25 @@ class WP_Test_Presence_Debugger_Scenes extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * @covers ::wp_presence_scene_locked
+	 */
+	public function test_lock_is_released_when_a_step_throws() {
+		try {
+			wp_presence_scene_locked(
+				function () {
+					throw new RuntimeException();
+				}
+			);
+		} catch ( RuntimeException $e ) {
+			$this->assertTrue( wp_presence_scene_lock() );
+		}
+	}
+
+	/**
 	 * @covers ::wp_presence_scene_start
+	 * @covers ::wp_presence_scene_cast
 	 * @covers ::wp_presence_scene_direct
+	 * @covers ::wp_presence_scene_play
 	 * @covers ::wp_presence_scene_strike
 	 * @covers ::wp_presence_scene_delete_users
 	 */

@@ -458,39 +458,46 @@ function wp_presence_scene_lock( $wait = 0 ) {
 }
 
 /**
- * Casts a scene and plays its opening cues.
+ * Runs a callback on the running scene while holding its lock, releasing it even when the callback throws.
  *
  * @since 0.12.0
  *
  * @access private
  *
- * @param string $name Scene name.
- * @return bool Whether the scene started.
+ * @param callable $callback Receives the running scene, read after the lock is taken, or false when none runs.
+ * @param int      $wait     Optional. Seconds to wait for a busy lock. Default 0.
+ * @return mixed The callback's return value, or false when the lock was busy.
  */
-function wp_presence_scene_start( $name ) {
-	$scenes = wp_get_presence_scenes();
-
-	if ( ! isset( $scenes[ $name ] ) ) {
+function wp_presence_scene_locked( callable $callback, $wait = 0 ) {
+	if ( ! wp_presence_scene_lock( $wait ) ) {
 		return false;
 	}
 
-	// One scene runs at a time, so a second waits until the first finishes or expires.
-	wp_presence_scene_sweep();
-	if ( ! wp_presence_scene_lock() ) {
-		return false;
-	}
-	wp_cache_delete( 'wp_presence_scene', 'options' );
-	if ( get_option( 'wp_presence_scene' ) ) {
+	try {
+		// Another request may have changed the scene before the lock was free.
+		wp_cache_delete( 'wp_presence_scene', 'options' );
+		return $callback( get_option( 'wp_presence_scene' ) );
+	} finally {
 		WP_Upgrader::release_lock( 'wp_presence_scene' );
-		return false;
 	}
+}
 
-	$scene  = $scenes[ $name ];
+/**
+ * Creates a scene's cast and saves it as the running scene.
+ *
+ * @since 0.12.0
+ *
+ * @access private
+ *
+ * @param array $scene A registered scene.
+ * @return array|false The running scene, or false when a user could not be created.
+ */
+function wp_presence_scene_cast( array $scene ) {
 	$number = (int) get_option( 'wp_presence_scene_runs', 1000 ) + 1;
 	update_option( 'wp_presence_scene_runs', $number, false );
 
 	$run = array(
-		'name'    => $name,
+		'name'    => $scene['name'],
 		'label'   => $scene['label'],
 		// A copy, so a scene edited or updated mid-run cannot change the steps being played.
 		'scene'   => $scene,
@@ -521,7 +528,6 @@ function wp_presence_scene_start( $name ) {
 		if ( is_wp_error( $user_id ) ) {
 			wp_presence_scene_note( $run, 'fail', $user_id->get_error_message() );
 			wp_presence_scene_strike( $run );
-			WP_Upgrader::release_lock( 'wp_presence_scene' );
 			return false;
 		}
 
@@ -529,7 +535,38 @@ function wp_presence_scene_start( $name ) {
 	}
 
 	update_option( 'wp_presence_scene', $run, false );
-	WP_Upgrader::release_lock( 'wp_presence_scene' );
+
+	return $run;
+}
+
+/**
+ * Casts a scene and plays its opening cues.
+ *
+ * @since 0.12.0
+ *
+ * @access private
+ *
+ * @param string $name Scene name.
+ * @return bool Whether the scene started.
+ */
+function wp_presence_scene_start( $name ) {
+	$scenes = wp_get_presence_scenes();
+
+	if ( ! isset( $scenes[ $name ] ) ) {
+		return false;
+	}
+
+	// One scene runs at a time, so a second waits until the first finishes or expires.
+	wp_presence_scene_sweep();
+	$run = wp_presence_scene_locked(
+		function ( $running ) use ( $name, $scenes ) {
+			return $running ? false : wp_presence_scene_cast( $scenes[ $name ] );
+		}
+	);
+	if ( ! $run ) {
+		return false;
+	}
+
 	// Strikes the scene if its tab closes before the last cue.
 	wp_schedule_single_event( $run['expires'], 'wp_presence_scene_sweep' );
 
@@ -560,17 +597,29 @@ function wp_presence_scene_direct() {
 	}
 
 	// Two tabs beating at once would otherwise play a cue twice.
-	if ( ! wp_presence_scene_lock() ) {
-		return $run;
-	}
-	// Read again, since another request may have played or struck the scene before the lock was free.
-	wp_cache_delete( 'wp_presence_scene', 'options' );
-	$run = get_option( 'wp_presence_scene' );
-	if ( ! is_array( $run ) || ! empty( $run['paused'] ) ) {
-		WP_Upgrader::release_lock( 'wp_presence_scene' );
-		return is_array( $run ) ? $run : null;
-	}
+	$played = wp_presence_scene_locked(
+		function ( $run ) {
+			if ( ! is_array( $run ) ) {
+				return null;
+			}
+			return empty( $run['paused'] ) ? wp_presence_scene_play( $run ) : $run;
+		}
+	);
 
+	return false === $played ? $run : $played;
+}
+
+/**
+ * Plays every cue that is due and keeps the cast beating, for a caller holding the scene lock.
+ *
+ * @since 0.12.0
+ *
+ * @access private
+ *
+ * @param array $run The running scene.
+ * @return array|null The running scene, or null once it is struck.
+ */
+function wp_presence_scene_play( array $run ) {
 	require_once ABSPATH . 'wp-admin/includes/post.php';
 
 	$scene   = $run['scene'];
@@ -627,12 +676,10 @@ function wp_presence_scene_direct() {
 
 	if ( count( $run['done'] ) === count( $scene['cues'] ) ) {
 		wp_presence_scene_strike( $run );
-		WP_Upgrader::release_lock( 'wp_presence_scene' );
 		return null;
 	}
 
 	update_option( 'wp_presence_scene', $run, false );
-	WP_Upgrader::release_lock( 'wp_presence_scene' );
 
 	return $run;
 }
@@ -717,12 +764,20 @@ function wp_presence_scene_strike( array $run ) {
  * @param bool $all Optional. Strike everything regardless of expiry. Default false.
  */
 function wp_presence_scene_sweep( $all = false ) {
-	$run = get_option( 'wp_presence_scene' );
+	$due = function ( $run ) use ( $all ) {
+		return is_array( $run ) && ( $all || $run['expires'] <= time() );
+	};
 
-	if ( is_array( $run ) && ( $all || $run['expires'] <= time() ) && wp_presence_scene_lock( 5 ) ) {
-		wp_presence_scene_note( $run, 'info', __( 'Cleaned up before the scene finished.', 'presence-api' ) );
-		wp_presence_scene_strike( $run );
-		WP_Upgrader::release_lock( 'wp_presence_scene' );
+	if ( $due( get_option( 'wp_presence_scene' ) ) ) {
+		wp_presence_scene_locked(
+			function ( $run ) use ( $due ) {
+				if ( $due( $run ) ) {
+					wp_presence_scene_note( $run, 'info', __( 'Cleaned up before the scene finished.', 'presence-api' ) );
+					wp_presence_scene_strike( $run );
+				}
+			},
+			5
+		);
 	}
 
 	$query = array(
@@ -838,30 +893,33 @@ function wp_presence_scene_admin_post() {
 
 	if ( 'start' === $do && isset( $_GET['scene'] ) ) {
 		wp_presence_scene_start( sanitize_text_field( wp_unslash( $_GET['scene'] ) ) );
-	} elseif ( in_array( $do, array( 'cut', 'pause', 'resume' ), true ) && wp_presence_scene_lock( 5 ) ) {
-		$run = get_option( 'wp_presence_scene' );
-		if ( is_array( $run ) && 'cut' === $do ) {
-			wp_presence_scene_note( $run, 'info', __( 'Stopped.', 'presence-api' ) );
-			wp_presence_scene_strike( $run );
-		} elseif ( is_array( $run ) && empty( $run['paused'] ) === ( 'pause' === $do ) ) {
-			// A pause holds the scene for up to an hour, then the sweep strikes it.
-			if ( 'pause' === $do ) {
-				$run['paused']   = time();
-				$run['expires'] += HOUR_IN_SECONDS;
-			} else {
-				$paused          = time() - $run['paused'];
-				$run['started'] += $paused;
-				$run['expires'] += $paused - HOUR_IN_SECONDS;
-				unset( $run['paused'] );
-			}
-			foreach ( $run['cast'] as $user_id ) {
-				update_user_meta( $user_id, '_wp_presence_scene', $run['expires'] );
-			}
-			wp_clear_scheduled_hook( 'wp_presence_scene_sweep' );
-			wp_schedule_single_event( $run['expires'], 'wp_presence_scene_sweep' );
-			update_option( 'wp_presence_scene', $run, false );
-		}
-		WP_Upgrader::release_lock( 'wp_presence_scene' );
+	} elseif ( in_array( $do, array( 'cut', 'pause', 'resume' ), true ) ) {
+		wp_presence_scene_locked(
+			function ( $run ) use ( $do ) {
+				if ( is_array( $run ) && 'cut' === $do ) {
+					wp_presence_scene_note( $run, 'info', __( 'Stopped.', 'presence-api' ) );
+					wp_presence_scene_strike( $run );
+				} elseif ( is_array( $run ) && empty( $run['paused'] ) === ( 'pause' === $do ) ) {
+					// A pause holds the scene for up to an hour, then the sweep strikes it.
+					if ( 'pause' === $do ) {
+						$run['paused']   = time();
+						$run['expires'] += HOUR_IN_SECONDS;
+					} else {
+						$paused          = time() - $run['paused'];
+						$run['started'] += $paused;
+						$run['expires'] += $paused - HOUR_IN_SECONDS;
+						unset( $run['paused'] );
+					}
+					foreach ( $run['cast'] as $user_id ) {
+						update_user_meta( $user_id, '_wp_presence_scene', $run['expires'] );
+					}
+					wp_clear_scheduled_hook( 'wp_presence_scene_sweep' );
+					wp_schedule_single_event( $run['expires'], 'wp_presence_scene_sweep' );
+					update_option( 'wp_presence_scene', $run, false );
+				}
+			},
+			5
+		);
 	}
 
 	wp_safe_redirect( wp_get_referer() ? wp_get_referer() : admin_url() );
