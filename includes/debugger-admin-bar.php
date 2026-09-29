@@ -219,8 +219,9 @@ function wp_presence_debugger_admin_bar_assets() {
 		#wpadminbar #wp-admin-bar-presence-debug.is-pinned > .ab-sub-wrapper { display: block; }
 		#wpadminbar #wp-admin-bar-presence-debug.is-pinned { position: relative; z-index: 1; }
 		#wpadminbar #wp-admin-bar-presence-debug .ab-submenu .ab-item { display: flex; align-items: center; height: auto; min-height: 26px; }
-		#wpadminbar #wp-admin-bar-presence-debug-rooms .presence-debug-row > .ab-item { padding-inline-start: 34px; }
-		#wpadminbar #wp-admin-bar-presence-debug-rooms .presence-debug-more > .ab-item { padding-inline-start: 58px; }
+		#wp-admin-bar-presence-debug { --presence-debug-indent: 24px; }
+		#wpadminbar #wp-admin-bar-presence-debug-rooms .presence-debug-row > .ab-item { padding-inline-start: calc(10px + var(--presence-debug-indent)); }
+		#wpadminbar #wp-admin-bar-presence-debug-rooms .presence-debug-more > .ab-item { padding-inline-start: calc(10px + 2 * var(--presence-debug-indent)); }
 		#wpadminbar #wp-admin-bar-presence-debug .ab-submenu .ab-item, #wpadminbar #wp-admin-bar-presence-debug .ab-submenu .ab-item > * { line-height: 1.4; }
 		#wp-admin-bar-presence-debug .presence-debug-row > .ab-item { gap: 16px; cursor: default; }
 		#wp-admin-bar-presence-debug .presence-debug-value { margin-inline-start: auto; font-variant-numeric: tabular-nums; user-select: none; }

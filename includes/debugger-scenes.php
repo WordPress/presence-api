@@ -1104,23 +1104,21 @@ function wp_presence_scene_assets() {
 		#wpadminbar #wp-admin-bar-presence-debug-scenes .is-hidden { display: none; }
 		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scenes-heading > .ab-item { display: flex; align-items: center; font-weight: 600; }
 		#wpadminbar #wp-admin-bar-presence-debug-scenes:not(.is-shown) > :not(.presence-debug-scenes-heading) { display: none; }
-		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scene-icon::before, #wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-step-mark::before { display: block; width: 16px; margin-inline-end: 8px; font: 16px/1 dashicons; }
+		#wpadminbar #wp-admin-bar-presence-debug-scenes :is(.presence-debug-scene-icon, .presence-debug-scenes-mark, .presence-debug-step-mark)::before { display: block; width: 16px; margin-inline-end: 8px; font: 16px/1 dashicons; }
 		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scene-icon::before { content: "\\f345"; }
 		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scene.is-open .presence-debug-scene-icon::before, #wpadminbar #wp-admin-bar-presence-debug-scenes.is-shown .presence-debug-scenes-heading .presence-debug-scene-icon::before { content: "\\f347"; }
 		#wpadminbar #wp-admin-bar-presence-debug-scenes :is(.presence-debug-scene, .presence-debug-scenes-heading) { display: flex; }
 		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scenes-heading > .ab-item { flex: 1; }
 		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scenes-heading > .presence-debug-scene-icon { display: flex; align-items: center; padding-inline: 6px 10px; cursor: pointer; }
 		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scenes-heading .presence-debug-scene-icon::before { margin: 0; }
-		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scenes-mark::before { content: "\\f204"; display: block; margin-inline-end: 8px; font: 16px/1 dashicons; }
+		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scenes-mark::before { content: "\\f204"; }
 		#wpadminbar #wp-admin-bar-presence-debug.is-playing > .ab-item::after { content: "\\f522"; font: 16px/1 dashicons; }
-		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scene > .ab-item { padding-inline-start: 34px; }
-		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scene > .ab-item { flex: 1; min-width: 0; }
+		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scene > .ab-item { flex: 1; min-width: 0; padding-inline-start: calc(10px + var(--presence-debug-indent)); }
 		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scene > .presence-debug-value { display: flex; flex: none; align-items: center; justify-content: flex-end; min-width: 4.5em; padding-inline: 4px 10px; }
 		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scene.is-open .presence-debug-scene-busy { display: none; }
 		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scene > .ab-item:not(:last-child) { padding-inline-end: 4px; }
 		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scene-button { display: flex; flex: none; align-items: center; justify-content: center; width: 28px; padding: 0; color: inherit; }
 		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scene { position: relative; }
-		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scene > .ab-item { min-height: 26px; }
 		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scene-controls { display: flex; position: absolute; inset-block: 0; inset-inline-end: 0; padding-inline-end: 4px; opacity: 0; pointer-events: none; }
 		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scene:is(:hover, :focus-within, :has(.is-resume)) .presence-debug-scene-controls { opacity: 1; pointer-events: auto; }
 		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scene:is(:hover, :focus-within, :has(.is-resume)) > .presence-debug-value { visibility: hidden; }
@@ -1136,16 +1134,15 @@ function wp_presence_scene_assets() {
 		@keyframes presence-debug-spin { to { transform: rotate(360deg); } }
 		#wpadminbar #wp-admin-bar-presence-debug-scenes .is-current .presence-debug-step-mark::before { content: "\\f463"; animation: presence-debug-spin 2s infinite linear; }
 		@media (prefers-reduced-motion: reduce) { #wpadminbar #wp-admin-bar-presence-debug-scenes :is(.presence-debug-scene-busy, .is-current .presence-debug-step-mark)::before { animation: none; } }
-		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-step > .ab-item { min-height: 22px; padding-inline-start: 58px; }
-		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-step-number { min-width: 18px; margin-inline-end: 6px; text-align: end; font-variant-numeric: tabular-nums; opacity: 0.75; }
+		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-step > .ab-item { min-height: 22px; padding-inline-start: calc(10px + 2 * var(--presence-debug-indent)); }
+		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-step-number { min-width: 2ch; margin-inline-end: 6px; text-align: end; font-variant-numeric: tabular-nums; opacity: 0.75; }
 		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-step.is-current span { font-weight: 600; }
 		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-step-mark { margin-inline-start: auto; padding-inline-start: 16px; }
-		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-step-mark::before { margin-inline-end: 0; }
+		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-step-mark::before { content: ""; margin-inline-end: 0; }
 		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-step > .ab-item, #wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-step > .ab-item * { white-space: nowrap; }
-		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-step-mark::before { content: ""; }
 		#wpadminbar #wp-admin-bar-presence-debug-scenes .is-pass .presence-debug-step-mark::before { content: "\\f147"; }
 		#wpadminbar #wp-admin-bar-presence-debug-scenes .is-fail .presence-debug-step-mark::before { content: "\\f158"; }
-		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-note > .ab-item { max-width: 420px; padding-inline-start: 82px; white-space: normal; }'
+		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-note > .ab-item { max-width: 420px; padding-inline-start: calc(10px + 3 * var(--presence-debug-indent)); white-space: normal; }'
 	);
 
 	wp_register_script( 'presence-debugger-scenes', false, array( 'presence-debugger-admin-bar', 'utils' ), WP_PRESENCE_VERSION, true );
