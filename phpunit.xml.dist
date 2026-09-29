@@ -31,6 +31,8 @@
 			-->
 			<file>includes/db-viewer.php</file>
 			<file>includes/debugger-admin-bar.php</file>
+			<file>includes/debugger-scenes.php</file>
+			<file>includes/class-wp-presence-scene-actor.php</file>
 			<!-- Only register hooks, and run during bootstrap before coverage starts. -->
 			<file>includes/default-filters.php</file>
 			<file>includes/ms-default-filters.php</file>

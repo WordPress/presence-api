@@ -1,0 +1,24 @@
+{
+	"$schema": "../schemas/scene.json",
+	"apiVersion": 1,
+	"name": "presence-api/project-kickoff",
+	"title": "Project kickoff",
+	"cast": [ { "role": "editor" }, { "role": "author" }, { "role": "author" }, { "role": "author" }, { "role": "contributor" }, { "role": "contributor" }, { "role": "subscriber" } ],
+	"cues": [
+		{ "at": 0, "actor": 1, "action": "visit", "place": "dashboard" },
+		{ "at": 5, "actor": 2, "action": "visit", "place": "dashboard" },
+		{ "at": 5, "actor": 3, "action": "visit", "place": "posts" },
+		{ "at": 10, "actor": 4, "action": "visit", "place": "dashboard" },
+		{ "at": 15, "actor": 5, "action": "visit", "place": "posts" },
+		{ "at": 20, "actor": 6, "action": "visit", "place": "dashboard" },
+		{ "at": 25, "actor": 7, "action": "visit", "place": "profile" },
+		{ "at": 27, "actor": "cast", "action": "checkOnline" },
+		{ "at": 30, "actor": 1, "action": "write", "title": "Kickoff agenda" },
+		{ "at": 35, "actor": 2, "action": "visit", "place": "posts" },
+		{ "at": 40, "actor": 3, "action": "visit", "place": "media" },
+		{ "at": 45, "actor": 7, "action": "leave" },
+		{ "at": 50, "actor": 6, "action": "leave" },
+		{ "at": 55, "actor": 5, "action": "leave" },
+		{ "at": 60, "actor": "cast", "action": "leave" }
+	]
+}

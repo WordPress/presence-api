@@ -35,3 +35,7 @@ src/hooks/test/
 src/utils/test/
 includes/db-viewer.php
 includes/debugger-admin-bar.php
+includes/debugger-scenes.php
+includes/class-wp-presence-scene-actor.php
+/scenes
+/schemas

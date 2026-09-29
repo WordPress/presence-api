@@ -1,0 +1,17 @@
+{
+	"$schema": "../schemas/scene.json",
+	"apiVersion": 1,
+	"name": "presence-api/connection-lost",
+	"title": "Logging out or losing connection",
+	"cast": [ { "role": "author" }, { "role": "author" } ],
+	"cues": [
+		{ "at": 0, "actor": 1, "action": "visit", "place": "dashboard" },
+		{ "at": 3, "actor": 2, "action": "visit", "place": "dashboard" },
+		{ "at": 8, "actor": 1, "action": "write", "title": "Garden plan" },
+		{ "at": 12, "actor": 2, "action": "write", "title": "Bake sale flyer" },
+		{ "at": 17, "actor": 1, "action": "leave" },
+		{ "at": 19, "actor": 1, "action": "checkOffline" },
+		{ "at": 22, "actor": 2, "action": "drop" },
+		{ "at": 27, "actor": 2, "action": "checkOnline" }
+	]
+}

@@ -1,0 +1,24 @@
+{
+	"$schema": "../schemas/scene.json",
+	"apiVersion": 1,
+	"name": "presence-api/several-posts",
+	"title": "Working on several posts",
+	"cast": [ { "role": "editor" }, { "role": "author" }, { "role": "author" }, { "role": "contributor" } ],
+	"cues": [
+		{ "at": 0, "actor": 1, "action": "visit", "place": "dashboard" },
+		{ "at": 3, "actor": 2, "action": "write", "title": "Spring newsletter" },
+		{ "at": 6, "actor": 3, "action": "write", "title": "Volunteer rota" },
+		{ "at": 9, "actor": 4, "action": "write", "title": "Recipe swap" },
+		{ "at": 13, "actor": 1, "action": "open", "post": 1 },
+		{ "at": 14, "actor": 1, "action": "checkLocked", "post": 1 },
+		{ "at": 18, "actor": 2, "action": "type", "post": 1, "text": "Added the opening paragraph." },
+		{ "at": 21, "actor": 4, "action": "type", "post": 3, "text": "Listed the first recipes." },
+		{ "at": 25, "actor": 3, "action": "close", "post": 2 },
+		{ "at": 26, "actor": 1, "action": "checkUnlocked", "post": 2 },
+		{ "at": 28, "actor": 1, "action": "close", "post": 1 },
+		{ "at": 30, "actor": 1, "action": "open", "post": 2 },
+		{ "at": 34, "actor": 1, "action": "type", "post": 2, "text": "Filled the Saturday shifts." },
+		{ "at": 38, "actor": "cast", "action": "checkOnline" },
+		{ "at": 42, "actor": "cast", "action": "leave" }
+	]
+}

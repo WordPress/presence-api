@@ -1,0 +1,21 @@
+{
+	"$schema": "../schemas/scene.json",
+	"apiVersion": 1,
+	"name": "presence-api/around-the-admin",
+	"title": "Around the admin",
+	"cast": [ { "role": "editor" }, { "role": "author" }, { "role": "contributor" }, { "role": "subscriber" }, { "role": "author" } ],
+	"cues": [
+		{ "at": 0, "actor": 1, "action": "visit", "place": "dashboard" },
+		{ "at": 5, "actor": 2, "action": "visit", "place": "posts" },
+		{ "at": 10, "actor": 3, "action": "visit", "place": "dashboard" },
+		{ "at": 15, "actor": 4, "action": "visit", "place": "profile" },
+		{ "at": 20, "actor": 5, "action": "visit", "place": "media" },
+		{ "at": 22, "actor": "cast", "action": "checkOnline" },
+		{ "at": 25, "actor": 5, "action": "leave" },
+		{ "at": 30, "actor": 4, "action": "leave" },
+		{ "at": 35, "actor": 3, "action": "leave" },
+		{ "at": 40, "actor": 2, "action": "leave" },
+		{ "at": 45, "actor": 1, "action": "leave" },
+		{ "at": 47, "actor": "cast", "action": "checkOffline" }
+	]
+}

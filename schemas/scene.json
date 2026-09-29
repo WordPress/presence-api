@@ -1,0 +1,247 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "Presence API scene",
+	"description": "A scene the admin bar debugger directs with WP_DEBUG on. Every cue is an action from a fixed list, acted by users the scene casts on posts it writes itself.",
+	"type": "object",
+	"additionalProperties": false,
+	"required": [
+		"name",
+		"title",
+		"cast",
+		"cues"
+	],
+	"properties": {
+		"$schema": {
+			"type": "string"
+		},
+		"apiVersion": {
+			"description": "The scene format version. Newer formats are refused rather than half-read.",
+			"const": 1
+		},
+		"name": {
+			"description": "Namespace and name, like a block name.",
+			"type": "string",
+			"pattern": "^[a-z0-9-]+/[a-z0-9-]+$"
+		},
+		"title": {
+			"type": "string",
+			"minLength": 1,
+			"maxLength": 60
+		},
+		"cast": {
+			"description": "One to seven actors, named Actor 1 onwards in this order.",
+			"type": "array",
+			"minItems": 1,
+			"maxItems": 7,
+			"items": {
+				"type": "object",
+				"additionalProperties": false,
+				"required": [
+					"role"
+				],
+				"properties": {
+					"role": {
+						"enum": [
+							"subscriber",
+							"contributor",
+							"author",
+							"editor"
+						]
+					}
+				}
+			}
+		},
+		"cues": {
+			"type": "array",
+			"minItems": 1,
+			"maxItems": 30,
+			"items": {
+				"$ref": "#/definitions/cue"
+			}
+		}
+	},
+	"definitions": {
+		"at": {
+			"description": "Seconds from the start, never earlier than the cue before. A TTL offset such as \"25+ttl+5\" follows the site's presence timeout.",
+			"oneOf": [
+				{
+					"type": "integer",
+					"minimum": 0,
+					"maximum": 900
+				},
+				{
+					"type": "string",
+					"pattern": "^([0-9]{1,3}\\+)?ttl(\\+[0-9]{1,3})?$"
+				}
+			]
+		},
+		"actor": {
+			"type": "integer",
+			"minimum": 1,
+			"maximum": 7
+		},
+		"post": {
+			"description": "The Nth post a write cue created.",
+			"type": "integer",
+			"minimum": 1
+		},
+		"text": {
+			"type": "string",
+			"minLength": 1,
+			"maxLength": 100
+		},
+		"cue": {
+			"type": "object",
+			"required": [
+				"at",
+				"actor",
+				"action"
+			],
+			"oneOf": [
+				{
+					"properties": {
+						"at": {
+							"$ref": "#/definitions/at"
+						},
+						"actor": {
+							"oneOf": [
+								{
+									"$ref": "#/definitions/actor"
+								},
+								{
+									"const": "cast"
+								}
+							]
+						},
+						"action": {
+							"const": "visit"
+						},
+						"place": {
+							"enum": [ "dashboard", "posts", "pages", "media", "comments", "profile" ]
+						}
+					},
+					"required": [
+						"place"
+					],
+					"additionalProperties": false
+				},
+				{
+					"properties": {
+						"at": {
+							"$ref": "#/definitions/at"
+						},
+						"actor": {
+							"$ref": "#/definitions/actor"
+						},
+						"action": {
+							"const": "write"
+						},
+						"title": {
+							"$ref": "#/definitions/text"
+						}
+					},
+					"required": [
+						"title"
+					],
+					"additionalProperties": false
+				},
+				{
+					"properties": {
+						"at": {
+							"$ref": "#/definitions/at"
+						},
+						"actor": {
+							"$ref": "#/definitions/actor"
+						},
+						"action": {
+							"enum": [
+								"open",
+								"takeOver",
+								"close"
+							]
+						},
+						"post": {
+							"$ref": "#/definitions/post"
+						}
+					},
+					"required": [
+						"post"
+					],
+					"additionalProperties": false
+				},
+				{
+					"properties": {
+						"at": {
+							"$ref": "#/definitions/at"
+						},
+						"actor": {
+							"$ref": "#/definitions/actor"
+						},
+						"action": {
+							"const": "type"
+						},
+						"post": {
+							"$ref": "#/definitions/post"
+						},
+						"text": {
+							"$ref": "#/definitions/text"
+						}
+					},
+					"required": [
+						"post"
+					],
+					"additionalProperties": false
+				},
+				{
+					"properties": {
+						"at": {
+							"$ref": "#/definitions/at"
+						},
+						"actor": {
+							"oneOf": [
+								{
+									"$ref": "#/definitions/actor"
+								},
+								{
+									"const": "cast"
+								}
+							]
+						},
+						"action": {
+							"enum": [
+								"drop",
+								"leave",
+								"checkOnline",
+								"checkOffline"
+							]
+						}
+					},
+					"additionalProperties": false
+				},
+				{
+					"properties": {
+						"at": {
+							"$ref": "#/definitions/at"
+						},
+						"actor": {
+							"$ref": "#/definitions/actor"
+						},
+						"action": {
+							"enum": [
+								"checkLocked",
+								"checkUnlocked"
+							]
+						},
+						"post": {
+							"$ref": "#/definitions/post"
+						}
+					},
+					"required": [
+						"post"
+					],
+					"additionalProperties": false
+				}
+			]
+		}
+	}
+}
