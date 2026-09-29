@@ -714,7 +714,6 @@ function wp_presence_scene_sweep( $all = false ) {
 	}
 
 	$query = array(
-		'blog_id'  => 0,
 		'meta_key' => '_wp_presence_scene', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
 	);
 	if ( ! $all ) {
@@ -833,20 +832,21 @@ function wp_presence_scene_admin_post() {
 			wp_presence_scene_note( $run, 'info', __( 'Stopped.', 'presence-api' ) );
 			wp_presence_scene_strike( $run );
 		} elseif ( is_array( $run ) && empty( $run['paused'] ) === ( 'pause' === $do ) ) {
+			// A pause holds the scene for up to an hour, then the sweep strikes it.
 			if ( 'pause' === $do ) {
-				$run['paused'] = time();
+				$run['paused']   = time();
+				$run['expires'] += HOUR_IN_SECONDS;
 			} else {
-				// The pause moves every deadline, so a long one cannot sweep the scene mid-run.
 				$paused          = time() - $run['paused'];
 				$run['started'] += $paused;
-				$run['expires'] += $paused;
+				$run['expires'] += $paused - HOUR_IN_SECONDS;
 				unset( $run['paused'] );
-				foreach ( $run['cast'] as $user_id ) {
-					update_user_meta( $user_id, '_wp_presence_scene', $run['expires'] );
-				}
-				wp_clear_scheduled_hook( 'wp_presence_scene_sweep' );
-				wp_schedule_single_event( $run['expires'], 'wp_presence_scene_sweep' );
 			}
+			foreach ( $run['cast'] as $user_id ) {
+				update_user_meta( $user_id, '_wp_presence_scene', $run['expires'] );
+			}
+			wp_clear_scheduled_hook( 'wp_presence_scene_sweep' );
+			wp_schedule_single_event( $run['expires'], 'wp_presence_scene_sweep' );
 			update_option( 'wp_presence_scene', $run, false );
 		}
 		WP_Upgrader::release_lock( 'wp_presence_scene' );
