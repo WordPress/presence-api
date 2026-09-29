@@ -3,7 +3,7 @@ Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas,
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.1
-Stable tag: 0.11.0
+Stable tag: 0.12.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -65,6 +65,12 @@ For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/presence-api/blob/main/CHANGELOG.md
 
+= 0.12.0 =
+* Add an admin bar debugger and remove the Dashboard widget ([#652](https://github.com/WordPress/presence-api/issues/652)).
+* Label agent presence rows across the admin UI ([#653](https://github.com/WordPress/presence-api/issues/653)).
+* Let plugins add rows and indicators to the debugger ([#666](https://github.com/WordPress/presence-api/issues/666)).
+* Give the debugger and DB viewer's muted text AA contrast ([#648](https://github.com/WordPress/presence-api/issues/648)).
+
 = 0.11.0 =
 * Show presence on every post type edited in the admin ([#631](https://github.com/WordPress/presence-api/issues/631)).
 * Give presence to roles that edit only pages or a custom post type ([#637](https://github.com/WordPress/presence-api/issues/637)).
@@ -108,10 +114,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 = 0.8.0 =
 * Add wp_presence_exchange() and wp_presence_leave() ([#546](https://github.com/WordPress/presence-api/issues/546)).
 * Say when Heartbeat cannot keep presence current ([#544](https://github.com/WordPress/presence-api/issues/544)).
-
-= 0.7.0 =
-* Filter wp_get_presence() by client_id prefix in SQL ([#530](https://github.com/WordPress/presence-api/issues/530)).
-* Store an expiry per presence row ([#541](https://github.com/WordPress/presence-api/issues/541)).
-* Stop the site TTL filter overriding an explicit $timeout ([#540](https://github.com/WordPress/presence-api/issues/540)).
-* Typos CI failure caused by changelog link label in `readme.txt` ([#527](https://github.com/WordPress/presence-api/issues/527)).
-* Decide redundant presence writes inside the upsert ([#542](https://github.com/WordPress/presence-api/issues/542)).
