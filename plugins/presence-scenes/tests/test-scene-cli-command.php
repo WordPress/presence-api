@@ -116,6 +116,15 @@ class WP_Test_Presence_Scene_CLI_Command extends WP_Presence_UnitTestCase {
 	/**
 	 * @covers WP_Presence_Scene_CLI_Command::run
 	 */
+	public function test_run_says_why_the_cast_could_not_be_created() {
+		add_filter( 'pre_user_login', '__return_empty_string' );
+
+		$this->run_and_halt( 'editing-together', wp_insert_user( array() )->get_error_message() );
+	}
+
+	/**
+	 * @covers WP_Presence_Scene_CLI_Command::run
+	 */
 	public function test_run_refuses_while_another_scene_runs() {
 		wp_presence_scene_start( 'connection-lost' );
 

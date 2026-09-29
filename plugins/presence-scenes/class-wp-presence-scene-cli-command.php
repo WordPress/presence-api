@@ -97,12 +97,15 @@ class WP_Presence_Scene_CLI_Command extends WP_CLI_Command {
 		}
 
 		$run = wp_presence_scene_start( $scene['name'] );
+		if ( is_wp_error( $run ) ) {
+			WP_CLI::error( $run->get_error_message() );
+		}
 		if ( ! $run ) {
 			wp_cache_delete( 'wp_presence_scene', 'options' );
 			WP_CLI::error(
 				is_array( get_option( 'wp_presence_scene' ) )
 					? __( 'Another scene is running. Stop it with wp presence scene stop.', 'presence-scenes' )
-					: __( 'Could not create the cast.', 'presence-scenes' )
+					: __( 'Another command is starting or stopping a scene. Try again.', 'presence-scenes' )
 			);
 		}
 
