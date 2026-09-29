@@ -816,8 +816,16 @@ function wp_presence_scene_admin_post() {
 			if ( 'pause' === $do ) {
 				$run['paused'] = time();
 			} else {
-				$run['started'] += time() - $run['paused'];
+				// The pause moves every deadline, so a long one cannot sweep the scene mid-run.
+				$paused          = time() - $run['paused'];
+				$run['started'] += $paused;
+				$run['expires'] += $paused;
 				unset( $run['paused'] );
+				foreach ( $run['cast'] as $user_id ) {
+					update_user_meta( $user_id, '_wp_presence_scene', $run['expires'] );
+				}
+				wp_clear_scheduled_hook( 'wp_presence_scene_sweep' );
+				wp_schedule_single_event( $run['expires'], 'wp_presence_scene_sweep' );
 			}
 			update_option( 'wp_presence_scene', $run, false );
 		}
