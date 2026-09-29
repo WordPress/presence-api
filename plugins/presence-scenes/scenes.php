@@ -417,3 +417,432 @@ function wp_presence_scene_note( array &$run, $level, $message ) {
 		'message' => $message,
 	);
 }
+
+/**
+ * Plays one step through the actors it names.
+ *
+ * @since 0.1.0
+ *
+ * @access private
+ *
+ * @param array                     $step A prepared step.
+ * @param WP_Presence_Scene_Actor[] $cast The cast.
+ * @param array                     $run  The running scene.
+ */
+function wp_presence_scene_perform( array $step, array $cast, array $run ) {
+	$action = wp_presence_scene_actions()[ $step['step'] ];
+	$method = $action['method'];
+	$args   = array();
+
+	foreach ( $action['fields'] as $field ) {
+		$args[] = 'post' === $field ? (int) ( $run['posts'][ $step['post'] ] ?? 0 ) : $step[ $field ];
+	}
+
+	foreach ( 'cast' === $step['actor'] ? $cast : array( $cast[ $step['actor'] - 1 ] ) as $actor ) {
+		$actor->$method( ...$args );
+	}
+}
+
+/**
+ * Picks the failures and warnings out of a scene's notes.
+ *
+ * @since 0.1.0
+ *
+ * @access private
+ *
+ * @param array[] $notes Notes from wp_presence_scene_note().
+ * @return array[] The notes that are problems.
+ */
+function wp_presence_scene_problems( array $notes ) {
+	return array_filter(
+		$notes,
+		function ( $note ) {
+			return 'fail' === $note['level'] || 'warning' === $note['level'];
+		}
+	);
+}
+
+/**
+ * Takes the lock that casting or playing a scene needs, so two commands cannot do either twice.
+ *
+ * @since 0.1.0
+ *
+ * @access private
+ *
+ * @param int $wait Optional. Seconds to wait for a busy lock. Default 0.
+ * @return bool Whether the lock was taken.
+ */
+function wp_presence_scene_lock( $wait = 0 ) {
+	require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+
+	$until = microtime( true ) + $wait;
+	while ( ! WP_Upgrader::create_lock( 'wp_presence_scene', 30 ) ) {
+		if ( microtime( true ) >= $until ) {
+			return false;
+		}
+		usleep( 250000 );
+	}
+
+	return true;
+}
+
+/**
+ * Runs a callback on the running scene while holding its lock, releasing it even when the callback throws.
+ *
+ * @since 0.1.0
+ *
+ * @access private
+ *
+ * @param callable $callback Receives the running scene, read after the lock is taken, or false when none runs.
+ * @param int      $wait     Optional. Seconds to wait for a busy lock. Default 0.
+ * @return mixed The callback's return value, or false when the lock was busy.
+ */
+function wp_presence_scene_locked( callable $callback, $wait = 0 ) {
+	if ( ! wp_presence_scene_lock( $wait ) ) {
+		return false;
+	}
+
+	try {
+		// Another command may have changed the scene before the lock was free.
+		wp_cache_delete( 'wp_presence_scene', 'options' );
+		return $callback( get_option( 'wp_presence_scene' ) );
+	} finally {
+		WP_Upgrader::release_lock( 'wp_presence_scene' );
+	}
+}
+
+/**
+ * Creates a scene's cast and saves it as the running scene.
+ *
+ * @since 0.1.0
+ *
+ * @access private
+ *
+ * @param array $scene A prepared scene.
+ * @return array|false The running scene, or false when a user could not be created.
+ */
+function wp_presence_scene_cast( array $scene ) {
+	$number = (int) get_option( 'wp_presence_scene_runs', 1000 ) + 1;
+	update_option( 'wp_presence_scene_runs', $number, false );
+
+	$run = array(
+		'name'    => $scene['name'],
+		'title'   => $scene['title'],
+		// A copy, so a scene edited or updated mid-run cannot change the steps being played.
+		'scene'   => $scene,
+		'run'     => $number,
+		'started' => time(),
+		// Leaves time for a dead command's run to be swept.
+		'expires' => time() + $scene['duration'] + 10 * MINUTE_IN_SECONDS,
+		'cast'    => array(),
+		'posts'   => array(),
+		'done'    => array(),
+		'clients' => array(),
+		'beat'    => 0,
+		'ticked'  => time(),
+		'notes'   => array(),
+	);
+
+	foreach ( $scene['cast'] as $i => $role ) {
+		$login   = 'actor' . ( $i + 1 ) . 'run' . $number;
+		$user_id = wp_insert_user(
+			array(
+				'user_login'   => $login,
+				'user_email'   => $login . '@example.com',
+				'user_pass'    => wp_generate_password( 24 ),
+				'display_name' => wp_presence_scene_actor_name( $i ),
+				'first_name'   => wp_presence_scene_actor_name( $i ),
+				'role'         => $role,
+				'meta_input'   => array( '_wp_presence_scene' => $run['expires'] ),
+			)
+		);
+
+		if ( is_wp_error( $user_id ) ) {
+			wp_presence_scene_note( $run, 'fail', $user_id->get_error_message() );
+			wp_presence_scene_strike( $run );
+			return false;
+		}
+
+		$run['cast'][] = $user_id;
+	}
+
+	update_option( 'wp_presence_scene', $run, false );
+
+	return $run;
+}
+
+/**
+ * Casts a scene, unless another is running.
+ *
+ * @since 0.1.0
+ *
+ * @access private
+ *
+ * @param string $name Scene name.
+ * @return array|false The running scene, or false when it could not start.
+ */
+function wp_presence_scene_start( $name ) {
+	$scenes = wp_presence_get_scenes();
+
+	if ( ! isset( $scenes[ $name ] ) ) {
+		return false;
+	}
+
+	// One scene runs at a time, so a second waits until the first finishes or expires.
+	wp_presence_scene_sweep();
+	$run = wp_presence_scene_locked(
+		function ( $running ) use ( $name, $scenes ) {
+			return $running ? false : wp_presence_scene_cast( $scenes[ $name ] );
+		}
+	);
+	if ( ! $run ) {
+		return false;
+	}
+
+	// Strikes the scene if the command dies before the last step.
+	wp_clear_scheduled_hook( 'wp_presence_scene_sweep' );
+	wp_schedule_single_event( $run['expires'], 'wp_presence_scene_sweep' );
+
+	return $run;
+}
+
+/**
+ * Plays every step that is due, then sends the cast's Heartbeats when they are due.
+ *
+ * @since 0.1.0
+ *
+ * @access private
+ *
+ * @param array    $run The running scene.
+ * @param int|null $now Optional. Timestamp to play at. Default the current time.
+ * @return array The running scene.
+ */
+function wp_presence_scene_play( array $run, $now = null ) {
+	// Loads core's own Heartbeat filters, such as wp_refresh_post_lock().
+	require_once ABSPATH . 'wp-admin/includes/admin.php';
+
+	$now     = null === $now ? time() : (int) $now;
+	$elapsed = $now - $run['started'];
+	$cast    = array();
+	foreach ( $run['cast'] as $user_id ) {
+		$cast[] = new WP_Presence_Scene_Actor( $user_id, $run );
+	}
+
+	foreach ( $run['scene']['steps'] as $i => $step ) {
+		if ( isset( $run['done'][ $i ] ) || $step['at'] > $elapsed ) {
+			continue;
+		}
+		// Saved as failed first, so a fatal error cannot replay the step on the next beat.
+		$run['done'][ $i ] = 'fail';
+		update_option( 'wp_presence_scene', $run, false );
+
+		$warnings = array();
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_set_error_handler -- Collects the step's warnings for the report.
+		set_error_handler(
+			function ( $errno, $errstr, $file, $line ) use ( &$warnings ) {
+				// Respects @ and error_reporting(), as PHP's own handler would.
+				if ( ! ( error_reporting() & $errno ) ) { // phpcs:ignore WordPress.PHP.DevelopmentFunctions.prevent_path_disclosure_error_reporting, WordPress.PHP.DiscouragedPHPFunctions.runtime_configuration_error_reporting -- Only reads the level.
+					return false;
+				}
+				$warnings[] = sprintf( '%s (%s:%d)', $errstr, wp_basename( $file ), $line );
+				return true;
+			}
+		);
+
+		try {
+			wp_presence_scene_perform( $step, $cast, $run );
+			$run['done'][ $i ] = 'pass';
+			wp_presence_scene_note( $run, 'pass', $step['label'] );
+		} catch ( Throwable $e ) {
+			wp_presence_scene_note( $run, 'fail', $step['label'] . ': ' . $e->getMessage() );
+		} finally {
+			restore_error_handler();
+		}
+
+		if ( $warnings ) {
+			$run['done'][ $i ] = 'fail';
+		}
+		foreach ( $warnings as $warning ) {
+			wp_presence_scene_note( $run, 'warning', $warning );
+		}
+	}
+
+	// Matches core's steady Heartbeat interval, so every actor stays well inside the timeout.
+	if ( $now - $run['beat'] >= 15 ) {
+		$run['beat'] = $now;
+		foreach ( $cast as $actor ) {
+			try {
+				$actor->beat();
+			} catch ( RuntimeException $e ) {
+				wp_presence_scene_note( $run, 'fail', $e->getMessage() );
+			}
+		}
+	}
+
+	$run['ticked'] = time();
+	update_option( 'wp_presence_scene', $run, false );
+
+	return $run;
+}
+
+/**
+ * Deletes the cast and everything they made, then checks nothing is left behind.
+ *
+ * @since 0.1.0
+ *
+ * @access private
+ *
+ * @param array $run The running scene.
+ * @return array The struck scene, with its closing note.
+ */
+function wp_presence_scene_strike( array $run ) {
+	wp_clear_scheduled_hook( 'wp_presence_scene_sweep' );
+
+	// Rooms are named before the posts that name them are deleted.
+	$rooms = array_filter( array_merge( array( wp_presence_admin_room() ), array_map( 'wp_presence_post_room', $run['posts'] ) ) );
+
+	foreach ( wp_presence_scene_delete_users( $run['cast'] ) as $user_id ) {
+		/* translators: %d: User ID. */
+		wp_presence_scene_note( $run, 'fail', sprintf( __( 'Could not delete user %d.', 'presence-scenes' ), $user_id ) );
+	}
+
+	foreach ( $rooms as $room ) {
+		foreach ( wp_get_presence( $room ) as $entry ) {
+			if ( in_array( (int) $entry->user_id, $run['cast'], true ) ) {
+				/* translators: 1: User ID, 2: Room. */
+				wp_presence_scene_note( $run, 'fail', sprintf( __( 'User %1$d is still present in %2$s.', 'presence-scenes' ), $entry->user_id, $room ) );
+			}
+		}
+	}
+
+	$problems = count( wp_presence_scene_problems( $run['notes'] ) );
+
+	$played = number_format_i18n( count( $run['done'] ) );
+	$total  = number_format_i18n( count( $run['scene']['steps'] ) );
+	if ( count( $run['done'] ) < count( $run['scene']['steps'] ) ) {
+		$summary = $problems
+			/* translators: 1: Steps played, 2: Total steps, 3: Number of problems. */
+			? sprintf( _n( 'Stopped after %1$s of %2$s steps, with %3$s problem.', 'Stopped after %1$s of %2$s steps, with %3$s problems.', $problems, 'presence-scenes' ), $played, $total, number_format_i18n( $problems ) )
+			/* translators: 1: Steps played, 2: Total steps. */
+			: sprintf( __( 'Stopped after %1$s of %2$s steps, with no problems.', 'presence-scenes' ), $played, $total );
+	} else {
+		$summary = $problems
+			/* translators: %s: Number of problems. */
+			? sprintf( _n( 'Finished with %s problem.', 'Finished with %s problems.', $problems, 'presence-scenes' ), number_format_i18n( $problems ) )
+			: __( 'Finished with no problems.', 'presence-scenes' );
+	}
+
+	wp_presence_scene_note( $run, $problems ? 'fail' : 'pass', $summary );
+
+	delete_option( 'wp_presence_scene' );
+
+	return $run;
+}
+
+/**
+ * Strikes an abandoned scene and deletes any cast member past their expiry.
+ *
+ * @since 0.1.0
+ *
+ * @access private
+ *
+ * @param bool $all Optional. Strike everything regardless of expiry. Default false.
+ */
+function wp_presence_scene_sweep( $all = false ) {
+	$due = function ( $run ) use ( $all ) {
+		// A run nobody has played for 30 seconds lost its command, such as to Ctrl+C.
+		return is_array( $run ) && ( $all || $run['expires'] <= time() || $run['ticked'] < time() - 30 );
+	};
+
+	if ( $due( get_option( 'wp_presence_scene' ) ) ) {
+		wp_presence_scene_locked(
+			function ( $run ) use ( $due ) {
+				if ( $due( $run ) ) {
+					wp_presence_scene_note( $run, 'info', __( 'Cleaned up before the scene finished.', 'presence-scenes' ) );
+					wp_presence_scene_strike( $run );
+				}
+			},
+			5
+		);
+	}
+
+	$query = array(
+		'meta_key' => '_wp_presence_scene', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+	);
+	if ( ! $all ) {
+		$query['meta_value']   = time(); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+		$query['meta_compare'] = '<=';
+		$query['meta_type']    = 'NUMERIC';
+	}
+
+	$query['fields'] = array( 'ID', 'user_login' );
+	$user_ids        = array();
+	foreach ( get_users( $query ) as $user ) {
+		if ( preg_match( '/^actor[1-7]run\d+$/', $user->user_login ) ) {
+			$user_ids[] = (int) $user->ID;
+		}
+	}
+	wp_presence_scene_delete_users( $user_ids );
+}
+
+/**
+ * Deletes scene users and everything they wrote.
+ *
+ * @since 0.1.0
+ *
+ * @access private
+ *
+ * @param int[] $user_ids Scene user IDs.
+ * @return int[] The users that could not be deleted.
+ */
+function wp_presence_scene_delete_users( array $user_ids ) {
+	if ( ! $user_ids ) {
+		return array();
+	}
+
+	require_once ABSPATH . 'wp-admin/includes/user.php';
+	if ( is_multisite() ) {
+		require_once ABSPATH . 'wp-admin/includes/ms.php';
+	}
+
+	// Deleting a user only trashes their posts, so theirs go first.
+	$posts = get_posts(
+		array(
+			'author__in'  => $user_ids,
+			'post_type'   => 'any',
+			'post_status' => 'any',
+			'fields'      => 'ids',
+			'numberposts' => -1,
+		)
+	);
+	foreach ( $posts as $post_id ) {
+		wp_delete_post( $post_id, true );
+	}
+
+	$failed = array();
+	foreach ( $user_ids as $user_id ) {
+		if ( ! ( is_multisite() ? wpmu_delete_user( $user_id ) : wp_delete_user( $user_id ) ) ) {
+			$failed[] = $user_id;
+		}
+	}
+
+	return $failed;
+}
+
+/**
+ * Refuses to log in as an actor.
+ *
+ * @since 0.1.0
+ *
+ * @access private
+ *
+ * @param WP_User|WP_Error $user The user logging in.
+ * @return WP_User|WP_Error The user, or an error for an actor.
+ */
+function wp_presence_scene_authenticate( $user ) {
+	if ( $user instanceof WP_User && get_user_meta( $user->ID, '_wp_presence_scene', true ) ) {
+		return new WP_Error( 'presence_scene_actor', __( 'Scene actors cannot log in.', 'presence-scenes' ) );
+	}
+
+	return $user;
+}

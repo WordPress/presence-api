@@ -28,5 +28,17 @@ add_action(
 
 		require_once __DIR__ . '/scenes.php';
 		require_once __DIR__ . '/class-wp-presence-scene-actor.php';
+
+		add_action( 'wp_presence_scene_sweep', 'wp_presence_scene_sweep' );
+		add_filter( 'wp_authenticate_user', 'wp_presence_scene_authenticate' );
+	}
+);
+
+register_deactivation_hook(
+	__FILE__,
+	function () {
+		if ( function_exists( 'wp_presence_scene_sweep' ) ) {
+			wp_presence_scene_sweep( true );
+		}
 	}
 );

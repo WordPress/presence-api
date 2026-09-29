@@ -9,11 +9,75 @@
 
 class WP_Test_Presence_Scenes extends WP_Presence_UnitTestCase {
 
+	public function tear_down() {
+		// The parent's TRUNCATE commits, so actors would otherwise outlive the rollback.
+		wp_presence_scene_sweep( true );
+		delete_option( 'wp_presence_scene' );
+		delete_option( 'wp_presence_scene.lock' );
+		delete_option( 'wp_presence_scene_runs' );
+		parent::tear_down();
+	}
+
+	public function data_bundled_scenes() {
+		$scenes = array();
+		foreach ( glob( dirname( __DIR__ ) . '/library/*.json' ) as $file ) {
+			$scenes[ basename( $file, '.json' ) ] = array( basename( $file, '.json' ) );
+		}
+		return $scenes;
+	}
+
 	/**
+	 * @dataProvider data_bundled_scenes
+	 *
 	 * @covers ::wp_presence_get_scenes
+	 * @covers ::wp_presence_scene_places
+	 * @covers ::wp_presence_scene_actions
+	 * @covers ::wp_presence_scene_prepare
+	 * @covers ::wp_presence_scene_text
+	 * @covers ::wp_presence_scene_start
+	 * @covers ::wp_presence_scene_cast
+	 * @covers ::wp_presence_scene_actor_name
+	 * @covers ::wp_presence_scene_authenticate
+	 * @covers ::wp_presence_scene_play
+	 * @covers ::wp_presence_scene_perform
+	 * @covers ::wp_presence_scene_note
+	 * @covers ::wp_presence_scene_problems
+	 * @covers ::wp_presence_scene_strike
+	 * @covers ::wp_presence_scene_delete_users
+	 * @covers WP_Presence_Scene_Actor
 	 */
-	public function test_loads_every_bundled_scene() {
-		$this->assertCount( count( glob( dirname( __DIR__ ) . '/library/*.json' ) ), wp_presence_get_scenes() );
+	public function test_bundled_scene_plays_to_the_end_through_heartbeat( $name ) {
+		global $wpdb;
+
+		$run   = wp_presence_scene_start( $name );
+		$steps = count( $run['scene']['steps'] );
+		$now   = $run['started'];
+
+		while ( count( $run['done'] ) < $steps ) {
+			$run = wp_presence_scene_play( $run, $now );
+
+			$next = $now + 15;
+			foreach ( $run['scene']['steps'] as $i => $step ) {
+				if ( ! isset( $run['done'][ $i ] ) ) {
+					$next = min( $next, $run['started'] + $step['at'] );
+					break;
+				}
+			}
+			$jump = max( 1, $next - $now );
+			$now += $jump;
+
+			// Ages every row as far as the fake clock moved, so timeouts pass as they would in real time.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->presence} SET date_gmt = date_gmt - INTERVAL %d SECOND, expires_gmt = expires_gmt - INTERVAL %d SECOND", $jump, $jump ) );
+		}
+
+		$run = wp_presence_scene_strike( $run );
+
+		$this->assertSame( array(), array_values( wp_presence_scene_problems( $run['notes'] ) ) );
+		$this->assertSame( array(), get_users( array( 'include' => $run['cast'], 'blog_id' => 0 ) ) );
+		foreach ( $run['posts'] as $post_id ) {
+			$this->assertNull( get_post( $post_id ), 'Scene posts should be deleted, not trashed.' );
+		}
 	}
 
 	public function data_bundled_files() {
@@ -100,5 +164,118 @@ class WP_Test_Presence_Scenes extends WP_Presence_UnitTestCase {
 		}
 
 		$this->assertWPError( wp_presence_scene_prepare( $scene ) );
+	}
+
+	/**
+	 * @covers ::wp_presence_scene_start
+	 */
+	public function test_start_refuses_while_another_scene_runs() {
+		$this->assertNotFalse( wp_presence_scene_start( 'editing-together' ) );
+
+		$this->assertFalse( wp_presence_scene_start( 'connection-lost' ) );
+	}
+
+	/**
+	 * @covers ::wp_presence_scene_locked
+	 */
+	public function test_lock_is_released_when_a_step_throws() {
+		try {
+			wp_presence_scene_locked(
+				function () {
+					throw new RuntimeException();
+				}
+			);
+		} catch ( RuntimeException $e ) {
+			$this->assertTrue( wp_presence_scene_lock() );
+		}
+	}
+
+	/**
+	 * @covers ::wp_presence_scene_sweep
+	 * @covers ::wp_presence_scene_strike
+	 * @covers ::wp_presence_scene_delete_users
+	 */
+	public function test_stopping_a_scene_leaves_nothing_behind() {
+		$run = wp_presence_scene_start( 'editing-together' );
+		$run = wp_presence_scene_play( $run, $run['started'] + 5 );
+		$this->assertNotEmpty( $run['posts'] );
+
+		wp_presence_scene_sweep( true );
+
+		$this->assertFalse( get_option( 'wp_presence_scene' ) );
+		$this->assertSame( array(), get_users( array( 'include' => $run['cast'], 'blog_id' => 0 ) ) );
+		$this->assertNull( get_post( $run['posts'][0] ), 'The draft should be deleted, not trashed.' );
+		$this->assertSame( array(), $this->presence_for_user( $run['cast'][0] ) );
+	}
+
+	/**
+	 * @covers ::wp_presence_scene_sweep
+	 * @covers ::wp_presence_scene_delete_users
+	 */
+	public function test_sweep_deletes_an_expired_users_posts() {
+		$user_id = self::factory()->user->create(
+			array(
+				'user_login' => 'actor1run5',
+				'meta_input' => array( '_wp_presence_scene' => time() - 1 ),
+			)
+		);
+		$post_id = self::factory()->post->create( array( 'post_author' => $user_id ) );
+
+		wp_presence_scene_sweep();
+
+		$this->assertFalse( get_userdata( $user_id ) );
+		$this->assertNull( get_post( $post_id ), 'The post should be deleted, not trashed.' );
+	}
+
+	/**
+	 * @covers ::wp_presence_scene_play
+	 * @covers ::wp_presence_scene_strike
+	 */
+	public function test_failed_step_is_reported() {
+		$run                   = wp_presence_scene_start( 'editing-together' );
+		$run['scene']['steps'] = array(
+			array(
+				'at'    => 0,
+				'actor' => 1,
+				'step'  => 'checkOnline',
+				'label' => 'Actor 1 is online',
+			),
+		);
+
+		$run = wp_presence_scene_play( $run, $run['started'] );
+		$this->assertSame( 'fail', $run['done'][0] );
+
+		$run = wp_presence_scene_strike( $run );
+		$this->assertSame( 'fail', end( $run['notes'] )['level'] );
+	}
+
+	/**
+	 * @covers ::wp_presence_scene_play
+	 */
+	public function test_warning_during_a_step_fails_it() {
+		$run                   = wp_presence_scene_start( 'editing-together' );
+		$run['scene']['steps'] = array_slice( $run['scene']['steps'], 0, 1 );
+
+		add_filter(
+			'heartbeat_received',
+			function ( $response ) {
+				trigger_error( 'Deprecated in a plugin', E_USER_WARNING ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_trigger_error
+				return $response;
+			}
+		);
+		$run = wp_presence_scene_play( $run, $run['started'] );
+
+		$this->assertSame( 'fail', $run['done'][0] );
+		$this->assertContains( 'warning', array_column( $run['notes'], 'level' ) );
+	}
+
+	/**
+	 * @covers ::wp_presence_scene_authenticate
+	 */
+	public function test_actor_cannot_log_in() {
+		$run = wp_presence_scene_start( 'editing-together' );
+
+		$this->assertWPError( wp_presence_scene_authenticate( get_userdata( $run['cast'][0] ) ) );
+		$this->assertInstanceOf( WP_User::class, wp_presence_scene_authenticate( get_userdata( self::factory()->user->create() ) ) );
 	}
 }
