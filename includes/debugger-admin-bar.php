@@ -75,20 +75,21 @@ function wp_presence_debugger_admin_bar_node( $wp_admin_bar ) {
 
 	foreach ( $rooms as $i => $room ) {
 		$group = 'presence-debug-room-' . $i;
+
+		// Reserved rows included, since the plugin's own bookkeeping is part of what is being debugged.
+		$rows = wp_presence_room_rows( $room );
+
 		$wp_admin_bar->add_node(
 			array(
 				'parent' => 'presence-debug-rooms',
 				'id'     => $group . '-name',
-				'title'  => '<code>' . esc_html( $room ) . '</code>',
+				'title'  => '<code>' . esc_html( $room ) . '</code><span class="presence-debug-value">' . esc_html( number_format_i18n( count( $rows ) ) ) . '</span>',
 				'meta'   => array(
 					'class' => 'presence-debug-room',
 					'html'  => file_exists( __DIR__ . '/db-viewer.php' ) ? '<a class="presence-debug-table" role="menuitem" href="' . esc_url( wp_nonce_url( add_query_arg( 'room', rawurlencode( $room ), home_url( '/?presence-db=1' ) ), 'wp_presence_db_viewer' ) ) . '" target="_blank" title="' . esc_attr__( 'View in the presence table', 'presence-api' ) . '"><span class="screen-reader-text">' . esc_html__( 'View in the presence table', 'presence-api' ) . ' ' . esc_html__( '(opens in a new window)', 'presence-api' ) . '</span></a>' : '',
 				),
 			)
 		);
-
-		// Reserved rows included, since the plugin's own bookkeeping is part of what is being debugged.
-		$rows = wp_presence_room_rows( $room );
 
 		// Colors only mark who shares your page, as in the app.
 		$page   = function ( $row ) use ( $room ) {
@@ -221,6 +222,8 @@ function wp_presence_debugger_admin_bar_assets() {
 		#wpadminbar #wp-admin-bar-presence-debug .presence-debug-table:is(:hover, :focus) { color: var(--wp-admin-theme-color, #72aee6); }
 		#wp-admin-bar-presence-debug code { padding: 0; background: none; color: inherit; font-size: 12px; font-weight: inherit; line-height: inherit; }
 		#wp-admin-bar-presence-debug .presence-debug-room > .ab-item { font-weight: 600; cursor: default; }
+		#wp-admin-bar-presence-debug .presence-debug-room .presence-debug-value { font-weight: 400; }
+		#wp-admin-bar-presence-debug .presence-debug-row code { opacity: 0.75; }
 		#wp-admin-bar-presence-debug .presence-debug-more > .ab-item { cursor: default; }
 		@media (prefers-reduced-motion: reduce) { #wp-admin-bar-presence-debug.is-beating .ab-icon { animation: none; } }
 	';
