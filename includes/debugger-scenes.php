@@ -419,6 +419,30 @@ function wp_presence_scene_lifetime( array $scene ) {
 }
 
 /**
+ * Takes the lock that casting or playing a scene needs, so two requests cannot do either twice.
+ *
+ * @since 0.12.0
+ *
+ * @access private
+ *
+ * @param int $wait Optional. Seconds to wait for a busy lock. Default 0.
+ * @return bool Whether the lock was taken.
+ */
+function wp_presence_scene_lock( $wait = 0 ) {
+	require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+
+	$until = microtime( true ) + $wait;
+	while ( ! WP_Upgrader::create_lock( 'wp_presence_scene', 30 ) ) {
+		if ( microtime( true ) >= $until ) {
+			return false;
+		}
+		usleep( 250000 );
+	}
+
+	return true;
+}
+
+/**
  * Casts a scene and plays its opening cues.
  *
  * @since 0.12.0
@@ -435,7 +459,12 @@ function wp_presence_scene_start( $name ) {
 
 	// One scene runs at a time, so a second waits until the first finishes or expires.
 	wp_presence_scene_sweep();
+	if ( ! wp_presence_scene_lock() ) {
+		return false;
+	}
+	wp_cache_delete( 'wp_presence_scene', 'options' );
 	if ( get_option( 'wp_presence_scene' ) ) {
+		WP_Upgrader::release_lock( 'wp_presence_scene' );
 		return false;
 	}
 
@@ -475,6 +504,7 @@ function wp_presence_scene_start( $name ) {
 		if ( is_wp_error( $user_id ) ) {
 			wp_presence_scene_note( $run, 'fail', $user_id->get_error_message() );
 			wp_presence_scene_strike( $run );
+			WP_Upgrader::release_lock( 'wp_presence_scene' );
 			return false;
 		}
 
@@ -482,6 +512,7 @@ function wp_presence_scene_start( $name ) {
 	}
 
 	update_option( 'wp_presence_scene', $run, false );
+	WP_Upgrader::release_lock( 'wp_presence_scene' );
 
 	wp_presence_scene_direct();
 
@@ -508,11 +539,15 @@ function wp_presence_scene_direct() {
 	}
 
 	// Two tabs beating at once would otherwise play a cue twice.
-	if ( ! add_option( 'wp_presence_scene_lock', time(), '', false ) ) {
-		if ( time() - (int) get_option( 'wp_presence_scene_lock' ) < 30 ) {
-			return $run;
-		}
-		update_option( 'wp_presence_scene_lock', time(), false );
+	if ( ! wp_presence_scene_lock() ) {
+		return $run;
+	}
+	// Read again, since another request may have played or struck the scene before the lock was free.
+	wp_cache_delete( 'wp_presence_scene', 'options' );
+	$run = get_option( 'wp_presence_scene' );
+	if ( ! is_array( $run ) || ! empty( $run['paused'] ) ) {
+		WP_Upgrader::release_lock( 'wp_presence_scene' );
+		return is_array( $run ) ? $run : null;
 	}
 
 	require_once ABSPATH . 'wp-admin/includes/post.php';
@@ -565,7 +600,7 @@ function wp_presence_scene_direct() {
 		}
 	}
 
-	delete_option( 'wp_presence_scene_lock' );
+	WP_Upgrader::release_lock( 'wp_presence_scene' );
 
 	if ( count( $run['done'] ) === count( $scene['cues'] ) ) {
 		wp_presence_scene_strike( $run );
@@ -672,9 +707,10 @@ function wp_presence_scene_strike( array $run ) {
 function wp_presence_scene_sweep( $all = false ) {
 	$run = get_option( 'wp_presence_scene' );
 
-	if ( is_array( $run ) && ( $all || $run['expires'] < time() ) ) {
+	if ( is_array( $run ) && ( $all || $run['expires'] <= time() ) && wp_presence_scene_lock( 5 ) ) {
 		wp_presence_scene_note( $run, 'info', __( 'Cleaned up before the scene finished.', 'presence-api' ) );
 		wp_presence_scene_strike( $run );
+		WP_Upgrader::release_lock( 'wp_presence_scene' );
 	}
 
 	$query = array(
@@ -754,15 +790,12 @@ function wp_presence_scene_admin_post() {
 
 	if ( 'start' === $do && isset( $_GET['scene'] ) ) {
 		wp_presence_scene_start( sanitize_text_field( wp_unslash( $_GET['scene'] ) ) );
-	} elseif ( 'cut' === $do ) {
+	} elseif ( in_array( $do, array( 'cut', 'pause', 'resume' ), true ) && wp_presence_scene_lock( 5 ) ) {
 		$run = get_option( 'wp_presence_scene' );
-		if ( is_array( $run ) ) {
+		if ( is_array( $run ) && 'cut' === $do ) {
 			wp_presence_scene_note( $run, 'info', __( 'Stopped.', 'presence-api' ) );
 			wp_presence_scene_strike( $run );
-		}
-	} elseif ( 'pause' === $do || 'resume' === $do ) {
-		$run = get_option( 'wp_presence_scene' );
-		if ( is_array( $run ) && empty( $run['paused'] ) === ( 'pause' === $do ) ) {
+		} elseif ( is_array( $run ) && empty( $run['paused'] ) === ( 'pause' === $do ) ) {
 			if ( 'pause' === $do ) {
 				$run['paused'] = time();
 			} else {
@@ -771,6 +804,7 @@ function wp_presence_scene_admin_post() {
 			}
 			update_option( 'wp_presence_scene', $run, false );
 		}
+		WP_Upgrader::release_lock( 'wp_presence_scene' );
 	}
 
 	wp_safe_redirect( wp_get_referer() ? wp_get_referer() : admin_url() );
