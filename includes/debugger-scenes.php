@@ -513,6 +513,8 @@ function wp_presence_scene_start( $name ) {
 
 	update_option( 'wp_presence_scene', $run, false );
 	WP_Upgrader::release_lock( 'wp_presence_scene' );
+	// Strikes the scene if its tab closes before the last cue.
+	wp_schedule_single_event( $run['expires'], 'wp_presence_scene_sweep' );
 
 	wp_presence_scene_direct();
 
@@ -622,36 +624,11 @@ function wp_presence_scene_direct() {
 function wp_presence_scene_strike( array $run ) {
 	global $wpdb;
 
-	require_once ABSPATH . 'wp-admin/includes/user.php';
-	if ( is_multisite() ) {
-		require_once ABSPATH . 'wp-admin/includes/ms.php';
-	}
+	wp_clear_scheduled_hook( 'wp_presence_scene_sweep' );
 
-	// Deleting a user only trashes their posts, so the scene's own go first, including any a fatal error left unrecorded.
-	$run['posts'] = array_unique(
-		array_merge(
-			$run['posts'],
-			$run['cast'] ? get_posts(
-				array(
-					'author__in'       => $run['cast'],
-					'post_type'        => 'any',
-					'post_status'      => 'any',
-					'fields'           => 'ids',
-					'numberposts'      => -1,
-					'suppress_filters' => true,
-				)
-			) : array()
-		)
-	);
-	foreach ( $run['posts'] as $post_id ) {
-		wp_delete_post( $post_id, true );
-	}
-
-	foreach ( $run['cast'] as $user_id ) {
-		if ( ! ( is_multisite() ? wpmu_delete_user( $user_id ) : wp_delete_user( $user_id ) ) ) {
-			/* translators: %d: User ID. */
-			wp_presence_scene_note( $run, 'fail', sprintf( __( 'Could not delete user %d.', 'presence-api' ), $user_id ) );
-		}
+	foreach ( wp_presence_scene_delete_users( $run['cast'] ) as $user_id ) {
+		/* translators: %d: User ID. */
+		wp_presence_scene_note( $run, 'fail', sprintf( __( 'Could not delete user %d.', 'presence-api' ), $user_id ) );
 	}
 
 	foreach ( $run['cast'] as $user_id ) {
@@ -719,7 +696,7 @@ function wp_presence_scene_sweep( $all = false ) {
 	);
 	if ( ! $all ) {
 		$query['meta_value']   = time(); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
-		$query['meta_compare'] = '<';
+		$query['meta_compare'] = '<=';
 		$query['meta_type']    = 'NUMERIC';
 	}
 
@@ -730,21 +707,52 @@ function wp_presence_scene_sweep( $all = false ) {
 			$user_ids[] = (int) $user->ID;
 		}
 	}
+	wp_presence_scene_delete_users( $user_ids );
+}
+
+/**
+ * Deletes scene users and everything they wrote.
+ *
+ * @since 0.12.0
+ *
+ * @access private
+ *
+ * @param int[] $user_ids Scene user IDs.
+ * @return int[] The users that could not be deleted.
+ */
+function wp_presence_scene_delete_users( array $user_ids ) {
 	if ( ! $user_ids ) {
-		return;
+		return array();
 	}
 
 	require_once ABSPATH . 'wp-admin/includes/user.php';
 	if ( is_multisite() ) {
 		require_once ABSPATH . 'wp-admin/includes/ms.php';
 	}
+
+	// Deleting a user only trashes their posts, so theirs go first.
+	$posts = get_posts(
+		array(
+			'author__in'       => $user_ids,
+			'post_type'        => 'any',
+			'post_status'      => 'any',
+			'fields'           => 'ids',
+			'numberposts'      => -1,
+			'suppress_filters' => true,
+		)
+	);
+	foreach ( $posts as $post_id ) {
+		wp_delete_post( $post_id, true );
+	}
+
+	$failed = array();
 	foreach ( $user_ids as $user_id ) {
-		if ( is_multisite() ) {
-			wpmu_delete_user( $user_id );
-		} else {
-			wp_delete_user( $user_id );
+		if ( ! ( is_multisite() ? wpmu_delete_user( $user_id ) : wp_delete_user( $user_id ) ) ) {
+			$failed[] = $user_id;
 		}
 	}
+
+	return $failed;
 }
 
 /**

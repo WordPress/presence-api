@@ -112,21 +112,26 @@ if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 		add_action( 'wp_enqueue_scripts', 'wp_presence_debugger_admin_bar_assets' );
 		add_filter( 'heartbeat_received', 'wp_presence_debugger_heartbeat_received', 13, 2 );
 	}
-	if ( file_exists( WP_PRESENCE_PLUGIN_DIR . 'includes/debugger-scenes.php' ) ) {
-		require_once WP_PRESENCE_PLUGIN_DIR . 'includes/class-wp-presence-scene-actor.php';
-		require_once WP_PRESENCE_PLUGIN_DIR . 'includes/debugger-scenes.php';
+	if ( file_exists( WP_PRESENCE_PLUGIN_DIR . 'includes/db-viewer.php' ) ) {
+		require_once WP_PRESENCE_PLUGIN_DIR . 'includes/db-viewer.php';
+	}
+}
+
+// Scene users outlive a run whose tab closed, so their cleanup keeps working after WP_DEBUG is turned off.
+if ( file_exists( WP_PRESENCE_PLUGIN_DIR . 'includes/debugger-scenes.php' ) ) {
+	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/class-wp-presence-scene-actor.php';
+	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/debugger-scenes.php';
+	add_action( 'wp_presence_scene_sweep', 'wp_presence_scene_sweep' );
+	add_filter( 'wp_authenticate_user', 'wp_presence_scene_authenticate' );
+	add_action( 'deactivate_' . plugin_basename( __FILE__ ), 'wp_presence_scene_sweep_all' );
+
+	if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 		add_action( 'wp_presence_scenes_init', 'wp_presence_register_default_scenes' );
 		add_action( 'wp_presence_debugger_menu', 'wp_presence_scene_admin_bar_nodes' );
 		add_action( 'admin_post_presence_scene', 'wp_presence_scene_admin_post' );
-		add_action( 'admin_init', 'wp_presence_scene_sweep' );
 		add_filter( 'heartbeat_received', 'wp_presence_scene_heartbeat_received', 12, 2 );
-		add_filter( 'wp_authenticate_user', 'wp_presence_scene_authenticate' );
 		add_action( 'admin_enqueue_scripts', 'wp_presence_scene_assets', 11 );
 		add_action( 'wp_enqueue_scripts', 'wp_presence_scene_assets', 11 );
-		add_action( 'deactivate_' . plugin_basename( __FILE__ ), 'wp_presence_scene_sweep_all' );
-	}
-	if ( file_exists( WP_PRESENCE_PLUGIN_DIR . 'includes/db-viewer.php' ) ) {
-		require_once WP_PRESENCE_PLUGIN_DIR . 'includes/db-viewer.php';
 	}
 }
 
