@@ -78,9 +78,7 @@ function wp_register_presence_scene( $scene ) {
 }
 
 /**
- * Actions a cue can take, each with the fields it needs and how its step is narrated.
- *
- * The action name maps to the WP_Presence_Scene_Actor method that plays it, so takeOver plays take_over().
+ * Actions a cue can take, each with the WP_Presence_Scene_Actor method that plays it, the fields it needs and how its step is narrated.
  *
  * @since 0.12.0
  *
@@ -91,6 +89,7 @@ function wp_register_presence_scene( $scene ) {
 function wp_presence_scene_actions() {
 	return array(
 		'visit'         => array(
+			'method' => 'visit',
 			'fields' => array( 'place' ),
 			'cast'   => true,
 			/* translators: 1: Actor, 2: Screen title. */
@@ -99,66 +98,77 @@ function wp_presence_scene_actions() {
 			'again'  => __( '%1$s goes to %2$s', 'presence-api' ),
 		),
 		'write'         => array(
+			'method' => 'write',
 			'fields' => array( 'title' ),
 			'cast'   => false,
 			/* translators: 1: Actor, 2: Post title. */
 			'label'  => __( '%1$s writes “%2$s”', 'presence-api' ),
 		),
 		'open'          => array(
+			'method' => 'open',
 			'fields' => array( 'post' ),
 			'cast'   => false,
 			/* translators: 1: Actor, 2: Post title. */
 			'label'  => __( '%1$s opens “%2$s”', 'presence-api' ),
 		),
 		'takeOver'      => array(
+			'method' => 'take_over',
 			'fields' => array( 'post' ),
 			'cast'   => false,
 			/* translators: 1: Actor, 2: Post title. */
 			'label'  => __( '%1$s takes over “%2$s”', 'presence-api' ),
 		),
 		'type'          => array(
+			'method' => 'type',
 			'fields' => array( 'post', 'text' ),
 			'cast'   => false,
 			/* translators: 1: Actor, 2: Post title. */
 			'label'  => __( '%1$s edits “%2$s”', 'presence-api' ),
 		),
 		'close'         => array(
+			'method' => 'close',
 			'fields' => array( 'post' ),
 			'cast'   => false,
 			/* translators: 1: Actor, 2: Post title. */
 			'label'  => __( '%1$s closes “%2$s”', 'presence-api' ),
 		),
 		'drop'          => array(
+			'method' => 'drop',
 			'fields' => array(),
 			'cast'   => true,
 			/* translators: %s: Actor. */
 			'label'  => __( '%s loses connection', 'presence-api' ),
 		),
 		'leave'         => array(
+			'method' => 'leave',
 			'fields' => array(),
 			'cast'   => true,
 			/* translators: %s: Actor. */
 			'label'  => __( '%s logs out', 'presence-api' ),
 		),
 		'checkOnline'   => array(
+			'method' => 'check_online',
 			'fields' => array(),
 			'cast'   => true,
 			/* translators: %s: Actor. */
 			'label'  => __( '%s is online', 'presence-api' ),
 		),
 		'checkOffline'  => array(
+			'method' => 'check_offline',
 			'fields' => array(),
 			'cast'   => true,
 			/* translators: %s: Actor. */
 			'label'  => __( '%s is offline', 'presence-api' ),
 		),
 		'checkLocked'   => array(
+			'method' => 'check_locked',
 			'fields' => array( 'post' ),
 			'cast'   => false,
 			/* translators: 1: Actor, 2: Post title. */
 			'label'  => __( '%1$s finds “%2$s” locked', 'presence-api' ),
 		),
 		'checkUnlocked' => array(
+			'method' => 'check_unlocked',
 			'fields' => array( 'post' ),
 			'cast'   => false,
 			/* translators: 1: Actor, 2: Post title. */
@@ -354,10 +364,11 @@ function wp_presence_scene_text( $value, $max ) {
  * @param array                     $run  The running scene.
  */
 function wp_presence_scene_perform( array $cue, array $cast, array $run ) {
-	$method = strtolower( preg_replace( '/(?<!^)[A-Z]/', '_$0', $cue['action'] ) );
+	$action = wp_presence_scene_actions()[ $cue['action'] ];
+	$method = $action['method'];
 	$args   = array();
 
-	foreach ( wp_presence_scene_actions()[ $cue['action'] ]['fields'] as $field ) {
+	foreach ( $action['fields'] as $field ) {
 		$args[] = 'post' === $field ? (int) ( $run['posts'][ $cue['post'] - 1 ] ?? 0 ) : ( $cue[ $field ] ?? null );
 	}
 
