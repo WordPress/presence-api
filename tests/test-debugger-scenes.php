@@ -139,6 +139,9 @@ class WP_Test_Presence_Debugger_Scenes extends WP_Presence_UnitTestCase {
 		$this->assertSame( array(), get_users( array( 'include' => $run['cast'], 'blog_id' => 0 ) ) );
 		$this->assertNull( get_post( $run['posts'][0] ), 'The draft should be deleted, not trashed.' );
 		$this->assertSame( array(), $this->presence_for_user( $run['cast'][0] ) );
+
+		$notes = get_option( 'wp_presence_scene_reports' )['presence-api/editing-together']['notes'];
+		$this->assertStringStartsWith( 'Stopped after', end( $notes )['message'] );
 	}
 
 	/**

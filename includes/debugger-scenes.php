@@ -676,14 +676,22 @@ function wp_presence_scene_strike( array $run ) {
 		)
 	);
 
-	wp_presence_scene_note(
-		$run,
-		$problems ? 'fail' : 'pass',
-		$problems
+	$played = number_format_i18n( count( $run['done'] ) );
+	$total  = number_format_i18n( count( $run['scene']['cues'] ) );
+	if ( count( $run['done'] ) < count( $run['scene']['cues'] ) ) {
+		$summary = $problems
+			/* translators: 1: Steps played, 2: Total steps, 3: Number of problems. */
+			? sprintf( _n( 'Stopped after %1$s of %2$s steps, with %3$s problem.', 'Stopped after %1$s of %2$s steps, with %3$s problems.', $problems, 'presence-api' ), $played, $total, number_format_i18n( $problems ) )
+			/* translators: 1: Steps played, 2: Total steps. */
+			: sprintf( __( 'Stopped after %1$s of %2$s steps, with no problems.', 'presence-api' ), $played, $total );
+	} else {
+		$summary = $problems
 			/* translators: %s: Number of problems. */
 			? sprintf( _n( 'Finished with %s problem.', 'Finished with %s problems.', $problems, 'presence-api' ), number_format_i18n( $problems ) )
-			: __( 'Finished with no problems.', 'presence-api' )
-	);
+			: __( 'Finished with no problems.', 'presence-api' );
+	}
+
+	wp_presence_scene_note( $run, $problems ? 'fail' : 'pass', $summary );
 
 	delete_option( 'wp_presence_scene' );
 	$reports = (array) get_option( 'wp_presence_scene_reports', array() );
