@@ -197,6 +197,7 @@ describe( 'wpPresenceCreateTabCoordinator', () => {
 
 		afterEach( () => {
 			delete window.ajaxurl;
+			delete window.heartbeatSettings;
 			delete window.wp;
 			setVisibility( 'visible' );
 		} );
@@ -261,7 +262,7 @@ describe( 'wpPresenceCreateTabCoordinator', () => {
 			expect( tab.coordinator.isLeader() ).toBe( true );
 		} );
 
-		it( 'does not lead when hidden between the grant and its callback', async () => {
+		it( 'does not lead when hidden before its request is granted', async () => {
 			const tab = openTab( 'presence-key', [ 'presence-online' ] );
 
 			setVisibility( 'hidden' );
@@ -293,15 +294,24 @@ describe( 'wpPresenceCreateTabCoordinator', () => {
 			expect( window.wp.heartbeat.connectNow ).toHaveBeenCalledTimes( 1 );
 		} );
 
-		it( 'elects a leader per site on a subdirectory network', async () => {
-			window.ajaxurl = '/site-a/wp-admin/admin-ajax.php';
-			const tabA = openTab( 'presence-key', [ 'presence-online' ] );
-			window.ajaxurl = '/site-b/wp-admin/admin-ajax.php';
-			const tabB = openTab( 'presence-key', [ 'presence-online' ] );
-			await flush();
+		it.each( [
+			[ 'admin', ( url ) => ( window.ajaxurl = url ) ],
+			[
+				'front end',
+				( url ) => ( window.heartbeatSettings = { ajaxurl: url } ),
+			],
+		] )(
+			'elects a leader per site on a subdirectory network (%s)',
+			async ( screen, setEndpoint ) => {
+				setEndpoint( '/site-a/wp-admin/admin-ajax.php' );
+				const tabA = openTab( 'presence-key', [ 'presence-online' ] );
+				setEndpoint( '/site-b/wp-admin/admin-ajax.php' );
+				const tabB = openTab( 'presence-key', [ 'presence-online' ] );
+				await flush();
 
-			expect( tabA.coordinator.isLeader() ).toBe( true );
-			expect( tabB.coordinator.isLeader() ).toBe( true );
-		} );
+				expect( tabA.coordinator.isLeader() ).toBe( true );
+				expect( tabB.coordinator.isLeader() ).toBe( true );
+			}
+		);
 	} );
 } );
