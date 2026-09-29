@@ -268,6 +268,15 @@ Filters whether a network assembles its sites' rows into the network-wide view b
 add_filter( 'wp_presence_network_aggregation_enabled', '__return_false' );
 ```
 
+#### `wp_presence_debugger_indicators`
+Filters the icons beside the admin bar debugger's countdown, which refresh with each Heartbeat. The debugger loads only under `WP_DEBUG` in a git checkout, since the release zip leaves it out.
+```php
+add_filter( 'wp_presence_debugger_indicators', function( $indicators ) {
+    $indicators[] = array( 'icon' => 'dashicons-controls-play', 'label' => __( 'Import running', 'my-plugin' ) );
+    return $indicators;
+} );
+```
+
 ### Actions
 #### `wp_presence_screen_revision_bumped`
 Fires after an admin screen revision has been bumped. Useful for triggering custom sync or WebSocket integrations.
@@ -291,6 +300,19 @@ Fires when collaboration ends in a room (transition from 2+ to exactly 1 editor)
 add_action( 'wp_presence_collaboration_ended', function( $room, $entries ) {
     // Announce room inactive or update integration state
 }, 10, 2 );
+```
+
+#### `wp_presence_debugger_menu`
+Fires after the admin bar debugger's Interval and TTL rows, on page load and again on each Heartbeat refresh, which `admin_bar_menu` does not. Add nodes under `presence-debug` with the `presence-debug-row` class, and a `presence-debug-value` span right-aligns a value.
+```php
+add_action( 'wp_presence_debugger_menu', function( $wp_admin_bar ) {
+    $wp_admin_bar->add_node( array(
+        'parent' => 'presence-debug',
+        'id'     => 'presence-debug-imports',
+        'title'  => '<span>Imports</span><span class="presence-debug-value">3</span>',
+        'meta'   => array( 'class' => 'presence-debug-row' ),
+    ) );
+} );
 ```
 
 ### JS Actions
