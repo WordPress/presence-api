@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.1](https://github.com/WordPress/presence-api/compare/v0.12.0...v0.12.1) (2026-09-29)
+
+
+### Bug Fixes
+
+* translate Heartbeat debugger plurals and units ([#660](https://github.com/WordPress/presence-api/issues/660)) ([2452d8e](https://github.com/WordPress/presence-api/commit/2452d8e29ffd0c59f2eb33a35c04a19f0a0c60f3))
+
 ## [0.12.0](https://github.com/WordPress/presence-api/compare/v0.11.0...v0.12.0) (2026-09-29)
 
 
