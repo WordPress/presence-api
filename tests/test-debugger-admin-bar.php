@@ -65,4 +65,34 @@ class WP_Test_Presence_Debugger_Admin_Bar extends WP_Presence_UnitTestCase {
 
 		$this->assertStringContainsString( 'beside-me', $markup );
 	}
+
+	/**
+	 * @covers ::wp_presence_debugger_admin_bar_node
+	 */
+	public function test_other_plugins_add_rows_and_indicators() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$row       = function ( $wp_admin_bar ) {
+			$wp_admin_bar->add_node(
+				array(
+					'parent' => 'presence-debug',
+					'id'     => 'presence-debug-extra',
+					'title'  => 'Extra row',
+				)
+			);
+		};
+		$indicator = function ( $indicators ) {
+			$indicators[] = array(
+				'icon'  => 'dashicons-controls-play',
+				'label' => 'Playing',
+			);
+			return $indicators;
+		};
+		add_action( 'wp_presence_debugger_menu', $row );
+		add_filter( 'wp_presence_debugger_indicators', $indicator );
+
+		$markup = wp_presence_debugger_admin_bar_markup();
+
+		$this->assertStringContainsString( 'Extra row', $markup, 'Rows added through the action should refresh with the menu.' );
+		$this->assertStringContainsString( 'dashicons-controls-play" title="Playing"', $markup );
+	}
 }

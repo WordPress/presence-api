@@ -21,13 +21,31 @@ function wp_presence_debugger_admin_bar_node( $wp_admin_bar ) {
 		return;
 	}
 
+	$indicators = '';
+	/**
+	 * Filters the icons beside the debugger's countdown, which refresh with its menu.
+	 *
+	 * @since 0.12.0
+	 *
+	 * @param array[] $indicators {
+	 *     Indicators to show, none by default.
+	 *
+	 *     @type string $icon  Dashicons class, such as `dashicons-controls-play`.
+	 *     @type string $label What the icon means, for its tooltip and screen readers.
+	 * }
+	 */
+	foreach ( (array) apply_filters( 'wp_presence_debugger_indicators', array() ) as $indicator ) {
+		$indicators .= '<span class="presence-debug-indicator dashicons ' . esc_attr( $indicator['icon'] ) . '" title="' . esc_attr( $indicator['label'] ) . '"><span class="screen-reader-text">' . esc_html( $indicator['label'] ) . '</span></span>';
+	}
+
 	$wp_admin_bar->add_node(
 		array(
 			'parent' => 'top-secondary',
 			'id'     => 'presence-debug',
 			'title'  => '<span class="ab-icon" aria-hidden="true"></span>'
 				. '<span class="presence-debug-countdown" aria-hidden="true"></span>'
-				. '<span class="screen-reader-text">' . esc_html__( 'Presence API Debugger', 'presence-api' ) . '</span>',
+				. '<span class="screen-reader-text">' . esc_html__( 'Presence API Debugger', 'presence-api' ) . '</span>'
+				. '<span class="presence-debug-indicators">' . $indicators . '</span>',
 			'meta'   => array(
 				'class'    => 'menupop',
 				'tabindex' => 0,
@@ -49,6 +67,15 @@ function wp_presence_debugger_admin_bar_node( $wp_admin_bar ) {
 			)
 		);
 	}
+
+	/**
+	 * Fires after the debugger's Interval and TTL rows, on page load and on every Heartbeat refresh.
+	 *
+	 * @since 0.12.0
+	 *
+	 * @param WP_Admin_Bar $wp_admin_bar The admin bar, holding the `presence-debug` node to add rows under.
+	 */
+	do_action( 'wp_presence_debugger_menu', $wp_admin_bar );
 
 	global $wpdb;
 
@@ -202,6 +229,8 @@ function wp_presence_debugger_admin_bar_assets() {
 		#wpadminbar #wp-admin-bar-presence-debug.is-pinned > .ab-item::after { content: "\\f537"; font: 16px/32px dashicons; margin-inline-start: 6px; vertical-align: top; }
 		.admin-color-light #wpadminbar #wp-admin-bar-presence-debug.is-lost .ab-icon::before { color: #996800; }
 		#wp-admin-bar-presence-debug .presence-debug-countdown { min-width: 2.5em; font-variant-numeric: tabular-nums; }
+		#wp-admin-bar-presence-debug .presence-debug-indicators { display: contents; }
+		#wpadminbar #wp-admin-bar-presence-debug .presence-debug-indicator::before { font: 16px/32px dashicons; }
 		#wp-admin-bar-presence-debug.is-beating .ab-icon { animation: presence-debug-heart 2s cubic-bezier(0.22, 0.61, 0.36, 1); }
 		@keyframes presence-debug-heart { 0% { transform: scale(1); } 5% { transform: scale(1.45); } 14% { transform: scale(0.92); } 22% { transform: scale(1.3); } 32% { transform: scale(0.97); } 42%, 100% { transform: scale(1); } }
 		#wpadminbar #wp-admin-bar-presence-debug > .ab-sub-wrapper { min-width: 320px; max-height: calc(100vh - 64px); overflow-y: auto; }
@@ -359,7 +388,7 @@ function wp_presence_debugger_admin_bar_assets() {
 						target: function () {
 							return document.getElementById( "wp-admin-bar-presence-debug" );
 						},
-						// Only the menu is swapped, so the heart keeps beating mid-animation.
+						// Only the menu and indicators are swapped, so the heart keeps beating mid-animation.
 						apply: function ( element, html ) {
 							const template = document.createElement( "template" );
 							template.innerHTML = html.trim();
@@ -367,6 +396,7 @@ function wp_presence_debugger_admin_bar_assets() {
 							const menu = element.querySelector( ".ab-sub-wrapper" );
 							if ( fresh && menu ) {
 								menu.replaceWith( fresh );
+								element.querySelector( ".presence-debug-indicators" ).replaceWith( template.content.querySelector( ".presence-debug-indicators" ) );
 								render();
 								reposition();
 							}
