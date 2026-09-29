@@ -123,7 +123,7 @@ class WP_Presence_Scene_CLI_Command extends WP_CLI_Command {
 					$run = wp_presence_scene_play( $run, $this->now() );
 					return true;
 				},
-				5
+				wp_presence_scene_timings()['wait']
 			);
 			$this->print_notes( $run['notes'], $printed );
 			if ( ! $playing ) {
@@ -136,7 +136,7 @@ class WP_Presence_Scene_CLI_Command extends WP_CLI_Command {
 			function ( $running ) {
 				return is_array( $running ) ? wp_presence_scene_strike( $running ) : false;
 			},
-			5
+			wp_presence_scene_timings()['wait']
 		);
 		if ( ! $run ) {
 			WP_CLI::error( __( 'The scene was stopped.', 'presence-scenes' ) );
@@ -183,7 +183,8 @@ class WP_Presence_Scene_CLI_Command extends WP_CLI_Command {
 			SIGINT,
 			function () {
 				wp_presence_scene_sweep( true );
-				WP_CLI::halt( 130 );
+				// Shells report a command killed by a signal as 128 plus its number.
+				WP_CLI::halt( 128 + SIGINT );
 			}
 		);
 	}

@@ -137,7 +137,7 @@ class WP_Test_Presence_Scene_CLI_Command extends WP_Presence_UnitTestCase {
 	 */
 	public function test_run_replaces_a_scene_whose_command_died() {
 		$run           = wp_presence_scene_start( 'connection-lost' );
-		$run['ticked'] = time() - 31;
+		$run['ticked'] = time() - wp_presence_scene_timings()['abandoned'] - 1;
 		update_option( 'wp_presence_scene', $run, false );
 
 		$this->command->run( array( 'editing-together' ), array() );
