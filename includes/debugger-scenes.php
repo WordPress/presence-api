@@ -918,7 +918,7 @@ function wp_presence_scene_actor_name( $i ) {
 }
 
 /**
- * Lists the users a scene creates, one per line, such as "• Actor 1 (Editor)".
+ * Lists the roles a scene casts, such as "Editor, Author and Subscriber".
  *
  * @since 0.12.0
  *
@@ -929,13 +929,12 @@ function wp_presence_scene_actor_name( $i ) {
  */
 function wp_presence_scene_casting( array $scene ) {
 	$role_names = wp_roles()->role_names;
-	$lines      = array();
-	foreach ( array_values( $scene['cast'] ) as $i => $part ) {
-		/* translators: 1: Actor, 2: Role. */
-		$lines[] = '• ' . sprintf( __( '%1$s (%2$s)', 'presence-api' ), wp_presence_scene_actor_name( $i ), translate_user_role( $role_names[ $part['role'] ] ?? $part['role'] ) );
+	$roles      = array();
+	foreach ( array_unique( wp_list_pluck( $scene['cast'], 'role' ) ) as $role ) {
+		$roles[] = translate_user_role( $role_names[ $role ] ?? $role );
 	}
 
-	return implode( "\n", $lines );
+	return wp_sprintf( '%l', $roles );
 }
 
 /**
@@ -1014,10 +1013,8 @@ function wp_presence_scene_admin_bar_nodes( $wp_admin_bar ) {
 
 		/* translators: %s: Scene label. */
 		$plan = sprintf( __( 'Run “%s”?', 'presence-api' ), $scene['label'] ) . "\n\n"
-			/* translators: %s: Number of users. */
-			. sprintf( _n( 'Creates %s user:', 'Creates %s users:', count( $scene['cast'] ), 'presence-api' ), number_format_i18n( count( $scene['cast'] ) ) ) . "\n"
-			. wp_presence_scene_casting( $scene ) . "\n\n"
-			. __( 'Deletes them and their posts when the scene ends.', 'presence-api' ) . "\n"
+			/* translators: 1: Number of users, 2: Their roles. */
+			. sprintf( _n( 'Creates %1$s user (%2$s), then deletes the user and their posts when the scene ends.', 'Creates %1$s users (%2$s), then deletes them and their posts when the scene ends.', count( $scene['cast'] ), 'presence-api' ), number_format_i18n( count( $scene['cast'] ) ), wp_presence_scene_casting( $scene ) ) . ' '
 			. __( 'Plugins that act on new users or posts act on these too.', 'presence-api' );
 
 		$url     = function ( $args ) {
