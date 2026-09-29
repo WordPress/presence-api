@@ -10,6 +10,31 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Returns the most a scene may hold.
+ *
+ * @since 0.1.0
+ *
+ * @access private
+ *
+ * @return int[] {
+ *     @type int $cast  Parts in the cast.
+ *     @type int $steps Steps.
+ *     @type int $at    Seconds from the start of the last step.
+ *     @type int $title Characters in the scene's title.
+ *     @type int $text  Characters in a step's title or text.
+ * }
+ */
+function wp_presence_scene_limits() {
+	return array(
+		'cast'  => 7,
+		'steps' => 30,
+		'at'    => 15 * MINUTE_IN_SECONDS,
+		'title' => 60,
+		'text'  => 100,
+	);
+}
+
+/**
  * Places an actor can visit, each with its screen ID, title and the capability it needs.
  *
  * @since 0.1.0
@@ -193,6 +218,7 @@ function wp_presence_scene_actions() {
 function wp_presence_scene_prepare( $scene ) {
 	$actions = wp_presence_scene_actions();
 	$places  = wp_presence_scene_places();
+	$limits  = wp_presence_scene_limits();
 	$roles   = array( 'contributor', 'author', 'editor' );
 	$invalid = function ( $message, $n = null ) {
 		/* translators: 1: Step number, 2: What is wrong with it. */
@@ -211,23 +237,25 @@ function wp_presence_scene_prepare( $scene ) {
 		return $invalid( __( 'The name must be lowercase letters, numbers and dashes, such as editing-together.', 'presence-scenes' ) );
 	}
 
-	$title = wp_presence_scene_text( $scene['title'] ?? null, 60 );
+	$title = wp_presence_scene_text( $scene['title'] ?? null, $limits['title'] );
 	if ( null === $title ) {
-		return $invalid( __( 'The title must be text of up to 60 characters.', 'presence-scenes' ) );
+		/* translators: %s: Maximum number of characters. */
+		return $invalid( sprintf( __( 'The title must be text of up to %s characters.', 'presence-scenes' ), number_format_i18n( $limits['title'] ) ) );
 	}
 
 	$cast    = $scene['cast'] ?? null;
 	$allowed = function ( $role ) use ( $roles ) {
 		return in_array( $role, $roles, true );
 	};
-	if ( ! is_array( $cast ) || ! wp_is_numeric_array( $cast ) || count( $cast ) < 1 || count( $cast ) > 7 || array_filter( $cast, $allowed ) !== $cast ) {
-		/* translators: %s: Allowed roles. */
-		return $invalid( sprintf( __( 'The cast must list one to seven roles, each one of %s.', 'presence-scenes' ), implode( ', ', $roles ) ) );
+	if ( ! is_array( $cast ) || ! wp_is_numeric_array( $cast ) || count( $cast ) < 1 || count( $cast ) > $limits['cast'] || array_filter( $cast, $allowed ) !== $cast ) {
+		/* translators: 1: Maximum number of roles, 2: Allowed roles. */
+		return $invalid( sprintf( __( 'The cast must list 1 to %1$s roles, each one of %2$s.', 'presence-scenes' ), number_format_i18n( $limits['cast'] ), implode( ', ', $roles ) ) );
 	}
 
 	$steps = $scene['steps'] ?? null;
-	if ( ! is_array( $steps ) || ! wp_is_numeric_array( $steps ) || count( $steps ) < 1 || count( $steps ) > 30 ) {
-		return $invalid( __( 'The steps must list one to thirty steps.', 'presence-scenes' ) );
+	if ( ! is_array( $steps ) || ! wp_is_numeric_array( $steps ) || count( $steps ) < 1 || count( $steps ) > $limits['steps'] ) {
+		/* translators: %s: Maximum number of steps. */
+		return $invalid( sprintf( __( 'The steps must list 1 to %s steps.', 'presence-scenes' ), number_format_i18n( $limits['steps'] ) ) );
 	}
 
 	$prepared = array();
@@ -251,8 +279,9 @@ function wp_presence_scene_prepare( $scene ) {
 		}
 
 		$at = $step['at'];
-		if ( ! is_int( $at ) || $at < $last || $at > 900 ) {
-			return $invalid( __( 'at must be seconds from 0 to 900, never earlier than the step before.', 'presence-scenes' ), $n );
+		if ( ! is_int( $at ) || $at < $last || $at > $limits['at'] ) {
+			/* translators: %s: Latest second a step can start at. */
+			return $invalid( sprintf( __( 'at must be seconds from 0 to %s, never earlier than the step before.', 'presence-scenes' ), number_format_i18n( $limits['at'] ) ), $n );
 		}
 		$last = $at;
 
@@ -288,10 +317,10 @@ function wp_presence_scene_prepare( $scene ) {
 				}
 				$object = $value;
 			} else {
-				$clean[ $field ] = wp_presence_scene_text( $value, 100 );
+				$clean[ $field ] = wp_presence_scene_text( $value, $limits['text'] );
 				if ( null === $clean[ $field ] ) {
-					/* translators: %s: Field name. */
-					return $invalid( sprintf( __( '%s must be text of up to 100 characters.', 'presence-scenes' ), $field ), $n );
+					/* translators: 1: Field name, 2: Maximum number of characters. */
+					return $invalid( sprintf( __( '%1$s must be text of up to %2$s characters.', 'presence-scenes' ), $field, number_format_i18n( $limits['text'] ) ), $n );
 				}
 			}
 		}

@@ -41,6 +41,8 @@ class WP_Test_Presence_Scenes extends WP_Presence_UnitTestCase {
 	}
 
 	public function data_invalid_steps() {
+		$limits = wp_presence_scene_limits();
+
 		return array(
 			'unknown key'         => array( array( 'author' => 'admin' ), array() ),
 			'no apiVersion'       => array( array( 'apiVersion' => null ), array() ),
@@ -48,7 +50,7 @@ class WP_Test_Presence_Scenes extends WP_Presence_UnitTestCase {
 			'no title'            => array( array( 'title' => null ), array() ),
 			'no steps'            => array( array( 'steps' => array() ), array() ),
 			'unknown field'       => array( array(), array( 'post' => 'Draft' ) ),
-			'after 900 seconds'   => array( array(), array( 'at' => 901 ) ),
+			'too late'            => array( array(), array( 'at' => $limits['at'] + 1 ) ),
 			'actor not cast'      => array( array(), array( 'actor' => 2 ) ),
 			'unknown place'       => array( array(), array( 'place' => 'plugins' ) ),
 			'unknown step'        => array( array(), array( 'step' => 'deleteUser' ) ),
@@ -56,10 +58,10 @@ class WP_Test_Presence_Scenes extends WP_Presence_UnitTestCase {
 			'markup in the title' => array( array(), array( 'step' => 'write', 'title' => '<b>Hi</b>' ) ),
 			'administrator cast'  => array( array( 'cast' => array( 'administrator' ) ), array() ),
 			'repeated title'      => array( array( 'steps' => array_fill( 0, 2, array( 'at' => 0, 'actor' => 1, 'step' => 'write', 'title' => 'Draft' ) ) ), array() ),
-			'eight roles'         => array( array( 'cast' => array_fill( 0, 8, 'author' ) ), array() ),
-			'back in time'        => array( array( 'steps' => array( array( 'at' => 5, 'actor' => 1, 'step' => 'drop' ), array( 'at' => 4, 'actor' => 1, 'step' => 'drop' ) ) ), array() ),
+			'too many roles'      => array( array( 'cast' => array_fill( 0, $limits['cast'] + 1, 'author' ) ), array() ),
+			'back in time'        => array( array( 'steps' => array( array( 'at' => 1, 'actor' => 1, 'step' => 'drop' ), array( 'at' => 0, 'actor' => 1, 'step' => 'drop' ) ) ), array() ),
 			'whole cast writing'  => array( array(), array( 'actor' => 'cast', 'step' => 'write', 'title' => 'Draft' ) ),
-			'long title'          => array( array(), array( 'step' => 'write', 'title' => str_repeat( 'a', 101 ) ) ),
+			'long title'          => array( array(), array( 'step' => 'write', 'title' => str_repeat( 'a', $limits['text'] + 1 ) ) ),
 		);
 	}
 
