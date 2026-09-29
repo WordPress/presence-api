@@ -123,7 +123,7 @@ if ( file_exists( WP_PRESENCE_PLUGIN_DIR . 'includes/debugger-scenes.php' ) ) {
 	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/debugger-scenes.php';
 	add_action( 'wp_presence_scene_sweep', 'wp_presence_scene_sweep' );
 	add_filter( 'wp_authenticate_user', 'wp_presence_scene_authenticate' );
-	add_action( 'deactivate_' . plugin_basename( __FILE__ ), 'wp_presence_scene_sweep_all' );
+	register_deactivation_hook( __FILE__, 'wp_presence_scene_sweep_all' );
 
 	if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 		add_action( 'wp_presence_scenes_init', 'wp_presence_register_default_scenes' );
