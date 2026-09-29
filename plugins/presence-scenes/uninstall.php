@@ -9,6 +9,9 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
 
+// Needs only core, so actors are deleted even while Presence API is inactive.
+require_once __DIR__ . '/scenes.php';
+
 foreach ( is_multisite() ? get_sites(
 	array(
 		'fields' => 'ids',
@@ -19,6 +22,7 @@ foreach ( is_multisite() ? get_sites(
 		switch_to_blog( $site_id );
 	}
 
+	wp_presence_scene_delete_users( wp_presence_scene_actors( true ) );
 	delete_option( 'wp_presence_scene' );
 	delete_option( 'wp_presence_scene_runs' );
 	delete_option( 'wp_presence_scene.lock' );

@@ -519,7 +519,7 @@ function wp_presence_scene_locked( callable $callback, $wait = 0 ) {
  * @access private
  *
  * @param array $scene A prepared scene.
- * @return array|false The running scene, or false when a user could not be created.
+ * @return array|WP_Error The running scene, or the error that stopped a user being created.
  */
 function wp_presence_scene_cast( array $scene ) {
 	$number = (int) get_option( 'wp_presence_scene_runs', 1000 ) + 1;
@@ -558,9 +558,8 @@ function wp_presence_scene_cast( array $scene ) {
 		);
 
 		if ( is_wp_error( $user_id ) ) {
-			wp_presence_scene_note( $run, 'fail', $user_id->get_error_message() );
 			wp_presence_scene_strike( $run );
-			return false;
+			return $user_id;
 		}
 
 		$run['cast'][] = $user_id;
@@ -579,7 +578,7 @@ function wp_presence_scene_cast( array $scene ) {
  * @access private
  *
  * @param string $name Scene name.
- * @return array|false The running scene, or false when it could not start.
+ * @return array|WP_Error|false The running scene, the error that stopped its cast, or false when it could not start.
  */
 function wp_presence_scene_start( $name ) {
 	$scenes = wp_presence_get_scenes();
@@ -595,8 +594,8 @@ function wp_presence_scene_start( $name ) {
 			return $running ? false : wp_presence_scene_cast( $scenes[ $name ] );
 		}
 	);
-	if ( ! $run ) {
-		return false;
+	if ( ! $run || is_wp_error( $run ) ) {
+		return $run;
 	}
 
 	// Strikes the scene if the command dies before the last step.
@@ -766,6 +765,20 @@ function wp_presence_scene_sweep( $all = false ) {
 		);
 	}
 
+	wp_presence_scene_delete_users( wp_presence_scene_actors( $all ) );
+}
+
+/**
+ * Returns the site's actors.
+ *
+ * @since 0.1.0
+ *
+ * @access private
+ *
+ * @param bool $all Optional. Include actors not yet past their expiry. Default false.
+ * @return int[] Actor user IDs.
+ */
+function wp_presence_scene_actors( $all = false ) {
 	$query = array(
 		'meta_key' => '_wp_presence_scene', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
 	);
@@ -782,7 +795,8 @@ function wp_presence_scene_sweep( $all = false ) {
 			$user_ids[] = (int) $user->ID;
 		}
 	}
-	wp_presence_scene_delete_users( $user_ids );
+
+	return $user_ids;
 }
 
 /**

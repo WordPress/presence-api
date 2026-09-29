@@ -36,9 +36,27 @@ add_action(
 
 register_deactivation_hook(
 	__FILE__,
-	function () {
-		if ( function_exists( 'wp_presence_scene_sweep' ) ) {
+	function ( $network_wide ) {
+		if ( ! function_exists( 'wp_presence_scene_sweep' ) ) {
+			return;
+		}
+
+		$site_ids = $network_wide ? get_sites(
+			array(
+				'fields' => 'ids',
+				'number' => 0,
+			)
+		) : array( 0 );
+		foreach ( $site_ids as $site_id ) {
+			if ( $site_id ) {
+				switch_to_blog( $site_id );
+			}
+
 			wp_presence_scene_sweep( true );
+
+			if ( $site_id ) {
+				restore_current_blog();
+			}
 		}
 	}
 );

@@ -176,6 +176,30 @@ class WP_Test_Presence_Scenes extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * @covers ::wp_presence_scene_start
+	 * @covers ::wp_presence_scene_cast
+	 */
+	public function test_start_returns_why_the_cast_could_not_be_created() {
+		add_filter( 'pre_user_login', '__return_empty_string' );
+
+		$this->assertWPError( wp_presence_scene_start( 'editing-together' ) );
+		$this->assertSame( array(), wp_presence_scene_actors( true ) );
+	}
+
+	/**
+	 * @covers ::wp_presence_scene_sweep
+	 */
+	public function test_sweep_takes_over_a_scene_nobody_is_playing() {
+		$run           = wp_presence_scene_start( 'editing-together' );
+		$run['ticked'] = time() - 31;
+		update_option( 'wp_presence_scene', $run, false );
+
+		wp_presence_scene_sweep();
+
+		$this->assertFalse( get_option( 'wp_presence_scene' ) );
+	}
+
+	/**
 	 * @covers ::wp_presence_scene_locked
 	 */
 	public function test_lock_is_released_when_a_step_throws() {
