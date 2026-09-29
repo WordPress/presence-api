@@ -39,11 +39,12 @@ coverage:
 # scripts/check-debug-exclusions.sh.
 ignore:
   # WP_DEBUG-only developer tools, not part of the distributed zip (.distignore).
-  - "includes/db-viewer.php"
-  - "includes/debugger-admin-bar.php"
+  - "plugins/presence-api/includes/db-viewer.php"
+  - "plugins/presence-api/includes/debugger-admin-bar.php"
   # Only register hooks, and run during bootstrap before coverage starts.
-  - "includes/default-filters.php"
-  - "includes/ms-default-filters.php"
+  - "plugins/presence-api/includes/default-filters.php"
+  - "plugins/presence-api/includes/ms-default-filters.php"
+  - "plugins/presence-api/tests/**"
   - "tests/**"
-  - "assets/**"
+  - "plugins/presence-api/assets/**"
   - "blueprint.json"

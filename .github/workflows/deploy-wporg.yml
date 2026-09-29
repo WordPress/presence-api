@@ -53,6 +53,11 @@ jobs:
         with:
           persist-credentials: false
           ref: ${{ steps.inputs.outputs.ref }}
+      - name: Build plugin
+        run: |
+          mkdir -p build/presence-api
+          rsync -a --exclude-from='plugins/presence-api/.distignore' plugins/presence-api/ build/presence-api/
+          cp LICENSE build/presence-api/
       - name: Deploy to WordPress.org Plugin Directory
         uses: 10up/action-wordpress-plugin-deploy@54bd289b8525fd23a5c365ec369185f2966529c2 # stable
         with:
@@ -62,4 +67,5 @@ jobs:
           SVN_USERNAME: ${{ secrets.WPORG_SVN_USERNAME }}
           SLUG: presence-api
           VERSION: ${{ steps.inputs.outputs.version }}
-          ASSETS_DIR: .wordpress-org
+          BUILD_DIR: build/presence-api
+          ASSETS_DIR: plugins/presence-api/.wordpress-org

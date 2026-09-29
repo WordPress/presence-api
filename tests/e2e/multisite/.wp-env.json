@@ -1,6 +1,6 @@
 {
 	"core": null,
-	"plugins": [ "../../.." ],
+	"plugins": [ "../../../plugins/presence-api" ],
 	"multisite": true,
 	"testsEnvironment": false,
 	"port": 8890,

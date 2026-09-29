@@ -8,9 +8,9 @@
 	<arg value="ps"/>
 
 	<!-- Scan plugin source files. -->
-	<file>presence-api.php</file>
-	<file>includes/</file>
-	<file>uninstall.php</file>
+	<file>plugins/presence-api/presence-api.php</file>
+	<file>plugins/presence-api/includes/</file>
+	<file>plugins/presence-api/uninstall.php</file>
 
 	<!-- Exclude test and demo files from coding standards. -->
 	<exclude-pattern>tests/</exclude-pattern>

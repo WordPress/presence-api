@@ -28,8 +28,7 @@ function wpCli( command ) {
 	} );
 }
 
-const SEEDER_PATH =
-	'/var/www/html/wp-content/plugins/presence-api/tests/e2e/demo-seeder.php';
+const SEEDER_PATH = '/var/www/html/presence-api/tests/e2e/demo-seeder.php';
 
 /**
  * Calls a demo-seeder function inside the container, as the Playground blueprint does.

@@ -15,7 +15,7 @@ WordPress has no way to know who is logged in, what screen they are on, or which
 >
 > [Matt Mullenweg, WordPress 7.0 planning session](https://youtu.be/F-xMPY9WqG4?si=YK0rIUM2nuYy7x45&t=2435)
 
-![The dashboard with 101 people online, the admin bar's presence menu open, and Active Posts listing who is editing each post and page](.wordpress-org/screenshot-1.png)
+![The dashboard with 101 people online, the admin bar's presence menu open, and Active Posts listing who is editing each post and page](plugins/presence-api/.wordpress-org/screenshot-1.png)
 
 ## Run locally
 
@@ -56,13 +56,13 @@ Every post type edited in the admin gets a room; see [Post Type Support](#post-t
 
 ### Client IDs
 
-Rooms carry no producer namespace of their own — this plugin's own writers are told apart from anyone else's entries in the same room by a `client_id` prefix instead. `user-{user_id}` (admin/online room, from `includes/heartbeat.php` and `includes/lifecycle.php`), `editor-{user_id}` (post rooms, from `includes/heartbeat.php` and `includes/post-lock-bridge.php`) and `cli-{user_id}` (any room, from `includes/cli/class-wp-presence-cli-command.php`, the default when `wp presence set` is given no client ID) are reserved this way; a row using any of them belongs to this plugin and has the state shape its writer expects.
+Rooms carry no producer namespace of their own — this plugin's own writers are told apart from anyone else's entries in the same room by a `client_id` prefix instead. `user-{user_id}` (admin/online room, from `plugins/presence-api/includes/heartbeat.php` and `includes/lifecycle.php`), `editor-{user_id}` (post rooms, from `plugins/presence-api/includes/heartbeat.php` and `includes/post-lock-bridge.php`) and `cli-{user_id}` (any room, from `includes/cli/class-wp-presence-cli-command.php`, the default when `wp presence set` is given no client ID) are reserved this way; a row using any of them belongs to this plugin and has the state shape its writer expects.
 
 Anything else sharing a room — another plugin relaying awareness from an external source, a REST client — must prefix its own `client_id` so it can't collide with those rows or be mistaken for one. A plugin that backs the block editor's awareness with this table takes a prefix of its own, like `gse-` for [gutenberg-sync-engines](https://github.com/Automattic/gutenberg-sync-engines). Pass that prefix as the third argument to `wp_get_presence()` to read back only your own rows: `wp_get_presence( $room, $timeout, 'gse-' )`.
 
 A leading `_` is reserved for this plugin's own bookkeeping rows, which are not participants. `_collab` holds a post room's last observed editor count, the state the collaboration actions below fire their edges from. `_lock` holds the post's `_edit_lock`. `wp_get_presence()` and the REST collection leave those rows out, and the REST write and delete routes reject a reserved `client_id`.
 
-The `editor-` prefix is load-bearing rather than cosmetic: `includes/heartbeat.php` counts the editors in a post room with `str_starts_with( $entry->client_id, 'editor-' )`, so a colliding prefix inflates that count.
+The `editor-` prefix is load-bearing rather than cosmetic: `plugins/presence-api/includes/heartbeat.php` counts the editors in a post room with `str_starts_with( $entry->client_id, 'editor-' )`, so a colliding prefix inflates that count.
 
 ## Agents
 
@@ -113,7 +113,7 @@ An agent is labelled wherever a presence row is listed by user — Who's Online,
 <details>
 <summary>Functions, return shapes, and network variants</summary>
 
-The following public functions are part of the stable public API contract. All other helper functions in `includes/presence.php` and `includes/network-functions.php` (such as `wp_get_active_rooms()`, `wp_get_presence_summary()`, etc.) are marked `@access private`, are intended for internal plugin use only, and may change or be removed without notice.
+The following public functions are part of the stable public API contract. All other helper functions in `plugins/presence-api/includes/presence.php` and `plugins/presence-api/includes/network-functions.php` (such as `wp_get_active_rooms()`, `wp_get_presence_summary()`, etc.) are marked `@access private`, are intended for internal plugin use only, and may change or be removed without notice.
 
 ```php
 // Read all presence entries in a room, or only those whose client_id starts
@@ -188,7 +188,7 @@ Each entry object returned by `wp_get_presence()` has:
 
 ### Network
 
-Multisite only, from `includes/network-functions.php`. Returns `false` outside multisite.
+Multisite only, from `plugins/presence-api/includes/network-functions.php`. Returns `false` outside multisite.
 
 ```php
 // Whether this network assembles its sites' rows into the network-wide view.

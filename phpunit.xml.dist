@@ -2,7 +2,7 @@
 <phpunit
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:noNamespaceSchemaLocation="http://schema.phpunit.de/9.2/phpunit.xsd"
-	bootstrap="tests/bootstrap.php"
+	bootstrap="plugins/presence-api/tests/bootstrap.php"
 	backupGlobals="false"
 	colors="true"
 	beStrictAboutTestsThatDoNotTestAnything="true"
@@ -10,17 +10,16 @@
 >
 	<testsuites>
 		<testsuite name="presence-api">
-			<directory suffix=".php">tests/</directory>
-			<exclude>tests/e2e</exclude>
-			<exclude>tests/stubs</exclude>
-			<exclude>tests/bootstrap.php</exclude>
-			<exclude>tests/class-wp-presence-unittestcase.php</exclude>
-			<exclude>tests/class-wp-presence-network-unittestcase.php</exclude>
+			<directory suffix=".php">plugins/presence-api/tests/</directory>
+			<exclude>plugins/presence-api/tests/stubs</exclude>
+			<exclude>plugins/presence-api/tests/bootstrap.php</exclude>
+			<exclude>plugins/presence-api/tests/class-wp-presence-unittestcase.php</exclude>
+			<exclude>plugins/presence-api/tests/class-wp-presence-network-unittestcase.php</exclude>
 		</testsuite>
 	</testsuites>
 	<coverage>
 		<include>
-			<directory suffix=".php">includes/</directory>
+			<directory suffix=".php">plugins/presence-api/includes/</directory>
 		</include>
 		<exclude>
 			<!--
@@ -29,11 +28,11 @@
 			product code either. scripts/check-debug-exclusions.sh checks all three
 			lists agree.
 			-->
-			<file>includes/db-viewer.php</file>
-			<file>includes/debugger-admin-bar.php</file>
+			<file>plugins/presence-api/includes/db-viewer.php</file>
+			<file>plugins/presence-api/includes/debugger-admin-bar.php</file>
 			<!-- Only register hooks, and run during bootstrap before coverage starts. -->
-			<file>includes/default-filters.php</file>
-			<file>includes/ms-default-filters.php</file>
+			<file>plugins/presence-api/includes/default-filters.php</file>
+			<file>plugins/presence-api/includes/ms-default-filters.php</file>
 		</exclude>
 	</coverage>
 </phpunit>

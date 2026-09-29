@@ -71,7 +71,7 @@ jobs:
         env:
           WP_ENV_PHP_VERSION: ${{ matrix.php }}
           WP_ENV_CORE: ${{ matrix.core }}
-      - run: npx wp-env run tests-cli --env-cwd='wp-content/plugins/presence-api' -- ./vendor/bin/phpunit ${{ matrix.coverage && '--coverage-clover coverage.xml' || '' }}
+      - run: npx wp-env run tests-cli --env-cwd='presence-api' -- ./vendor/bin/phpunit ${{ matrix.coverage && '--coverage-clover coverage.xml' || '' }}
         if: ${{ inputs.should-run }}
       - name: Upload coverage to Codecov
         if: ${{ inputs.should-run && matrix.coverage }}
@@ -95,7 +95,7 @@ jobs:
       # prints "Running as single site..." and this report adds nothing.
       - name: Run the suite as multisite
         if: ${{ inputs.should-run && matrix.coverage }}
-        run: npx wp-env run tests-cli --env-cwd='wp-content/plugins/presence-api' -- env WP_MULTISITE=1 ./vendor/bin/phpunit --coverage-clover coverage-multisite.xml
+        run: npx wp-env run tests-cli --env-cwd='presence-api' -- env WP_MULTISITE=1 ./vendor/bin/phpunit --coverage-clover coverage-multisite.xml
       - name: Upload multisite coverage to Codecov
         if: ${{ inputs.should-run && matrix.coverage }}
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
@@ -145,4 +145,4 @@ jobs:
         run: |
           npx wp-env run tests-cli -- wp plugin install sqlite-database-integration
           npx wp-env run tests-cli -- sh -c "sed -e \"s#'{SQLITE_IMPLEMENTATION_FOLDER_PATH}'#__DIR__ . '/plugins/sqlite-database-integration'#\" -e 's#{SQLITE_PLUGIN}#sqlite-database-integration/load.php#g' wp-content/plugins/sqlite-database-integration/db.copy > wp-content/db.php"
-      - run: npx wp-env run tests-cli --env-cwd='wp-content/plugins/presence-api' -- ./vendor/bin/phpunit
+      - run: npx wp-env run tests-cli --env-cwd='presence-api' -- ./vendor/bin/phpunit

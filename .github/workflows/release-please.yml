@@ -57,7 +57,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           PR_NUMBER: ${{ fromJSON(needs.release-please.outputs.pr).number }}
-        run: node .github/scripts/sync-contributors.js readme.txt
+        run: node .github/scripts/sync-contributors.js plugins/presence-api/readme.txt
       # Pushed with the same token release-please uses. A commit pushed under
       # GITHUB_TOKEN leaves the PR's head build stuck at `action_required`, so
       # the release PR never gets a Playground preview of what is shipping.
@@ -68,7 +68,7 @@ jobs:
           if ! git diff --quiet; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add presence-api.php readme.txt CHANGELOG.md .wordpress-org/blueprints/blueprint.json
+            git add plugins/presence-api/presence-api.php plugins/presence-api/readme.txt CHANGELOG.md plugins/presence-api/.wordpress-org/blueprints/blueprint.json
             git commit -m "chore: sync versions and remove duplicate changelog entries"
             gh auth setup-git
             git push
@@ -120,7 +120,8 @@ jobs:
       - name: Build plugin zip
         run: |
           mkdir -p build/presence-api
-          rsync -a --exclude-from='.distignore' ./ build/presence-api/
+          rsync -a --exclude-from='plugins/presence-api/.distignore' plugins/presence-api/ build/presence-api/
+          cp LICENSE build/presence-api/
           cd build && zip -r presence-api.zip presence-api/
       - run: gh release upload --clobber "${{ needs.release-please.outputs.tag_name }}" build/presence-api.zip
         env:

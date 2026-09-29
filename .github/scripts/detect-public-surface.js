@@ -11,12 +11,16 @@
 // `do_action` constantly without publishing anything, and built assets under
 // `assets/js/build/` duplicate the surfaces already counted in `src/`.
 const SCANNED = [
-	/^includes\//,
-	/^assets\/js\//,
-	/^src\//,
-	/^(presence-api|uninstall)\.php$/,
+	/^plugins\/presence-api\/includes\//,
+	/^plugins\/presence-api\/assets\/js\//,
+	/^plugins\/presence-api\/src\//,
+	/^plugins\/presence-api\/(presence-api|uninstall)\.php$/,
 ];
-const IGNORED = [ /^assets\/js\/build\//, /\/test\//, /\.test\.js$/ ];
+const IGNORED = [
+	/^plugins\/presence-api\/assets\/js\/build\//,
+	/\/test\//,
+	/\.test\.js$/,
+];
 
 // WordPress's own, which a plugin reads without ever owning. `ABSPATH` alone
 // opens every file in the tree, so without this the surfaces that are the

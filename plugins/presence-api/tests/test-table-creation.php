@@ -291,7 +291,7 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 		}
 
 		// wp_presence_on_initialize_site() only acts when the plugin is network active.
-		update_site_option( 'active_sitewide_plugins', array( 'presence-api/presence-api.php' => time() ) );
+		update_site_option( 'active_sitewide_plugins', array( plugin_basename( WP_PRESENCE_PLUGIN_DIR . 'presence-api.php' ) => time() ) );
 
 		$blog_id = self::factory()->blog->create();
 

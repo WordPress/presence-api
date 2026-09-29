@@ -39,7 +39,8 @@ jobs:
       - name: Build plugin
         run: |
           mkdir -p build/presence-api
-          rsync -a --exclude-from='.distignore' --exclude='build' ./ build/presence-api/
+          rsync -a --exclude-from='plugins/presence-api/.distignore' plugins/presence-api/ build/presence-api/
+          cp LICENSE build/presence-api/
 
       - name: Configure wp-env to mount built plugin
         run: |

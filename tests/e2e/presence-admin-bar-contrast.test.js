@@ -10,8 +10,7 @@
 import { test as base, expect } from '@wordpress/e2e-test-utils-playwright';
 import { execSync } from 'node:child_process';
 
-const SEEDER_PATH =
-	'/var/www/html/wp-content/plugins/presence-api/tests/e2e/demo-seeder.php';
+const SEEDER_PATH = '/var/www/html/presence-api/tests/e2e/demo-seeder.php';
 
 function wpCli( command ) {
 	execSync( `npx wp-env run cli wp ${ command }`, {

@@ -12,6 +12,7 @@ on:
       - '**.md'
       - '.github/**'
       - 'tests/**'
+      - 'plugins/presence-api/tests/**'
   workflow_dispatch:
 
 # Queued, not cancelled: the last push to finish is the one that wins.
@@ -38,7 +39,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p build/presence-api
-          rsync -a --exclude-from='.distignore' --exclude='build' ./ build/presence-api/
+          rsync -a --exclude-from='plugins/presence-api/.distignore' plugins/presence-api/ build/presence-api/
+          cp LICENSE build/presence-api/
           (cd build && zip -qr presence-api.zip presence-api/)
 
       # Same guard as the PR preview: a `.distignore` that drifts out of

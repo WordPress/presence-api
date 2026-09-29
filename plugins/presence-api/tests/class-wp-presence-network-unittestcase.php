@@ -54,7 +54,7 @@ abstract class WP_Presence_Network_UnitTestCase extends WP_Presence_UnitTestCase
 		// meaningful when every site actually has a table, so fake that here the
 		// same way test-table-creation.php does for its own network-active tests.
 		$this->network_plugins = get_site_option( 'active_sitewide_plugins' );
-		update_site_option( 'active_sitewide_plugins', array( 'presence-api/presence-api.php' => time() ) );
+		update_site_option( 'active_sitewide_plugins', array( plugin_basename( WP_PRESENCE_PLUGIN_DIR . 'presence-api.php' ) => time() ) );
 
 		wp_maybe_create_presence_network_summary_table();
 

@@ -22,9 +22,9 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-distignore=$(grep -E '^includes/.*\.php$' .distignore | sort)
-phpunit=$(grep -oE '<file>includes/[^<]+\.php</file>' phpunit.xml.dist | sed -E 's#<file>(.*)</file>#\1#' | sort)
-codecov=$(grep -oE '"includes/[^"]+\.php"' codecov.yml | tr -d '"' | sort)
+distignore=$(grep -E '^includes/.*\.php$' plugins/presence-api/.distignore | sort)
+phpunit=$(grep -oE '<file>plugins/presence-api/includes/[^<]+\.php</file>' phpunit.xml.dist | sed -E 's#<file>plugins/presence-api/(.*)</file>#\1#' | sort)
+codecov=$(grep -oE '"plugins/presence-api/includes/[^"]+\.php"' codecov.yml | tr -d '"' | sed 's#^plugins/presence-api/##' | sort)
 
 if [[ -z "$distignore" || -z "$phpunit" || -z "$codecov" ]]; then
 	echo "One of the three exclusion lists is empty — check the grep patterns still match." >&2

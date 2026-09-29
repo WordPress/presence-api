@@ -3,10 +3,10 @@
 # Reads the canonical version from .release-please-manifest.json and syncs it
 # into every place WordPress (and WordPress.org) reads it verbatim:
 #
-#   - presence-api.php plugin header `* Version:`
-#   - presence-api.php `WP_PRESENCE_VERSION` define
-#   - readme.txt `Stable tag:`
-#   - .wordpress-org/blueprints/blueprint.json tag-pinned demo seeder URLs
+#   - plugins/presence-api/presence-api.php plugin header `* Version:`
+#   - plugins/presence-api/presence-api.php `WP_PRESENCE_VERSION` define
+#   - plugins/presence-api/readme.txt `Stable tag:`
+#   - plugins/presence-api/.wordpress-org/blueprints/blueprint.json tag-pinned demo seeder URLs
 #
 # Called from .github/workflows/release-please.yml after release-please opens
 # (or updates) its release PR. Also runnable locally:
@@ -21,6 +21,8 @@ cd "$(dirname "$0")/.."
 
 command -v jq      >/dev/null 2>&1 || { echo "jq is required to run scripts/sync-versions.sh" >&2; exit 1; }
 command -v python3 >/dev/null 2>&1 || { echo "python3 is required to run scripts/sync-versions.sh" >&2; exit 1; }
+MAIN='plugins/presence-api/presence-api.php'
+README='plugins/presence-api/readme.txt'
 VERSION=$(jq -r '."."' .release-please-manifest.json)
 
 if [[ -z "$VERSION" || "$VERSION" == "null" ]]; then
@@ -28,32 +30,32 @@ if [[ -z "$VERSION" || "$VERSION" == "null" ]]; then
 	exit 1
 fi
 
-grep -q '^ \* Version: ' presence-api.php \
+grep -q '^ \* Version: ' "$MAIN" \
 	|| { echo "Plugin header 'Version:' line not found in presence-api.php" >&2; exit 1; }
-grep -q "^define( 'WP_PRESENCE_VERSION'" presence-api.php \
+grep -q "^define( 'WP_PRESENCE_VERSION'" "$MAIN" \
 	|| { echo "WP_PRESENCE_VERSION define not found in presence-api.php" >&2; exit 1; }
-grep -q '^Stable tag: ' readme.txt \
+grep -q '^Stable tag: ' "$README" \
 	|| { echo "'Stable tag:' line not found in readme.txt" >&2; exit 1; }
 
 # The WordPress.org preview blueprint pulls the demo seeder from a tag, not from
 # main, so the seeder always matches the plugin version published to the
 # directory. The tag does not exist yet while the release PR is open; it is
 # created when that PR merges, before deploy-wporg.yml ships this file.
-BLUEPRINT='.wordpress-org/blueprints/blueprint.json'
+BLUEPRINT='plugins/presence-api/.wordpress-org/blueprints/blueprint.json'
 grep -q 'raw\.githubusercontent\.com/WordPress/presence-api/v[0-9]' "$BLUEPRINT" \
 	|| { echo "Tag-pinned seeder URL not found in ${BLUEPRINT}" >&2; exit 1; }
 
 # `sed -i.bak` works on both GNU sed (Linux CI) and BSD sed (macOS dev).
-sed -i.bak "s|^ \* Version: .*$| * Version: ${VERSION}|" presence-api.php
-sed -i.bak "s|^\(define( 'WP_PRESENCE_VERSION', '\)[^']*\(' );\)|\1${VERSION}\2|" presence-api.php
-sed -i.bak "s|^Stable tag: .*$|Stable tag: ${VERSION}|" readme.txt
+sed -i.bak "s|^ \* Version: .*$| * Version: ${VERSION}|" "$MAIN"
+sed -i.bak "s|^\(define( 'WP_PRESENCE_VERSION', '\)[^']*\(' );\)|\1${VERSION}\2|" "$MAIN"
+sed -i.bak "s|^Stable tag: .*$|Stable tag: ${VERSION}|" "$README"
 sed -i.bak "s|\(raw\.githubusercontent\.com/WordPress/presence-api/\)v[^/]*|\1v${VERSION}|g" "$BLUEPRINT"
 
-grep -qFx " * Version: ${VERSION}" presence-api.php \
+grep -qFx " * Version: ${VERSION}" "$MAIN" \
 	|| { echo "Failed to update plugin header version in presence-api.php" >&2; exit 1; }
-grep -qFx "define( 'WP_PRESENCE_VERSION', '${VERSION}' );" presence-api.php \
+grep -qFx "define( 'WP_PRESENCE_VERSION', '${VERSION}' );" "$MAIN" \
 	|| { echo "Failed to update WP_PRESENCE_VERSION define in presence-api.php" >&2; exit 1; }
-grep -qFx "Stable tag: ${VERSION}" readme.txt \
+grep -qFx "Stable tag: ${VERSION}" "$README" \
 	|| { echo "Failed to update 'Stable tag:' line in readme.txt" >&2; exit 1; }
 grep -q "raw\.githubusercontent\.com/WordPress/presence-api/v${VERSION}/" "$BLUEPRINT" \
 	|| { echo "Failed to update seeder URLs in ${BLUEPRINT}" >&2; exit 1; }
@@ -63,7 +65,7 @@ if grep -o 'raw\.githubusercontent\.com/WordPress/presence-api/v[^/]*' "$BLUEPRI
 	exit 1
 fi
 
-rm -f presence-api.php.bak readme.txt.bak "${BLUEPRINT}.bak"
+rm -f "${MAIN}.bak" "${README}.bak" "${BLUEPRINT}.bak"
 
 # Rewrite the == Changelog == section in readme.txt from CHANGELOG.md.
 # Skips the Dependencies subsection, strips GitHub commit links, deduplicates bullets.
@@ -80,7 +82,7 @@ CHANGELOG_URL = 'https://github.com/WordPress/presence-api/blob/main/CHANGELOG.m
 with open('CHANGELOG.md') as f:
     changelog_md = f.read()
 
-with open('readme.txt') as f:
+with open('plugins/presence-api/readme.txt') as f:
     readme = f.read()
 
 if '== Changelog ==' not in readme:
@@ -159,7 +161,7 @@ note = f'Only the most recent releases are listed here. For the full history, se
 new_section = '== Changelog ==\n\n' + note + '\n\n' + '\n\n'.join(entries) + '\n'
 new_readme = re.sub(r'== Changelog ==.*', new_section, readme, flags=re.DOTALL)
 
-with open('readme.txt', 'w') as f:
+with open('plugins/presence-api/readme.txt', 'w') as f:
     f.write(new_readme)
 
 print('Synced == Changelog == section in readme.txt')

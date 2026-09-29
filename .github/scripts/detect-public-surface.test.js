@@ -387,18 +387,18 @@ test( 'one write-up covers a hook fired from two places', () => {
 
 test( 'scans shipped code only', () => {
 	for ( const path of [
-		'includes/functions.php',
-		'presence-api.php',
-		'assets/js/ping.js',
+		'plugins/presence-api/includes/functions.php',
+		'plugins/presence-api/presence-api.php',
+		'plugins/presence-api/assets/js/ping.js',
 	] ) {
 		assert.equal( isScanned( path ), true, path );
 	}
 	// `tests/` is the loudest false-positive source: it calls hooks constantly
 	// without publishing any. Built assets duplicate `src/`.
 	for ( const path of [
-		'tests/test-functions.php',
-		'assets/js/build/index.js',
-		'src/utils/test/coordinator.test.js',
+		'plugins/presence-api/tests/test-functions.php',
+		'plugins/presence-api/assets/js/build/index.js',
+		'plugins/presence-api/src/utils/test/coordinator.test.js',
 		'.github/scripts/detect-public-surface.js',
 	] ) {
 		assert.equal( isScanned( path ), false, path );

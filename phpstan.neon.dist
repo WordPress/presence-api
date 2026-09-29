@@ -3,9 +3,9 @@ parameters:
 	bootstrapFiles:
 		- phpstan-bootstrap.php
 	paths:
-		- presence-api.php
-		- includes/
-		- uninstall.php
+		- plugins/presence-api/presence-api.php
+		- plugins/presence-api/includes/
+		- plugins/presence-api/uninstall.php
 	scanFiles:
 		- vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
 		- vendor/wp-cli/wp-cli/php/utils.php

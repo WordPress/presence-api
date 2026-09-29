@@ -49,7 +49,7 @@ jobs:
               - 'phpcs.xml.dist'
               - 'phpstan.neon.dist'
               - 'phpunit.xml.dist'
-              - 'readme.txt'
+              - 'plugins/presence-api/readme.txt'
               - '.github/workflows/**'
 
   phpcs:
