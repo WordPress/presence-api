@@ -13,6 +13,8 @@ Actors reach everything else through core's `heartbeat_received` filter, as a br
 
 ## WP-CLI
 
+`npm run env:start` activates it. Anywhere else, activate it after Presence API.
+
 ```
 wp presence scene list
 wp presence scene run editing-together
