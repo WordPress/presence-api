@@ -977,7 +977,8 @@ function wp_presence_scene_admin_bar_nodes( $wp_admin_bar ) {
 			/* translators: %s: Number of users. */
 			. sprintf( _n( 'Creates %s user:', 'Creates %s users:', count( $scene['cast'] ), 'presence-api' ), number_format_i18n( count( $scene['cast'] ) ) ) . "\n"
 			. wp_presence_scene_casting( $scene ) . "\n\n"
-			. __( 'Deletes them and their posts when the scene ends.', 'presence-api' );
+			. __( 'Deletes them and their posts when the scene ends.', 'presence-api' ) . "\n"
+			. __( 'Plugins that act on new users or posts act on these too.', 'presence-api' );
 
 		$url     = function ( $args ) {
 			return esc_url( wp_nonce_url( add_query_arg( array( 'action' => 'presence_scene' ) + $args, admin_url( 'admin-post.php' ) ), 'wp_presence_scene' ) );
