@@ -952,9 +952,8 @@ function wp_presence_scene_admin_bar_nodes( $wp_admin_bar ) {
 
 	$run     = get_option( 'wp_presence_scene' );
 	$reports = (array) get_option( 'wp_presence_scene_reports', array() );
-	// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Only compared against scene slugs.
-	$open  = isset( $_COOKIE['wp_presence_scene_open'] ) ? wp_unslash( $_COOKIE['wp_presence_scene_open'] ) : '';
-	$marks = array(
+	$open    = get_user_setting( 'presence_scene', '' );
+	$marks   = array(
 		'pending' => __( 'Not played yet:', 'presence-api' ),
 		'current' => __( 'Playing:', 'presence-api' ),
 		'pass'    => __( 'Passed:', 'presence-api' ),
@@ -965,7 +964,7 @@ function wp_presence_scene_admin_bar_nodes( $wp_admin_bar ) {
 		array(
 			'parent' => 'presence-debug',
 			'id'     => 'presence-debug-scenes',
-			'meta'   => array( 'class' => 'ab-sub-secondary' . ( empty( $_COOKIE['wp_presence_scenes_shown'] ) ? '' : ' is-shown' ) ),
+			'meta'   => array( 'class' => 'ab-sub-secondary' . ( get_user_setting( 'presence_scenes' ) ? ' is-shown' : '' ) ),
 		)
 	);
 	$wp_admin_bar->add_node(
@@ -1139,8 +1138,10 @@ function wp_presence_scene_assets() {
 		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-note > .ab-item { max-width: 420px; padding-inline-start: 82px; white-space: normal; }'
 	);
 
+	wp_register_script( 'presence-debugger-scenes', false, array( 'presence-debugger-admin-bar', 'utils' ), WP_PRESENCE_VERSION, true );
+	wp_enqueue_script( 'presence-debugger-scenes' );
 	wp_add_inline_script(
-		'presence-debugger-admin-bar',
+		'presence-debugger-scenes',
 		<<<'JS'
 ( function ( $ ) {
 	if ( ! document.getElementById( "wp-admin-bar-presence-debug-scenes" ) || ! window.wp || ! wp.heartbeat ) {
@@ -1197,13 +1198,17 @@ function wp_presence_scene_assets() {
 		}
 	} );
 
-	// One scene opens at a time, and a cookie keeps it open through the next beat's swap.
+	// One scene opens at a time, and a user setting keeps it open through the next beat's swap.
 	$( document ).on( "click", "#wp-admin-bar-presence-debug-scenes .presence-debug-scene > .ab-item", function ( event ) {
 		event.preventDefault();
 		const scene = this.parentNode;
 		const slug = scene.id.slice( prefix.length );
 		const open = ! scene.classList.contains( "is-open" );
-		document.cookie = "wp_presence_scene_open=" + ( open ? encodeURIComponent( slug ) : "" ) + "; path=/; SameSite=Lax";
+		if ( open ) {
+			window.setUserSetting( "presence_scene", slug );
+		} else {
+			window.deleteUserSetting( "presence_scene" );
+		}
 		scene.parentNode.querySelectorAll( ".presence-debug-scene" ).forEach( function ( other ) {
 			const otherSlug = other.id.slice( prefix.length );
 			const shown = open && other === scene;
@@ -1222,7 +1227,7 @@ function wp_presence_scene_assets() {
 	$( document ).on( "click", "#wp-admin-bar-presence-debug-scenes .presence-debug-scenes-heading > :not(.is-follow)", function ( event ) {
 		event.preventDefault();
 		const shown = document.getElementById( "wp-admin-bar-presence-debug-scenes" ).classList.toggle( "is-shown" );
-		document.cookie = "wp_presence_scenes_shown=" + ( shown ? "1" : "" ) + "; path=/; SameSite=Lax";
+		window.setUserSetting( "presence_scenes", shown ? 1 : 0 );
 		sync();
 		if ( event.detail ) {
 			this.blur();
@@ -1234,7 +1239,7 @@ function wp_presence_scene_assets() {
 			event.preventDefault();
 			return;
 		}
-		document.cookie = "wp_presence_scene_open=" + encodeURIComponent( this.parentNode.id.slice( prefix.length ) ) + "; path=/; SameSite=Lax";
+		window.setUserSetting( "presence_scene", this.closest( ".presence-debug-scene" ).id.slice( prefix.length ) );
 		store( "presence-scene-directing", true );
 	} );
 
