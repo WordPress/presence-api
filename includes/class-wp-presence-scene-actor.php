@@ -84,11 +84,11 @@ final class WP_Presence_Scene_Actor {
 	 * @throws RuntimeException When their role cannot open that screen.
 	 */
 	public function visit( $place ) {
-		list( $screen, $title, $cap ) = wp_presence_scene_places()[ $place ];
+		$where = wp_presence_scene_places()[ $place ];
 
-		if ( ! user_can( $this->ID, $cap ) ) {
+		if ( ! user_can( $this->ID, $where['cap'] ) ) {
 			/* translators: %s: Screen title. */
-			throw new RuntimeException( sprintf( __( 'Their role cannot open %s.', 'presence-api' ), $title ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Printed as text.
+			throw new RuntimeException( sprintf( __( 'Their role cannot open %s.', 'presence-api' ), $where['title'] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Printed as text.
 		}
 
 		foreach ( $this->run['posts'] as $post_id ) {
@@ -99,8 +99,8 @@ final class WP_Presence_Scene_Actor {
 		}
 
 		$state = array(
-			'screen' => $screen,
-			'title'  => $title,
+			'screen' => $where['screen'],
+			'title'  => $where['title'],
 			'color'  => wp_presence_assign_user_color( $this->ID ),
 		);
 
@@ -166,9 +166,9 @@ final class WP_Presence_Scene_Actor {
 
 		foreach ( $this->run['beats'] as $user_id => $beats ) {
 			foreach ( $beats as $key => $beat ) {
-				if ( $user_id !== $this->ID && $beat[3] === $post->ID ) {
-					$this->run['beats'][ $user_id ][ $key ][2]['locked'] = false;
-					$this->run['beats'][ $user_id ][ $key ][3]           = 0;
+				if ( $user_id !== $this->ID && $beat['lock'] === $post->ID ) {
+					$this->run['beats'][ $user_id ][ $key ]['state']['locked'] = false;
+					$this->run['beats'][ $user_id ][ $key ]['lock']            = 0;
 				}
 			}
 		}
@@ -335,27 +335,25 @@ final class WP_Presence_Scene_Actor {
 		$errors = array();
 
 		foreach ( $this->run['beats'][ $this->ID ] ?? array() as $key => $beat ) {
-			list( $room, $client_id, $state, $lock ) = $beat;
-
-			if ( $lock ) {
-				$holder = $this->sees_lock( $lock );
+			if ( $beat['lock'] ) {
+				$holder = $this->sees_lock( $beat['lock'] );
 				if ( $holder ) {
-					$state['locked'] = false;
-					$lock            = 0;
-
-					$this->run['beats'][ $this->ID ][ $key ] = array( $room, $client_id, $state, $lock );
-
 					$user = get_userdata( $holder );
 					/* translators: 1: Actor name, 2: Post ID, 3: The user who took it over. */
-					$errors[] = array( 'info', sprintf( __( '%1$s lost the lock on post %2$d to %3$s.', 'presence-api' ), $this->name, $beat[3], $user ? $user->display_name : '#' . $holder ) );
+					$errors[] = array( 'info', sprintf( __( '%1$s lost the lock on post %2$d to %3$s.', 'presence-api' ), $this->name, $beat['lock'], $user ? $user->display_name : '#' . $holder ) );
+
+					$beat['state']['locked'] = false;
+					$beat['lock']            = 0;
+
+					$this->run['beats'][ $this->ID ][ $key ] = $beat;
 				} else {
-					$this->lock( $lock );
+					$this->lock( $beat['lock'] );
 				}
 			}
 
-			if ( ! wp_set_presence( $room, $client_id, $state, $this->ID ) ) {
+			if ( ! wp_set_presence( $beat['room'], $beat['client_id'], $beat['state'], $this->ID ) ) {
 				/* translators: 1: Client ID, 2: Room. */
-				$errors[] = array( 'fail', sprintf( __( 'wp_set_presence() refused %1$s in %2$s.', 'presence-api' ), $client_id, $room ) );
+				$errors[] = array( 'fail', sprintf( __( 'wp_set_presence() refused %1$s in %2$s.', 'presence-api' ), $beat['client_id'], $beat['room'] ) );
 			}
 		}
 
@@ -378,7 +376,12 @@ final class WP_Presence_Scene_Actor {
 			throw new RuntimeException( sprintf( __( 'wp_set_presence() refused %1$s in %2$s.', 'presence-api' ), $client_id, $room ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Printed as text.
 		}
 
-		$this->run['beats'][ $this->ID ][ $room . ' ' . $client_id ] = array( $room, $client_id, $state, (int) $lock );
+		$this->run['beats'][ $this->ID ][ $room . ' ' . $client_id ] = array(
+			'room'      => $room,
+			'client_id' => $client_id,
+			'state'     => $state,
+			'lock'      => (int) $lock,
+		);
 	}
 
 	/**

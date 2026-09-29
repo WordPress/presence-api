@@ -20,12 +20,36 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 function wp_presence_scene_places() {
 	return array(
-		'dashboard' => array( 'dashboard', __( 'Dashboard', 'presence-api' ), 'read' ),
-		'posts'     => array( 'edit-post', __( 'Posts', 'presence-api' ), 'edit_posts' ),
-		'pages'     => array( 'edit-page', __( 'Pages', 'presence-api' ), 'edit_pages' ),
-		'media'     => array( 'upload', __( 'Media', 'presence-api' ), 'upload_files' ),
-		'comments'  => array( 'edit-comments', __( 'Comments', 'presence-api' ), 'edit_posts' ),
-		'profile'   => array( 'profile', __( 'Profile', 'presence-api' ), 'read' ),
+		'dashboard' => array(
+			'screen' => 'dashboard',
+			'title'  => __( 'Dashboard', 'presence-api' ),
+			'cap'    => 'read',
+		),
+		'posts'     => array(
+			'screen' => 'edit-post',
+			'title'  => __( 'Posts', 'presence-api' ),
+			'cap'    => 'edit_posts',
+		),
+		'pages'     => array(
+			'screen' => 'edit-page',
+			'title'  => __( 'Pages', 'presence-api' ),
+			'cap'    => 'edit_pages',
+		),
+		'media'     => array(
+			'screen' => 'upload',
+			'title'  => __( 'Media', 'presence-api' ),
+			'cap'    => 'upload_files',
+		),
+		'comments'  => array(
+			'screen' => 'edit-comments',
+			'title'  => __( 'Comments', 'presence-api' ),
+			'cap'    => 'edit_posts',
+		),
+		'profile'   => array(
+			'screen' => 'profile',
+			'title'  => __( 'Profile', 'presence-api' ),
+			'cap'    => 'read',
+		),
 	);
 }
 
@@ -282,7 +306,7 @@ function wp_presence_scene_prepare( $scene ) {
 				return $invalid( sprintf( __( 'place must be one of %s.', 'presence-api' ), implode( ', ', array_keys( $places ) ) ), $n );
 			}
 			$clean['place'] = $cue['place'];
-			$object         = $places[ $cue['place'] ][1];
+			$object         = $places[ $cue['place'] ]['title'];
 		}
 
 		if ( isset( $cue['post'] ) ) {
