@@ -305,7 +305,7 @@ function wp_presence_scene_prepare( $scene ) {
 		}
 
 		$members = $whole ? array_keys( $present ) : array( $actor - 1 );
-		$format  = 'visit' === $action && $present[ $members[0] ] ? $actions[ $action ]['again'] : $actions[ $action ]['label'];
+		$format  = 'visit' === $action && ! in_array( false, array_intersect_key( $present, array_flip( $members ) ), true ) ? $actions[ $action ]['again'] : $actions[ $action ]['label'];
 
 		$clean['label'] = sprintf( $format, $whole ? __( 'The cast', 'presence-scenes' ) : wp_presence_scene_actor_name( $actor - 1 ), $object );
 		$prepared[]     = $clean;

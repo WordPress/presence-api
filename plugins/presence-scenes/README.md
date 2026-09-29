@@ -21,6 +21,8 @@ Plays real users through probable situations, such as two people editing one pos
 
 | Key | Value |
 |---|---|
+| `name` | Lowercase letters, numbers and dashes, matching the file name |
+| `title` | Plain text of up to 60 characters |
 | `cast` | One to seven roles, each `contributor`, `author` or `editor`; `actor` 1 plays the first |
 | `steps` | One to thirty steps |
 | `at` | Seconds from the start, 0 to 900, never earlier than the step before |
@@ -42,7 +44,7 @@ Plays real users through probable situations, such as two people editing one pos
 | `checkLocked` | `post` | |
 | `checkUnlocked` | `post` | |
 
-`title` and `text` are plain text of up to 100 characters.
+In steps, `title` and `text` are plain text of up to 100 characters.
 
 ## Adding a scene
 

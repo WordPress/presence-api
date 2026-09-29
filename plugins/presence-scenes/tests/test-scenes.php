@@ -56,6 +56,10 @@ class WP_Test_Presence_Scenes extends WP_Presence_UnitTestCase {
 			'markup in the title' => array( array(), array( 'step' => 'write', 'title' => '<b>Hi</b>' ) ),
 			'administrator cast'  => array( array( 'cast' => array( 'administrator' ) ), array() ),
 			'repeated title'      => array( array( 'steps' => array_fill( 0, 2, array( 'at' => 0, 'actor' => 1, 'step' => 'write', 'title' => 'Draft' ) ) ), array() ),
+			'eight roles'         => array( array( 'cast' => array_fill( 0, 8, 'author' ) ), array() ),
+			'back in time'        => array( array( 'steps' => array( array( 'at' => 5, 'actor' => 1, 'step' => 'drop' ), array( 'at' => 4, 'actor' => 1, 'step' => 'drop' ) ) ), array() ),
+			'whole cast writing'  => array( array(), array( 'actor' => 'cast', 'step' => 'write', 'title' => 'Draft' ) ),
+			'long title'          => array( array(), array( 'step' => 'write', 'title' => str_repeat( 'a', 101 ) ) ),
 		);
 	}
 
