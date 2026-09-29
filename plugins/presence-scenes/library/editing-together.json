@@ -1,0 +1,24 @@
+{
+	"apiVersion": 1,
+	"name": "editing-together",
+	"title": "Editing together",
+	"cast": [ "author", "editor" ],
+	"steps": [
+		{ "at": 0, "actor": 1, "step": "visit", "place": "posts" },
+		{ "at": 3, "actor": 1, "step": "write", "title": "Launch checklist" },
+		{ "at": 8, "actor": 1, "step": "type", "post": "Launch checklist", "text": "First pass at the checklist." },
+		{ "at": 12, "actor": 2, "step": "visit", "place": "posts" },
+		{ "at": 15, "actor": 2, "step": "open", "post": "Launch checklist" },
+		{ "at": 16, "actor": 2, "step": "checkLocked", "post": "Launch checklist" },
+		{ "at": 21, "actor": 1, "step": "type", "post": "Launch checklist", "text": "Added the venue details." },
+		{ "at": 25, "actor": 1, "step": "close", "post": "Launch checklist" },
+		{ "at": 28, "actor": 2, "step": "checkUnlocked", "post": "Launch checklist" },
+		{ "at": 29, "actor": 2, "step": "open", "post": "Launch checklist" },
+		{ "at": 33, "actor": 2, "step": "type", "post": "Launch checklist", "text": "Tightened the wording." },
+		{ "at": 37, "actor": 1, "step": "open", "post": "Launch checklist" },
+		{ "at": 38, "actor": 1, "step": "checkLocked", "post": "Launch checklist" },
+		{ "at": 42, "actor": 1, "step": "takeOver", "post": "Launch checklist" },
+		{ "at": 46, "actor": 1, "step": "type", "post": "Launch checklist", "text": "Final dates added." },
+		{ "at": 50, "actor": "cast", "step": "leave" }
+	]
+}

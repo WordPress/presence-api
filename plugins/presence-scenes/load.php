@@ -18,3 +18,14 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
+
+add_action(
+	'plugins_loaded',
+	function () {
+		if ( ! function_exists( 'wp_get_presence' ) ) {
+			return;
+		}
+
+		require_once __DIR__ . '/scenes.php';
+	}
+);

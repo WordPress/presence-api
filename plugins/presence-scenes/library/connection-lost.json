@@ -1,0 +1,16 @@
+{
+	"apiVersion": 1,
+	"name": "connection-lost",
+	"title": "Logging out or losing connection",
+	"cast": [ "author", "author" ],
+	"steps": [
+		{ "at": 0, "actor": 1, "step": "visit", "place": "dashboard" },
+		{ "at": 3, "actor": 2, "step": "visit", "place": "dashboard" },
+		{ "at": 8, "actor": 1, "step": "write", "title": "Garden plan" },
+		{ "at": 12, "actor": 2, "step": "write", "title": "Bake sale flyer" },
+		{ "at": 17, "actor": 1, "step": "leave" },
+		{ "at": 19, "actor": 1, "step": "checkOffline" },
+		{ "at": 22, "actor": 2, "step": "drop" },
+		{ "at": 27, "actor": 2, "step": "checkOnline" }
+	]
+}
