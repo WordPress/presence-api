@@ -114,6 +114,18 @@ function openTab( key, relayedKeys ) {
 
 const flush = () => new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
 
+/**
+ * Sets the shared document's visibility; tabs only react once their own bus fires visibilitychange.
+ *
+ * @param {string} state
+ */
+function setVisibility( state ) {
+	Object.defineProperty( document, 'visibilityState', {
+		configurable: true,
+		get: () => state,
+	} );
+}
+
 describe( 'wpPresenceCreateTabCoordinator', () => {
 	beforeEach( () => {
 		global.BroadcastChannel = FakeBroadcastChannel;
@@ -156,17 +168,47 @@ describe( 'wpPresenceCreateTabCoordinator', () => {
 
 	describe( 'with the Web Locks API', () => {
 		beforeEach( () => {
-			const heldLocks = {};
+			const queues = {};
+
+			const grantNext = ( name ) => {
+				const queue = queues[ name ];
+				if ( ! queue.length || queue[ 0 ].granted ) {
+					return;
+				}
+				const next = queue[ 0 ];
+				next.granted = true;
+				Promise.resolve()
+					.then( () => next.callback() )
+					.then( () => {
+						queue.shift();
+						grantNext( name );
+					} );
+			};
 
 			global.navigator.locks = {
-				request: ( name, callback ) => {
-					if ( heldLocks[ name ] ) {
-						return new Promise( () => {} );
-					}
-					heldLocks[ name ] = true;
-					return Promise.resolve().then( () => callback() );
-				},
+				request: ( name, options, callback ) =>
+					new Promise( ( resolve, reject ) => {
+						queues[ name ] = queues[ name ] || [];
+						const entry = { callback, granted: false };
+						queues[ name ].push( entry );
+						options.signal.addEventListener( 'abort', () => {
+							if ( ! entry.granted ) {
+								queues[ name ].splice(
+									queues[ name ].indexOf( entry ),
+									1
+								);
+								reject( new Error( 'AbortError' ) );
+							}
+						} );
+						grantNext( name );
+					} ),
 			};
+		} );
+
+		afterEach( () => {
+			delete window.ajaxurl;
+			delete window.wp;
+			setVisibility( 'visible' );
 		} );
 
 		it( 'relays the leader tick to followers exactly once', async () => {
@@ -199,6 +241,77 @@ describe( 'wpPresenceCreateTabCoordinator', () => {
 			drainDeliveries();
 
 			expect( postedMessages ).toHaveLength( 0 );
+		} );
+
+		it( 'hands leadership to a visible tab when the leader is hidden', async () => {
+			const tabA = openTab( 'presence-key', [ 'presence-online' ] );
+			const tabB = openTab( 'presence-key', [ 'presence-online' ] );
+			await flush();
+
+			setVisibility( 'hidden' );
+			tabA.jQuery( document ).trigger( 'visibilitychange' );
+			setVisibility( 'visible' );
+			await flush();
+
+			expect( tabA.coordinator.isLeader() ).toBe( false );
+			expect( tabB.coordinator.isLeader() ).toBe( true );
+		} );
+
+		it( 'does not queue a tab that opens hidden until it is shown', async () => {
+			setVisibility( 'hidden' );
+			const tab = openTab( 'presence-key', [ 'presence-online' ] );
+			await flush();
+
+			expect( tab.coordinator.isLeader() ).toBe( false );
+
+			setVisibility( 'visible' );
+			tab.jQuery( document ).trigger( 'visibilitychange' );
+			await flush();
+
+			expect( tab.coordinator.isLeader() ).toBe( true );
+		} );
+
+		it( 'does not lead when hidden between the grant and its callback', async () => {
+			const tab = openTab( 'presence-key', [ 'presence-online' ] );
+
+			setVisibility( 'hidden' );
+			tab.jQuery( document ).trigger( 'visibilitychange' );
+			await flush();
+
+			expect( tab.coordinator.isLeader() ).toBe( false );
+
+			setVisibility( 'visible' );
+			const nextTab = openTab( 'presence-key', [ 'presence-online' ] );
+			await flush();
+
+			expect( nextTab.coordinator.isLeader() ).toBe( true );
+		} );
+
+		it( 'connects at once when a shown tab takes over', async () => {
+			window.wp = { heartbeat: { connectNow: jest.fn() } };
+			const tab = openTab( 'presence-key', [ 'presence-online' ] );
+			await flush();
+
+			expect( window.wp.heartbeat.connectNow ).not.toHaveBeenCalled();
+
+			setVisibility( 'hidden' );
+			tab.jQuery( document ).trigger( 'visibilitychange' );
+			setVisibility( 'visible' );
+			tab.jQuery( document ).trigger( 'visibilitychange' );
+			await flush();
+
+			expect( window.wp.heartbeat.connectNow ).toHaveBeenCalledTimes( 1 );
+		} );
+
+		it( 'elects a leader per site on a subdirectory network', async () => {
+			window.ajaxurl = '/site-a/wp-admin/admin-ajax.php';
+			const tabA = openTab( 'presence-key', [ 'presence-online' ] );
+			window.ajaxurl = '/site-b/wp-admin/admin-ajax.php';
+			const tabB = openTab( 'presence-key', [ 'presence-online' ] );
+			await flush();
+
+			expect( tabA.coordinator.isLeader() ).toBe( true );
+			expect( tabB.coordinator.isLeader() ).toBe( true );
 		} );
 	} );
 } );

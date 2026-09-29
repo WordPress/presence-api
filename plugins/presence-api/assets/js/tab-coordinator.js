@@ -1,7 +1,7 @@
 /**
  * Cross-tab Heartbeat ping coordinator.
  *
- * Elects one tab per key to actually send Heartbeat's ping payload; other
+ * Elects one visible tab per key and site to send Heartbeat's ping payload; other
  * tabs relay the elected tab's response over BroadcastChannel instead of
  * pinging independently. Falls back to independent pinging when Web Locks
  * or BroadcastChannel aren't available.
@@ -26,9 +26,18 @@
 		// No Locks API: ping independently, same as before.
 		let isPingLeader = ! hasLocks;
 
+		// Locks and channels are shared across the origin, but each site on a subdirectory network has its own Heartbeat endpoint.
+		const scope =
+			typeof window.ajaxurl === 'string'
+				? window.ajaxurl
+				: ( window.heartbeatSettings &&
+						window.heartbeatSettings.ajaxurl ) ||
+				  '';
+		const scopedKey = scope + '|' + key;
+
 		const channel =
 			hasLocks && typeof BroadcastChannel === 'function'
-				? new BroadcastChannel( key )
+				? new BroadcastChannel( scopedKey )
 				: null;
 
 		if ( channel ) {
@@ -38,15 +47,67 @@
 		}
 
 		if ( hasLocks ) {
-			// All tabs queue on this lock; the winner leads until its tab
-			// closes. Closing or crashing the leader's tab releases the
-			// lock automatically, promoting the next queued tab.
-			navigator.locks
-				.request( key, function () {
-					isPingLeader = true;
-					return new Promise( function () {} );
-				} )
-				.catch( function () {} );
+			// Only visible tabs queue for the lock; a tab that takes over on becoming visible connects at once so followers don't wait an interval.
+			let pending = null;
+			let release = null;
+
+			const requestLeadership = function ( connectOnGrant ) {
+				if ( pending || release ) {
+					return;
+				}
+				const controller = new AbortController();
+				pending = controller;
+				navigator.locks
+					.request(
+						scopedKey,
+						{ signal: controller.signal },
+						function () {
+							// Resigned after the grant but before this ran; returning releases the lock.
+							if ( pending !== controller ) {
+								return;
+							}
+							pending = null;
+							isPingLeader = true;
+							if (
+								connectOnGrant &&
+								window.wp &&
+								window.wp.heartbeat &&
+								typeof window.wp.heartbeat.connectNow ===
+									'function'
+							) {
+								window.wp.heartbeat.connectNow();
+							}
+							return new Promise( function ( resolve ) {
+								release = resolve;
+							} );
+						}
+					)
+					.catch( function () {} );
+			};
+
+			const resignLeadership = function () {
+				if ( pending ) {
+					pending.abort();
+					pending = null;
+				}
+				if ( release ) {
+					release();
+					release = null;
+				}
+				isPingLeader = false;
+			};
+
+			$( document ).on( 'visibilitychange', function () {
+				if ( document.visibilityState === 'hidden' ) {
+					resignLeadership();
+				} else {
+					requestLeadership( true );
+				}
+			} );
+
+			if ( document.visibilityState !== 'hidden' ) {
+				requestLeadership( false );
+			}
 		}
 
 		if ( channel ) {
