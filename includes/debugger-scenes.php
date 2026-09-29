@@ -857,7 +857,7 @@ function wp_presence_scene_heartbeat_received( $response, $data ) {
 			'notes'   => $report['notes'],
 		);
 
-		if ( $run && $run['done'] && ! empty( $_COOKIE['wp_presence_scene_follow'] ) ) {
+		if ( $run && $run['done'] && ! empty( $data['presence-scene']['follow'] ) ) {
 			// Lists rather than editors, since opening a scene post would take its lock.
 			$cue = $run['scene']['cues'][ max( array_keys( $run['done'] ) ) ];
 
@@ -940,7 +940,7 @@ function wp_presence_scene_admin_bar_nodes( $wp_admin_bar ) {
 			'href'   => '#',
 			'meta'   => array(
 				'class' => 'presence-debug-scenes-heading',
-				'html'  => ( is_array( $run ) ? '<a class="presence-debug-scene-button is-follow" href="#" role="button" aria-pressed="' . ( empty( $_COOKIE['wp_presence_scene_follow'] ) ? 'false' : 'true' ) . '" title="' . esc_attr__( 'Follow along', 'presence-api' ) . '"><span class="screen-reader-text">' . esc_html__( 'Follow along', 'presence-api' ) . '</span></a>' : '<span class="presence-debug-scene-button" aria-hidden="true"></span>' ) . '<span class="presence-debug-scene-icon" aria-hidden="true"></span>',
+				'html'  => ( is_array( $run ) ? '<a class="presence-debug-scene-button is-follow" href="#" role="button" aria-pressed="false" title="' . esc_attr__( 'Follow along', 'presence-api' ) . '"><span class="screen-reader-text">' . esc_html__( 'Follow along', 'presence-api' ) . '</span></a>' : '<span class="presence-debug-scene-button" aria-hidden="true"></span>' ) . '<span class="presence-debug-scene-icon" aria-hidden="true"></span>',
 			),
 		)
 	);
@@ -1074,9 +1074,9 @@ function wp_presence_scene_assets() {
 		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scene-button { display: flex; flex: none; align-items: center; justify-content: center; width: 28px; padding: 0; color: inherit; }
 		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scene { position: relative; }
 		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scene > .ab-item { min-height: 26px; }
-		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scene-controls { display: none; position: absolute; inset-block: 0; inset-inline-end: 0; padding-inline-end: 4px; }
-		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scene:is(:hover, :has(:focus-visible), :has(.is-resume)) .presence-debug-scene-controls { display: flex; }
-		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scene:is(:hover, :has(:focus-visible), :has(.is-resume)) > .presence-debug-value { visibility: hidden; }
+		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scene-controls { display: flex; position: absolute; inset-block: 0; inset-inline-end: 0; padding-inline-end: 4px; opacity: 0; pointer-events: none; }
+		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scene:is(:hover, :focus-within, :has(.is-resume)) .presence-debug-scene-controls { opacity: 1; pointer-events: auto; }
+		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scene:is(:hover, :focus-within, :has(.is-resume)) > .presence-debug-value { visibility: hidden; }
 		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scene-button:is(:hover, :focus, [aria-pressed="true"]):not([aria-pressed="false"]) { color: var(--wp-admin-theme-color, #72aee6); }
 		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scene-button::before { font: 16px/1 dashicons; }
 		#wpadminbar #wp-admin-bar-presence-debug-scenes .presence-debug-scene-button:is(.is-start, .is-resume)::before { content: "\\f522"; }
@@ -1112,6 +1112,53 @@ function wp_presence_scene_assets() {
 	const methods = { fail: "error", warning: "warn" };
 	const prefix = "wp-admin-bar-presence-debug-scene-";
 
+	// Follow and the fast beat belong to one tab, so other tabs neither move nor beat faster.
+	function stored( key ) {
+		try {
+			return "1" === window.sessionStorage.getItem( key );
+		} catch ( e ) {
+			return false;
+		}
+	}
+	function store( key, on ) {
+		try {
+			window.sessionStorage.setItem( key, on ? "1" : "" );
+		} catch ( e ) {}
+	}
+
+	// Core cannot print these attributes on a menu item, and live updates replace the markup.
+	function sync() {
+		const group = document.getElementById( "wp-admin-bar-presence-debug-scenes" );
+		if ( ! group ) {
+			return;
+		}
+		group.querySelector( ".presence-debug-scenes-heading > .ab-item" ).setAttribute( "aria-expanded", group.classList.contains( "is-shown" ) );
+		group.querySelectorAll( ".presence-debug-scene > .ab-item" ).forEach( function ( item ) {
+			item.setAttribute( "aria-expanded", item.parentNode.classList.contains( "is-open" ) );
+		} );
+		const follow = group.querySelector( ".is-follow" );
+		if ( follow ) {
+			follow.setAttribute( "aria-pressed", stored( "presence-scene-follow" ) );
+		}
+	}
+	sync();
+	new MutationObserver( function ( records ) {
+		if ( records.some( function ( record ) {
+			return Array.prototype.some.call( record.addedNodes, function ( added ) {
+				return 1 === added.nodeType;
+			} );
+		} ) ) {
+			sync();
+		}
+	} ).observe( document.getElementById( "wp-admin-bar-presence-debug" ), { childList: true, subtree: true } );
+
+	$( document ).on( "keydown", "#wp-admin-bar-presence-debug-scenes .presence-debug-scene > .ab-item, #wp-admin-bar-presence-debug-scenes .presence-debug-scenes-heading > .ab-item, #wp-admin-bar-presence-debug-scenes .is-follow", function ( event ) {
+		if ( " " === event.key ) {
+			event.preventDefault();
+			this.click();
+		}
+	} );
+
 	// One scene opens at a time, and a cookie keeps it open through the next beat's swap.
 	$( document ).on( "click", "#wp-admin-bar-presence-debug-scenes .presence-debug-scene > .ab-item", function ( event ) {
 		event.preventDefault();
@@ -1127,6 +1174,7 @@ function wp_presence_scene_assets() {
 				row.classList.toggle( "is-hidden", ! shown );
 			} );
 		} );
+		sync();
 		// Live updates skip a focused menu, so a click must not leave focus behind.
 		if ( event.detail ) {
 			this.blur();
@@ -1137,6 +1185,7 @@ function wp_presence_scene_assets() {
 		event.preventDefault();
 		const shown = document.getElementById( "wp-admin-bar-presence-debug-scenes" ).classList.toggle( "is-shown" );
 		document.cookie = "wp_presence_scenes_shown=" + ( shown ? "1" : "" ) + "; path=/; SameSite=Lax";
+		sync();
 		if ( event.detail ) {
 			this.blur();
 		}
@@ -1148,13 +1197,17 @@ function wp_presence_scene_assets() {
 			return;
 		}
 		document.cookie = "wp_presence_scene_open=" + encodeURIComponent( this.parentNode.id.slice( prefix.length ) ) + "; path=/; SameSite=Lax";
+		store( "presence-scene-directing", true );
+	} );
+
+	$( document ).on( "click", "#wp-admin-bar-presence-debug-scenes .presence-debug-scene-button.is-resume", function () {
+		store( "presence-scene-directing", true );
 	} );
 
 	$( document ).on( "click", "#wp-admin-bar-presence-debug-scenes .presence-debug-scene-button.is-follow", function ( event ) {
 		event.preventDefault();
-		const follow = this.getAttribute( "aria-pressed" ) !== "true";
-		this.setAttribute( "aria-pressed", follow );
-		document.cookie = "wp_presence_scene_follow=" + ( follow ? "1" : "" ) + "; path=/; SameSite=Lax";
+		store( "presence-scene-follow", ! stored( "presence-scene-follow" ) );
+		sync();
 		if ( event.detail ) {
 			this.blur();
 		}
@@ -1162,13 +1215,16 @@ function wp_presence_scene_assets() {
 	} );
 
 	$( document ).on( "heartbeat-send", function ( event, data ) {
-		data[ "presence-scene" ] = 1;
+		data[ "presence-scene" ] = { follow: stored( "presence-scene-follow" ) ? 1 : 0 };
 	} );
 
 	// Printed once per tab, so a reload does not repeat the report.
 	$( document ).on( "heartbeat-tick", function ( event, data ) {
 		const scene = data[ "presence-scene" ];
 		document.getElementById( "wp-admin-bar-presence-debug" ).classList.toggle( "is-playing", !! ( scene && scene.running ) );
+		if ( ! scene || ! scene.running ) {
+			store( "presence-scene-directing", false );
+		}
 		if ( ! scene ) {
 			return;
 		}
@@ -1187,7 +1243,7 @@ function wp_presence_scene_assets() {
 			window.location.assign( scene.watch );
 		}
 		// Cues play on this tab's beats, which core slows to two minutes while the window is out of focus.
-		if ( scene.running ) {
+		if ( scene.running && stored( "presence-scene-directing" ) ) {
 			window.setTimeout( function () {
 				wp.heartbeat.interval( "fast" );
 				if ( ! document.hasFocus() ) {
@@ -1199,8 +1255,10 @@ function wp_presence_scene_assets() {
 
 	if ( document.querySelector( "#wp-admin-bar-presence-debug-scenes .presence-debug-scene-busy" ) ) {
 		document.getElementById( "wp-admin-bar-presence-debug" ).classList.add( "is-playing" );
-		wp.heartbeat.interval( "fast" );
-		wp.heartbeat.connectNow();
+		if ( stored( "presence-scene-directing" ) ) {
+			wp.heartbeat.interval( "fast" );
+			wp.heartbeat.connectNow();
+		}
 	}
 } )( jQuery );
 JS
