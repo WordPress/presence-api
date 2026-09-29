@@ -257,8 +257,8 @@ function wp_presence_debugger_admin_bar_assets() {
 
 			function formatSeconds( count ) {
 				return sprintf(
-					/* translators: %s: Number of seconds. */
-					_n( "%ss", "%ss", count, "presence-api" ),
+					/* translators: %%s: Number of seconds. */
+					_n( "%%ss", "%%ss", count, "presence-api" ),
 					count
 				);
 			}

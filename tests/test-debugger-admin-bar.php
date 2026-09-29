@@ -108,6 +108,8 @@ class WP_Test_Presence_Debugger_Admin_Bar extends WP_Presence_UnitTestCase {
 		$inline_js      = is_array( $inline_scripts ) ? implode( "\n", $inline_scripts ) : (string) $inline_scripts;
 		$this->assertStringContainsString( 'formatSeconds', $inline_js );
 		$this->assertStringContainsString( '_n', $inline_js );
+		$this->assertStringContainsString( '_n( "%ss", "%ss"', $inline_js );
+		$this->assertStringContainsString( '/* translators: %s: Number of seconds. */', $inline_js );
 		$this->assertStringNotContainsString( 'Intl.NumberFormat', $inline_js );
 	}
 }
