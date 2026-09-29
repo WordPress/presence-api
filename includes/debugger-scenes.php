@@ -235,8 +235,12 @@ function wp_presence_scene_prepare( $scene ) {
 		$fields  = $actions[ $action ]['fields'];
 		$allowed = array_merge( array( 'at', 'actor', 'action' ), $fields );
 		if ( array_diff( array_keys( $cue ), $allowed ) || array_diff( array_diff( $allowed, array( 'text' ) ), array_keys( $cue ) ) ) {
-			/* translators: 1: Action, 2: Its fields. */
-			return $invalid( sprintf( __( '%1$s takes %2$s, and text is optional.', 'presence-api' ), $action, implode( ', ', $allowed ) ), $n );
+			$message = in_array( 'text', $fields, true )
+				/* translators: 1: Action, 2: Its fields. */
+				? __( '%1$s takes %2$s, and text is optional.', 'presence-api' )
+				/* translators: 1: Action, 2: Its fields. */
+				: __( '%1$s takes %2$s.', 'presence-api' );
+			return $invalid( sprintf( $message, $action, implode( ', ', $allowed ) ), $n );
 		}
 
 		$at = $cue['at'];
@@ -981,7 +985,8 @@ function wp_presence_scene_admin_bar_nodes( $wp_admin_bar ) {
 	);
 
 	foreach ( $scenes as $name => $scene ) {
-		$slug     = str_replace( '/', '-', $name );
+		// Core strips dashes from user settings, and names could collide once slashes go.
+		$slug     = md5( $name );
 		$running  = is_array( $run ) && $run['name'] === $name;
 		$paused   = $running && ! empty( $run['paused'] );
 		$scene    = $running ? $run['scene'] : $scene;
