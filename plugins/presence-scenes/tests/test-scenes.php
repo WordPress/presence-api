@@ -66,9 +66,19 @@ class WP_Test_Presence_Scenes extends WP_Presence_UnitTestCase {
 			$jump = max( 1, $next - $now );
 			$now += $jump;
 
-			// Ages every row as far as the fake clock moved, so timeouts pass as they would in real time.
+			// Ages every row as far as the fake clock moved, in PHP since SQLite has no INTERVAL.
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->presence} SET date_gmt = date_gmt - INTERVAL %d SECOND, expires_gmt = expires_gmt - INTERVAL %d SECOND", $jump, $jump ) );
+			foreach ( $wpdb->get_results( "SELECT id, date_gmt, expires_gmt FROM {$wpdb->presence}" ) as $row ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->update(
+					$wpdb->presence,
+					array(
+						'date_gmt'    => gmdate( 'Y-m-d H:i:s', strtotime( $row->date_gmt . ' UTC' ) - $jump ),
+						'expires_gmt' => gmdate( 'Y-m-d H:i:s', strtotime( $row->expires_gmt . ' UTC' ) - $jump ),
+					),
+					array( 'id' => $row->id )
+				);
+			}
 		}
 
 		$run = wp_presence_scene_strike( $run );
