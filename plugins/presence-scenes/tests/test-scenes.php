@@ -219,6 +219,28 @@ class WP_Test_Presence_Scenes extends WP_Presence_UnitTestCase {
 		$this->assertSame( array(), $this->presence_for_user( $run['cast'][0] ) );
 	}
 
+	public function data_run_past_its_time() {
+		return array(
+			'command died' => array( 'ticked', -wp_presence_scene_timings()['abandoned'] - 1 ),
+			'run expired'  => array( 'expires', 0 ),
+		);
+	}
+
+	/**
+	 * @dataProvider data_run_past_its_time
+	 *
+	 * @covers ::wp_presence_scene_sweep
+	 */
+	public function test_sweep_strikes_a_run_past_its_time( $key, $offset ) {
+		$run         = wp_presence_scene_start( 'editing-together' );
+		$run[ $key ] = time() + $offset;
+		update_option( 'wp_presence_scene', $run, false );
+
+		wp_presence_scene_sweep();
+
+		$this->assertFalse( get_option( 'wp_presence_scene' ) );
+	}
+
 	/**
 	 * @covers ::wp_presence_scene_sweep
 	 * @covers ::wp_presence_scene_delete_users
