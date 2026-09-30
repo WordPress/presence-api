@@ -23,7 +23,6 @@ jobs:
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
-      pr: ${{ steps.release.outputs.pr }}
       prs: ${{ steps.release.outputs.prs }}
       releases_created: ${{ steps.release.outputs.releases_created }}
       paths_released: ${{ steps.release.outputs.paths_released }}
@@ -102,7 +101,6 @@ jobs:
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           PROPS_SORT_LAST: ${{ vars.PROPS_SORT_LAST }}
-          PR_NUMBER: ${{ needs.release-please.outputs.pr && endsWith(fromJSON(needs.release-please.outputs.pr).headBranchName, '--components--presence-api') && fromJSON(needs.release-please.outputs.pr).number || '' }}
         with:
           script: |
             const run = require(`${process.env.GITHUB_WORKSPACE}/.github/scripts/aggregate-props.js`);

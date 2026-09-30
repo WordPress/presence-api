@@ -127,22 +127,18 @@ async function run( {
 	const { owner, repo } = context.repo;
 	const sortLast = env.PROPS_SORT_LAST || '';
 
-	// 1. Resolve the release PR. release-please only reports it on runs where it
-	//    touched the PR, so fall back to whichever release PR is open. Without
-	//    this, contributors merged after the last touch are never aggregated.
-	let prNumber = Number( env.PR_NUMBER );
-	if ( ! prNumber ) {
-		const { data: openPRs } = await github.rest.pulls.list( {
-			owner,
-			repo,
-			state: 'open',
-			base: 'main',
-			per_page: 100,
-		} );
-		prNumber =
-			openPRs.find( ( pr ) => pr.head.ref === PLUGIN_RELEASE_BRANCH )
-				?.number ?? 0;
-	}
+	// 1. Find the open release PR. release-please only reports it on runs where
+	//    it touched the PR, so its output would drop contributors merged since.
+	const { data: openPRs } = await github.rest.pulls.list( {
+		owner,
+		repo,
+		state: 'open',
+		base: 'main',
+		per_page: 100,
+	} );
+	const prNumber =
+		openPRs.find( ( pr ) => pr.head.ref === PLUGIN_RELEASE_BRANCH )
+			?.number ?? 0;
 	if ( ! prNumber ) {
 		core.info( 'No open release PR; skipping comment.' );
 		return;

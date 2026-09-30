@@ -37,7 +37,14 @@ function makeRelease( tag_name, published_at, draft = false ) {
 function buildGithub( {
 	releases = [],
 	prs = [],
-	openPRs = [],
+	openPRs = [
+		{
+			number: RELEASE_PR,
+			head: {
+				ref: 'release-please--branches--main--components--presence-api',
+			},
+		},
+	],
 	commentsByPR = {},
 } = {} ) {
 	return {
@@ -64,7 +71,6 @@ function buildGithub( {
 
 function makeEnv( overrides = {} ) {
 	return {
-		PR_NUMBER: String( RELEASE_PR ),
 		PROPS_SORT_LAST: '',
 		...overrides,
 	};
@@ -460,7 +466,7 @@ test( 'run: applies PROPS_SORT_LAST and deduplicates across PRs', async () => {
 	assert.ok( body.includes( 'Props alice, bob, maintainer.' ) );
 } );
 
-test( 'run: falls back to the open release PR when PR_NUMBER is absent', async () => {
+test( 'run: comments on the Presence API release PR, not another plugin release PR', async () => {
 	const github = buildGithub( {
 		openPRs: [
 			{ number: 7, head: { ref: 'feature/unrelated' } },
@@ -489,7 +495,7 @@ test( 'run: falls back to the open release PR when PR_NUMBER is absent', async (
 		github,
 		context,
 		core,
-		env: { PR_NUMBER: '', PROPS_SORT_LAST: '' },
+		env: makeEnv(),
 	} );
 
 	assert.equal( github.rest.issues.createComment.mock.calls.length, 1 );
@@ -658,7 +664,7 @@ test( 'run: asks WordPress.org about each unlinked login only once', async () =>
 	assert.deepEqual( sent.github_user, [ 'alice-gh' ] );
 } );
 
-test( 'run: skips when PR_NUMBER is absent and no release PR is open', async () => {
+test( 'run: skips when no release PR is open', async () => {
 	const github = buildGithub( {
 		openPRs: [ { number: 7, head: { ref: 'feature/unrelated' } } ],
 		prs: [ makePR( 10, 'feature/foo' ) ],
@@ -670,7 +676,7 @@ test( 'run: skips when PR_NUMBER is absent and no release PR is open', async () 
 		github,
 		context,
 		core,
-		env: { PR_NUMBER: '', PROPS_SORT_LAST: '' },
+		env: makeEnv(),
 	} );
 
 	assert.equal( core.setFailed.mock.calls.length, 0 );
