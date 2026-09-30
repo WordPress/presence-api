@@ -382,11 +382,13 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), self::$editor_id );
 		wp_set_presence( 'postType/post:1', 'lock-' . self::$editor_id, array(), self::$editor_id );
 		wp_set_presence( 'admin/online', 'user-' . self::$subscriber_id, array(), self::$subscriber_id );
+		wp_get_presence( 'admin/online' );
 
 		wp_remove_user_presence( self::$editor_id );
 
 		$this->assertCount( 0, $this->presence_for_user( self::$editor_id ) );
 		$this->assertCount( 1, $this->presence_for_user( self::$subscriber_id ), 'Another user\'s entries should be left alone.' );
+		$this->assertCount( 1, wp_get_presence( 'admin/online' ), 'The next read should not reuse rows from before the removal.' );
 	}
 
 	/**
