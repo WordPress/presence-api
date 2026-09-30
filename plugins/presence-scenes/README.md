@@ -23,6 +23,8 @@ wp presence scene stop
 
 A run creates a user for each part in the cast, plays each step at its time, then deletes those users and everything they wrote. Runs refuse to overlap, a run whose command died is soon replaced, and actors cannot log in. Only the scenes in `library/` can be played.
 
+`npm run test:scenes` plays every scene and saves a screenshot of the screen each step happened on to `artifacts/screenshots/scenes/`.
+
 ## Scene format
 
 ```json
