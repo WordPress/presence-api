@@ -2047,6 +2047,173 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * An agent has no Heartbeat, so saving a post is what puts it in the
+	 * post's room, labelled, with nothing else having to run.
+	 *
+	 * @covers ::wp_presence_on_agent_post_saved
+	 */
+	public function test_an_agent_saving_a_post_gets_a_labelled_row_in_its_room() {
+		$agent_id = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$this->mark_as_agent( $agent_id );
+		wp_set_current_user( $agent_id );
+
+		$post_id = self::factory()->post->create();
+
+		$entries = wp_get_presence( 'postType/post:' . $post_id );
+
+		$this->assertCount( 1, $entries );
+		$this->assertSame( 'agent-' . $agent_id, $entries[0]->client_id );
+		$this->assertSame( (string) $agent_id, $entries[0]->user_id );
+		$this->assertContains( (string) $agent_id, wp_list_pluck( wp_presence_admin_room_entries(), 'user_id' ), 'The row is labelled as an agent wherever presence is listed.' );
+	}
+
+	/**
+	 * A person's presence rides Heartbeat, so their save writes nothing.
+	 *
+	 * @covers ::wp_presence_on_agent_post_saved
+	 */
+	public function test_a_person_saving_a_post_gets_no_row() {
+		wp_set_current_user( self::$editor_id );
+
+		$post_id = self::factory()->post->create();
+
+		$this->assertSame( array(), wp_get_presence( 'postType/post:' . $post_id ) );
+	}
+
+	/**
+	 * The row's window is the idle threshold, so a busy agent never reads as
+	 * idle, and it lapses on its own once the agent stops saving.
+	 *
+	 * @covers ::wp_presence_on_agent_post_saved
+	 */
+	public function test_an_agent_save_row_lasts_the_idle_threshold_and_expires_with_no_heartbeat() {
+		global $wpdb;
+
+		$agent_id = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$this->mark_as_agent( $agent_id );
+		wp_set_current_user( $agent_id );
+
+		$post_id = self::factory()->post->create();
+		$client  = 'agent-' . $agent_id;
+
+		$row = $wpdb->get_row( $wpdb->prepare( "SELECT date_gmt, expires_gmt FROM {$wpdb->presence} WHERE client_id = %s", $client ) );
+
+		$this->assertSame( wp_presence_idle_threshold(), strtotime( $row->expires_gmt ) - strtotime( $row->date_gmt ) );
+
+		$wpdb->update(
+			$wpdb->presence,
+			array( 'expires_gmt' => gmdate( 'Y-m-d H:i:s', time() - 1 ) ),
+			array( 'client_id' => $client ),
+			array( '%s' ),
+			array( '%s' )
+		);
+
+		$this->assertSame( array(), wp_get_presence( 'postType/post:' . $post_id ) );
+		$this->assertNotContains( (string) $agent_id, wp_list_pluck( wp_presence_admin_room_entries(), 'user_id' ) );
+	}
+
+	/**
+	 * Every save writes again, so an agent that keeps saving keeps its row.
+	 *
+	 * @covers ::wp_presence_on_agent_post_saved
+	 */
+	public function test_an_agent_saving_again_refreshes_its_row() {
+		global $wpdb;
+
+		$agent_id = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$this->mark_as_agent( $agent_id );
+		wp_set_current_user( $agent_id );
+
+		$post_id = self::factory()->post->create();
+
+		$wpdb->update(
+			$wpdb->presence,
+			array(
+				'date_gmt'    => gmdate( 'Y-m-d H:i:s', time() - 20 ),
+				'expires_gmt' => gmdate( 'Y-m-d H:i:s', time() + 5 ),
+			),
+			array( 'client_id' => 'agent-' . $agent_id ),
+			array( '%s', '%s' ),
+			array( '%s' )
+		);
+
+		wp_update_post(
+			array(
+				'ID'         => $post_id,
+				'post_title' => 'Edited again',
+			)
+		);
+
+		$row = $wpdb->get_row( $wpdb->prepare( "SELECT expires_gmt FROM {$wpdb->presence} WHERE client_id = %s", 'agent-' . $agent_id ) );
+
+		$this->assertGreaterThan( time() + 5, strtotime( $row->expires_gmt ) );
+	}
+
+	/**
+	 * Revisions and autosaves fire the same hook but are not the agent editing
+	 * the post. Revisions have no presence support by default, which would
+	 * skip them anyway, so it is added here to show the guard is what holds.
+	 *
+	 * @covers ::wp_presence_on_agent_post_saved
+	 */
+	public function test_an_agent_writing_a_revision_or_an_autosave_gets_no_row() {
+		$agent_id = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$parent   = self::factory()->post->create();
+		$this->mark_as_agent( $agent_id );
+		wp_set_current_user( $agent_id );
+		add_post_type_support( 'revision', 'presence' );
+
+		foreach ( array( 'revision', 'autosave' ) as $kind ) {
+			$post_id = wp_insert_post(
+				array(
+					'post_type'   => 'revision',
+					'post_status' => 'inherit',
+					'post_parent' => $parent,
+					'post_name'   => $parent . '-' . $kind . '-v1',
+				)
+			);
+
+			$this->assertSame( array(), wp_get_presence( 'postType/revision:' . $post_id ), "An agent's {$kind} writes no row." );
+		}
+
+		remove_post_type_support( 'revision', 'presence' );
+	}
+
+	/**
+	 * An auto-draft is the editor opening a new post, not the agent saving one.
+	 *
+	 * @covers ::wp_presence_on_agent_post_saved
+	 */
+	public function test_an_agent_creating_an_auto_draft_gets_no_row() {
+		$agent_id = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$this->mark_as_agent( $agent_id );
+		wp_set_current_user( $agent_id );
+
+		$post_id = wp_insert_post( array( 'post_status' => 'auto-draft' ) );
+
+		$this->assertSame( array(), wp_get_presence( 'postType/post:' . $post_id ) );
+	}
+
+	/**
+	 * A post type without presence support has no room to write to.
+	 *
+	 * @covers ::wp_presence_on_agent_post_saved
+	 */
+	public function test_an_agent_saving_a_post_type_without_presence_support_gets_no_row() {
+		register_post_type( 'no_presence_type', array( 'show_ui' => false ) );
+
+		$agent_id = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$this->mark_as_agent( $agent_id );
+		wp_set_current_user( $agent_id );
+
+		$post_id = self::factory()->post->create( array( 'post_type' => 'no_presence_type' ) );
+
+		$this->assertSame( array(), wp_get_presence( 'postType/no_presence_type:' . $post_id ) );
+
+		unregister_post_type( 'no_presence_type' );
+	}
+
+	/**
 	 * Marks a user as an agent for the current test, through the same filter
 	 * a real Agent Users integration would use.
 	 *
