@@ -36,7 +36,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-The Network Admin specs need a network, which is a second wp-env instance on [localhost:8890](http://localhost:8890/wp-admin/network/) with its own database. `npm run test:e2e` starts and seeds it on demand, so the first run after a fresh checkout takes a few minutes longer. `npm run env:stop:multisite` shuts it down.
+The Network Admin specs need a network, which is a second wp-env instance on [localhost:8890](http://localhost:8890/wp-admin/network/) with its own database. `npm run test:e2e` starts and seeds it on demand, so the first run after a fresh checkout takes a few minutes longer. `npm run test:e2e -- --project chromium` skips the network, and `--project chromium-multisite` runs only the network specs. `npm run env:stop:multisite` shuts it down.
 
 Tests here carry `@covers`, and PHPUnit records coverage only for the functions a test names. A new helper called by a function that is already covered still reports as unexecuted until some test names it, which shows up as a Codecov drop with every test passing. Add the helper to the `@covers` list of whichever tests exercise it.
 
