@@ -128,6 +128,9 @@ add_action( 'init', 'wp_presence_register_network_summary_table', 0 );
 add_action( 'admin_init', 'wp_maybe_create_presence_table' );
 add_action( 'cli_init', 'wp_maybe_create_presence_table' );
 
+// Rows change on every heartbeat, so a read is only reused within the request that made it.
+wp_cache_add_non_persistent_groups( 'presence' );
+
 add_action( 'admin_init', 'wp_presence_register_settings' );
 
 add_filter( 'get_user_option_meta-box-order_dashboard', 'wp_presence_default_widget_order' );

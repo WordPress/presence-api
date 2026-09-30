@@ -310,10 +310,12 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 		);
 
 		$this->assertSame( 3, $this->presence_row_count(), 'Guard: the fixture should be in place.' );
+		wp_get_presence( 'admin/online' );
 
 		$this->command->cleanup( array(), array( 'yes' => true ) );
 
 		$this->assertSame( 0, $this->presence_row_count() );
+		$this->assertSame( array(), wp_get_presence( 'admin/online' ), 'The next read should not reuse rows from before the cleanup.' );
 		$this->assertSame( array( '3 entries deleted.' ), WP_CLI::messages( 'success' ) );
 	}
 
