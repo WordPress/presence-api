@@ -1,6 +1,29 @@
 # Presence Scenes
 
-Plays real users through probable situations, such as two people editing one post, so the Presence API can be watched and checked end to end. It is a separate plugin that needs Presence API. Only the scenes in `library/` can be played.
+Plays real users through probable situations, such as two people editing one post, so the Presence API can be watched and checked end to end. It is a separate plugin that needs Presence API, and it calls only these Presence API functions:
+
+| Function | Used for |
+|---|---|
+| `wp_get_presence()` | Checking an actor shows up where they should |
+| `wp_remove_presence()` | Closing an editor |
+| `wp_remove_user_presence()` | Logging out |
+| `wp_presence_admin_room()`, `wp_presence_post_room()` | Naming the rooms to check |
+
+Actors reach everything else through core's `heartbeat_received` filter, as a browser would.
+
+## WP-CLI
+
+`npm run env:start` activates it. Anywhere else, activate it after Presence API.
+
+```
+wp presence scene list
+wp presence scene run editing-together
+wp presence scene stop
+```
+
+A run creates a user for each part in the cast, plays each step at its time, then deletes those users and everything they wrote. Runs refuse to overlap, a run whose command died is soon replaced, and actors cannot log in. Only the scenes in `library/` can be played.
+
+`npm run test:scenes` plays every scene and saves a screenshot of the screen each step happened on to `artifacts/screenshots/scenes/`.
 
 ## Scene format
 

@@ -4,6 +4,16 @@
  * @package Presence_API
  */
 
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { describe, it, expect, afterEach } from 'vitest';
+
+// A classic script, so each load runs a fresh copy the way a <script> tag does.
+const PRESENCE_PING = readFileSync(
+	path.join( import.meta.dirname, '../presence-ping.js' ),
+	'utf8'
+);
+
 let listeners;
 
 /**
@@ -51,7 +61,7 @@ function loadSiteEditor( search, id, record ) {
 	window.wpPresenceCreateTabCoordinator = () => ( { isLeader: () => true } );
 	global.jQuery = $;
 
-	jest.isolateModules( () => require( '../presence-ping' ) );
+	new Function( PRESENCE_PING )();
 }
 
 function editorPing() {

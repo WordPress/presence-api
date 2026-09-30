@@ -2,6 +2,8 @@
 
 const MARKER = '<!-- presence-api:release-props -->';
 const RELEASE_BRANCH = 'release-please--';
+// Only the Presence API release collects props.
+const PLUGIN_RELEASE_BRANCH = `${ RELEASE_BRANCH }branches--main--components--presence-api`;
 // Plugin releases are tagged vX.Y.Z. The releases list also holds Playground
 // preview releases (preview-pr-N) and release-please drafts, neither of which
 // may set the cutoff.
@@ -125,22 +127,17 @@ async function run( {
 	const { owner, repo } = context.repo;
 	const sortLast = env.PROPS_SORT_LAST || '';
 
-	// 1. Resolve the release PR. release-please only reports it on runs where it
-	//    touched the PR, so fall back to whichever release PR is open. Without
-	//    this, contributors merged after the last touch are never aggregated.
-	let prNumber = Number( env.PR_NUMBER );
-	if ( ! prNumber ) {
-		const { data: openPRs } = await github.rest.pulls.list( {
-			owner,
-			repo,
-			state: 'open',
-			base: 'main',
-			per_page: 100,
-		} );
-		prNumber =
-			openPRs.find( ( pr ) => pr.head.ref.startsWith( RELEASE_BRANCH ) )
-				?.number ?? 0;
-	}
+	// 1. Look the release PR up, since release-please only reports it on runs that touched it.
+	const { data: openPRs } = await github.rest.pulls.list( {
+		owner,
+		repo,
+		state: 'open',
+		base: 'main',
+		per_page: 100,
+	} );
+	const prNumber =
+		openPRs.find( ( pr ) => pr.head.ref === PLUGIN_RELEASE_BRANCH )
+			?.number ?? 0;
 	if ( ! prNumber ) {
 		core.info( 'No open release PR; skipping comment.' );
 		return;

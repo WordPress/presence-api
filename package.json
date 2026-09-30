@@ -12,18 +12,22 @@
 		"test": "wp-env run tests-cli --env-cwd='presence-api' -- ./vendor/bin/phpunit --testdox",
 		"test:multisite": "wp-env run tests-cli --env-cwd='presence-api' -- env WP_MULTISITE=1 ./vendor/bin/phpunit --testdox",
 		"test:e2e": "playwright test --config tests/e2e/playwright.config.js",
+		"test:scenes": "playwright test --config tests/scenes/playwright.config.js",
 		"test:scripts": "node --test .github/scripts/*.test.js",
 		"test:unit": "wp-scripts test-unit-js"
 	},
 	"devDependencies": {
 		"@playwright/test": "^1.63.0",
 		"@testing-library/react": "^16.3.3",
-		"@wordpress/e2e-test-utils-playwright": "^2.0.0",
-		"@wordpress/env": "^11.15.0",
-		"@wordpress/eslint-plugin": "^26.0.0",
-		"@wordpress/scripts": "^35.0.0",
+		"@wordpress/e2e-test-utils-playwright": "^2.1.0",
+		"@wordpress/env": "^11.16.0",
+		"@wordpress/eslint-plugin": "^27.0.0",
+		"@wordpress/scripts": "^36.0.0",
 		"globals": "^17.12.0",
-		"jquery": "^4.0.0"
+		"jquery": "^4.0.0",
+		"jsdom": "^26.1.0",
+		"vite": "^8.3.1",
+		"vitest": "^5.0.3"
 	},
 	"peerDependencies": {
 		"@wordpress/api-fetch": "^7.0.0",
