@@ -161,7 +161,7 @@ Each plugin in `plugins/` gets its own release PR, and merging it produces the t
 <details>
 <summary>Keeping the version numbers in step</summary>
 
-`scripts/sync-versions.sh` reads the version from `.release-please-manifest.json` and updates the plugin header `Version:`, the `WP_PRESENCE_VERSION` constant, and `readme.txt`'s `Stable tag:`, plus every other plugin's `Version:` header. The release-please workflow runs it on every release PR; you can run it locally too:
+`scripts/sync-versions.sh` reads the version from `.release-please-manifest.json` and updates every plugin's `Version:` header, plus Presence API's `WP_PRESENCE_VERSION` constant and `readme.txt` `Stable tag:`. The release-please workflow runs it on every release PR; you can run it locally too:
 
 ```bash
 bash scripts/sync-versions.sh

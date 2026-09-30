@@ -106,10 +106,9 @@ jobs:
             const run = require(`${process.env.GITHUB_WORKSPACE}/.github/scripts/aggregate-props.js`);
             await run({ github, context, core });
 
-  # When a release PR is merged, release-please tags + cuts the GitHub Release.
-  # Build each released plugin's zip and attach it to its release. Presence API
-  # is the root package, so its path is `.`; every other package is its plugin's
-  # own directory.
+  # Zip each plugin release-please just released and attach it to its GitHub
+  # Release. Presence API is the root package at `.`; every other package path
+  # is its plugin directory.
   build-release-asset:
     needs: release-please
     if: ${{ needs.release-please.outputs.releases_created == 'true' }}
