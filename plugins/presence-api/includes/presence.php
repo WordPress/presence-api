@@ -1441,49 +1441,13 @@ function wp_get_active_rooms( $timeout = null, $hydrate_users = true ) {
 	$rooms = array();
 
 	foreach ( $room_stats as $stat ) {
-		$room_data = array(
+		$rooms[] = array(
 			'room'       => $stat->room,
 			'user_count' => (int) $stat->user_count,
 		);
-
-		if ( $hydrate_users ) {
-			// Query user IDs only for this room.
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			$user_ids = $wpdb->get_col(
-				$wpdb->prepare(
-					"SELECT DISTINCT user_id
-					FROM {$wpdb->presence}
-					WHERE room = %s AND expires_gmt > %s AND date_gmt > %s AND client_id NOT LIKE %s",
-					$stat->room,
-					$cutoff,
-					$stale,
-					wp_presence_reserved_client_id_pattern()
-				)
-			);
-
-			$users = array();
-			foreach ( $user_ids as $uid ) {
-				$user = get_userdata( (int) $uid );
-
-				if ( ! $user ) {
-					continue;
-				}
-
-				$users[] = array(
-					'user_id'      => (int) $uid,
-					'display_name' => $user->display_name,
-					'avatar_url'   => get_avatar_url( $uid, array( 'size' => 48 ) ),
-				);
-			}
-
-			$room_data['users']      = $users;
-			$room_data['user_count'] = count( $users );
-		}
-
-		$rooms[] = $room_data;
 	}
 
-	return $rooms;
+	return $hydrate_users ? wp_presence_hydrate_room_users( $rooms, $timeout ) : $rooms;
 }
 
 /**
