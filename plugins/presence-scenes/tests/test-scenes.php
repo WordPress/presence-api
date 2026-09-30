@@ -56,7 +56,7 @@ class WP_Test_Presence_Scenes extends WP_Presence_UnitTestCase {
 		while ( count( $run['done'] ) < $steps ) {
 			$run = wp_presence_scene_play( $run, $now );
 
-			$next = $now + 15;
+			$next = $now + wp_presence_scene_timings()['beat'];
 			foreach ( $run['scene']['steps'] as $i => $step ) {
 				if ( ! isset( $run['done'][ $i ] ) ) {
 					$next = min( $next, $run['started'] + $step['at'] );
