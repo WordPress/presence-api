@@ -11,8 +11,8 @@ permissions:
   contents: read
 
 jobs:
-  # One leg per Playwright project, each booting only the wp-env instance its
-  # specs use, so neither waits on the other's boot or specs.
+  # Each Playwright project boots only its own wp-env instance, so neither
+  # waits on the other.
   playwright:
     if: ${{ inputs.should-run }}
     name: Playwright (${{ matrix.project }})
@@ -87,9 +87,8 @@ jobs:
         working-directory: ${{ matrix.env-dir }}
         run: npx wp-env run ${{ matrix.log-container }} -- cat wp-content/debug.log || true
 
-  # The `main` ruleset requires `e2e / Playwright`, which the matrix legs above
-  # do not report under. `!cancelled()` rather than `always()` or nothing: a
-  # job skipped because a leg failed would satisfy the required check.
+  # Reports the `e2e / Playwright` check the `main` ruleset requires. Without
+  # `!cancelled()` a failed leg would skip this job, and a skipped check passes.
   e2e:
     if: ${{ inputs.should-run && !cancelled() }}
     name: Playwright

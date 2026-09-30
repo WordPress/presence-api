@@ -63,9 +63,8 @@ async function globalSetup( config ) {
 			storageStatePath,
 		} );
 
-		// setupRest() discovers the REST root on WP_BASE_URL whatever the
-		// context's baseURL, so the network, which never calls rest(), saves
-		// only its session.
+		// setupRest() probes WP_BASE_URL whatever the baseURL, so the network,
+		// whose specs never call rest(), saves only its cookies.
 		if ( project.name === 'chromium-multisite' ) {
 			await requestUtils.login();
 			await requestContext.storageState( { path: storageStatePath } );
