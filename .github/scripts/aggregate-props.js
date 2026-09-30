@@ -2,6 +2,8 @@
 
 const MARKER = '<!-- presence-api:release-props -->';
 const RELEASE_BRANCH = 'release-please--';
+// Props go on the Presence API release only; the other plugins ship without one.
+const PLUGIN_RELEASE_BRANCH = `${ RELEASE_BRANCH }branches--main--components--presence-api`;
 // Plugin releases are tagged vX.Y.Z. The releases list also holds Playground
 // preview releases (preview-pr-N) and release-please drafts, neither of which
 // may set the cutoff.
@@ -138,7 +140,7 @@ async function run( {
 			per_page: 100,
 		} );
 		prNumber =
-			openPRs.find( ( pr ) => pr.head.ref.startsWith( RELEASE_BRANCH ) )
+			openPRs.find( ( pr ) => pr.head.ref === PLUGIN_RELEASE_BRANCH )
 				?.number ?? 0;
 	}
 	if ( ! prNumber ) {

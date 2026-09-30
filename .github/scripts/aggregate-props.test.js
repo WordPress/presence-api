@@ -465,8 +465,16 @@ test( 'run: falls back to the open release PR when PR_NUMBER is absent', async (
 		openPRs: [
 			{ number: 7, head: { ref: 'feature/unrelated' } },
 			{
+				number: 8,
+				head: {
+					ref: 'release-please--branches--main--components--presence-scenes',
+				},
+			},
+			{
 				number: RELEASE_PR,
-				head: { ref: 'release-please--branches--main' },
+				head: {
+					ref: 'release-please--branches--main--components--presence-api',
+				},
 			},
 		],
 		prs: [ makePR( 10, 'feature/foo' ) ],
