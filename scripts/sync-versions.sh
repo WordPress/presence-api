@@ -71,7 +71,7 @@ rm -f "${MAIN}.bak" "${README}.bak" "${BLUEPRINT}.bak"
 # Every other package is a plugin whose directory is its manifest path; only its header carries the version.
 for PLUGIN_DIR in $(jq -r 'keys[] | select(. != ".")' .release-please-manifest.json); do
 	PLUGIN_VERSION=$(jq -r --arg path "$PLUGIN_DIR" '.[$path]' .release-please-manifest.json)
-	PLUGIN_MAIN=$(grep -l '^ \* Plugin Name: ' "$PLUGIN_DIR"/*.php | head -n 1)
+	PLUGIN_MAIN=$(grep -ls '^ \* Plugin Name: ' "$PLUGIN_DIR"/*.php | head -n 1) || true
 	[[ -n "$PLUGIN_MAIN" ]] || { echo "No plugin header found in ${PLUGIN_DIR}" >&2; exit 1; }
 	sed -i.bak "s|^ \* Version: .*$| * Version: ${PLUGIN_VERSION}|" "$PLUGIN_MAIN"
 	rm -f "${PLUGIN_MAIN}.bak"
