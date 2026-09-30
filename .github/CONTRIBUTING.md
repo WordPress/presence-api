@@ -36,7 +36,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-The Network Admin specs need a network, which is a second wp-env instance on [localhost:8890](http://localhost:8890/wp-admin/network/) with its own database. `npm run test:e2e` starts and seeds it on demand, so the first run after a fresh checkout takes a few minutes longer. `npm run env:stop:multisite` shuts it down.
+The Network Admin specs need a network, which is a second wp-env instance on [localhost:8890](http://localhost:8890/wp-admin/network/) with its own database. `npm run test:e2e` starts and seeds it on demand, so the first run after a fresh checkout takes a few minutes longer. `npm run test:e2e -- --project chromium` skips the network, and `--project chromium-multisite` runs only the network specs. `npm run env:stop:multisite` shuts it down.
 
 Tests here carry `@covers`, and PHPUnit records coverage only for the functions a test names. A new helper called by a function that is already covered still reports as unexecuted until some test names it, which shows up as a Codecov drop with every test passing. Add the helper to the `@covers` list of whichever tests exercise it.
 
@@ -147,12 +147,21 @@ Releases are automated by [release-please](https://github.com/googleapis/release
 - `feat!: ...` or a `BREAKING CHANGE:` footer → major bump (or, pre-1.0, a minor bump)
 - `chore:`, `docs:`, `refactor:`, `test:`, `ci:`, `build:`, `style:` → no version bump
 
-When the release-please PR is merged, the tag, GitHub Release, and zip asset are produced automatically.
+Merging a plugin's release PR tags it `<plugin>-vX.Y.Z` and attaches its zip to the GitHub Release, except Presence API, which is tagged `vX.Y.Z` and also ships to WordPress.org.
+
+<details>
+<summary>Releasing a new plugin</summary>
+
+1. Add its directory to `packages` in `release-please-config.json` with its `package-name`, `"include-component-in-tag": true`, and an `"initial-version"` matching its `Version:` header.
+2. Add the directory to presence-api's `exclude-paths` so its commits stay out of the Presence API changelog.
+3. Give it a `.distignore` listing what the zip leaves out, starting with `.distignore`, `CHANGELOG.md`, and `tests`.
+
+</details>
 
 <details>
 <summary>Keeping the version numbers in step</summary>
 
-`scripts/sync-versions.sh` reads the version from `.release-please-manifest.json` and updates the plugin header `Version:`, the `WP_PRESENCE_VERSION` constant, and `readme.txt`'s `Stable tag:`. The release-please workflow runs it on every release PR; you can run it locally too:
+On every release PR, `scripts/sync-versions.sh` copies the version from `.release-please-manifest.json` into every plugin's `Version:` header, plus Presence API's `WP_PRESENCE_VERSION` constant and `readme.txt` `Stable tag:`, and you can run it locally too:
 
 ```bash
 bash scripts/sync-versions.sh

@@ -48,8 +48,7 @@ function wp_presence_register_network_summary_table() {
 /**
  * Checks the database directly for the presence table.
  *
- * Only for the provisioning path. Request paths use wp_presence_has_table(),
- * which reads an autoloaded option and costs nothing.
+ * Only for activation and failed writes. Request paths use wp_presence_has_table().
  *
  * @access private
  *
@@ -66,19 +65,29 @@ function wp_presence_table_exists() {
 }
 
 /**
+ * Clears the version option when the presence table is missing.
+ *
+ * Feature plugin shim, so the next admin or WP-CLI request rebuilds the table.
+ *
+ * @access private
+ *
+ * @since 0.12.2
+ */
+function wp_presence_forget_missing_table() {
+	if ( ! wp_presence_table_exists() ) {
+		delete_option( 'wp_presence_db_version' );
+	}
+}
+
+/**
  * Creates or updates the presence table if needed.
  *
  * Feature plugin shim. In core, dbDelta() would create this table from the
  * schema in wp-admin/includes/schema.php during the database upgrade routine.
  *
- * The version option alone is not enough to skip the work. If the table is
- * dropped while the option survives, a partial restore or a hand-run DROP,
- * every read and write fails and nothing reconciles the two.
- *
- * Ajax is excluded from that reconciliation. admin-ajax.php fires admin_init
- * too, and presence heartbeats through it every 15 seconds per open admin tab,
- * so checking there would bill every site continuously for a state almost none
- * of them will reach. The next real admin page load repairs it instead.
+ * Trusts the version option the way core trusts db_version. A table dropped
+ * while the option survives is rebuilt after a write fails, see
+ * wp_presence_forget_missing_table(), or when the plugin is reactivated.
  *
  * @access private
  *
@@ -87,9 +96,7 @@ function wp_presence_table_exists() {
 function wp_maybe_create_presence_table() {
 	add_option( 'wp_presence_recording', '1', '', true );
 
-	$provisioned = (int) get_option( 'wp_presence_db_version' ) === WP_PRESENCE_DB_VERSION;
-
-	if ( $provisioned && ( wp_doing_ajax() || wp_presence_table_exists() ) ) {
+	if ( (int) get_option( 'wp_presence_db_version' ) === WP_PRESENCE_DB_VERSION ) {
 		return;
 	}
 
@@ -140,9 +147,8 @@ function wp_maybe_create_presence_table() {
 /**
  * Checks whether the network-wide presence summary table exists.
  *
- * Hits the database, so this is for provisioning only, where the point is to
- * catch a table dropped out from under the option. Read and write paths use
- * wp_presence_has_network_summary_table().
+ * Hits the database, so this is for explicit checks and tests only. Read and
+ * write paths use wp_presence_has_network_summary_table().
  *
  * @access private
  *
@@ -162,10 +168,8 @@ function wp_presence_network_summary_table_exists() {
  * Creates or updates the network-wide presence summary table if needed.
  *
  * One table for the whole network rather than one per site, since it exists
- * to be read without switching into any of them. Mirrors
- * wp_maybe_create_presence_table()'s self-healing pattern, using site options
- * instead of per-site ones since this table is provisioned once per network,
- * not once per site.
+ * to be read without switching into any of them. Uses site options since this
+ * table is provisioned once per network, not once per site.
  *
  * @access private
  *
@@ -176,9 +180,7 @@ function wp_maybe_create_presence_network_summary_table() {
 		return;
 	}
 
-	$provisioned = (int) get_site_option( 'wp_presence_network_summary_db_version' ) === WP_PRESENCE_NETWORK_SUMMARY_DB_VERSION;
-
-	if ( $provisioned && ( wp_doing_ajax() || wp_presence_network_summary_table_exists() ) ) {
+	if ( wp_presence_has_network_summary_table() ) {
 		return;
 	}
 

@@ -4,6 +4,16 @@
  * @package Presence_API
  */
 
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { describe, it, expect, afterEach, vi } from 'vitest';
+
+// A classic script, so each load runs a fresh copy the way a <script> tag does.
+const PRESENCE_PING = readFileSync(
+	path.join( import.meta.dirname, '../presence-ping.js' ),
+	'utf8'
+);
+
 let listeners;
 
 /**
@@ -67,7 +77,7 @@ function loadPing() {
 	window.wpPresenceCreateTabCoordinator = () => ( { isLeader: () => true } );
 	global.jQuery = $;
 
-	jest.isolateModules( () => require( '../presence-ping' ) );
+	new Function( PRESENCE_PING )();
 
 	return hooks;
 }
@@ -102,7 +112,7 @@ describe( 'live surfaces', () => {
 		document.body.innerHTML =
 			'<div id="presence-active-posts-list"><a href="#">Old</a></div>';
 		const hooks = loadPing();
-		const updated = jest.fn();
+		const updated = vi.fn();
 		hooks.addAction( 'presence-api.surfaceUpdated', 'test', updated );
 		const list = document.getElementById( 'presence-active-posts-list' );
 

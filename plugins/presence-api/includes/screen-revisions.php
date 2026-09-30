@@ -308,34 +308,11 @@ function wp_presence_bump_screen_revision( $screen_key, $actor_id = 0 ) {
 			break;
 
 		case 'user':
-			$revision = time();
-			update_user_meta(
-				$target['id'],
-				'_wp_presence_screen_rev',
-				array(
-					'rev'      => $revision,
-					'actor_id' => (int) $actor_id,
-					'time'     => $revision,
-				)
-			);
-			break;
-
 		case 'term':
-			$revision = time();
-			update_term_meta(
-				$target['id'],
-				'_wp_presence_screen_rev',
-				array(
-					'rev'      => $revision,
-					'actor_id' => (int) $actor_id,
-					'time'     => $revision,
-				)
-			);
-			break;
-
 		case 'comment':
 			$revision = time();
-			update_comment_meta(
+			update_metadata(
+				$target['type'],
 				$target['id'],
 				'_wp_presence_screen_rev',
 				array(
