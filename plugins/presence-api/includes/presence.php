@@ -184,6 +184,7 @@ function wp_presence_room_rows( $room, $timeout = null, $client_prefix = '' ) {
 	}
 
 	return wp_presence_cached_rows(
+		"room:{$room}:{$client_prefix}",
 		// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 		$wpdb->prepare(
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -196,7 +197,8 @@ function wp_presence_room_rows( $room, $timeout = null, $client_prefix = '' ) {
 /**
  * Runs a presence read, reusing its rows for the rest of the request until the table changes.
  *
- * Keyed by the SQL, which holds the current second, so a cached read also lapses as rows expire.
+ * Salted with the SQL, which holds the current second, so a cached read lapses as rows expire
+ * while each read keeps one entry however long the process runs.
  *
  * @access private
  *
@@ -204,15 +206,16 @@ function wp_presence_room_rows( $room, $timeout = null, $client_prefix = '' ) {
  *
  * @global wpdb $wpdb WordPress database abstraction object.
  *
+ * @param string $read  Names the read, without the times in its SQL.
  * @param string $query Prepared SQL selecting presence rows.
  * @return array Array of presence row objects, with `data` decoded.
  */
-function wp_presence_cached_rows( $query ) {
+function wp_presence_cached_rows( $read, $query ) {
 	global $wpdb;
 
-	$key          = md5( $query );
-	$last_changed = wp_cache_get_last_changed( 'presence' );
-	$results      = wp_cache_get_salted( $key, 'presence', $last_changed );
+	$key     = md5( $read );
+	$salt    = array( wp_cache_get_last_changed( 'presence' ), md5( $query ) );
+	$results = wp_cache_get_salted( $key, 'presence', $salt );
 
 	if ( false === $results ) {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.NotPrepared
@@ -224,7 +227,7 @@ function wp_presence_cached_rows( $query ) {
 			$row->data = is_array( $decoded ) ? $decoded : array();
 		}
 
-		wp_cache_set_salted( $key, $results, 'presence', $last_changed );
+		wp_cache_set_salted( $key, $results, 'presence', $salt );
 	}
 
 	return $results;
@@ -1239,6 +1242,7 @@ function wp_get_presence_by_room_prefix( $prefix, $timeout = null ) {
 	$stale  = wp_presence_read_floor( $timeout );
 
 	return wp_presence_cached_rows(
+		"prefix:{$prefix}",
 		$wpdb->prepare(
 			"SELECT room, client_id, user_id, data, date_gmt FROM {$wpdb->presence} WHERE room LIKE %s AND expires_gmt > %s AND date_gmt > %s AND client_id NOT LIKE %s ORDER BY date_gmt DESC",
 			$wpdb->esc_like( $prefix ) . '%',
