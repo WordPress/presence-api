@@ -48,8 +48,7 @@ function wp_presence_register_network_summary_table() {
 /**
  * Checks the database directly for the presence table.
  *
- * Only for activation, which is how a site recovers a table dropped while its
- * version option survived. Request paths use wp_presence_has_table().
+ * Only for activation. Request paths use wp_presence_has_table().
  *
  * @access private
  *
