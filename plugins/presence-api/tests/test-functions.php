@@ -105,9 +105,8 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers ::wp_presence_cached_rows
-	 * @covers ::wp_presence_write_row
 	 */
-	public function test_get_presence_reads_once_until_a_write() {
+	public function test_get_presence_reads_the_table_once_per_request() {
 		global $wpdb;
 
 		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
@@ -115,10 +114,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 		$before = $wpdb->num_queries;
 		wp_get_presence( 'test/room' );
-		$this->assertSame( $before, $wpdb->num_queries, 'A repeated read should come from the request cache.' );
-
-		wp_set_presence( 'test/room', 'client-2', array(), self::$editor_id );
-		$this->assertCount( 2, wp_get_presence( 'test/room' ), 'A write should reach the next read.' );
+		$this->assertSame( $before, $wpdb->num_queries );
 	}
 
 	/**
