@@ -147,7 +147,7 @@ Releases are automated by [release-please](https://github.com/googleapis/release
 - `feat!: ...` or a `BREAKING CHANGE:` footer → major bump (or, pre-1.0, a minor bump)
 - `chore:`, `docs:`, `refactor:`, `test:`, `ci:`, `build:`, `style:` → no version bump
 
-Each plugin in `plugins/` gets its own release PR, and merging it produces the tag, GitHub Release, and zip asset automatically. Presence API ships to WordPress.org and is tagged `vX.Y.Z`; the rest ship only as a zip on a GitHub Release tagged `<plugin>-vX.Y.Z`.
+Merging a plugin's release PR tags it `<plugin>-vX.Y.Z` and attaches its zip to the GitHub Release, except Presence API, which is tagged `vX.Y.Z` and also ships to WordPress.org.
 
 <details>
 <summary>Releasing a new plugin</summary>
@@ -161,7 +161,7 @@ Each plugin in `plugins/` gets its own release PR, and merging it produces the t
 <details>
 <summary>Keeping the version numbers in step</summary>
 
-`scripts/sync-versions.sh` reads the version from `.release-please-manifest.json` and updates every plugin's `Version:` header, plus Presence API's `WP_PRESENCE_VERSION` constant and `readme.txt` `Stable tag:`. The release-please workflow runs it on every release PR; you can run it locally too:
+On every release PR, `scripts/sync-versions.sh` copies the version from `.release-please-manifest.json` into every plugin's `Version:` header, plus Presence API's `WP_PRESENCE_VERSION` constant and `readme.txt` `Stable tag:`, and you can run it locally too:
 
 ```bash
 bash scripts/sync-versions.sh

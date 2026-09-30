@@ -127,8 +127,7 @@ async function run( {
 	const { owner, repo } = context.repo;
 	const sortLast = env.PROPS_SORT_LAST || '';
 
-	// 1. Find the open release PR. release-please only reports it on runs where
-	//    it touched the PR, so its output would drop contributors merged since.
+	// 1. Look the release PR up, since release-please only reports it on runs that touched it.
 	const { data: openPRs } = await github.rest.pulls.list( {
 		owner,
 		repo,
