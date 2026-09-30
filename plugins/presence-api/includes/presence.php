@@ -745,6 +745,10 @@ function wp_presence_write_row( $room, $client_id, $user_id, $data_json, $date_g
 		)
 	);
 
+	if ( false === $result ) {
+		wp_presence_forget_missing_table();
+	}
+
 	if ( $result > 0 && wp_presence_admin_room() === $room ) {
 		wp_presence_admin_room_changed();
 	}

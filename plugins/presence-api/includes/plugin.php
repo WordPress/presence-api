@@ -12,11 +12,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Creates the presence table and schedules cleanup for the current site.
  *
+ * Checks the database first, so reactivating the plugin rebuilds a table
+ * dropped while its version option survived.
+ *
  * @access private
  *
  * @since 0.1.17
  */
 function wp_presence_provision_site() {
+	wp_presence_forget_missing_table();
 	wp_maybe_create_presence_table();
 	wp_presence_schedule_cleanup();
 }
