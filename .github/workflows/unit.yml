@@ -13,6 +13,7 @@ permissions:
 jobs:
   unit:
     if: ${{ inputs.should-run }}
+    # Runs Vitest, but the `main` ruleset requires `unit / Jest`; rename both together.
     name: Jest
     runs-on: ubuntu-24.04
     steps:
