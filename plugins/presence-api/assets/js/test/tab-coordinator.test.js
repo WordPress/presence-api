@@ -1,17 +1,27 @@
 /**
  * Unit tests for the cross-tab Heartbeat ping coordinator.
  *
- * Each "tab" is a fresh require of tab-coordinator.js against its own fake
+ * Each "tab" is a fresh run of tab-coordinator.js against its own fake
  * jQuery document bus, so the two closures see separate `heartbeat-tick`
  * event streams the way two browser tabs would.
  *
  * @package Presence_API
  */
 
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
+// A classic script, so each load runs a fresh copy the way a <script> tag does.
+const TAB_COORDINATOR = readFileSync(
+	path.join( import.meta.dirname, '../tab-coordinator.js' ),
+	'utf8'
+);
+
 /**
  * Builds a minimal jQuery stand-in exposing `on`/`trigger` on a shared bus.
  *
- * @return {Function} jQuery-like factory.
+ * @return {() => Object} jQuery-like factory.
  */
 function createFakeJQuery() {
 	const listeners = {};
@@ -90,16 +100,14 @@ function drainDeliveries( maxRounds = 10 ) {
  *
  * @param {string}   key
  * @param {string[]} relayedKeys
- * @return {{coordinator: object, jQuery: Function, ticks: object[]}} Tab handle.
+ * @return {{coordinator: object, jQuery: () => Object, ticks: object[]}} Tab handle.
  */
 function openTab( key, relayedKeys ) {
 	const fakeJQuery = createFakeJQuery();
 	const ticks = [];
 
-	jest.isolateModules( () => {
-		global.jQuery = fakeJQuery;
-		require( '../tab-coordinator' );
-	} );
+	global.jQuery = fakeJQuery;
+	new Function( TAB_COORDINATOR )();
 
 	fakeJQuery( document ).on( 'heartbeat-tick', ( event, data ) =>
 		ticks.push( data )
@@ -279,7 +287,7 @@ describe( 'wpPresenceCreateTabCoordinator', () => {
 		} );
 
 		it( 'connects at once when a shown tab takes over', async () => {
-			window.wp = { heartbeat: { connectNow: jest.fn() } };
+			window.wp = { heartbeat: { connectNow: vi.fn() } };
 			const tab = openTab( 'presence-key', [ 'presence-online' ] );
 			await flush();
 

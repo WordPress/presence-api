@@ -10,7 +10,7 @@ const wpPlugin = require( '@wordpress/eslint-plugin' );
 /**
  * Retargets a shipped config array at a set of files.
  *
- * @param {Array}    config Config objects from @wordpress/eslint-plugin.
+ * @param {Array}    config Config objects from `@wordpress/eslint-plugin`.
  * @param {string[]} files  Glob patterns the config should apply to.
  * @return {Array} Retargeted config objects.
  */
@@ -98,4 +98,12 @@ module.exports = [
 		'**/test/**/*.js',
 		'**/*.test.js',
 	] ),
+
+	{
+		// Unit tests import from Vitest, even beside the classic scripts they load.
+		files: [ 'plugins/presence-api/assets/js/test/**/*.js' ],
+		languageOptions: {
+			sourceType: 'module',
+		},
+	},
 ];
