@@ -36,7 +36,11 @@ function assertNotMultisite() {
 async function globalSetup( config ) {
 	const authenticated = new Set();
 
-	for ( const project of config.projects ) {
+	const selected = config.projects.filter( ( project ) =>
+		config.metadata.projects.includes( project.name )
+	);
+
+	for ( const project of selected ) {
 		if ( project.name !== 'chromium-multisite' ) {
 			assertNotMultisite();
 		}
@@ -59,8 +63,15 @@ async function globalSetup( config ) {
 			storageStatePath,
 		} );
 
-		// Authenticate and save the storageState to disk.
-		await requestUtils.setupRest();
+		// setupRest() discovers the REST root on WP_BASE_URL whatever the
+		// context's baseURL, so the network, which never calls rest(), saves
+		// only its session.
+		if ( project.name === 'chromium-multisite' ) {
+			await requestUtils.login();
+			await requestContext.storageState( { path: storageStatePath } );
+		} else {
+			await requestUtils.setupRest();
+		}
 
 		await requestContext.dispose();
 	}

@@ -39,8 +39,41 @@ process.env.WP_MULTISITE_BASE_URL = multisiteBaseUrl.href;
  */
 const NETWORK_SPECS = /presence-network-[^/]+\.test\.js$/;
 
+const PROJECTS = [ 'chromium', 'chromium-multisite' ];
+
+/**
+ * Reads `--project` from argv, which Playwright does not pass to the config or global setup.
+ *
+ * @return {string[]} Project names.
+ */
+function selectedProjects() {
+	const names = [];
+	const args = process.argv.slice( 2 );
+
+	for ( let i = 0; i < args.length; i++ ) {
+		if ( args[ i ].startsWith( '--project=' ) ) {
+			names.push( args[ i ].slice( '--project='.length ) );
+		} else if ( args[ i ] === '--project' ) {
+			while ( args[ i + 1 ] && ! args[ i + 1 ].startsWith( '-' ) ) {
+				names.push( args[ ++i ] );
+			}
+		}
+	}
+
+	const selected = PROJECTS.filter( ( name ) =>
+		names.some( ( n ) => n.toLowerCase() === name )
+	);
+
+	return names.length && selected.length === names.length
+		? selected
+		: PROJECTS;
+}
+
+const projects = selectedProjects();
+
 export default defineConfig( {
 	globalSetup: path.resolve( __dirname, 'global-setup.js' ),
+	metadata: { projects },
 	reporter: process.env.CI ? [ [ 'github' ] ] : [ [ 'list' ] ],
 	retries: process.env.CI ? 2 : 0,
 	workers: 1,
@@ -64,13 +97,13 @@ export default defineConfig( {
 		screenshot: 'only-on-failure',
 	},
 	webServer: [
-		{
+		projects.includes( 'chromium' ) && {
 			command: 'npm run env:start',
 			port: parseInt( baseUrl.port, 10 ),
 			timeout: 120_000,
 			reuseExistingServer: true,
 		},
-		{
+		projects.includes( 'chromium-multisite' ) && {
 			// Seeds the fixture network as well as starting it, so a first run
 			// on a cold machine takes longer than the single-site instance.
 			command: 'npm run env:start:multisite',
@@ -78,7 +111,7 @@ export default defineConfig( {
 			timeout: 300_000,
 			reuseExistingServer: true,
 		},
-	],
+	].filter( Boolean ),
 	projects: [
 		{
 			name: 'chromium',
