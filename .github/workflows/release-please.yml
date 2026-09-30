@@ -39,8 +39,8 @@ jobs:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
 
   # release-please only updates the manifest and CHANGELOG. Every place
-  # WordPress (or WordPress.org) reads the version verbatim — the plugin
-  # header `* Version:`, the `WP_PRESENCE_VERSION` define, and readme.txt's
+  # WordPress (or WordPress.org) reads the version verbatim — each plugin
+  # header's `* Version:`, the `WP_PRESENCE_VERSION` define, and readme.txt's
   # `Stable tag:` — is synced by `scripts/sync-versions.sh`. The script is
   # the same one a maintainer runs locally, so the CI behavior is grep-able.
   sync-versions:

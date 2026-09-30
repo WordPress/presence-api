@@ -147,9 +147,7 @@ Releases are automated by [release-please](https://github.com/googleapis/release
 - `feat!: ...` or a `BREAKING CHANGE:` footer → major bump (or, pre-1.0, a minor bump)
 - `chore:`, `docs:`, `refactor:`, `test:`, `ci:`, `build:`, `style:` → no version bump
 
-When the release-please PR is merged, the tag, GitHub Release, and zip asset are produced automatically.
-
-Each plugin in `plugins/` gets its own release PR. Presence API ships to WordPress.org and is tagged `vX.Y.Z`; the rest ship only as a zip on a GitHub Release tagged `<plugin>-vX.Y.Z`.
+Each plugin in `plugins/` gets its own release PR, and merging it produces the tag, GitHub Release, and zip asset automatically. Presence API ships to WordPress.org and is tagged `vX.Y.Z`; the rest ship only as a zip on a GitHub Release tagged `<plugin>-vX.Y.Z`.
 
 <details>
 <summary>Releasing a new plugin</summary>
