@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.12.2](https://github.com/WordPress/presence-api/compare/v0.12.1...v0.12.2) (2026-09-30)
+
+
+### Bug Fixes
+
+* elect the Heartbeat ping leader per site among visible tabs ([#675](https://github.com/WordPress/presence-api/issues/675)) ([bb0d695](https://github.com/WordPress/presence-api/commit/bb0d695a3bbac8ffb8e70aaa79c8a0010dc5213a))
+
+
+### Performance Improvements
+
+* avoid repeated network summary table checks ([#657](https://github.com/WordPress/presence-api/issues/657)) ([1218cb1](https://github.com/WordPress/presence-api/commit/1218cb1ecba86480dd01228b285eb85b82f55cf6))
+* read each presence query once per request until the table changes ([#678](https://github.com/WordPress/presence-api/issues/678)) ([cf96ff1](https://github.com/WordPress/presence-api/commit/cf96ff12994ff93007ae535533ab50fbdcdf02a6))
+* trust the presence table's version option and recheck it only after a failed write ([#682](https://github.com/WordPress/presence-api/issues/682)) ([b08836c](https://github.com/WordPress/presence-api/commit/b08836c8935926082c39de2335616dfb69c74089))
+
+
+### Dependencies
+
+* **deps-dev:** bump @wordpress/e2e-test-utils-playwright ([#690](https://github.com/WordPress/presence-api/issues/690)) ([6505d54](https://github.com/WordPress/presence-api/commit/6505d543578f361d89e244ade1d877656618fd66))
+* **deps-dev:** bump @wordpress/env from 11.15.0 to 11.16.0 ([#688](https://github.com/WordPress/presence-api/issues/688)) ([285d6d6](https://github.com/WordPress/presence-api/commit/285d6d62ed48c69b0c2cf9edb3d6c1074a2b3b66))
+* **deps-dev:** update phpstan/phpstan requirement ([#687](https://github.com/WordPress/presence-api/issues/687)) ([bdff228](https://github.com/WordPress/presence-api/commit/bdff228f0edb991554c5859f845737ffe2d794ad))
+* **deps:** bump astral-sh/setup-uv from 10.1.0 to 10.2.0 ([#693](https://github.com/WordPress/presence-api/issues/693)) ([0369097](https://github.com/WordPress/presence-api/commit/0369097ecf61717e03c6b027580eb00f9b00fe4e))
+* **deps:** bump the codeql-action group with 3 updates ([#692](https://github.com/WordPress/presence-api/issues/692)) ([a449679](https://github.com/WordPress/presence-api/commit/a449679d043ffac64319f0f96299815e5b129249))
+
 ## [0.12.1](https://github.com/WordPress/presence-api/compare/v0.12.0...v0.12.1) (2026-09-29)
 
 
