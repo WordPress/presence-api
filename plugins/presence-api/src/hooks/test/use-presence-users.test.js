@@ -1,7 +1,8 @@
 /**
  * External dependencies
  */
-import { renderHook, waitFor } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { cleanup, renderHook, waitFor } from '@testing-library/react';
 
 /**
  * WordPress dependencies
@@ -13,9 +14,9 @@ import apiFetch from '@wordpress/api-fetch';
  */
 import usePresenceUsers from '../use-presence-users';
 
-jest.mock( '@wordpress/api-fetch' );
-jest.mock( '@wordpress/data', () => ( {
-	useSelect: jest.fn( ( mapSelect ) => {
+vi.mock( '@wordpress/api-fetch' );
+vi.mock( '@wordpress/data', () => ( {
+	useSelect: vi.fn( ( mapSelect ) => {
 		const select = () => ( {
 			getCurrentUser: () => ( { id: 1 } ),
 		} );
@@ -25,36 +26,25 @@ jest.mock( '@wordpress/data', () => ( {
 
 let heartbeatTickCallback = null;
 
-jest.mock( '../../utils/heartbeat-events', () => ( {
-	onHeartbeatTick: jest.fn( ( callback ) => {
+vi.mock( '../../utils/heartbeat-events', () => ( {
+	onHeartbeatTick: vi.fn( ( callback ) => {
 		heartbeatTickCallback = callback;
 		return () => {
 			heartbeatTickCallback = null;
 		};
 	} ),
-	isHeartbeatAvailable: jest.fn( () => true ),
+	isHeartbeatAvailable: vi.fn( () => true ),
 } ) );
 
 describe( 'usePresenceUsers', () => {
 	beforeEach( () => {
-		global.window = {
-			wp: {
-				heartbeat: {},
-			},
-		};
-
-		global.process = {
-			env: {
-				NODE_ENV: 'test',
-			},
-		};
-
 		heartbeatTickCallback = null;
 		apiFetch.mockClear();
 	} );
 
 	afterEach( () => {
-		jest.clearAllMocks();
+		cleanup();
+		vi.clearAllMocks();
 	} );
 
 	it( 'should return empty state when room is null', () => {

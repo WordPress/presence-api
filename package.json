@@ -21,10 +21,13 @@
 		"@testing-library/react": "^16.3.3",
 		"@wordpress/e2e-test-utils-playwright": "^2.1.0",
 		"@wordpress/env": "^11.16.0",
-		"@wordpress/eslint-plugin": "^26.0.0",
-		"@wordpress/scripts": "^35.0.0",
+		"@wordpress/eslint-plugin": "^27.0.0",
+		"@wordpress/scripts": "^36.0.0",
 		"globals": "^17.12.0",
-		"jquery": "^4.0.0"
+		"jquery": "^4.0.0",
+		"jsdom": "^26.1.0",
+		"vite": "^8.3.1",
+		"vitest": "^5.0.3"
 	},
 	"peerDependencies": {
 		"@wordpress/api-fetch": "^7.0.0",

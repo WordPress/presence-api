@@ -1,4 +1,9 @@
 /**
+ * External dependencies
+ */
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
+/**
  * WordPress dependencies
  */
 import apiFetch from '@wordpress/api-fetch';
@@ -8,12 +13,12 @@ import apiFetch from '@wordpress/api-fetch';
  */
 import { subscribeToPresencePolling } from '../presence-poll-coordinator';
 
-jest.mock( '@wordpress/api-fetch' );
+vi.mock( '@wordpress/api-fetch' );
 
 let mockHeartbeatTickCallbacks = [];
 
-jest.mock( '../heartbeat-events', () => ( {
-	onHeartbeatTick: jest.fn( ( callback ) => {
+vi.mock( '../heartbeat-events', () => ( {
+	onHeartbeatTick: vi.fn( ( callback ) => {
 		mockHeartbeatTickCallbacks.push( callback );
 		return () => {
 			mockHeartbeatTickCallbacks = mockHeartbeatTickCallbacks.filter(
@@ -34,14 +39,14 @@ describe( 'subscribeToPresencePolling', () => {
 	afterEach( () => {
 		delete global.navigator.locks;
 		delete global.BroadcastChannel;
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 	} );
 
 	it( 'shares a single request across multiple subscribers for the same room and fields', async () => {
 		apiFetch.mockResolvedValue( [ { user_id: 2 } ] );
 
-		const callbackA = jest.fn();
-		const callbackB = jest.fn();
+		const callbackA = vi.fn();
+		const callbackB = vi.fn();
 
 		const unsubscribeA = subscribeToPresencePolling(
 			'room-shared',
@@ -76,12 +81,12 @@ describe( 'subscribeToPresencePolling', () => {
 		const unsubscribeA = subscribeToPresencePolling(
 			'room-fields',
 			'user_id',
-			jest.fn()
+			vi.fn()
 		);
 		const unsubscribeB = subscribeToPresencePolling(
 			'room-fields',
 			'user_id,display_name',
-			jest.fn()
+			vi.fn()
 		);
 
 		await flush();
@@ -98,7 +103,7 @@ describe( 'subscribeToPresencePolling', () => {
 		const unsubscribe = subscribeToPresencePolling(
 			'room-teardown',
 			'user_id',
-			jest.fn()
+			vi.fn()
 		);
 		await flush();
 		expect( mockHeartbeatTickCallbacks ).toHaveLength( 1 );
@@ -114,7 +119,7 @@ describe( 'subscribeToPresencePolling', () => {
 	it( 'does not call apiFetch until this tab wins the Web Lock', async () => {
 		let grantLock;
 		global.navigator.locks = {
-			request: jest.fn( ( name, options, callback ) => {
+			request: vi.fn( ( name, options, callback ) => {
 				return new Promise( ( resolve ) => {
 					grantLock = () => callback().then( resolve );
 				} );
@@ -125,7 +130,7 @@ describe( 'subscribeToPresencePolling', () => {
 		const unsubscribe = subscribeToPresencePolling(
 			'room-lock',
 			'user_id',
-			jest.fn()
+			vi.fn()
 		);
 
 		await flush();
@@ -150,16 +155,16 @@ describe( 'subscribeToPresencePolling', () => {
 				addEventListener: ( type, handler ) => {
 					messageHandler = handler;
 				},
-				postMessage: jest.fn(),
-				close: jest.fn(),
+				postMessage: vi.fn(),
+				close: vi.fn(),
 			};
 		};
 		// Another tab holds the lock, so this request never resolves.
 		global.navigator.locks = {
-			request: jest.fn( () => new Promise( () => {} ) ),
+			request: vi.fn( () => new Promise( () => {} ) ),
 		};
 
-		const callback = jest.fn();
+		const callback = vi.fn();
 		const unsubscribe = subscribeToPresencePolling(
 			'room-follower',
 			'user_id',
@@ -183,7 +188,7 @@ describe( 'subscribeToPresencePolling', () => {
 		const mockError = new Error( 'Network error' );
 		apiFetch.mockRejectedValue( mockError );
 
-		const callback = jest.fn();
+		const callback = vi.fn();
 		const unsubscribe = subscribeToPresencePolling(
 			'room-error',
 			'user_id',
