@@ -44,10 +44,8 @@ Plays real users through probable situations, such as two people editing one pos
 | `checkLocked` | `post` | |
 | `checkUnlocked` | `post` | |
 
-In steps, `title` and `text` are plain text.
-
-`wp_presence_scene_limits()` sets how many roles and steps a scene can have, how late a step can play and how long each text can be. A scene past a limit is refused with a message that names it.
+Step `title` and `text` are plain text too, and `wp_presence_scene_limits()` caps how many roles and steps a scene has, how late a step plays and how long each title and text is.
 
 ## Adding a scene
 
-Write a JSON file in `library/` named after its `name`, then run `npm test`. The suite checks every file in `library/`, so a new scene needs no test changes.
+Add a JSON file to `library/` named after its `name`; `npm test` checks every file there, so a new scene needs no test changes.

@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @return int[] {
  *     @type int $cast  Parts in the cast.
  *     @type int $steps Steps.
- *     @type int $at    Seconds from the start of the last step.
+ *     @type int $at    Latest second a step can start at.
  *     @type int $title Characters in the scene's title.
  *     @type int $text  Characters in a step's title or text.
  * }
@@ -106,7 +106,7 @@ function wp_presence_get_scenes() {
 }
 
 /**
- * Steps a scene can take, each with the WP_Presence_Scene_Actor method that plays it, the fields it needs and how it is narrated.
+ * Steps a scene can take, each with the WP_Presence_Scene_Actor method that plays it, the fields it needs, whether the whole cast can take it and how it is narrated.
  *
  * @since 0.1.0
  *
@@ -356,7 +356,7 @@ function wp_presence_scene_prepare( $scene ) {
 }
 
 /**
- * Sanitizes a scene string, refusing anything that is not short plain text.
+ * Accepts a scene string only if it is already short plain text.
  *
  * @since 0.1.0
  *

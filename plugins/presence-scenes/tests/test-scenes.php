@@ -61,7 +61,8 @@ class WP_Test_Presence_Scenes extends WP_Presence_UnitTestCase {
 			'too many roles'      => array( array( 'cast' => array_fill( 0, $limits['cast'] + 1, 'author' ) ), array() ),
 			'back in time'        => array( array( 'steps' => array( array( 'at' => 1, 'actor' => 1, 'step' => 'drop' ), array( 'at' => 0, 'actor' => 1, 'step' => 'drop' ) ) ), array() ),
 			'whole cast writing'  => array( array(), array( 'actor' => 'cast', 'step' => 'write', 'title' => 'Draft' ) ),
-			'long title'          => array( array(), array( 'step' => 'write', 'title' => str_repeat( 'a', $limits['text'] + 1 ) ) ),
+			'long scene title'    => array( array( 'title' => str_repeat( 'a', $limits['title'] + 1 ) ), array() ),
+			'long step title'     => array( array(), array( 'step' => 'write', 'title' => str_repeat( 'a', $limits['text'] + 1 ) ) ),
 		);
 	}
 
