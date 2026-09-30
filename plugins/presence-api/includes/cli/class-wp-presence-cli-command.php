@@ -412,6 +412,7 @@ class WP_Presence_CLI_Command extends WP_CLI_Command {
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$deleted = $wpdb->query( "DELETE FROM {$wpdb->presence}" );
+		wp_cache_set_last_changed( 'presence' );
 
 		/* translators: %d: Number of deleted entries. */
 		WP_CLI::success( sprintf( __( '%d entries deleted.', 'presence-api' ), $deleted ) );
