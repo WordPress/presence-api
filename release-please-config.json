@@ -4,6 +4,7 @@
 	"include-component-in-tag": false,
 	"include-v-in-tag": true,
 	"bump-minor-pre-major": true,
+	"separate-pull-requests": true,
 	"changelog-sections": [
 		{ "type": "feat",     "section": "Features" },
 		{ "type": "fix",      "section": "Bug Fixes" },
@@ -21,6 +22,11 @@
 		".": {
 			"package-name": "presence-api",
 			"exclude-paths": [ "plugins/presence-scenes" ]
+		},
+		"plugins/presence-scenes": {
+			"package-name": "presence-scenes",
+			"include-component-in-tag": true,
+			"initial-version": "0.1.0"
 		}
 	}
 }
