@@ -12,6 +12,7 @@
 		"test": "wp-env run tests-cli --env-cwd='presence-api' -- ./vendor/bin/phpunit --testdox",
 		"test:multisite": "wp-env run tests-cli --env-cwd='presence-api' -- env WP_MULTISITE=1 ./vendor/bin/phpunit --testdox",
 		"test:e2e": "playwright test --config tests/e2e/playwright.config.js",
+		"test:scenes": "playwright test --config tests/scenes/playwright.config.js",
 		"test:scripts": "node --test .github/scripts/*.test.js",
 		"test:unit": "wp-scripts test-unit-js"
 	},

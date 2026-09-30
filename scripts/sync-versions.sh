@@ -7,6 +7,7 @@
 #   - plugins/presence-api/presence-api.php `WP_PRESENCE_VERSION` define
 #   - plugins/presence-api/readme.txt `Stable tag:`
 #   - plugins/presence-api/.wordpress-org/blueprints/blueprint.json tag-pinned demo seeder URLs
+#   - the `* Version:` header of every other plugin in the manifest
 #
 # Called from .github/workflows/release-please.yml after release-please opens
 # (or updates) its release PR. Also runnable locally:
@@ -66,6 +67,17 @@ if grep -o 'raw\.githubusercontent\.com/WordPress/presence-api/v[^/]*' "$BLUEPRI
 fi
 
 rm -f "${MAIN}.bak" "${README}.bak" "${BLUEPRINT}.bak"
+
+# Every other package path is a plugin directory whose header holds its only version.
+for PLUGIN_DIR in $(jq -r 'keys[] | select(. != ".")' .release-please-manifest.json); do
+	PLUGIN_VERSION=$(jq -r --arg path "$PLUGIN_DIR" '.[$path]' .release-please-manifest.json)
+	PLUGIN_MAIN=$(grep -ls '^ \* Plugin Name: ' "$PLUGIN_DIR"/*.php | head -n 1) || true
+	[[ -n "$PLUGIN_MAIN" ]] || { echo "No plugin header found in ${PLUGIN_DIR}" >&2; exit 1; }
+	sed -i.bak "s|^ \* Version: .*$| * Version: ${PLUGIN_VERSION}|" "$PLUGIN_MAIN"
+	rm -f "${PLUGIN_MAIN}.bak"
+	grep -qFx " * Version: ${PLUGIN_VERSION}" "$PLUGIN_MAIN" \
+		|| { echo "Failed to update plugin header version in ${PLUGIN_MAIN}" >&2; exit 1; }
+done
 
 # Rewrite the == Changelog == section in readme.txt from CHANGELOG.md.
 # Skips the Dependencies subsection, strips GitHub commit links, deduplicates bullets.
