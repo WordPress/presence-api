@@ -60,20 +60,18 @@ function selectedProjects() {
 		}
 	}
 
-	const selected = PROJECTS.filter( ( name ) =>
+	const matched = PROJECTS.filter( ( name ) =>
 		names.some( ( n ) => n.toLowerCase() === name )
 	);
 
-	return names.length && selected.length === names.length
-		? selected
-		: PROJECTS;
+	return names.length && matched.length === names.length ? matched : PROJECTS;
 }
 
-const projects = selectedProjects();
+const selected = selectedProjects();
 
 export default defineConfig( {
 	globalSetup: path.resolve( __dirname, 'global-setup.js' ),
-	metadata: { projects },
+	metadata: { projects: selected },
 	reporter: process.env.CI ? [ [ 'github' ] ] : [ [ 'list' ] ],
 	retries: process.env.CI ? 2 : 0,
 	workers: 1,
@@ -97,13 +95,13 @@ export default defineConfig( {
 		screenshot: 'only-on-failure',
 	},
 	webServer: [
-		projects.includes( 'chromium' ) && {
+		selected.includes( 'chromium' ) && {
 			command: 'npm run env:start',
 			port: parseInt( baseUrl.port, 10 ),
 			timeout: 120_000,
 			reuseExistingServer: true,
 		},
-		projects.includes( 'chromium-multisite' ) && {
+		selected.includes( 'chromium-multisite' ) && {
 			// Seeds the fixture network as well as starting it, so a first run
 			// on a cold machine takes longer than the single-site instance.
 			command: 'npm run env:start:multisite',
