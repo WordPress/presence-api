@@ -48,8 +48,8 @@ function wp_presence_register_network_summary_table() {
 /**
  * Checks the database directly for the presence table.
  *
- * Only for the provisioning path. Request paths use wp_presence_has_table(),
- * which reads an autoloaded option and costs nothing.
+ * Only for activation, which is how a site recovers a table dropped while its
+ * version option survived. Request paths use wp_presence_has_table().
  *
  * @access private
  *
@@ -71,14 +71,9 @@ function wp_presence_table_exists() {
  * Feature plugin shim. In core, dbDelta() would create this table from the
  * schema in wp-admin/includes/schema.php during the database upgrade routine.
  *
- * The version option alone is not enough to skip the work. If the table is
- * dropped while the option survives, a partial restore or a hand-run DROP,
- * every read and write fails and nothing reconciles the two.
- *
- * Ajax is excluded from that reconciliation. admin-ajax.php fires admin_init
- * too, and presence heartbeats through it every 15 seconds per open admin tab,
- * so checking there would bill every site continuously for a state almost none
- * of them will reach. The next real admin page load repairs it instead.
+ * Trusts the version option the way core trusts db_version, so a table dropped
+ * while the option survives stays missing until the plugin is reactivated; see
+ * wp_presence_provision_site().
  *
  * @access private
  *
@@ -87,9 +82,7 @@ function wp_presence_table_exists() {
 function wp_maybe_create_presence_table() {
 	add_option( 'wp_presence_recording', '1', '', true );
 
-	$provisioned = (int) get_option( 'wp_presence_db_version' ) === WP_PRESENCE_DB_VERSION;
-
-	if ( $provisioned && ( wp_doing_ajax() || wp_presence_table_exists() ) ) {
+	if ( (int) get_option( 'wp_presence_db_version' ) === WP_PRESENCE_DB_VERSION ) {
 		return;
 	}
 
