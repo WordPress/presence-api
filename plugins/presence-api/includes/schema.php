@@ -48,7 +48,7 @@ function wp_presence_register_network_summary_table() {
 /**
  * Checks the database directly for the presence table.
  *
- * Only for activation. Request paths use wp_presence_has_table().
+ * Only for activation and failed writes. Request paths use wp_presence_has_table().
  *
  * @access private
  *
@@ -65,14 +65,29 @@ function wp_presence_table_exists() {
 }
 
 /**
+ * Clears the version option when the presence table is missing.
+ *
+ * Feature plugin shim, so the next admin or WP-CLI request rebuilds the table.
+ *
+ * @access private
+ *
+ * @since 0.12.2
+ */
+function wp_presence_forget_missing_table() {
+	if ( ! wp_presence_table_exists() ) {
+		delete_option( 'wp_presence_db_version' );
+	}
+}
+
+/**
  * Creates or updates the presence table if needed.
  *
  * Feature plugin shim. In core, dbDelta() would create this table from the
  * schema in wp-admin/includes/schema.php during the database upgrade routine.
  *
- * Trusts the version option the way core trusts db_version, so a table dropped
- * while the option survives stays missing until the plugin is reactivated; see
- * wp_presence_provision_site().
+ * Trusts the version option the way core trusts db_version. A table dropped
+ * while the option survives is rebuilt after a write fails, see
+ * wp_presence_forget_missing_table(), or when the plugin is reactivated.
  *
  * @access private
  *

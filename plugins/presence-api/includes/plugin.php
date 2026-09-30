@@ -20,10 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @since 0.1.17
  */
 function wp_presence_provision_site() {
-	if ( ! wp_presence_table_exists() ) {
-		delete_option( 'wp_presence_db_version' );
-	}
-
+	wp_presence_forget_missing_table();
 	wp_maybe_create_presence_table();
 	wp_presence_schedule_cleanup();
 }

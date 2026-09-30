@@ -171,6 +171,28 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Consumers such as gutenberg-sync-engines ask wp_presence_is_available()
+	 * before choosing this store, so the first failed write has to make it say no.
+	 *
+	 * @covers ::wp_presence_forget_missing_table
+	 */
+	public function test_a_failed_write_to_a_dropped_table_clears_the_version_option() {
+		global $wpdb;
+
+		$this->drop_presence_table();
+		update_option( 'wp_presence_db_version', WP_PRESENCE_DB_VERSION, true );
+
+		$suppress = $wpdb->suppress_errors();
+		$this->assertFalse( wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), self::$editor_id ) );
+		$wpdb->suppress_errors( $suppress );
+
+		$this->assertFalse( wp_presence_has_table(), 'The failed write should stop the site claiming a table.' );
+
+		wp_maybe_create_presence_table();
+		$this->assertTrue( $this->presence_table_exists(), 'The next admin request should rebuild it.' );
+	}
+
+	/**
 	 * Two admin requests can enter provisioning at the same time, and neither
 	 * has a confirmation step to serialize them the way wp-admin/upgrade.php
 	 * does for core. The one that arrives second has to return rather than run
