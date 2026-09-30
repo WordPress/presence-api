@@ -51,10 +51,58 @@ jobs:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
           restore-keys: ${{ runner.os }}-playwright-
-      # The apt packages are not covered by the cache above, so install-deps
-      # runs unconditionally while the browser download is skipped on a hit.
-      - run: npx playwright install-deps chromium
+
+      # The Ubuntu mirror throttles the packages install-deps downloads often
+      # enough to stall a job for minutes, so they are cached the way Gutenberg's
+      # .github/setup-playwright action caches them.
+      - name: Prepare the package cache
+        id: apt-prepare
+        run: |
+          VERSION="$(node -p "require('playwright/package.json').version")"
+          # Packages cached under another runner image mostly miss.
+          IMAGE="${ImageOS:-unknown}-${ImageVersion:-unknown}"
+          echo "PREFIX=playwright-apt--os-${RUNNER_OS}--arch-${RUNNER_ARCH}--img-${IMAGE}--pw-${VERSION}--browsers-chromium--fingerprint-" >> "$GITHUB_OUTPUT"
+          echo 'APT::Keep-Downloaded-Packages "true";' | sudo tee /etc/apt/apt.conf.d/99keep-downloaded-packages > /dev/null
+          mkdir -p "$HOME/apt-cache"
+
+      # The key carries a fingerprint of the packages, so `key` never matches on
+      # its own and the prefix search restores the newest entry.
+      - name: Restore the cached packages
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/apt-cache
+          key: ${{ steps.apt-prepare.outputs.PREFIX }}
+          restore-keys: ${{ steps.apt-prepare.outputs.PREFIX }}
+
+      - name: Install Playwright system dependencies
+        id: apt-install
         timeout-minutes: 5
+        run: |
+          fingerprint() {
+            find "$HOME/apt-cache" -maxdepth 1 -name '*.deb' -printf '%f\n' | LC_ALL=C sort | sha256sum | cut -c1-16
+          }
+          BEFORE="$(fingerprint)"
+
+          # apt re-downloads any package whose size does not match its index, so
+          # a stale one here is never used.
+          sudo cp -r --update=none "$HOME/apt-cache/." /var/cache/apt/archives/
+
+          npx playwright install-deps chromium
+
+          sudo find /var/cache/apt/archives -maxdepth 1 -name '*.deb' -exec cp --update=none -t "$HOME/apt-cache" {} +
+          sudo chown -R "$(id -u):$(id -g)" "$HOME/apt-cache"
+
+          AFTER="$(fingerprint)"
+          echo "FINGERPRINT=$AFTER" >> "$GITHUB_OUTPUT"
+          echo "CHANGED=$( [ "$BEFORE" != "$AFTER" ] && echo true || echo false )" >> "$GITHUB_OUTPUT"
+
+      - name: Save the packages
+        if: ${{ steps.apt-install.outputs.CHANGED == 'true' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/apt-cache
+          key: ${{ steps.apt-prepare.outputs.PREFIX }}${{ steps.apt-install.outputs.FINGERPRINT }}
+
       - run: npx playwright install chromium
         if: ${{ steps.playwright-cache.outputs.cache-hit != 'true' }}
 
