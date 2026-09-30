@@ -202,18 +202,21 @@ class WP_Test_Presence_Scenes extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * @covers ::wp_presence_scene_start
 	 * @covers ::wp_presence_scene_sweep
 	 * @covers ::wp_presence_scene_strike
 	 * @covers ::wp_presence_scene_delete_users
 	 */
 	public function test_stopping_a_scene_leaves_nothing_behind() {
 		$run = wp_presence_scene_start( 'editing-together' );
+		$this->assertSame( $run['expires'], wp_next_scheduled( 'wp_presence_scene_sweep' ), 'Cron should strike the scene if its command dies.' );
 		$run = wp_presence_scene_play( $run, $run['started'] + 5 );
 		$this->assertNotEmpty( $run['posts'] );
 
 		wp_presence_scene_sweep( true );
 
 		$this->assertFalse( get_option( 'wp_presence_scene' ) );
+		$this->assertFalse( wp_next_scheduled( 'wp_presence_scene_sweep' ) );
 		$this->assertSame( array(), get_users( array( 'include' => $run['cast'], 'blog_id' => 0 ) ) );
 		$this->assertNull( get_post( $run['posts'][0] ), 'The draft should be deleted, not trashed.' );
 		$this->assertSame( array(), $this->presence_for_user( $run['cast'][0] ) );
