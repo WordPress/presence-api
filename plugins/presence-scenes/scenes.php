@@ -882,3 +882,23 @@ function wp_presence_scene_authenticate( $user ) {
 
 	return $user;
 }
+
+/**
+ * Lists the roles a scene casts, such as "Editor, Author and Contributor".
+ *
+ * @since 0.1.0
+ *
+ * @access private
+ *
+ * @param array $scene A prepared scene.
+ * @return string
+ */
+function wp_presence_scene_casting( array $scene ) {
+	$role_names = wp_roles()->role_names;
+	$roles      = array();
+	foreach ( array_unique( $scene['cast'] ) as $role ) {
+		$roles[] = translate_user_role( $role_names[ $role ] ?? $role );
+	}
+
+	return wp_sprintf( '%l', $roles );
+}

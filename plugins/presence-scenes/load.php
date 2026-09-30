@@ -31,6 +31,12 @@ add_action(
 
 		add_action( 'wp_presence_scene_sweep', 'wp_presence_scene_sweep' );
 		add_filter( 'wp_authenticate_user', 'wp_presence_scene_authenticate' );
+
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			require_once __DIR__ . '/class-wp-presence-scene-cli-command.php';
+			/** Plays the bundled scenes, which have no other way in. */
+			WP_CLI::add_command( 'presence scene', 'WP_Presence_Scene_CLI_Command' );
+		}
 	}
 );
 

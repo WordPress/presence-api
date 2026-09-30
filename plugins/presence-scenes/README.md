@@ -11,6 +11,18 @@ Plays real users through probable situations, such as two people editing one pos
 
 Actors reach everything else through core's `heartbeat_received` filter, as a browser would.
 
+## WP-CLI
+
+`npm run env:start` activates it. Anywhere else, activate it after Presence API.
+
+```
+wp presence scene list
+wp presence scene run editing-together
+wp presence scene stop
+```
+
+A run creates a user for each part in the cast, plays each step at its time, then deletes those users and everything they wrote. Runs refuse to overlap, a run whose command died is soon replaced, and actors cannot log in. Only the scenes in `library/` can be played.
+
 ## Scene format
 
 ```json
