@@ -1,6 +1,15 @@
 # Presence Scenes
 
-Plays real users through probable situations, such as two people editing one post, so the Presence API can be watched and checked end to end. It is a separate plugin that needs Presence API. Only the scenes in `library/` can be played.
+Plays real users through probable situations, such as two people editing one post, so the Presence API can be watched and checked end to end. It is a separate plugin that needs Presence API, and it calls only these Presence API functions:
+
+| Function | Used for |
+|---|---|
+| `wp_get_presence()` | Checking an actor shows up where they should |
+| `wp_remove_presence()` | Closing an editor |
+| `wp_remove_user_presence()` | Logging out |
+| `wp_presence_admin_room()`, `wp_presence_post_room()` | Naming the rooms to check |
+
+Actors reach everything else through core's `heartbeat_received` filter, as a browser would.
 
 ## Scene format
 

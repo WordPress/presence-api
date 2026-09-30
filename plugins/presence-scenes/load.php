@@ -28,5 +28,35 @@ add_action(
 
 		require_once __DIR__ . '/scenes.php';
 		require_once __DIR__ . '/class-wp-presence-scene-actor.php';
+
+		add_action( 'wp_presence_scene_sweep', 'wp_presence_scene_sweep' );
+		add_filter( 'wp_authenticate_user', 'wp_presence_scene_authenticate' );
+	}
+);
+
+register_deactivation_hook(
+	__FILE__,
+	function ( $network_wide ) {
+		if ( ! function_exists( 'wp_presence_scene_sweep' ) ) {
+			return;
+		}
+
+		$site_ids = $network_wide ? get_sites(
+			array(
+				'fields' => 'ids',
+				'number' => 0,
+			)
+		) : array( 0 );
+		foreach ( $site_ids as $site_id ) {
+			if ( $site_id ) {
+				switch_to_blog( $site_id );
+			}
+
+			wp_presence_scene_sweep( true );
+
+			if ( $site_id ) {
+				restore_current_blog();
+			}
+		}
 	}
 );
