@@ -297,7 +297,7 @@ final class WP_Presence_Scene_Actor {
 			$this->lock( $post->ID );
 		}
 
-		$this->be_on( $post->post_type, __( 'Edit Post', 'presence-scenes' ), $post->ID, $lock );
+		$this->be_on( $post->post_type, get_post_type_object( $post->post_type )->labels->edit_item, $post->ID, $lock );
 	}
 
 	/**
