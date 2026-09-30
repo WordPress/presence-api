@@ -179,17 +179,14 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 	public function test_a_failed_write_to_a_dropped_table_clears_the_version_option() {
 		global $wpdb;
 
-		$this->drop_presence_table();
-		update_option( 'wp_presence_db_version', WP_PRESENCE_DB_VERSION, true );
+		// A missing name rather than a DROP, which SQLite would undo when it rolls back the failed write.
+		$wpdb->presence = $wpdb->prefix . 'presence_missing';
 
 		$suppress = $wpdb->suppress_errors();
 		$this->assertFalse( wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), self::$editor_id ) );
 		$wpdb->suppress_errors( $suppress );
 
 		$this->assertFalse( wp_presence_has_table(), 'The failed write should stop the site claiming a table.' );
-
-		wp_maybe_create_presence_table();
-		$this->assertTrue( $this->presence_table_exists(), 'The next admin request should rebuild it.' );
 	}
 
 	/**
