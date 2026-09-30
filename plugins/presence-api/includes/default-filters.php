@@ -45,6 +45,7 @@ add_action( 'added_option', 'wp_presence_on_updated_option' );
 add_action( 'updated_option', 'wp_presence_on_updated_option' );
 add_action( 'update_option_wp_page_for_privacy_policy', 'wp_presence_on_privacy_policy_page_updated' );
 add_action( 'post_updated', 'wp_presence_on_post_updated', 10, 3 );
+add_action( 'wp_after_insert_post', 'wp_presence_on_agent_post_saved', 10, 2 );
 add_action( 'profile_update', 'wp_presence_on_profile_update' );
 add_action( 'edited_term', 'wp_presence_on_edited_term', 10, 3 );
 add_action( 'edit_comment', 'wp_presence_on_edit_comment' );
