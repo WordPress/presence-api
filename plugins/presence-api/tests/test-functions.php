@@ -810,6 +810,19 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * @covers ::wp_get_active_rooms
+	 */
+	public function test_get_active_rooms_hydrates_only_users_within_the_timeout() {
+		wp_set_presence( 'admin/online', 'client-idle', array(), self::$subscriber_id );
+		wp_set_presence( 'admin/online', 'client-live', array(), self::$editor_id );
+		$this->backdate( 'admin/online', 'client-idle', 2 * MINUTE_IN_SECONDS );
+
+		$rooms = wp_get_active_rooms( MINUTE_IN_SECONDS );
+
+		$this->assertSame( array( self::$editor_id ), wp_list_pluck( $rooms[0]['users'], 'user_id' ) );
+	}
+
+	/**
 	 * @covers ::wp_presence_hydrate_room_users
 	 */
 	public function test_hydrate_room_users() {
