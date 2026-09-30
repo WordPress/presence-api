@@ -3,7 +3,7 @@ Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas,
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.1
-Stable tag: 0.12.1
+Stable tag: 0.12.2
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -66,6 +66,12 @@ For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/presence-api/blob/main/CHANGELOG.md
 
+= 0.12.2 =
+* Elect the Heartbeat ping leader per site among visible tabs ([#675](https://github.com/WordPress/presence-api/issues/675)).
+* Avoid repeated network summary table checks ([#657](https://github.com/WordPress/presence-api/issues/657)).
+* Read each presence query once per request until the table changes ([#678](https://github.com/WordPress/presence-api/issues/678)).
+* Trust the presence table's version option and recheck it only after a failed write ([#682](https://github.com/WordPress/presence-api/issues/682)).
+
 = 0.12.1 =
 * Translate Heartbeat debugger plurals and units ([#660](https://github.com/WordPress/presence-api/issues/660)).
 
@@ -96,21 +102,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 * Read the network Online view from the heartbeat's screen ([#622](https://github.com/WordPress/presence-api/issues/622)).
 * Refresh presence rows on SQLite with CASE instead of IF() ([#623](https://github.com/WordPress/presence-api/issues/623)).
 * Cut e2e runtime with backdated fixtures and readiness waits ([#621](https://github.com/WordPress/presence-api/issues/621)).
-
-= 0.9.0 =
-* Gate where people are behind a per-user view_presence_location meta cap ([#571](https://github.com/WordPress/presence-api/issues/571)).
-* Give each user a room-assigned color from Gutenberg's palette ([#574](https://github.com/WordPress/presence-api/issues/574)).
-* Keep the admin bar presence node in sync on each heartbeat ([#589](https://github.com/WordPress/presence-api/issues/589)).
-* Put people on this page first in the admin bar menu and link everyone else to where they are ([#597](https://github.com/WordPress/presence-api/issues/597)).
-* Retire the site Who's Online dashboard widget ([#591](https://github.com/WordPress/presence-api/issues/591)).
-* Ring each admin bar face in its block editor collaborator color.
-* Say how many people the admin bar menu leaves out ([#594](https://github.com/WordPress/presence-api/issues/594)).
-* Seat the admin bar faces beside My Account and build the menu from core groups ([#565](https://github.com/WordPress/presence-api/issues/565)).
-* Show whole faces in the admin bar and beside each name in its menu.
-* Carry the filter nonce on the Plugins screen's online users link ([#569](https://github.com/WordPress/presence-api/issues/569)).
-* Close the remaining location leaks and refresh the screen token ([#600](https://github.com/WordPress/presence-api/issues/600)).
-* Keep post locks in the presence table instead of post meta ([#551](https://github.com/WordPress/presence-api/issues/551)).
-* Keep presence markup and location to the people allowed them ([#596](https://github.com/WordPress/presence-api/issues/596)).
-* List everyone online in the admin bar and keep only their location behind the cap ([#590](https://github.com/WordPress/presence-api/issues/590)).
-* Skip an unchanged editor tick's presence write ([#553](https://github.com/WordPress/presence-api/issues/553)).
-* Store the recording option so reading it costs no query ([#552](https://github.com/WordPress/presence-api/issues/552)).
