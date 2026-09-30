@@ -24,10 +24,10 @@ const coordinators = new Map();
  * Subscribes to presence data for a room, sharing the poll with every other
  * subscriber asking for the same room and fields.
  *
- * @param {string}   room     Presence room id.
- * @param {string}   fields   `_fields` parameter for the REST request.
- * @param {Function} callback Called with `{ entries, error }` whenever new data arrives.
- * @return {Function} Unsubscribe function.
+ * @param {string}                   room     Presence room id.
+ * @param {string}                   fields   `_fields` parameter for the REST request.
+ * @param {(result: Object) => void} callback Called with `{ entries, error }` whenever new data arrives.
+ * @return {() => void} Unsubscribe function.
  */
 export function subscribeToPresencePolling( room, fields, callback ) {
 	let byFields = coordinators.get( room );

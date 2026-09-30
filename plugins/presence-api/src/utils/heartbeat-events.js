@@ -14,8 +14,8 @@
  * WordPress core triggers 'heartbeat-tick' via jQuery's event system.
  * This function bridges to that event while avoiding a hard jQuery dependency.
  *
- * @param {Function} callback Function to call on each heartbeat tick.
- * @return {Function} Cleanup function to remove the listener.
+ * @param {(data: Object) => void} callback Function to call on each heartbeat tick.
+ * @return {() => void} Cleanup function to remove the listener.
  */
 export function onHeartbeatTick( callback ) {
 	const wrappedCallback = ( event, data ) => {
