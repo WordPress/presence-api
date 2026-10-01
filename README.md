@@ -66,7 +66,11 @@ The `editor-` prefix is load-bearing rather than cosmetic: `plugins/presence-api
 
 ## Agents
 
-An AI agent editing WordPress over REST or MCP runs no Heartbeat, so it never picks up an `admin/online` row on its own and, without more, is invisible to a person watching the same post. It does not need one: it writes its own row in the post room it is editing, with its own expiry, and that is enough for Who's Online, the admin bar and the post list's Editors column to show it, labelled, alongside everyone else.
+An AI agent editing WordPress over REST or MCP runs no Heartbeat, so it never picks up an `admin/online` row on its own and, without more, is invisible to a person watching the same post. It does not need one: saving a post writes its row for it, in the post room it is editing and with its own expiry, and that is enough for Who's Online, the admin bar and the post list's Editors column to show it, labelled, alongside everyone else.
+
+The row is written from `wp_after_insert_post`, which fires for REST, abilities and WP-CLI alike, whenever the current user is an agent (see below). It is `agent-{user_id}` in `postType/{post_type}:{post_id}` and lives for the idle threshold (75 seconds by default). Every save writes it again, so an agent that keeps saving never reads as idle, and one that stops expires on its own. A person's save writes nothing, since theirs rides Heartbeat.
+
+To show up before its first save, an agent can still write the row itself:
 
 ```php
 // Join: write a row that expires in 60 seconds if nothing renews it.
@@ -78,18 +82,6 @@ wp_set_presence( 'postType/post:42', 'agent-' . $user_id, array(), $user_id, nul
 
 // Leave, once done. Otherwise the row simply expires on its own.
 wp_remove_presence( 'postType/post:42', 'agent-' . $user_id );
-```
-
-```mermaid
-sequenceDiagram
-  participant A as Agent
-  participant P as Presence table
-  participant E as Person in the editor
-  A->>P: Writes its row, 60s
-  E->>P: Heartbeat reads the room
-  P-->>E: The agent's row, labelled as an agent
-  A->>P: Removes its row
-  Note over P: Or the row expires on its own
 ```
 
 Write a short row again rather than one long `$expires_in`: `wp_presence_is_idle()`'s reader-facing threshold is `wp_presence_max_staleness() + ` the Heartbeat interval — well under an hour — so a row left untouched for the whole of a long window reads as idle long before it expires. `$expires_in` is capped by the [`wp_presence_max_expires_in`](#wp_presence_max_expires_in) filter (default one hour) regardless.
