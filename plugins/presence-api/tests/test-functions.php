@@ -2189,7 +2189,12 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		$this->mark_as_agent( $agent_id );
 		wp_set_current_user( $agent_id );
 
-		$post_id = wp_insert_post( array( 'post_status' => 'auto-draft' ) );
+		$post_id = wp_insert_post(
+			array(
+				'post_title'  => 'Auto draft',
+				'post_status' => 'auto-draft',
+			)
+		);
 
 		$this->assertSame( array(), wp_get_presence( 'postType/post:' . $post_id ) );
 	}
