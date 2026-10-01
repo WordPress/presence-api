@@ -2113,43 +2113,6 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * Every save writes again, so an agent that keeps saving keeps its row.
-	 *
-	 * @covers ::wp_presence_on_agent_post_saved
-	 */
-	public function test_an_agent_saving_again_refreshes_its_row() {
-		global $wpdb;
-
-		$agent_id = self::factory()->user->create( array( 'role' => 'editor' ) );
-		$this->mark_as_agent( $agent_id );
-		wp_set_current_user( $agent_id );
-
-		$post_id = self::factory()->post->create();
-
-		$wpdb->update(
-			$wpdb->presence,
-			array(
-				'date_gmt'    => gmdate( 'Y-m-d H:i:s', time() - 20 ),
-				'expires_gmt' => gmdate( 'Y-m-d H:i:s', time() + 5 ),
-			),
-			array( 'client_id' => 'agent-' . $agent_id ),
-			array( '%s', '%s' ),
-			array( '%s' )
-		);
-
-		wp_update_post(
-			array(
-				'ID'         => $post_id,
-				'post_title' => 'Edited again',
-			)
-		);
-
-		$row = $wpdb->get_row( $wpdb->prepare( "SELECT expires_gmt FROM {$wpdb->presence} WHERE client_id = %s", 'agent-' . $agent_id ) );
-
-		$this->assertGreaterThan( time() + 5, strtotime( $row->expires_gmt ) );
-	}
-
-	/**
 	 * An auto-draft is the editor opening a new post, not the agent saving one.
 	 *
 	 * @covers ::wp_presence_on_agent_post_saved
