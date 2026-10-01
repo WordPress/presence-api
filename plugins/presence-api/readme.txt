@@ -3,7 +3,7 @@ Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas,
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.1
-Stable tag: 0.12.2
+Stable tag: 0.13.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -70,6 +70,11 @@ For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/presence-api/blob/main/CHANGELOG.md
 
+= 0.13.0 =
+* Write an agent's presence row when it saves a post ([#697](https://github.com/WordPress/presence-api/issues/697)).
+* Skip trashing in the agent save hook and test only the guards it needs ([#700](https://github.com/WordPress/presence-api/issues/700)).
+* Style the agent badge like the block editor's Badge ([#701](https://github.com/WordPress/presence-api/issues/701)).
+
 = 0.12.2 =
 * Elect the Heartbeat ping leader per site among visible tabs ([#675](https://github.com/WordPress/presence-api/issues/675)).
 * Avoid repeated network summary table checks ([#657](https://github.com/WordPress/presence-api/issues/657)).
@@ -93,16 +98,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 * Name post types, untitled posts and sites in the dashboard widgets ([#634](https://github.com/WordPress/presence-api/issues/634)).
 * Stop labelling Active Posts as posts being edited ([#645](https://github.com/WordPress/presence-api/issues/645)).
 * Translate reused core strings under the plugin's text domain ([#646](https://github.com/WordPress/presence-api/issues/646)).
-
-= 0.10.0 =
-* Fold shared screens into one row in the admin bar menu ([#615](https://github.com/WordPress/presence-api/issues/615)).
-* List people editing posts first in the admin bar menu ([#603](https://github.com/WordPress/presence-api/issues/603)).
-* Refresh the Editors column on each heartbeat ([#606](https://github.com/WordPress/presence-api/issues/606)).
-* Refresh the Online users list on each heartbeat ([#604](https://github.com/WordPress/presence-api/issues/604)).
-* Show the stale-screen banner on Settings API, Privacy and Network Admin screens ([#619](https://github.com/WordPress/presence-api/issues/619)).
-* Bump the right Users screen on a row Remove and skip bumps while deleting a site ([#628](https://github.com/WordPress/presence-api/issues/628)).
-* Link admin bar rows to the comment, user or term being edited ([#617](https://github.com/WordPress/presence-api/issues/617)).
-* Link Network Admin rows and count the network in the admin bar ([#618](https://github.com/WordPress/presence-api/issues/618)).
-* Read the network Online view from the heartbeat's screen ([#622](https://github.com/WordPress/presence-api/issues/622)).
-* Refresh presence rows on SQLite with CASE instead of IF() ([#623](https://github.com/WordPress/presence-api/issues/623)).
-* Cut e2e runtime with backdated fixtures and readiness waits ([#621](https://github.com/WordPress/presence-api/issues/621)).

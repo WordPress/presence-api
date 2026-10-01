@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.13.0](https://github.com/WordPress/presence-api/compare/v0.12.2...v0.13.0) (2026-10-01)
+
+
+### Features
+
+* write an agent's presence row when it saves a post ([#697](https://github.com/WordPress/presence-api/issues/697)) ([047dc91](https://github.com/WordPress/presence-api/commit/047dc917195add4ba1d3ade84569a9cc9a0c93b3))
+
+
+### Bug Fixes
+
+* skip trashing in the agent save hook and test only the guards it needs ([#700](https://github.com/WordPress/presence-api/issues/700)) ([c57af7f](https://github.com/WordPress/presence-api/commit/c57af7fb80770215abbaa00a4c627d197107b8c1))
+* style the agent badge like the block editor's Badge ([#701](https://github.com/WordPress/presence-api/issues/701)) ([bc8dd0c](https://github.com/WordPress/presence-api/commit/bc8dd0cf07e30fa2a0c23effb1acb8a38de3aa86))
+
 ## [0.12.2](https://github.com/WordPress/presence-api/compare/v0.12.1...v0.12.2) (2026-09-30)
 
 
