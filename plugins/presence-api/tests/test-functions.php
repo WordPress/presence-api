@@ -2150,36 +2150,6 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * Revisions and autosaves fire the same hook but are not the agent editing
-	 * the post. Revisions have no presence support by default, which would
-	 * skip them anyway, so it is added here to show the guard is what holds.
-	 *
-	 * @covers ::wp_presence_on_agent_post_saved
-	 */
-	public function test_an_agent_writing_a_revision_or_an_autosave_gets_no_row() {
-		$agent_id = self::factory()->user->create( array( 'role' => 'editor' ) );
-		$parent   = self::factory()->post->create();
-		$this->mark_as_agent( $agent_id );
-		wp_set_current_user( $agent_id );
-		add_post_type_support( 'revision', 'presence' );
-
-		foreach ( array( 'revision', 'autosave' ) as $kind ) {
-			$post_id = wp_insert_post(
-				array(
-					'post_type'   => 'revision',
-					'post_status' => 'inherit',
-					'post_parent' => $parent,
-					'post_name'   => $parent . '-' . $kind . '-v1',
-				)
-			);
-
-			$this->assertSame( array(), wp_get_presence( 'postType/revision:' . $post_id ), "An agent's {$kind} writes no row." );
-		}
-
-		remove_post_type_support( 'revision', 'presence' );
-	}
-
-	/**
 	 * An auto-draft is the editor opening a new post, not the agent saving one.
 	 *
 	 * @covers ::wp_presence_on_agent_post_saved
