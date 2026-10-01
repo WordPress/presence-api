@@ -2113,6 +2113,22 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Trashing a post is not editing it, so it writes no row.
+	 *
+	 * @covers ::wp_presence_on_agent_post_saved
+	 */
+	public function test_an_agent_trashing_a_post_gets_no_row() {
+		$post_id  = self::factory()->post->create();
+		$agent_id = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$this->mark_as_agent( $agent_id );
+		wp_set_current_user( $agent_id );
+
+		wp_trash_post( $post_id );
+
+		$this->assertSame( array(), wp_get_presence( 'postType/post:' . $post_id ) );
+	}
+
+	/**
 	 * An auto-draft is the editor opening a new post, not the agent saving one.
 	 *
 	 * @covers ::wp_presence_on_agent_post_saved
