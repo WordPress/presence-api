@@ -165,7 +165,7 @@ jobs:
           transform() {
             jq --arg plugin "$1" --arg seeder "$2" --arg helper "$3" '
               .steps |= map(
-                if .step == "installPlugin" and (.pluginData.resource == "url") then
+                if .step == "installPlugin" and (.pluginData.resource == "url") and (.pluginData.url | endswith("/presence-api.zip")) then
                   .pluginData.url = $plugin
                 elif .step == "writeFile" and (.data.resource == "url") then
                   if (.path | endswith("/demo-seeder.php")) then .data.url = $seeder
@@ -177,17 +177,17 @@ jobs:
           }
 
           BLUEPRINT=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" blueprint.json)
-          BLUEPRINT_100=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" blueprint-100.json)
           BLUEPRINT_MS=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" blueprint-multisite.json)
-          BLUEPRINT_MS100=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" blueprint-multisite-100.json)
+          BLUEPRINT_RTC=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" blueprint-rtc.json)
+          BLUEPRINT_MS_RTC=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" blueprint-multisite-rtc.json)
 
           encode() { printf '%s' "$1" | base64 -w0; }
 
           {
             echo "url=https://playground.wordpress.net/#$(encode "$BLUEPRINT")"
-            echo "url_100=https://playground.wordpress.net/#$(encode "$BLUEPRINT_100")"
             echo "url_multisite=https://playground.wordpress.net/#$(encode "$BLUEPRINT_MS")"
-            echo "url_multisite_100=https://playground.wordpress.net/#$(encode "$BLUEPRINT_MS100")"
+            echo "url_rtc=https://playground.wordpress.net/#$(encode "$BLUEPRINT_RTC")"
+            echo "url_multisite_rtc=https://playground.wordpress.net/#$(encode "$BLUEPRINT_MS_RTC")"
           } >> "$GITHUB_OUTPUT"
 
       - name: Post or update sticky comment
@@ -197,16 +197,16 @@ jobs:
           PR_NUMBER: ${{ env.PR_NUMBER }}
           HEAD_SHA: ${{ env.HEAD_SHA }}
           PLAYGROUND_URL: ${{ steps.playground.outputs.url }}
-          PLAYGROUND_URL_100: ${{ steps.playground.outputs.url_100 }}
           PLAYGROUND_URL_MULTISITE: ${{ steps.playground.outputs.url_multisite }}
-          PLAYGROUND_URL_MULTISITE_100: ${{ steps.playground.outputs.url_multisite_100 }}
+          PLAYGROUND_URL_RTC: ${{ steps.playground.outputs.url_rtc }}
+          PLAYGROUND_URL_MULTISITE_RTC: ${{ steps.playground.outputs.url_multisite_rtc }}
         with:
           script: |
             const marker = '<!-- presence-api:playground-preview -->';
             const url = process.env.PLAYGROUND_URL;
-            const url100 = process.env.PLAYGROUND_URL_100;
             const urlMultisite = process.env.PLAYGROUND_URL_MULTISITE;
-            const urlMultisite100 = process.env.PLAYGROUND_URL_MULTISITE_100;
+            const urlRtc = process.env.PLAYGROUND_URL_RTC;
+            const urlMultisiteRtc = process.env.PLAYGROUND_URL_MULTISITE_RTC;
             const fullSha = process.env.HEAD_SHA;
             const sha = fullSha.slice(0, 7);
             const commitUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/commit/${fullSha}`;
@@ -226,10 +226,10 @@ jobs:
               // emits, which the timeline's sha links are not.
               `Built from <a href="${commitUrl}"><samp>${sha}</samp></a>`,
               '',
-              '|  | 25 users | 100 users |',
+              '|  | Single site | Multisite |',
               '| --- | --- | --- |',
-              `| **Single site** | ${launch(url, 'Launch single site, 25 users')} | ${launch(url100, 'Launch single site, 100 users')} |`,
-              `| **Multisite** | ${launch(urlMultisite, 'Launch multisite, 25 users')} | ${launch(urlMultisite100, 'Launch multisite, 100 users')} |`,
+              `| **Post locks** | ${launch(url, 'Launch post locks, single site')} | ${launch(urlMultisite, 'Launch post locks, multisite')} |`,
+              `| **RTC** | ${launch(urlRtc, 'Launch RTC, single site')} | ${launch(urlMultisiteRtc, 'Launch RTC, multisite')} |`,
               '',
             ].join('\n');
 

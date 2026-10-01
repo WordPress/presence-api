@@ -3,7 +3,7 @@
 		"php": "8.3",
 		"wp": "latest"
 	},
-	"landingPage": "/wp-admin/edit.php",
+	"landingPage": "/wp-admin/?presence_demo=rtc",
 	"login": true,
 	"steps": [
 		{
@@ -17,6 +17,13 @@
 			"pluginData": {
 				"resource": "url",
 				"url": "https://raw.githubusercontent.com/WordPress/presence-api/preview-main/presence-api.zip"
+			}
+		},
+		{
+			"step": "installPlugin",
+			"pluginData": {
+				"resource": "url",
+				"url": "https://github.com/WordPress/gutenberg-sync-engines/releases/latest/download/gutenberg-sync-engines.zip"
 			}
 		},
 		{
@@ -37,7 +44,7 @@
 		},
 		{
 			"step": "runPHP",
-			"code": "<?php require '/wordpress/wp-load.php'; require '/wordpress/wp-content/plugins/presence-api/demo-seeder.php'; update_option( 'avatar_default', 'identicon' ); wp_presence_demo_seed( 100 ); update_user_meta( 1, 'show_welcome_panel', 0 ); update_user_meta( 1, 'meta-box-order_dashboard', array( 'normal' => 'presence_active_posts,dashboard_right_now,dashboard_activity', 'side' => 'dashboard_quick_press,dashboard_primary' ) ); ?>"
+			"code": "<?php require '/wordpress/wp-load.php'; require '/wordpress/wp-content/plugins/presence-api/demo-seeder.php'; global $wpdb; update_option( 'avatar_default', 'identicon' ); wp_presence_demo_seed( 25 ); update_option( 'presence_demo_rtc_post', wp_presence_demo_seed_collaborators() ); update_user_meta( 1, $wpdb->get_blog_prefix() . 'persisted_preferences', array( 'core/edit-post' => array( 'welcomeGuide' => false ), '_modified' => gmdate( 'c' ) ) ); ?>"
 		}
 	]
 }
