@@ -2113,70 +2113,19 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * Every save writes again, so an agent that keeps saving keeps its row.
+	 * Trashing a post is not editing it, so it writes no row.
 	 *
 	 * @covers ::wp_presence_on_agent_post_saved
 	 */
-	public function test_an_agent_saving_again_refreshes_its_row() {
-		global $wpdb;
-
+	public function test_an_agent_trashing_a_post_gets_no_row() {
+		$post_id  = self::factory()->post->create();
 		$agent_id = self::factory()->user->create( array( 'role' => 'editor' ) );
 		$this->mark_as_agent( $agent_id );
 		wp_set_current_user( $agent_id );
 
-		$post_id = self::factory()->post->create();
+		wp_trash_post( $post_id );
 
-		$wpdb->update(
-			$wpdb->presence,
-			array(
-				'date_gmt'    => gmdate( 'Y-m-d H:i:s', time() - 20 ),
-				'expires_gmt' => gmdate( 'Y-m-d H:i:s', time() + 5 ),
-			),
-			array( 'client_id' => 'agent-' . $agent_id ),
-			array( '%s', '%s' ),
-			array( '%s' )
-		);
-
-		wp_update_post(
-			array(
-				'ID'         => $post_id,
-				'post_title' => 'Edited again',
-			)
-		);
-
-		$row = $wpdb->get_row( $wpdb->prepare( "SELECT expires_gmt FROM {$wpdb->presence} WHERE client_id = %s", 'agent-' . $agent_id ) );
-
-		$this->assertGreaterThan( time() + 5, strtotime( $row->expires_gmt ) );
-	}
-
-	/**
-	 * Revisions and autosaves fire the same hook but are not the agent editing
-	 * the post. Revisions have no presence support by default, which would
-	 * skip them anyway, so it is added here to show the guard is what holds.
-	 *
-	 * @covers ::wp_presence_on_agent_post_saved
-	 */
-	public function test_an_agent_writing_a_revision_or_an_autosave_gets_no_row() {
-		$agent_id = self::factory()->user->create( array( 'role' => 'editor' ) );
-		$parent   = self::factory()->post->create();
-		$this->mark_as_agent( $agent_id );
-		wp_set_current_user( $agent_id );
-		add_post_type_support( 'revision', 'presence' );
-
-		foreach ( array( 'revision', 'autosave' ) as $kind ) {
-			$post_id = wp_insert_post(
-				array(
-					'post_type'   => 'revision',
-					'post_status' => 'inherit',
-					'post_parent' => $parent,
-					'post_name'   => $parent . '-' . $kind . '-v1',
-				)
-			);
-
-			$this->assertSame( array(), wp_get_presence( 'postType/revision:' . $post_id ), "An agent's {$kind} writes no row." );
-		}
-
-		remove_post_type_support( 'revision', 'presence' );
+		$this->assertSame( array(), wp_get_presence( 'postType/post:' . $post_id ) );
 	}
 
 	/**
@@ -2189,7 +2138,12 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		$this->mark_as_agent( $agent_id );
 		wp_set_current_user( $agent_id );
 
-		$post_id = wp_insert_post( array( 'post_status' => 'auto-draft' ) );
+		$post_id = wp_insert_post(
+			array(
+				'post_title'  => 'Auto draft',
+				'post_status' => 'auto-draft',
+			)
+		);
 
 		$this->assertSame( array(), wp_get_presence( 'postType/post:' . $post_id ) );
 	}

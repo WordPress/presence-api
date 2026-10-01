@@ -68,7 +68,7 @@ The `editor-` prefix is load-bearing rather than cosmetic: `plugins/presence-api
 
 An AI agent editing WordPress over REST or MCP runs no Heartbeat, so it never picks up an `admin/online` row on its own and, without more, is invisible to a person watching the same post. It does not need one: saving a post writes its row for it, in the post room it is editing and with its own expiry, and that is enough for Who's Online, the admin bar and the post list's Editors column to show it, labelled, alongside everyone else.
 
-The row is written from `wp_after_insert_post`, which fires for REST, abilities and WP-CLI alike, whenever the current user is an agent (see below). It is `agent-{user_id}` in `postType/{post_type}:{post_id}` and lives for the idle threshold (75 seconds by default). Every save writes it again, so an agent that keeps saving never reads as idle, and one that stops expires on its own. A person's save writes nothing, since theirs rides Heartbeat.
+The row is written from `wp_after_insert_post`, which fires for REST, abilities and WP-CLI alike, whenever the current user is an agent (see below). It is `agent-{user_id}` in `postType/{post_type}:{post_id}` and lives for the idle threshold (75 seconds by default). Every save writes it again, so an agent that keeps saving never reads as idle, and one that stops expires on its own. A person's save writes nothing, since theirs rides Heartbeat, and neither does moving a post to the trash.
 
 To show up before its first save, an agent can still write the row itself:
 

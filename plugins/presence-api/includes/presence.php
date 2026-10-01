@@ -1132,16 +1132,9 @@ add_filter( 'wp_presence_is_agent_user', 'wp_presence_is_agent_user_via_wpai', 1
 /**
  * Writes an agent's presence row in the post room it just saved.
  *
- * An agent has no Heartbeat to carry its presence, so its writes stand in for
- * one: the hook fires for REST, abilities and WP-CLI alike, and a person's
- * save never reaches the write because only an agent user passes the check.
- * Revisions, autosaves and auto-drafts fire the same hook and are not the agent
- * editing the post, so they are skipped, as is a save with no current user or
- * of a post type without presence support.
- *
- * The row lives for `wp_presence_idle_threshold()`, the age at which readers
- * treat a row as idle, and is rewritten on every save. A busy agent therefore
- * never reads as idle, and one that stops writing expires on its own.
+ * An agent has no Heartbeat, so each of its saves writes a row that lasts
+ * `wp_presence_idle_threshold()`, skipping auto-drafts, trashed posts and post
+ * types without presence support, which covers revisions and autosaves.
  *
  * @access private
  *
@@ -1153,11 +1146,11 @@ add_filter( 'wp_presence_is_agent_user', 'wp_presence_is_agent_user_via_wpai', 1
 function wp_presence_on_agent_post_saved( $post_id, $post ) {
 	$user_id = get_current_user_id();
 
-	if ( ! $user_id || wp_is_post_autosave( $post_id ) || wp_is_post_revision( $post_id ) ) {
+	if ( ! $user_id || in_array( $post->post_status, array( 'auto-draft', 'trash' ), true ) ) {
 		return;
 	}
 
-	if ( 'auto-draft' === $post->post_status || ! wp_presence_is_agent_user( $user_id ) ) {
+	if ( ! wp_presence_is_agent_user( $user_id ) ) {
 		return;
 	}
 
