@@ -147,6 +147,28 @@ function presence_demo_refresh_locks() {
 		return;
 	}
 	require_once $seeder;
-	wp_presence_demo_seed_locks();
+	if ( ! get_option( 'presence_demo_rtc_post' ) ) {
+		wp_presence_demo_seed_locks();
+	}
 }
 add_action( 'admin_init', 'presence_demo_refresh_locks' );
+
+/**
+ * Keeps the RTC playground's collaborators in their post, and opens it from `?presence_demo=rtc`.
+ */
+function presence_demo_refresh_collaborators() {
+	$post_id = (int) get_option( 'presence_demo_rtc_post' );
+	$seeder  = WP_PLUGIN_DIR . '/presence-api/demo-seeder.php';
+	if ( ! $post_id || ! function_exists( 'wp_presence_post_room' ) || ! file_exists( $seeder ) ) {
+		return;
+	}
+	require_once $seeder;
+	wp_presence_demo_seed_collaborators( $post_id );
+
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	if ( is_admin() && isset( $_GET['presence_demo'] ) && current_user_can( 'edit_post', $post_id ) ) {
+		wp_safe_redirect( get_edit_post_link( $post_id, 'raw' ) );
+		exit;
+	}
+}
+add_action( 'wp_loaded', 'presence_demo_refresh_collaborators' );
