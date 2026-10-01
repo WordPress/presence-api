@@ -540,8 +540,8 @@ function wp_presence_admin_bar_assets() {
 		#wp-admin-bar-presence-online :is(.presence-bar-idle, .presence-bar-crowd, .presence-bar-more > .ab-item) { opacity: .8; }
 		.admin-color-light #wp-admin-bar-presence-online :is(.presence-bar-idle, .presence-bar-crowd, .presence-bar-more > .ab-item) { opacity: 1; }
 		.admin-color-light #wpadminbar #wp-admin-bar-presence-online .presence-bar-count { color: #50575e !important; }
-		#wp-admin-bar-presence-online .presence-agent-badge { padding: 0 6px; border-radius: 2px; background: rgba(255, 255, 255, .12); font-size: 11px; line-height: 18px; }
-		.admin-color-light #wp-admin-bar-presence-online .presence-agent-badge { background: rgba(0, 0, 0, .07); }
+		#wp-admin-bar-presence-online .presence-agent-badge { padding: 0 6px; border-radius: 2px; background: rgba(0, 0, 0, .25); color: #fff; font-size: 11px; line-height: 18px; }
+		.admin-color-light #wp-admin-bar-presence-online .presence-agent-badge { background: rgba(0, 0, 0, .07); color: #1d2327; }
 	';
 
 	// The current user wears the admin theme color, as in the block editor, so it never matches a ring on the page.
