@@ -494,6 +494,55 @@ function wp_presence_demo_seed_locks() {
 }
 
 /**
+ * Puts demo users in a post's block editor session, as Gutenberg Sync Engines' Presence backend stores them.
+ *
+ * @since 0.14.0
+ *
+ * @param int $post_id Optional. The post to join. Defaults to the first demo post.
+ * @param int $count   How many demo users join. GSE turns away a room's fourth client, so two leaves room for the viewer.
+ * @return int The post they are editing, or 0 when there is none.
+ */
+function wp_presence_demo_seed_collaborators( $post_id = 0, $count = 2 ) {
+	if ( ! $post_id ) {
+		$posts   = wp_presence_demo_ensure_posts();
+		$post_id = $posts ? (int) $posts[0] : 0;
+	}
+	$room = $post_id ? wp_presence_post_room( $post_id ) : false;
+
+	if ( ! $room ) {
+		return 0;
+	}
+
+	for ( $i = 1; $i <= $count; $i++ ) {
+		$user = get_user_by( 'login', 'presence-demo-' . $i );
+		if ( ! $user ) {
+			continue;
+		}
+
+		// GSE reads the number after its prefix as the Yjs client id, and drops rows older than 30 seconds.
+		wp_set_presence(
+			$room,
+			'gse-' . ( 1000 + $user->ID ),
+			array(
+				'collaboratorInfo' => array(
+					'id'          => $user->ID,
+					'name'        => $user->display_name,
+					'slug'        => $user->user_nicename,
+					'avatar_urls' => rest_get_avatar_urls( $user ),
+					'browserType' => 'Chrome',
+					'enteredAt'   => strtotime( $user->user_registered . ' UTC' ) * 1000,
+				),
+			),
+			$user->ID,
+			gmdate( 'Y-m-d H:i:s' )
+		);
+		wp_set_presence( 'admin/online', 'user-' . $user->ID, array( 'screen' => 'post' ), $user->ID );
+	}
+
+	return $post_id;
+}
+
+/**
  * Removes all demo users and their presence entries.
  *
  * @since 7.1.0
