@@ -62,6 +62,10 @@ Yes. Clear the **Presence** checkbox on Settings > General, or run `wp presence 
 
 For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording_enabled` filters take the checkboxes as their defaults, so a filter always has the last word.
 
+== Screenshots ==
+
+1. The dashboard with 101 people online, the admin bar's presence menu open, and Active Posts listing who is editing each post and page.
+
 == Changelog ==
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/presence-api/blob/main/CHANGELOG.md
