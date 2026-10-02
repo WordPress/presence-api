@@ -73,7 +73,6 @@ add_action(
 	tr.is-fresh td { color: var(--wp-admin-text-dark, #1d2327); }
 	tr.is-stale td { color: var(--wp-admin-muted, #646970); }
 
-
 	.empty { color: var(--wp-admin-muted, #646970); padding: 12px 6px; }
 </style>
 </head>
