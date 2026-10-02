@@ -86,7 +86,7 @@ This plugin counts a post room's editors by the `editor-` prefix, so anyone else
 
 An AI agent working over REST or MCP runs no Heartbeat, so the plugin writes its row when it saves a post. That row puts it, labelled, in the admin bar, the Active Posts widget and the post list's Editors column.
 
-The row is written on `wp_after_insert_post` (REST, abilities and WP-CLI) when the current user is an agent. It is `agent-{user_id}` in `postType/{post_type}:{post_id}` and lasts for the idle threshold, so an agent that stops saving drops out on its own. People's saves and trashing a post write nothing.
+The row is written on `wp_after_insert_post` (REST, abilities and WP-CLI) when the current user is an agent. It is `agent-{user_id}` in `postType/{post_type}:{post_id}` and expires on its own, so an agent that stops saving drops out. People's saves and trashing a post write nothing.
 
 To show up before its first save, an agent can still write the row itself:
 
@@ -122,12 +122,12 @@ This plugin already registers it, so nothing more is needed once `wpai_is_agent_
 <details>
 <summary>Functions, return shapes, and network variants</summary>
 
-These functions are the stable API. Every other function is `@access private` and may change without notice.
+These functions are the stable API. Treat every other function as internal, since it may change without notice.
 
 ```php
 // Read all presence entries in a room, or only those whose client_id starts
 // with $client_prefix. The prefix is matched literally, in the query.
-// A $timeout you pass is the window used; null takes the site's filtered TTL.
+// A $timeout you pass is the window used; with null, each row counts until its own expiry.
 $entries = wp_get_presence( $room, $timeout = null, $client_prefix = '' );
 
 // Upsert a client's presence state. Atomic via INSERT … ON DUPLICATE KEY UPDATE.
@@ -258,7 +258,7 @@ add_filter( 'wp_presence_max_expires_in', fn() => 15 * MINUTE_IN_SECONDS );
 ```
 
 #### `wp_presence_current_screen_key`
-The current admin screen's key for [stale-screen detection](#stale-screen-detection). Core screens have their own, and `$key` is `''` elsewhere. Return a non-empty string to opt a custom screen in.
+The current admin screen's key for [stale-screen detection](#stale-screen-detection). Core screens and Settings API pages have their own, and `$key` is `''` elsewhere. Return a non-empty string to opt a custom screen in.
 ```php
 add_filter( 'wp_presence_current_screen_key', function( $key, $screen ) {
     if ( 'toplevel_page_my-plugin' === $screen->id ) {
@@ -268,7 +268,7 @@ add_filter( 'wp_presence_current_screen_key', function( $key, $screen ) {
 }, 10, 2 );
 ```
 
-Keys are slash-separated like rooms. The filter cuts them to 191 characters (`WP_PRESENCE_SCREEN_KEY_LIMIT`), while `wp.presence.markScreenStale()` rejects longer keys, so pass it the same key.
+Keys are slash-separated like rooms. The filter cuts them to 191 characters (`WP_PRESENCE_SCREEN_KEY_LIMIT`), while `wp.presence.markScreenStale()` rejects longer keys and any characters other than lowercase letters, digits, `/`, `_` and `-`, so pass it the same key.
 
 #### `wp_presence_editor_state`
 Filters the state saved in an editor's post room row on each tick, so a plugin can add its own data. Keep it stable between ticks, or every tick writes.
@@ -358,7 +358,7 @@ add_action( 'wp_presence_admin_room_changed', function() {
 ```
 
 ### JS Actions
-Fired through `wp.hooks`, not PHP. `presence-ping.js` is the only thing that computes these, so a consumer has to listen rather than poll for them.
+Fired through `wp.hooks`, not PHP. The plugin's ping script is the only thing that computes these, so a consumer has to listen rather than poll for them.
 
 #### `presence-api.watchingRoom`
 Fires once, before Heartbeat's first tick, on the edit screen of a post type with `presence` support, so a listener can tell "presence-api isn't here" from "no tick yet."
@@ -395,7 +395,7 @@ wp.hooks.addAction( 'presence-api.surfaceUpdated', 'my-plugin', ( key, element )
 ### JS Filters
 
 #### `presence-api.liveSurfaces`
-The surfaces `presence-ping.js` keeps current. A surface asks Heartbeat for its key while `target()` finds it on the page, and the server answers with HTML under the same key. That HTML goes in as is, so escape it in your `heartbeat_received` callback.
+The surfaces the plugin's ping script keeps current. A surface asks Heartbeat for its key while `target()` finds it on the page, and the server answers with HTML under the same key. That HTML goes in as is, so escape it in your `heartbeat_received` callback.
 
 | Property | Required | Description |
 | --- | --- | --- |
@@ -424,7 +424,7 @@ add_filter( 'heartbeat_received', function( $response, $data ) {
 
 ## REST API
 
-All endpoints require editing at least one post type, and a post room also requires editing that post. GET responses include `Cache-Control: no-store`.
+All endpoints require editing at least one post type, and a post room also requires editing that post, and marking a screen stale requires that screen's own capability. GET responses include `Cache-Control: no-store`.
 
 <details>
 <summary>Endpoints</summary>
@@ -439,7 +439,7 @@ All endpoints require editing at least one post type, and a post room also requi
 
 ### Network
 
-Multisite only, and gated on `manage_network` rather than `edit_posts`.
+Multisite only, and gated on `manage_network` by default rather than `edit_posts`.
 
 | Method | Path | Description |
 |---|---|---|
