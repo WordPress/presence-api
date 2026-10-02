@@ -219,6 +219,21 @@ Or define the constant before the plugin loads:
 define( 'WP_PRESENCE_DEFAULT_TTL', 300 );
 ```
 
+#### `wp_presence_heartbeat_idle_ticks`
+How many unchanged ticks in a row widen the Heartbeat interval. Default: 5. Return 0 to turn the backoff off.
+```php
+add_filter( 'wp_presence_heartbeat_idle_ticks', fn() => 0 );
+```
+
+#### `wp_presence_heartbeat_idle_interval`
+The widened Heartbeat interval, in seconds. Default: 45. Keep it under the TTL less 15 seconds, or idle people drop out; see [Data flow](#data-flow).
+
+#### `wp_presence_cleanup_batch_size`
+How many expired rows cron deletes per pass. Default: 1000.
+
+#### `wp_presence_cleanup_max_passes`
+How many delete passes one cron run makes. Default: 10. Anything left waits for the next run.
+
 #### `wp_presence_max_expires_in`
 The longest `$expires_in` a writer may ask for, in seconds. Default: 3600. The privacy policy text and personal data export report it as the retention period.
 ```php
@@ -238,6 +253,15 @@ add_filter( 'wp_presence_current_screen_key', function( $key, $screen ) {
 
 Keys are slash-separated like rooms and cut to 191 characters (`WP_PRESENCE_SCREEN_KEY_LIMIT`). Pass the same key to `wp.presence.markScreenStale()`.
 
+#### `wp_presence_editor_state`
+Filters the state saved in an editor's post room row on each tick, so a plugin can add its own data.
+```php
+add_filter( 'wp_presence_editor_state', function( $state, $post_id, $user_id ) {
+    $state['my_plugin_panel'] = 'seo';
+    return $state;
+}, 10, 3 );
+```
+
 #### `wp_presence_recording_enabled`
 Whether this site records presence. Default: the **Presence** checkbox on Settings > General, on for new installs. Return `false` and every surface empties within one TTL.
 ```php
@@ -254,6 +278,12 @@ Whether a network builds the network-wide view behind Network Admin. Default: `t
 ```php
 add_filter( 'wp_presence_network_aggregation_enabled', '__return_false' );
 ```
+
+#### `wp_presence_network_capability`
+The capability needed to see network-wide presence. Default: `manage_network`. A site-level capability such as `edit_posts` shows every holder who is online on every site, including sites they don't belong to.
+
+#### `wp_presence_network_summary_refresh_interval`
+How stale a site's row in the network summary may get, in seconds, before a write refreshes it. Clamped to the TTL less the idle Heartbeat interval, which is also the default.
 
 #### `wp_presence_debugger_indicators`
 Filters the icons beside the admin bar debugger's countdown, which refresh with each Heartbeat. The debugger loads only under `WP_DEBUG` in a git checkout, since the release zip leaves it out.
@@ -299,6 +329,14 @@ add_action( 'wp_presence_debugger_menu', function( $wp_admin_bar ) {
         'title'  => '<span>Imports</span><span class="presence-debug-value">3</span>',
         'meta'   => array( 'class' => 'presence-debug-row' ),
     ) );
+} );
+```
+
+#### `wp_presence_admin_room_changed`
+Fires after a write changes at least one row in the `admin/online` room. Multisite uses it to refresh the network summary.
+```php
+add_action( 'wp_presence_admin_room_changed', function() {
+    // Refresh a cached headcount.
 } );
 ```
 
