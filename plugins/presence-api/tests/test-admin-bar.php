@@ -11,6 +11,7 @@
  * @covers ::wp_presence_admin_bar_node_markup
  * @covers ::wp_presence_admin_bar_heartbeat_received
  * @covers ::wp_presence_screen_object_id
+ * @covers ::wp_presence_get_user_color
  * @covers ::wp_presence_online_users_url
  */
 class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
@@ -171,6 +172,7 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$nodes = $this->render_nodes();
 
 		$this->assertStringContainsString( 'presence-bar-avatar', $nodes[ 'presence-user-' . $here->ID ]->title );
+		$this->assertStringNotContainsString( 'outline-color:', $nodes[ 'presence-user-' . $here->ID ]->title, 'Color only exists in a post room.' );
 		// Without view_presence_location, everyone else is a name with no place or link.
 		$this->assertSame( 'presence-elsewhere', $nodes[ 'presence-user-' . $elsewhere ]->parent );
 		$this->assertSame( esc_html( get_userdata( $elsewhere )->display_name ), $nodes[ 'presence-user-' . $elsewhere ]->title );
@@ -550,6 +552,22 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$nodes = $this->render_nodes();
 
 		$this->assertArrayHasKey( 'presence-user-' . $user_id, $nodes );
+	}
+
+	public function test_people_in_your_post_room_wear_the_block_editors_color() {
+		$this->view_admin_page( 'post.php', 'post' );
+		$post_id = self::factory()->post->create();
+		$room    = 'postType/post:' . $post_id;
+
+		$with = $this->put_user_on_screen( 'post', array( 'post_id' => $post_id ) );
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'post', 'post_id' => $post_id ), self::$editor_id );
+		wp_set_presence( $room, 'editor-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( $room, 'editor-' . $with, array(), $with );
+
+		wp_set_current_user( self::$editor_id );
+		$nodes = $this->render_nodes();
+
+		$this->assertStringContainsString( 'outline-color:' . wp_presence_get_user_color( $with ), $nodes[ 'presence-user-' . $with ]->title );
 	}
 
 	public function test_a_place_is_never_left_without_anyone_under_it() {

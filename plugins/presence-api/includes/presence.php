@@ -1054,17 +1054,14 @@ function wp_presence_admin_room() {
 }
 
 /**
- * Returns the color Gutenberg gives a user ID.
+ * Returns the color the block editor gives a user in a post room.
  *
  * @since 0.9.0
- * @deprecated 0.14.0 The block editor picks collaborator colors itself.
  *
  * @param int $user_id User ID.
  * @return string A `#RRGGBB` hex color from Gutenberg's collaborator palette.
  */
 function wp_presence_get_user_color( $user_id ) {
-	_deprecated_function( __FUNCTION__, '0.14.0' );
-
 	$palette = array( '#6F42C1', '#D94145', '#FBBF24', '#FF35EE', '#879F11', '#0F766E', '#00CFFF' );
 
 	return $palette[ absint( $user_id ) % count( $palette ) ];

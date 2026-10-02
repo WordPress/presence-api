@@ -212,8 +212,16 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	$here_ids  = wp_parse_id_list( wp_list_pluck( $here, 'user_id' ) );
 	$stack_ids = array_slice( $here_ids, 0, 8 );
 
-	$avatar = function ( $user, $size, $alt = '' ) {
-		$extra_attr = '' !== $alt ? 'title="' . esc_attr( $alt ) . '"' : '';
+	// Color only exists inside a post room, where the block editor picks it from the user ID.
+	$my_room = $editing[ $current_uid ]['room'] ?? '';
+	$avatar  = function ( $user, $size, $alt = '' ) use ( $editing, $my_room ) {
+		$extra_attr = '';
+		if ( '' !== $my_room && ( $editing[ $user->ID ]['room'] ?? '' ) === $my_room ) {
+			$extra_attr = 'style="outline-color:' . esc_attr( wp_presence_get_user_color( $user->ID ) ) . '" ';
+		}
+		if ( '' !== $alt ) {
+			$extra_attr .= 'title="' . esc_attr( $alt ) . '"';
+		}
 		return (string) get_avatar(
 			$user->ID,
 			$size,
