@@ -24,6 +24,7 @@ jobs:
         include:
           - project: chromium
             start: npx wp-env start
+            test: npm run test:e2e -- --project chromium
             env-dir: .
             log-container: tests-cli
           # A second instance rather than a flag on the first one, for the
@@ -31,8 +32,15 @@ jobs:
           # fixture network too.
           - project: chromium-multisite
             start: npm run env:start:multisite
+            test: npm run test:e2e -- --project chromium-multisite
             env-dir: tests/e2e/multisite
             log-container: cli
+          # Plays every library scene; screenshots come only from a failure.
+          - project: scenes
+            start: npx wp-env start
+            test: npm run test:scenes
+            env-dir: .
+            log-container: tests-cli
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -112,7 +120,7 @@ jobs:
       # is true, so Playwright attaches to this instance rather than a second.
       - run: ${{ matrix.start }}
 
-      - run: npm run test:e2e -- --project ${{ matrix.project }}
+      - run: ${{ matrix.test }}
 
       # Screenshots are produced on success too, which is the point of keeping
       # presence-screenshots.test.js in the run: the plugin is UI-heavy and the

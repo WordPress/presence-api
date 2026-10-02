@@ -3,7 +3,8 @@
  *
  * Plays every scene in the library and, after each step, captures the screen
  * the step happened on with the debugger open. Outputs to
- * artifacts/screenshots/scenes/.
+ * artifacts/screenshots/scenes/. CI skips these and keeps Playwright's
+ * screenshot and trace of a failure instead.
  *
  * Run from plugin root:
  *   npm run test:scenes
@@ -88,7 +89,9 @@ test.describe.serial( 'Presence Scenes', () => {
 			);
 
 			const dir = path.join( SCREENSHOTS_DIR, scene.name );
-			fs.mkdirSync( dir, { recursive: true } );
+			if ( ! process.env.CI ) {
+				fs.mkdirSync( dir, { recursive: true } );
+			}
 			await admin.visitAdminPage( '/' );
 
 			const run = spawn( 'npx', [
@@ -120,9 +123,11 @@ test.describe.serial( 'Presence Scenes', () => {
 							.replace( /^-|-$/g, '' ),
 					].join( '-' );
 					const played = scene.steps[ step - 1 ];
-					shots = shots.then( () =>
-						snap( admin, page, dir, name, played )
-					);
+					if ( ! process.env.CI ) {
+						shots = shots.then( () =>
+							snap( admin, page, dir, name, played )
+						);
+					}
 				}
 			} );
 

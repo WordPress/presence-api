@@ -1,5 +1,5 @@
 /**
- * Playwright configuration for scenes, which play in real time and so run on demand rather than with the e2e specs.
+ * Playwright configuration for scenes, which play in real time and so run apart from the e2e specs.
  *
  * @see https://github.com/WordPress/gutenberg/blob/trunk/test/performance/playwright.config.ts
  */
