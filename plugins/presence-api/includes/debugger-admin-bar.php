@@ -168,6 +168,23 @@ function wp_presence_debugger_admin_bar_node( $wp_admin_bar ) {
 					'meta'   => array( 'class' => 'presence-debug-row' ),
 				)
 			);
+
+			// Location keys are dropped as in the DB viewer.
+			$data = $row->data;
+			if ( ! current_user_can( 'view_presence_location', (int) $row->user_id ) ) {
+				unset( $data['screen'], $data['post_id'], $data['object_id'] );
+			}
+			if ( $data ) {
+				$json = wp_json_encode( $data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+				$wp_admin_bar->add_node(
+					array(
+						'parent' => 'presence-debug-rooms',
+						'id'     => $group . '-' . $j . '-data',
+						'title'  => '<code title="' . esc_attr( $json ) . '">' . esc_html( $json ) . '</code>',
+						'meta'   => array( 'class' => 'presence-debug-row presence-debug-data' ),
+					)
+				);
+			}
 		}
 	}
 }
@@ -253,6 +270,8 @@ function wp_presence_debugger_admin_bar_assets() {
 		#wp-admin-bar-presence-debug .presence-debug-room > .ab-item { font-weight: 600; cursor: default; }
 		#wp-admin-bar-presence-debug .presence-debug-room .presence-debug-value { font-weight: 400; }
 		#wp-admin-bar-presence-debug .presence-debug-row code { opacity: 0.75; }
+		#wpadminbar #wp-admin-bar-presence-debug-rooms .presence-debug-data > .ab-item { min-height: 0; max-width: 320px; padding-inline-start: 58px; padding-bottom: 4px; }
+		#wp-admin-bar-presence-debug .presence-debug-data code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 		@media (prefers-reduced-motion: reduce) { #wp-admin-bar-presence-debug.is-beating .ab-icon { animation: none; } }
 	';
 
