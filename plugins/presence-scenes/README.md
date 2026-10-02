@@ -17,7 +17,7 @@ Gutenberg's collaboration end-to-end tests open a browser for each user and chec
 
 [![Launch Presence Scenes](https://img.shields.io/badge/Launch-3858E9?style=for-the-badge&logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint-scenes.json)
 
-Plays Editing together on the Posts screen. Keep the tab in front, since Heartbeat slows down in a background tab and the scene stops after 30 seconds without a tick.
+Plays Editing together on the Posts screen. Steps play on your tab's Heartbeat, so a few land on each tick, and a tab left in the background catches up all at once when you return.
 
 ## WP-CLI
 
