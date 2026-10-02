@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.14.0](https://github.com/WordPress/presence-api/compare/v0.13.0...v0.14.0) (2026-10-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* REST presence entries no longer include `color`, and wp_presence_get_user_color() returns the block editor's color for the user ID instead of a stored one.
+
+### Features
+
+* stop saving and serving presence colors ([#707](https://github.com/WordPress/presence-api/issues/707)) ([b9098ab](https://github.com/WordPress/presence-api/commit/b9098abd87103ceb92ecf2a85b395b8bedbde71c))
+
+
+### Bug Fixes
+
+* list everyone in the debugger, you first, then by name ([#709](https://github.com/WordPress/presence-api/issues/709)) ([e253ed7](https://github.com/WordPress/presence-api/commit/e253ed750c64fd9615328857c62e9242bf864086))
+
 ## [0.13.0](https://github.com/WordPress/presence-api/compare/v0.12.2...v0.13.0) (2026-10-01)
 
 
