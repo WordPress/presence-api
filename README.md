@@ -23,7 +23,7 @@ Tracking who is logged in, on which screen and in which post takes frequent writ
 - Active Posts dashboard widget grouped by post
 - Editors column in the post list
 - Online filter in the Users list
-- AI agents labelled in Who's Online, the admin bar, and the Editors column (see [Agents](#agents))
+- AI agents labelled in the admin bar, the Active Posts widget, and the Editors column (see [Agents](#agents))
 - Notice when someone else saves the screen you have open (see [Stale-screen detection](#stale-screen-detection))
 - On multisite, a Who's Online widget in Network Admin, an Online column in the Sites list, and an Online view, filter, and column in the Users list
 
@@ -55,7 +55,7 @@ No install needed: launch a scratch site straight from `main`.
 4. The admin bar swaps its node when the markup changes, unless its menu is open, and Active Posts redraws when its posts change
 5. After a run of ticks with an unchanged hash, the ping widens the Heartbeat interval; a new hash snaps it back
 
-Only Heartbeat refreshes a row between page loads. With its script removed, or its interval above the TTL less 15 seconds (135 by default), someone who stays on one screen drops out of the room while still there. Site Health reports both.
+Only Heartbeat refreshes a row between page loads. With its script removed, or its interval too long for the TTL, someone who stays on one screen drops out of the room while still there. Site Health reports both.
 
 ## Rooms
 
@@ -72,21 +72,21 @@ A `client_id` prefix tells this plugin's rows apart from anyone else's in the sa
 
 | Prefix | Room | Written by |
 | --- | --- | --- |
-| `user-{user_id}` | `admin/online` | `includes/heartbeat.php`, `includes/lifecycle.php` |
-| `editor-{user_id}` | Post rooms | `includes/heartbeat.php`, `includes/post-lock-bridge.php` |
+| `user-{user_id}` | `admin/online` | Heartbeat, login and logout |
+| `editor-{user_id}` | Post rooms | Heartbeat, post locks |
 | `cli-{user_id}` | Any | `wp presence set` when given no client ID |
 
 Anything else writing to a room, such as a plugin relaying awareness or a REST client, must use its own prefix, like `gse-` for [gutenberg-sync-engines](https://github.com/WordPress/gutenberg-sync-engines). Pass it as the third argument to read back only your rows: `wp_get_presence( $room, $timeout, 'gse-' )`.
 
 A leading `_` marks bookkeeping rows, which are not participants: `_collab` holds a post room's last editor count for the collaboration actions, and `_lock` holds the post's `_edit_lock`. `wp_get_presence()` and the REST collection leave them out, and the REST write and delete routes reject them.
 
-`includes/heartbeat.php` counts a post room's editors with `str_starts_with( $entry->client_id, 'editor-' )`, so anyone else using that prefix inflates the count.
+This plugin counts a post room's editors by the `editor-` prefix, so anyone else using it inflates the count.
 
 ## Agents
 
-An AI agent working over REST or MCP runs no Heartbeat, so the plugin writes its row when it saves a post. That row puts it, labelled, in Who's Online, the admin bar and the post list's Editors column.
+An AI agent working over REST or MCP runs no Heartbeat, so the plugin writes its row when it saves a post. That row puts it, labelled, in the admin bar, the Active Posts widget and the post list's Editors column.
 
-The row is written on `wp_after_insert_post` (REST, abilities and WP-CLI) when the current user is an agent. It is `agent-{user_id}` in `postType/{post_type}:{post_id}` and lasts for the idle threshold, 75 seconds by default, so an agent that stops saving drops out on its own. People's saves and trashing a post write nothing.
+The row is written on `wp_after_insert_post` (REST, abilities and WP-CLI) when the current user is an agent. It is `agent-{user_id}` in `postType/{post_type}:{post_id}` and lasts for the idle threshold, so an agent that stops saving drops out on its own. People's saves and trashing a post write nothing.
 
 To show up before its first save, an agent can still write the row itself:
 
@@ -101,7 +101,7 @@ wp_set_presence( 'postType/post:42', 'agent-' . $user_id, array(), $user_id, nul
 wp_remove_presence( 'postType/post:42', 'agent-' . $user_id );
 ```
 
-Renew a short row instead of writing one long `$expires_in`: `wp_presence_is_idle()` calls a row idle after `wp_presence_max_staleness()` plus the Heartbeat interval, well under an hour. [`wp_presence_max_expires_in`](#wp_presence_max_expires_in) caps `$expires_in` at one hour by default.
+Renew a short row instead of writing one long `$expires_in`, since an untouched row reads as idle long before a long window runs out. [`wp_presence_max_expires_in`](#wp_presence_max_expires_in) caps `$expires_in` at one hour by default.
 
 `agent-{user_id}` is only a convention. What matters is `$user_id`: a row without one, or with a person's, is never labelled.
 
@@ -122,7 +122,7 @@ This plugin already registers it, so nothing more is needed once `wpai_is_agent_
 <details>
 <summary>Functions, return shapes, and network variants</summary>
 
-These functions are the stable API. Every other helper, such as `wp_get_active_rooms()` and `wp_get_presence_summary()`, is `@access private` and may change without notice.
+These functions are the stable API. Every other function is `@access private` and may change without notice.
 
 ```php
 // Read all presence entries in a room, or only those whose client_id starts
@@ -157,6 +157,12 @@ wp_can_access_presence_room( $room, $user_id = 0 );
 // does not support presence.
 $room = wp_presence_post_room( $post );
 
+// Return the site-wide room, 'admin/online'.
+$room = wp_presence_admin_room();
+
+// Whether a user is an AI agent; see Agents.
+wp_presence_is_agent_user( $user_id );
+
 // Whether this site records presence at all.
 wp_presence_recording_enabled();
 
@@ -172,7 +178,7 @@ if ( function_exists( 'wp_presence_is_available' ) && wp_presence_is_available()
 }
 ```
 
-Without that check, a site with no table or with recording off still accepts your calls: `wp_set_presence()` returns `false`, and `wp_get_presence()` returns an empty array that reads the same as an empty room.
+Without that check, a site with no table or with recording off still accepts your calls: `wp_set_presence()` returns `false`, and once leftover rows expire, `wp_get_presence()` returns an empty array that reads the same as an empty room.
 
 Each entry object returned by `wp_get_presence()` has:
 
@@ -184,11 +190,11 @@ Each entry object returned by `wp_get_presence()` has:
 | `data`      | `array`  | Decoded from the stored JSON; an empty array if that JSON failed to decode.                                                 |
 | `date_gmt`  | `string` | A MySQL `datetime` string in UTC (e.g. `2024-01-01 12:00:00`), not a Unix timestamp. Convert with `strtotime( $entry->date_gmt . ' UTC' )`. See below for how far behind a live client it can sit. |
 
-An unchanged row is only rewritten once it is 30 seconds old, so `date_gmt` can trail a live client by that plus the gap between pings. `wp_get_presence()` already filters on each row's expiry, so this only matters for a tighter window of your own.
+An unchanged row isn't rewritten on every ping, so `date_gmt` can trail a live client. `wp_get_presence()` already filters on each row's expiry, so this only matters for a tighter window of your own.
 
 ### Network
 
-Multisite only, from `plugins/presence-api/includes/network-functions.php`. Returns `false` outside multisite.
+These load only on multisite, so check `function_exists()` before calling them on a single site.
 
 ```php
 // Whether this network assembles its sites' rows into the network-wide view.
@@ -237,7 +243,7 @@ add_filter( 'wp_presence_heartbeat_idle_ticks', fn() => 0 );
 ```
 
 #### `wp_presence_heartbeat_idle_interval`
-The widened Heartbeat interval, in seconds. Default: 45. The ping caps it at the TTL less 15 seconds, so idle people never drop out; see [Data flow](#data-flow).
+The widened Heartbeat interval, in seconds. Default: 45. The ping keeps it inside the TTL, so idle people never drop out; see [Data flow](#data-flow).
 
 #### `wp_presence_cleanup_batch_size`
 How many expired rows cron deletes per pass. Default: 1000.
@@ -252,7 +258,7 @@ add_filter( 'wp_presence_max_expires_in', fn() => 15 * MINUTE_IN_SECONDS );
 ```
 
 #### `wp_presence_current_screen_key`
-The current admin screen's key for [stale-screen detection](#stale-screen-detection). Core screens (Settings, `post.php`, term, user, comment) have their own, and `$key` is `''` elsewhere. Return a non-empty string to opt a custom screen in.
+The current admin screen's key for [stale-screen detection](#stale-screen-detection). Core screens have their own, and `$key` is `''` elsewhere. Return a non-empty string to opt a custom screen in.
 ```php
 add_filter( 'wp_presence_current_screen_key', function( $key, $screen ) {
     if ( 'toplevel_page_my-plugin' === $screen->id ) {
@@ -262,7 +268,7 @@ add_filter( 'wp_presence_current_screen_key', function( $key, $screen ) {
 }, 10, 2 );
 ```
 
-Keys are slash-separated like rooms and cut to 191 characters (`WP_PRESENCE_SCREEN_KEY_LIMIT`). Pass the same key to `wp.presence.markScreenStale()`.
+Keys are slash-separated like rooms. The filter cuts them to 191 characters (`WP_PRESENCE_SCREEN_KEY_LIMIT`), while `wp.presence.markScreenStale()` rejects longer keys, so pass it the same key.
 
 #### `wp_presence_editor_state`
 Filters the state saved in an editor's post room row on each tick, so a plugin can add its own data. Keep it stable between ticks, or every tick writes.
@@ -274,7 +280,7 @@ add_filter( 'wp_presence_editor_state', function( $state, $post_id, $user_id ) {
 ```
 
 #### `wp_presence_recording_enabled`
-Whether this site records presence. Default: the **Presence** checkbox on Settings > General, on for new installs. Return `false` and every surface empties within one TTL.
+Whether this site records presence. Default: the **Presence** checkbox on Settings > General, on for new installs. Return `false` and writes stop, so surfaces empty as existing rows expire, within one TTL for Heartbeat rows.
 ```php
 add_filter( 'wp_presence_recording_enabled', '__return_false' );
 ```
@@ -294,7 +300,7 @@ add_filter( 'wp_presence_network_aggregation_enabled', '__return_false' );
 The capability needed to see network-wide presence. Default: `manage_network`. A site-level capability such as `edit_posts` shows every holder who is online on every site, including sites they don't belong to.
 
 #### `wp_presence_network_summary_refresh_interval`
-How stale a site's row in the network summary may get, in seconds, before a write refreshes it. Clamped to the TTL less the idle Heartbeat interval, which is also the default.
+How stale a site's row in the network summary may get, in seconds, before a write refreshes it. It can only be lowered, since the default is the longest that keeps rows inside the TTL.
 
 #### `wp_presence_debugger_indicators`
 Filters the icons beside the admin bar debugger's countdown, which refresh with each Heartbeat. The debugger loads only under `WP_DEBUG` in a git checkout, since the release zip leaves it out.
@@ -344,7 +350,7 @@ add_action( 'wp_presence_debugger_menu', function( $wp_admin_bar ) {
 ```
 
 #### `wp_presence_admin_room_changed`
-Fires after a write changes at least one row in the `admin/online` room. Multisite uses it to refresh the network summary.
+Fires after a write changes at least one row in the `admin/online` room, and whenever `wp_remove_user_presence()` deletes rows. Multisite uses it to refresh the network summary.
 ```php
 add_action( 'wp_presence_admin_room_changed', function() {
     // Refresh a cached headcount.
@@ -382,7 +388,7 @@ wp.hooks.addAction( 'presence-api.collaborationEnded', 'my-plugin', ( room, coun
 Fires after a live surface's markup is swapped for a fresh copy from Heartbeat. Swaps wait while the pointer, focus or a checked checkbox is inside the surface.
 ```js
 wp.hooks.addAction( 'presence-api.surfaceUpdated', 'my-plugin', ( key, element ) => {
-    // key is 'admin-bar', 'users-list', 'users-online-count', 'editors', 'active-posts', 'network-widget', or one you registered.
+    // key names the surface, such as 'admin-bar', or one you registered.
 } );
 ```
 
@@ -418,7 +424,7 @@ add_filter( 'heartbeat_received', function( $response, $data ) {
 
 ## REST API
 
-All endpoints require editing at least one post type. Responses include `Cache-Control: no-store`.
+All endpoints require editing at least one post type, and a post room also requires editing that post. GET responses include `Cache-Control: no-store`.
 
 <details>
 <summary>Endpoints</summary>
@@ -429,6 +435,7 @@ All endpoints require editing at least one post type. Responses include `Cache-C
 | `POST` | `/wp-presence/v1/presence` | Upsert a presence entry |
 | `DELETE` | `/wp-presence/v1/presence` | Remove a presence entry |
 | `GET` | `/wp-presence/v1/presence/rooms` | List active rooms |
+| `POST` | `/wp-presence/v1/presence/screen-revisions/stale` | Mark a screen key stale |
 
 ### Network
 
@@ -449,10 +456,10 @@ The collection takes `page` and `per_page` (default 50, max 100), with site coun
 <summary>Commands</summary>
 
 ```
-wp presence list      # List all active presence entries
+wp presence list <room>  # List a room's entries, reserved rows included
 wp presence summary   # Summary grouped by room
 wp presence set       # Manually upsert an entry
-wp presence cleanup   # Delete expired entries immediately
+wp presence cleanup   # Delete every entry, live or expired, after confirmation
 wp presence network   # Network-wide summary (multisite only)
 wp presence recording # Read or set the recording switch
 ```
