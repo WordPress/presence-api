@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Presence Scenes
  * Description: Plays real users through probable situations from WP-CLI, using only the Presence API's public functions.
- * Version: 0.1.0
+ * Version: 0.1.1
  * Requires at least: 7.0
  * Requires PHP: 7.4
  * Requires Plugins: presence-api
