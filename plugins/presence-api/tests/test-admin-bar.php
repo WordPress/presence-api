@@ -170,7 +170,7 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		wp_set_current_user( self::$editor_id );
 		$nodes = $this->render_nodes();
 
-		$this->assertStringContainsString( 'outline-color:', $nodes[ 'presence-user-' . $here->ID ]->title );
+		$this->assertStringContainsString( 'presence-bar-avatar', $nodes[ 'presence-user-' . $here->ID ]->title );
 		// Without view_presence_location, everyone else is a name with no place or link.
 		$this->assertSame( 'presence-elsewhere', $nodes[ 'presence-user-' . $elsewhere ]->parent );
 		$this->assertSame( esc_html( get_userdata( $elsewhere )->display_name ), $nodes[ 'presence-user-' . $elsewhere ]->title );
@@ -550,19 +550,6 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$nodes = $this->render_nodes();
 
 		$this->assertArrayHasKey( 'presence-user-' . $user_id, $nodes );
-	}
-
-	public function test_people_on_this_page_never_share_a_ring_color() {
-		$this->view_admin_page( 'upload.php', 'upload' );
-
-		$first  = $this->put_user_on_screen( 'upload', array( 'color' => '#6F42C1' ) );
-		$second = $this->put_user_on_screen( 'upload', array( 'color' => '#6F42C1' ) );
-
-		wp_set_current_user( self::$editor_id );
-		$nodes = $this->render_nodes();
-
-		$this->assertStringContainsString( 'outline-color:#6F42C1', $nodes[ 'presence-user-' . $first ]->title );
-		$this->assertStringNotContainsString( 'outline-color:#6F42C1', $nodes[ 'presence-user-' . $second ]->title );
 	}
 
 	public function test_a_place_is_never_left_without_anyone_under_it() {

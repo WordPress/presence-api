@@ -118,7 +118,7 @@ function wp_presence_debugger_admin_bar_node( $wp_admin_bar ) {
 			)
 		);
 
-		// Colors only mark who shares your page, as in the app.
+		// A dot marks who shares your page.
 		$page   = function ( $row ) use ( $room ) {
 			if ( ! current_user_can( 'view_presence_location', (int) $row->user_id ) ) {
 				return 'user:' . $row->user_id;
@@ -152,7 +152,7 @@ function wp_presence_debugger_admin_bar_node( $wp_admin_bar ) {
 				array(
 					'parent' => 'presence-debug-rooms',
 					'id'     => $group . '-' . $j,
-					'title'  => '<span><span class="presence-debug-color"' . ( $page( $row ) === $shared ? ' style="background:' . ( get_current_user_id() === (int) $row->user_id ? 'var(--wp-admin-theme-color, #2271b1)' : esc_attr( wp_presence_entry_color( $row ) ) ) . '"' : '' ) . ' aria-hidden="true"></span>' . esc_html( $user ? $user->display_name : '#' . $row->user_id ) . ' <code>' . esc_html( $row->client_id ) . '</code></span><span class="presence-debug-value" data-presence-debug-age="' . esc_attr( $age ) . '"></span>',
+					'title'  => '<span><span class="presence-debug-color"' . ( $page( $row ) === $shared ? ' style="background:var(--wp-admin-theme-color, #2271b1)"' : '' ) . ' aria-hidden="true"></span>' . esc_html( $user ? $user->display_name : '#' . $row->user_id ) . ' <code>' . esc_html( $row->client_id ) . '</code></span><span class="presence-debug-value" data-presence-debug-age="' . esc_attr( $age ) . '"></span>',
 					'meta'   => array( 'class' => 'presence-debug-row' ),
 				)
 			);

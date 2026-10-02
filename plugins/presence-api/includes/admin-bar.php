@@ -212,19 +212,8 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	$here_ids  = wp_parse_id_list( wp_list_pluck( $here, 'user_id' ) );
 	$stack_ids = array_slice( $here_ids, 0, 8 );
 
-	$colors = array();
-	foreach ( $entries as $entry ) {
-		$colors[ (int) $entry->user_id ] = wp_presence_entry_color( $entry );
-	}
-
-	// Seven colors cannot go round a busy site, so people on this page trade a clash for a free one.
-	$colors = wp_presence_spread_colors( array_intersect_key( $colors, array_flip( $here_ids ) ) ) + $colors;
-
-	$avatar = function ( $user, $size, $alt = '' ) use ( $colors ) {
-		$extra_attr = 'style="outline-color:' . esc_attr( $colors[ $user->ID ] ?? wp_presence_default_user_color( $user->ID ) ) . '"';
-		if ( '' !== $alt ) {
-			$extra_attr .= ' title="' . esc_attr( $alt ) . '"';
-		}
+	$avatar = function ( $user, $size, $alt = '' ) {
+		$extra_attr = '' !== $alt ? 'title="' . esc_attr( $alt ) . '"' : '';
 		return (string) get_avatar(
 			$user->ID,
 			$size,
@@ -524,7 +513,7 @@ function wp_presence_admin_bar_assets() {
 		#wp-admin-bar-presence-online > .ab-item { display: flex !important; align-items: center; gap: 6px; }
 		#wp-admin-bar-presence-online > div.ab-item { cursor: default; }
 		#wp-admin-bar-presence-online .presence-bar-avatars { display: inline-flex; align-items: center; gap: 9px; margin-inline: 3px; }
-		#wp-admin-bar-presence-online .presence-bar-avatar { width: 20px !important; height: 20px !important; border-radius: 50%; outline: 2px solid; outline-offset: 1px; }
+		#wp-admin-bar-presence-online .presence-bar-avatar { width: 20px !important; height: 20px !important; border-radius: 50%; outline: 2px solid var(--wp-admin-theme-color, #2271b1); outline-offset: 1px; }
 		@media (max-width: 1024px) { #wp-admin-bar-presence-online .presence-bar-avatars > :nth-child(n+6) { display: none; } }
 		#wp-admin-bar-presence-online .ab-sub-wrapper { max-height: calc(100vh - 64px); overflow-y: auto; color-scheme: dark; }
 		.admin-color-light #wp-admin-bar-presence-online .ab-sub-wrapper { color-scheme: light; }
@@ -544,7 +533,6 @@ function wp_presence_admin_bar_assets() {
 		.admin-color-light #wp-admin-bar-presence-online .presence-agent-badge { background: rgba(0, 0, 0, .07); color: #1d2327; }
 	';
 
-	// The current user wears the admin theme color, as in the block editor, so it never matches a ring on the page.
 	$css .= '#wpadminbar:has(.presence-bar-avatars) #wp-admin-bar-my-account.with-avatar > .ab-item img { outline: 2px solid var(--wp-admin-theme-color, #2271b1); outline-offset: 1px; }';
 
 	wp_register_style( 'presence-admin-bar', false, array(), WP_PRESENCE_VERSION );
