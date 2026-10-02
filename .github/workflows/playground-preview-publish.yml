@@ -226,10 +226,10 @@ jobs:
               // emits, which the timeline's sha links are not.
               `Built from <a href="${commitUrl}"><samp>${sha}</samp></a>`,
               '',
-              '|  | Single site | Multisite |',
+              '|  | Post locks | RTC |',
               '| --- | --- | --- |',
-              `| **Post locks** | ${launch(url, 'Launch post locks, single site')} | ${launch(urlMultisite, 'Launch post locks, multisite')} |`,
-              `| **RTC** | ${launch(urlRtc, 'Launch RTC, single site')} | ${launch(urlMultisiteRtc, 'Launch RTC, multisite')} |`,
+              `| **Single site** | ${launch(url, 'Launch post locks, single site')} | ${launch(urlRtc, 'Launch RTC, single site')} |`,
+              `| **Multisite** | ${launch(urlMultisite, 'Launch post locks, multisite')} | ${launch(urlMultisiteRtc, 'Launch RTC, multisite')} |`,
               '',
             ].join('\n');
 
