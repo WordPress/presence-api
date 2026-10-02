@@ -91,6 +91,14 @@ function wp_presence_debugger_admin_bar_node( $wp_admin_bar ) {
 		);
 	}
 
+	// The catch-all admin room goes last, so the room for this screen leads.
+	usort(
+		$rooms,
+		function ( $a, $b ) {
+			return ( wp_presence_admin_room() === $a ) - ( wp_presence_admin_room() === $b );
+		}
+	);
+
 	if ( $rooms ) {
 		$wp_admin_bar->add_group(
 			array(
