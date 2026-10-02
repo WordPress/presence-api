@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Adds a play icon beside the debugger's countdown while a scene runs.
+ * Adds a ticket icon beside the debugger's countdown while a scene runs.
  *
  * @since 0.1.0
  *
@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 function wp_presence_scene_debugger_indicators( $indicators ) {
 	if ( is_array( get_option( 'wp_presence_scene' ) ) ) {
 		$indicators[] = array(
-			'icon'  => 'dashicons-controls-play',
+			'icon'  => 'dashicons-tickets-alt',
 			'label' => __( 'Scene playing', 'presence-scenes' ),
 		);
 	}
@@ -88,7 +88,7 @@ function wp_presence_scene_debugger_assets() {
 	wp_add_inline_style(
 		'presence-debugger-admin-bar',
 		'
-		#wpadminbar #wp-admin-bar-presence-debug .presence-debug-scene > .ab-item::before { content: "\\f522"; position: static; padding: 0; font: 12px/1 dashicons; color: inherit; }
+		#wpadminbar #wp-admin-bar-presence-debug .presence-debug-scene > .ab-item::before { content: "\\f524"; position: static; padding: 0; font: 12px/1 dashicons; color: inherit; }
 		#wpadminbar #wp-admin-bar-presence-debug .presence-debug-scene > .ab-item { gap: 6px; }
 		#wpadminbar #wp-admin-bar-presence-debug .presence-debug-scene > .ab-item > .presence-debug-value { margin-inline-start: auto; }
 		#wpadminbar #wp-admin-bar-presence-debug .presence-debug-step > .ab-item { min-height: 0; padding-inline-start: 34px; padding-bottom: 4px; font-size: 12px; }
