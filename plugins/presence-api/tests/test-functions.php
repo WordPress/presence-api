@@ -2168,6 +2168,16 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Callers get a notice instead of a fatal error, and still the color Gutenberg would give.
+	 *
+	 * @covers ::wp_presence_get_user_color
+	 * @expectedDeprecated wp_presence_get_user_color
+	 */
+	public function test_get_user_color_is_deprecated() {
+		$this->assertSame( '#D94145', wp_presence_get_user_color( 8 ) );
+	}
+
+	/**
 	 * Marks a user as an agent for the current test, through the same filter
 	 * a real Agent Users integration would use.
 	 *

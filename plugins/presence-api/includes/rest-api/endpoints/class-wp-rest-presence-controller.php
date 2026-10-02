@@ -775,12 +775,8 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 			$data['data'] = $item->data;
 
 			if ( wp_presence_admin_room() === $item->room && ! current_user_can( 'view_presence_location', (int) $item->user_id ) ) {
-				$data['data'] = array_intersect_key( (array) $data['data'], array( 'color' => true ) );
+				$data['data'] = array();
 			}
-		}
-
-		if ( rest_is_field_included( 'color', $fields ) ) {
-			$data['color'] = wp_presence_admin_room() === $item->room ? wp_presence_entry_color( $item ) : wp_presence_get_user_color( $item->user_id );
 		}
 
 		if ( rest_is_field_included( 'date_gmt', $fields ) ) {
@@ -894,7 +890,7 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 					'readonly'    => true,
 				),
 				'data'         => array(
-					'description'          => __( 'Presence state data. The plugin writes the keys listed below from Heartbeat; other plugins may store additional keys. In the admin/online room, only the color is kept unless the current user can view that user\'s location.', 'presence-api' ),
+					'description'          => __( 'Presence state data. The plugin writes the keys listed below from Heartbeat; other plugins may store additional keys. In the admin/online room, it is empty unless the current user can view that user\'s location.', 'presence-api' ),
 					'type'                 => 'object',
 					'context'              => array( 'view', 'edit' ),
 					'additionalProperties' => true,
@@ -920,12 +916,6 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 							'context'     => array( 'view', 'edit' ),
 						),
 					),
-				),
-				'color'        => array(
-					'description' => __( 'The color the user wears on every presence surface, from the block editor\'s collaborator palette.', 'presence-api' ),
-					'type'        => 'string',
-					'context'     => array( 'view' ),
-					'readonly'    => true,
 				),
 				'date_gmt'     => array(
 					'description' => __( 'The date the presence was last updated, in GMT.', 'presence-api' ),
