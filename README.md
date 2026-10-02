@@ -9,7 +9,7 @@ A feature plugin for system-wide presence and awareness in WordPress.
 
 ## Problem
 
-WordPress has no way to know who is logged in, what screen they are on, or which posts are being edited, without writing to shared tables like `wp_postmeta` or `wp_options`. High-frequency writes to those tables invalidate caches site-wide ([#64696](https://core.trac.wordpress.org/ticket/64696)). This plugin uses a dedicated `wp_presence` table with a 150-second TTL to provide that awareness with zero cache side effects.
+Knowing who is logged in, on which screen, and editing which post means frequent writes, and writing them to `wp_postmeta` or `wp_options` invalidates caches site-wide ([#64696](https://core.trac.wordpress.org/ticket/64696)). This plugin writes them to its own `wp_presence` table instead, with a 150-second TTL.
 
 > "This idea of presence I think is really cool and seeing where people are... you log into your WordPress, I see oh Matias is moderating some comments, Lynn is on the dashboard maybe reading some news... that idea of like you log in and you can kind of see the neighborhood of like who else is also there."
 >
@@ -28,7 +28,7 @@ Then open [localhost:8888/wp-admin/](http://localhost:8888/wp-admin/) (admin / p
 
 ## WordPress Playground
 
-No install needed — launch a scratch site straight from `main`.
+No install needed: launch a scratch site straight from `main`.
 
 |  | Post locks | RTC |
 | --- | --- | --- |
@@ -56,19 +56,25 @@ Every post type edited in the admin gets a room; see [Post Type Support](#post-t
 
 ### Client IDs
 
-Rooms carry no producer namespace of their own — this plugin's own writers are told apart from anyone else's entries in the same room by a `client_id` prefix instead. `user-{user_id}` (admin/online room, from `plugins/presence-api/includes/heartbeat.php` and `includes/lifecycle.php`), `editor-{user_id}` (post rooms, from `plugins/presence-api/includes/heartbeat.php` and `includes/post-lock-bridge.php`) and `cli-{user_id}` (any room, from `includes/cli/class-wp-presence-cli-command.php`, the default when `wp presence set` is given no client ID) are reserved this way; a row using any of them belongs to this plugin and has the state shape its writer expects.
+A `client_id` prefix tells this plugin's rows apart from anyone else's in the same room. These are reserved:
 
-Anything else sharing a room — another plugin relaying awareness from an external source, a REST client — must prefix its own `client_id` so it can't collide with those rows or be mistaken for one. A plugin that backs the block editor's awareness with this table takes a prefix of its own, like `gse-` for [gutenberg-sync-engines](https://github.com/Automattic/gutenberg-sync-engines). Pass that prefix as the third argument to `wp_get_presence()` to read back only your own rows: `wp_get_presence( $room, $timeout, 'gse-' )`.
+| Prefix | Room | Written by |
+| --- | --- | --- |
+| `user-{user_id}` | `admin/online` | `includes/heartbeat.php`, `includes/lifecycle.php` |
+| `editor-{user_id}` | Post rooms | `includes/heartbeat.php`, `includes/post-lock-bridge.php` |
+| `cli-{user_id}` | Any | `wp presence set` when given no client ID |
 
-A leading `_` is reserved for this plugin's own bookkeeping rows, which are not participants. `_collab` holds a post room's last observed editor count, the state the collaboration actions below fire their edges from. `_lock` holds the post's `_edit_lock`. `wp_get_presence()` and the REST collection leave those rows out, and the REST write and delete routes reject a reserved `client_id`.
+Anything else writing to a room, such as a plugin relaying awareness or a REST client, must use its own prefix, like `gse-` for [gutenberg-sync-engines](https://github.com/WordPress/gutenberg-sync-engines). Pass it as the third argument to read back only your rows: `wp_get_presence( $room, $timeout, 'gse-' )`.
 
-The `editor-` prefix is load-bearing rather than cosmetic: `plugins/presence-api/includes/heartbeat.php` counts the editors in a post room with `str_starts_with( $entry->client_id, 'editor-' )`, so a colliding prefix inflates that count.
+A leading `_` marks bookkeeping rows, which are not participants: `_collab` holds a post room's last editor count for the collaboration actions, and `_lock` holds the post's `_edit_lock`. `wp_get_presence()` and the REST collection leave them out, and the REST write and delete routes reject them.
+
+`includes/heartbeat.php` counts a post room's editors with `str_starts_with( $entry->client_id, 'editor-' )`, so anyone else using that prefix inflates the count.
 
 ## Agents
 
-An AI agent editing WordPress over REST or MCP runs no Heartbeat, so it never picks up an `admin/online` row on its own and, without more, is invisible to a person watching the same post. It does not need one: saving a post writes its row for it, in the post room it is editing and with its own expiry, and that is enough for Who's Online, the admin bar and the post list's Editors column to show it, labelled, alongside everyone else.
+An AI agent working over REST or MCP runs no Heartbeat, so saving a post writes its row for it. That row puts it, labelled, in Who's Online, the admin bar and the post list's Editors column.
 
-The row is written from `wp_after_insert_post`, which fires for REST, abilities and WP-CLI alike, whenever the current user is an agent (see below). It is `agent-{user_id}` in `postType/{post_type}:{post_id}` and lives for the idle threshold (75 seconds by default). Every save writes it again, so an agent that keeps saving never reads as idle, and one that stops expires on its own. A person's save writes nothing, since theirs rides Heartbeat, and neither does moving a post to the trash.
+The row is written on `wp_after_insert_post` (REST, abilities and WP-CLI) when the current user is an agent. It is `agent-{user_id}` in `postType/{post_type}:{post_id}` and lasts for the idle threshold, 75 seconds by default, so an agent that stops saving drops out on its own. People's saves and trashing a post write nothing.
 
 To show up before its first save, an agent can still write the row itself:
 
@@ -77,18 +83,18 @@ To show up before its first save, an agent can still write the row itself:
 wp_set_presence( 'postType/post:42', 'agent-' . $user_id, array(), $user_id, null, 60 );
 
 // While still working, write again before the window runs out, to stay
-// present. A single long $expires_in is not the way — see below.
+// present. A single long $expires_in is not the way; see below.
 wp_set_presence( 'postType/post:42', 'agent-' . $user_id, array(), $user_id, null, 60 );
 
 // Leave, once done. Otherwise the row simply expires on its own.
 wp_remove_presence( 'postType/post:42', 'agent-' . $user_id );
 ```
 
-Write a short row again rather than one long `$expires_in`: `wp_presence_is_idle()`'s reader-facing threshold is `wp_presence_max_staleness() + ` the Heartbeat interval — well under an hour — so a row left untouched for the whole of a long window reads as idle long before it expires. `$expires_in` is capped by the [`wp_presence_max_expires_in`](#wp_presence_max_expires_in) filter (default one hour) regardless.
+Renew a short row instead of writing one long `$expires_in`: `wp_presence_is_idle()` calls a row idle after `wp_presence_max_staleness()` plus the Heartbeat interval, well under an hour. [`wp_presence_max_expires_in`](#wp_presence_max_expires_in) caps `$expires_in` at one hour by default.
 
-An agent's `client_id` needs no reserved prefix of its own; `agent-{user_id}` is a convention, not a requirement enforced anywhere. What does matter is `$user_id`: a row with no `user_id`, or one belonging to a person, is never labelled.
+`agent-{user_id}` is only a convention. What matters is `$user_id`: a row without one, or with a person's, is never labelled.
 
-Who counts as an agent is not this plugin's call — that belongs to whichever plugin marks the `WP_User`, such as [Agent Users](https://github.com/WordPress/ai/pull/961). `wp_presence_is_agent_user( $user_id )` is a plain filter, `false` by default, so a site with no such plugin never labels anyone as an agent:
+Another plugin, such as [Agent Users](https://github.com/WordPress/ai/pull/961), decides who is an agent. `wp_presence_is_agent_user( $user_id )` is a filter, `false` by default:
 
 ```php
 add_filter( 'wp_presence_is_agent_user', function ( $is_agent, $user_id ) {
@@ -96,16 +102,16 @@ add_filter( 'wp_presence_is_agent_user', function ( $is_agent, $user_id ) {
 }, 10, 2 );
 ```
 
-This plugin already registers that exact filter, so nothing further is needed once `wpai_is_agent_user()` is loaded.
+This plugin already registers it, so nothing more is needed once `wpai_is_agent_user()` is loaded.
 
-An agent is labelled wherever a presence row is listed by user — Who's Online, the admin bar and the post list's Editors column — but is not counted by [`wp_presence_collaboration_started`](#wp_presence_collaboration_started): that action watches `editor-` rows specifically, and an agent's row does not use that prefix.
+[`wp_presence_collaboration_started`](#wp_presence_collaboration_started) does not count agents, since it watches `editor-` rows only.
 
 ## PHP API
 
 <details>
 <summary>Functions, return shapes, and network variants</summary>
 
-The following public functions are part of the stable public API contract. All other helper functions in `plugins/presence-api/includes/presence.php` and `plugins/presence-api/includes/network-functions.php` (such as `wp_get_active_rooms()`, `wp_get_presence_summary()`, etc.) are marked `@access private`, are intended for internal plugin use only, and may change or be removed without notice.
+These functions are the stable API. Every other helper, such as `wp_get_active_rooms()` and `wp_get_presence_summary()`, is `@access private` and may change without notice.
 
 ```php
 // Read all presence entries in a room, or only those whose client_id starts
@@ -114,28 +120,19 @@ The following public functions are part of the stable public API contract. All o
 $entries = wp_get_presence( $room, $timeout = null, $client_prefix = '' );
 
 // Upsert a client's presence state. Atomic via INSERT … ON DUPLICATE KEY UPDATE.
-// $date_gmt ('Y-m-d H:i:s') lets a caller relaying awareness on behalf of
-// other clients preserve their timestamps instead of stamping every relayed
-// row with its own clock; a value in the future is clamped to now, and a
-// value that isn't a real calendar date is rejected (returns false). Passing
-// it also skips the internal check that otherwise leaves an unchanged row
-// untouched, since a relay backdating a departed collaborator needs that
-// write to land. Defaults to now.
-// $expires_in (seconds, relative to $date_gmt) is how long the row counts as
-// present, for a writer that knows when its clients leave and removes their
-// rows itself: the window is then the backstop for a departure that never
-// arrived, not the interval it has to keep re-stamping inside. Capped by the
-// wp_presence_max_expires_in filter (default one hour); below one second is
-// rejected (returns false). Passing it also skips the unchanged-row check, so
-// the extension always lands. Defaults to the site TTL.
+// $date_gmt ('Y-m-d H:i:s') lets a relay keep each client's own timestamp.
+// Future values are clamped to now, invalid dates return false. Defaults to now.
+// $expires_in (seconds from $date_gmt) is how long the row counts as present,
+// for a writer that removes its own rows when clients leave. Capped by
+// wp_presence_max_expires_in (default one hour); under one second returns
+// false. Defaults to the site TTL.
+// Passing either one always writes, even when the row is unchanged.
 wp_set_presence( $room, $client_id, $state, $user_id = 0, $date_gmt = null, $expires_in = null );
 
 // Remove a single client from a room.
 wp_remove_presence( $room, $client_id );
 
-// Write, or remove, a client and read the room back in one call, for a
-// caller that re-reads after every write. The read is scoped by
-// $client_prefix, as in wp_get_presence().
+// Write or remove a client, then read the room back, in one call.
 $entries = wp_presence_exchange( $room, $client_id, $state, $user_id = 0, $timeout = null, $client_prefix = '' );
 $entries = wp_presence_leave( $room, $client_id, $timeout = null, $client_prefix = '' );
 
@@ -171,12 +168,12 @@ Each entry object returned by `wp_get_presence()` has:
 | Field       | Type     | Notes                                                                                                                      |
 | ----------- | -------- | --------------------------------------------------------------------------------------------------------------------------- |
 | `room`      | `string` | The room the entry belongs to.                                                                                              |
-| `client_id` | `string` | A `varchar` column — opaque, and not guaranteed numeric even when it looks like one. See [Client IDs](#client-ids).         |
+| `client_id` | `string` | A `varchar` column, opaque, and not guaranteed numeric even when it looks like one. See [Client IDs](#client-ids).         |
 | `user_id`   | `string` | `"0"` for an entry with no signed-in user. Every column comes back as a string, so cast before a strict comparison. |
 | `data`      | `array`  | Decoded from the stored JSON; an empty array if that JSON failed to decode.                                                 |
 | `date_gmt`  | `string` | A MySQL `datetime` string in UTC (e.g. `2024-01-01 12:00:00`), not a Unix timestamp. Convert with `strtotime( $entry->date_gmt . ' UTC' )`. See below for how far behind a live client it can sit. |
 
-`date_gmt` is not rewritten on every ping. An unchanged row is left alone until it is 30 seconds old, however high the TTL goes, and that is on top of the gap the client leaves between pings, so both have to fit inside any liveness window you read off `date_gmt` yourself. Entries from `wp_get_presence()` are already filtered on each row's own expiry, so the window only matters if you are working out a tighter one yourself. Passing an explicit `$date_gmt` to `wp_set_presence()` writes every time.
+An unchanged row is only rewritten once it is 30 seconds old, so `date_gmt` can trail a live client by that plus the gap between pings. `wp_get_presence()` already filters on each row's expiry, so this only matters for a tighter window of your own.
 
 ### Network
 
@@ -206,11 +203,11 @@ Without support, `wp_presence_post_room()` returns `false` for that post type an
 
 ### Filters
 #### `wp_presence_default_ttl`
-Filters the presence TTL (time-to-live) in seconds, used when nobody names a window of their own: the expiry a row is written with, and the window a read treats as present. Default: 150. Changing it does not re-age rows already stored; anyone still present picks up the new expiry on their next ping.
+The TTL in seconds for writes and reads that don't name their own window. Default: 150. Stored rows pick up a new value on their next ping.
 
-Values under 120 drop a tab that is still open and still pinging, since that is the Heartbeat interval core gives an unfocused or five-minute-idle tab.
+Values under 120 drop open tabs, since 120 is core's Heartbeat interval for an unfocused or idle tab.
 
-A caller that passes its own `$timeout` gets that window on every site, so this filter leaves it alone. Something asking `wp_get_presence( $room, 30 )` has decided what counts as live for its own feature, and a site widening that would let it read stale clients as present.
+An explicit `$timeout`, such as `wp_get_presence( $room, 30 )`, is left alone, so widening the TTL never makes that caller read stale clients as present.
 ```php
 add_filter( 'wp_presence_default_ttl', function( $timeout ) {
     return 300; // Override TTL to 5 minutes.
@@ -223,13 +220,13 @@ define( 'WP_PRESENCE_DEFAULT_TTL', 300 );
 ```
 
 #### `wp_presence_max_expires_in`
-Filters the longest window, in seconds, a writer may ask for through `$expires_in`. Default: 3600. It is also the retention figure the privacy policy text and the personal data export report, since it is the most any row can outlive its last activity.
+The longest `$expires_in` a writer may ask for, in seconds. Default: 3600. The privacy policy text and personal data export report it as the retention period.
 ```php
 add_filter( 'wp_presence_max_expires_in', fn() => 15 * MINUTE_IN_SECONDS );
 ```
 
 #### `wp_presence_current_screen_key`
-Filters the key identifying the current admin screen for [stale-screen detection](#stale-screen-detection). Core screens (Settings, `post.php`, term, user, comment) resolve their own keys; `$key` is `''` on any screen without coverage. Return a non-empty string to opt a custom screen in.
+The current admin screen's key for [stale-screen detection](#stale-screen-detection). Core screens (Settings, `post.php`, term, user, comment) have their own, and `$key` is `''` elsewhere. Return a non-empty string to opt a custom screen in.
 ```php
 add_filter( 'wp_presence_current_screen_key', function( $key, $screen ) {
     if ( 'toplevel_page_my-plugin' === $screen->id ) {
@@ -239,23 +236,21 @@ add_filter( 'wp_presence_current_screen_key', function( $key, $screen ) {
 }, 10, 2 );
 ```
 
-Keys follow the plugin's slash-separated room convention and are truncated to 191 characters (`WP_PRESENCE_SCREEN_KEY_LIMIT`). Use the same key when bumping the revision from JS via `wp.presence.markScreenStale()`.
+Keys are slash-separated like rooms and cut to 191 characters (`WP_PRESENCE_SCREEN_KEY_LIMIT`). Pass the same key to `wp.presence.markScreenStale()`.
 
 #### `wp_presence_recording_enabled`
-Filters whether presence is recorded on this site. Default: the **Presence** checkbox on Settings > General, which is on for a new install. Return `false` and nothing further is written; every surface empties within one TTL as the rows already stored expire, so there is nothing else to clear.
+Whether this site records presence. Default: the **Presence** checkbox on Settings > General, on for new installs. Return `false` and every surface empties within one TTL.
 ```php
 add_filter( 'wp_presence_recording_enabled', '__return_false' );
 ```
 
-Because the checkbox is only the filter's default, a filter always has the last word over whatever an administrator has chosen.
-
-On multisite, `wp_presence_network_recording_enabled` does the same for every site at once, defaulting to the **Presence** checkbox on Network Admin > Settings. It is consulted only once the site-level filter has allowed recording, so either switch turning off wins and neither can turn the other back on.
+On multisite, `wp_presence_network_recording_enabled` does the same for every site, defaulting to the **Presence** checkbox on Network Admin > Settings. Either switch turning recording off wins.
 
 #### `wp_presence_is_agent_user`
 Filters whether a user is an AI agent, for labelling its presence rows. Default: `false`, deferred to `wpai_is_agent_user()` when it is loaded (see [Agents](#agents)).
 
 #### `wp_presence_network_aggregation_enabled`
-Filters whether a network assembles its sites' rows into the network-wide view behind Network Admin. Default: `true` below [`wp_is_large_network()`](https://developer.wordpress.org/reference/functions/wp_is_large_network/), which answers write concentration rather than policy. Independent of recording: a network can go on recording site by site and still switch the aggregate off.
+Whether a network builds the network-wide view behind Network Admin. Default: `true` unless [`wp_is_large_network()`](https://developer.wordpress.org/reference/functions/wp_is_large_network/). Recording is separate, so sites keep recording with this off.
 ```php
 add_filter( 'wp_presence_network_aggregation_enabled', '__return_false' );
 ```
@@ -279,7 +274,7 @@ add_action( 'wp_presence_screen_revision_bumped', function( $screen_key, $revisi
 ```
 
 #### `wp_presence_collaboration_started`
-Fires when collaboration starts in a room (transition from 1 to 2+ editors). Only entries whose `client_id` begins with `editor-` count toward the transition, while `$entries` is every client entry in the room, reserved bookkeeping rows excluded. The previous count is held in the room's `_collab` row, which ages out on the presence TTL, so once those entries have gone the next pair reads as a fresh start.
+Fires when a room goes from one editor to two or more. Only `editor-` rows count, but `$entries` holds every client except bookkeeping rows. The previous count lives in `_collab` and expires on the TTL, so the next pair after everyone leaves is a fresh start.
 ```php
 add_action( 'wp_presence_collaboration_started', function( $room, $entries ) {
     // Announce room active or update integration state
@@ -287,7 +282,7 @@ add_action( 'wp_presence_collaboration_started', function( $room, $entries ) {
 ```
 
 #### `wp_presence_collaboration_ended`
-Fires when collaboration ends in a room (transition from 2+ to exactly 1 editor). The check runs on an editor heartbeat tick, so if every editor leaves at once there is nobody left to tick and the hook does not fire; the `_collab` row ages out on the presence TTL and the room resets quietly.
+Fires when a room goes from two or more editors to one. It runs on an editor's Heartbeat tick, so if everyone leaves at once it never fires and the room resets when `_collab` expires.
 ```php
 add_action( 'wp_presence_collaboration_ended', function( $room, $entries ) {
     // Announce room inactive or update integration state
@@ -295,7 +290,7 @@ add_action( 'wp_presence_collaboration_ended', function( $room, $entries ) {
 ```
 
 #### `wp_presence_debugger_menu`
-Fires after the admin bar debugger's Interval and TTL rows, on page load and again on each Heartbeat refresh, which `admin_bar_menu` does not. Add nodes under `presence-debug` with the `presence-debug-row` class, and a `presence-debug-value` span right-aligns a value.
+Fires after the debugger's Interval and TTL rows, on page load and on each Heartbeat refresh. Add nodes under `presence-debug` with the `presence-debug-row` class; a `presence-debug-value` span right-aligns a value.
 ```php
 add_action( 'wp_presence_debugger_menu', function( $wp_admin_bar ) {
     $wp_admin_bar->add_node( array(
@@ -311,7 +306,7 @@ add_action( 'wp_presence_debugger_menu', function( $wp_admin_bar ) {
 Fired through `wp.hooks`, not PHP. `presence-ping.js` is the only thing that computes these, so a consumer has to listen rather than poll for them.
 
 #### `presence-api.watchingRoom`
-Fires once, synchronously, before Heartbeat's first tick. Only on a post-edit screen for a post type with `presence` support — lets a listener tell "presence-api isn't here" apart from "here, no tick yet."
+Fires once, before Heartbeat's first tick, on the edit screen of a post type with `presence` support, so a listener can tell "presence-api isn't here" from "no tick yet."
 ```js
 wp.hooks.addAction( 'presence-api.watchingRoom', 'my-plugin', ( room ) => {
     // room is 'postType/{type}:{id}'
@@ -319,7 +314,7 @@ wp.hooks.addAction( 'presence-api.watchingRoom', 'my-plugin', ( room ) => {
 ```
 
 #### `presence-api.collaborationStarted`
-Fires on the same 1-to-2+ edge as `wp_presence_collaboration_started`, not on every tick. `count` is the room's editor count at that moment and includes you, so it is 2 or more. A third editor joining later does not fire anything, and does not update a `count` a listener kept, since the edge has already been crossed. Anything that needs a live number should read the room instead.
+Fires on the same edge as `wp_presence_collaboration_started`. `count` includes you, so it is at least 2. A third editor joining later fires nothing, so read the room for a live number.
 ```js
 wp.hooks.addAction( 'presence-api.collaborationStarted', 'my-plugin', ( room, count ) => {
     // Someone besides you is now in the room.
@@ -327,7 +322,7 @@ wp.hooks.addAction( 'presence-api.collaborationStarted', 'my-plugin', ( room, co
 ```
 
 #### `presence-api.collaborationEnded`
-Fires on the 2+-to-1 edge, mirroring `wp_presence_collaboration_ended`. `count` is 1: you. If every editor leaves at once, nobody is left to tick, so this does not fire and the room resets on the TTL.
+Fires on the same edge as `wp_presence_collaboration_ended`. `count` is 1, meaning you. If everyone leaves at once, it never fires.
 ```js
 wp.hooks.addAction( 'presence-api.collaborationEnded', 'my-plugin', ( room, count ) => {
     // You are alone in the room again.
@@ -335,7 +330,7 @@ wp.hooks.addAction( 'presence-api.collaborationEnded', 'my-plugin', ( room, coun
 ```
 
 #### `presence-api.surfaceUpdated`
-Fires after a live surface's markup is swapped for a fresh copy from Heartbeat. Swaps wait while the pointer or focus is inside the surface, or a checkbox in it is checked, and are skipped when the markup has not changed.
+Fires after a live surface's markup is swapped for a fresh copy from Heartbeat. Swaps wait while the pointer, focus or a checked checkbox is inside the surface.
 ```js
 wp.hooks.addAction( 'presence-api.surfaceUpdated', 'my-plugin', ( key, element ) => {
     // key is 'admin-bar', 'users-list', 'users-online-count', 'editors', 'active-posts', 'network-widget', or one you registered.
@@ -345,7 +340,7 @@ wp.hooks.addAction( 'presence-api.surfaceUpdated', 'my-plugin', ( key, element )
 ### JS Filters
 
 #### `presence-api.liveSurfaces`
-The surfaces `presence-ping.js` keeps current. A surface asks Heartbeat for its key only while `target()` finds it on the page, and the server answers with HTML under the same key. The server's HTML goes into the page as is, so escape it in your `heartbeat_received` callback.
+The surfaces `presence-ping.js` keeps current. A surface asks Heartbeat for its key while `target()` finds it on the page, and the server answers with HTML under the same key. That HTML goes in as is, so escape it in your `heartbeat_received` callback.
 
 | Property | Required | Description |
 | --- | --- | --- |
@@ -395,7 +390,7 @@ Multisite only, and gated on `manage_network` rather than `edit_posts`.
 | `GET` | `/wp-presence/v1/presence/network` | List sites with users online, busiest first |
 | `GET` | `/wp-presence/v1/presence/network/<blog_id>` | One site's users online |
 
-The collection accepts `page` and `per_page` (default 50, max 100), counting sites in `X-WP-Total` and `X-WP-TotalPages` and the network headcount in `X-WP-Presence-Users-Online`. Both routes accept `users_per_site` to cap the users named per site (default 0, every user); each site's `user_count` stays its real total. A site nobody is on answers with an empty user list, so only an unknown `blog_id` is a 404.
+The collection takes `page` and `per_page` (default 50, max 100), with site counts in `X-WP-Total` and `X-WP-TotalPages` and the network headcount in `X-WP-Presence-Users-Online`. Both routes take `users_per_site` to cap the users named per site (default 0, all), while `user_count` stays the real total. Only an unknown `blog_id` is a 404.
 
 </details>
 
@@ -423,19 +418,19 @@ wp presence recording set off --network   # Multisite only
 
 ## Relationship to the block editor
 
-Real-time awareness inside the editor — cursors, selections, who's editing which block — is not this plugin's job. It belongs to whichever plugin implements the block editor's collaboration storage. This table is where that plugin can keep the awareness half.
+Cursors, selections and who is in which block belong to the plugin implementing the block editor's collaboration storage, which can keep its awareness rows in this table.
 
-Gutenberg's [`__unstable_wp_sync_storage`](https://github.com/WordPress/gutenberg/pull/81697) filter takes a `WP_Sync_Storage`, a single interface covering awareness and the CRDT update log together, so a plugin on that filter supplies both. [WordPress/gutenberg#83165](https://github.com/WordPress/gutenberg/issues/83165) asks for the two to be separable. Until then, a plugin can keep the awareness half here by splitting it off behind a filter of its own that points at `wp_get_presence()`, `wp_set_presence()` and `wp_remove_presence()`, as [gutenberg-sync-engines](https://github.com/Automattic/gutenberg-sync-engines) does with `wp_sync_awareness_backend`. CRDT document updates stay in the editor plugin's own table either way.
+Gutenberg's [`__unstable_wp_sync_storage`](https://github.com/WordPress/gutenberg/pull/81697) filter takes one `WP_Sync_Storage` for both awareness and the CRDT update log, and [WordPress/gutenberg#83165](https://github.com/WordPress/gutenberg/issues/83165) asks for them to be separable. Until then, a plugin can route awareness to `wp_get_presence()`, `wp_set_presence()` and `wp_remove_presence()` behind its own filter, as [gutenberg-sync-engines](https://github.com/WordPress/gutenberg-sync-engines) does with `wp_sync_awareness_backend`. CRDT updates stay in the editor plugin's table.
 
-No room mapping sits between the two sides: both use `postType/{type}:{id}`, the grammar Gutenberg's `WP_Sync_Config::parse_room()` defines and [`wp_presence_post_room()`](#php-api) already returns. Inside that shared room the `client_id` prefix keeps the rows apart. An editor plugin writes and reads only its own (`gse-{id}`, say), leaving this plugin's `editor-{user_id}` rows untouched.
+Both sides use `postType/{type}:{id}`, the grammar of Gutenberg's `WP_Sync_Config::parse_room()` and what [`wp_presence_post_room()`](#php-api) returns. The `client_id` prefix keeps their rows apart: `gse-{id}` for the editor plugin, `editor-{user_id}` for this one.
 
-That leaves the split: awareness and cursors inside the editor go through that plugin; room membership everywhere else in wp-admin, plus the post-lock bridge below, stays this plugin's. Where an editor plugin uses this table, someone editing a post also shows up in the admin bar and the post list.
+Where an editor plugin uses this table, someone editing a post also shows up in the admin bar and the post list.
 
-The JS actions above exist for that same relationship. A consumer like Gutenberg's sync poll loop ([presence-api#444](https://github.com/WordPress/presence-api/issues/444)) can wait for `presence-api.collaborationStarted` instead of polling to find out whether anyone else is in the room.
+A consumer like Gutenberg's sync poll loop ([presence-api#444](https://github.com/WordPress/presence-api/issues/444)) can wait for `presence-api.collaborationStarted` instead of polling to learn whether anyone else is in the room.
 
 ## Post-lock bridge
 
-Keeps `_edit_lock` in the post room's `_lock` row instead of post meta, through the `get_post_metadata`, `update_post_metadata` and `delete_post_metadata` short-circuits, so refreshing a lock no longer makes every cached post query stale. `wp_check_post_lock()` and every other caller work unchanged. Every post type keeps its lock there, even with recording turned off, since the row holds only the time and user ID the meta did.
+Keeps `_edit_lock` in the post room's `_lock` row instead of post meta, so refreshing a lock no longer makes cached post queries stale. Meta short-circuits keep `wp_check_post_lock()` and other callers working, and it applies to every post type even with recording off.
 
 ## Capability
 
@@ -456,7 +451,7 @@ if (window.wp?.presence?.markScreenStale) {
 }
 ```
 
-For a screen to be *watched* in the first place, it needs a screen key — core screens resolve their own, and custom screens supply one via the [`wp_presence_current_screen_key`](#wp_presence_current_screen_key) filter.
+For a screen to be *watched* in the first place, it needs a screen key. Core screens resolve their own, and custom screens supply one via the [`wp_presence_current_screen_key`](#wp_presence_current_screen_key) filter.
 
 ## Maintainers
 
