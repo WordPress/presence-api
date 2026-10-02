@@ -237,7 +237,7 @@ add_filter( 'wp_presence_heartbeat_idle_ticks', fn() => 0 );
 ```
 
 #### `wp_presence_heartbeat_idle_interval`
-The widened Heartbeat interval, in seconds. Default: 45. Keep it under the TTL less 15 seconds, or idle people drop out; see [Data flow](#data-flow).
+The widened Heartbeat interval, in seconds. Default: 45. The ping caps it at the TTL less 15 seconds, so idle people never drop out; see [Data flow](#data-flow).
 
 #### `wp_presence_cleanup_batch_size`
 How many expired rows cron deletes per pass. Default: 1000.
@@ -481,7 +481,7 @@ Keeps `_edit_lock` in the post room's `_lock` row instead of post meta, so refre
 
 ## Capability
 
-All features require editing at least one post type shown in the admin, so a role limited to pages or a custom post type is included. Network views need `manage_network`.
+All features require editing at least one post type shown in the admin, so a role limited to pages or a custom post type is included. Network views need `manage_network` by default.
 
 ## Stale-screen detection
 
