@@ -9,7 +9,7 @@ A feature plugin for system-wide presence and awareness in WordPress.
 
 ## Problem
 
-Knowing who is logged in, on which screen, and editing which post means frequent writes, and writing them to `wp_postmeta` or `wp_options` invalidates caches site-wide ([#64696](https://core.trac.wordpress.org/ticket/64696)). This plugin writes them to its own `wp_presence` table instead, with a 150-second TTL.
+Tracking who is logged in, on which screen and in which post takes frequent writes, and in `wp_postmeta` or `wp_options` those invalidate caches site-wide ([#64696](https://core.trac.wordpress.org/ticket/64696)). This plugin writes them to its own `wp_presence` table instead, with a 150-second TTL.
 
 > "This idea of presence I think is really cool and seeing where people are... you log into your WordPress, I see oh Matias is moderating some comments, Lynn is on the dashboard maybe reading some news... that idea of like you log in and you can kind of see the neighborhood of like who else is also there."
 >
@@ -64,7 +64,7 @@ Only Heartbeat refreshes a row between page loads. With its script removed, or i
 | `admin/online`         | All admin pages    |
 | `postType/{type}:{id}` | `postType/post:42` |
 
-Every post type edited in the admin gets a room; see [Post Type Support](#post-type-support).
+Each post type with presence support gets a room; see [Post Type Support](#post-type-support).
 
 ### Client IDs
 
@@ -84,7 +84,7 @@ A leading `_` marks bookkeeping rows, which are not participants: `_collab` hold
 
 ## Agents
 
-An AI agent working over REST or MCP runs no Heartbeat, so saving a post writes its row for it. That row puts it, labelled, in Who's Online, the admin bar and the post list's Editors column.
+An AI agent working over REST or MCP runs no Heartbeat, so the plugin writes its row when it saves a post. That row puts it, labelled, in Who's Online, the admin bar and the post list's Editors column.
 
 The row is written on `wp_after_insert_post` (REST, abilities and WP-CLI) when the current user is an agent. It is `agent-{user_id}` in `postType/{post_type}:{post_id}` and lasts for the idle threshold, 75 seconds by default, so an agent that stops saving drops out on its own. People's saves and trashing a post write nothing.
 
@@ -94,8 +94,7 @@ To show up before its first save, an agent can still write the row itself:
 // Join: write a row that expires in 60 seconds if nothing renews it.
 wp_set_presence( 'postType/post:42', 'agent-' . $user_id, array(), $user_id, null, 60 );
 
-// While still working, write again before the window runs out, to stay
-// present. A single long $expires_in is not the way; see below.
+// While still working, write again before the window runs out, to stay present.
 wp_set_presence( 'postType/post:42', 'agent-' . $user_id, array(), $user_id, null, 60 );
 
 // Leave, once done. Otherwise the row simply expires on its own.
@@ -266,7 +265,7 @@ add_filter( 'wp_presence_current_screen_key', function( $key, $screen ) {
 Keys are slash-separated like rooms and cut to 191 characters (`WP_PRESENCE_SCREEN_KEY_LIMIT`). Pass the same key to `wp.presence.markScreenStale()`.
 
 #### `wp_presence_editor_state`
-Filters the state saved in an editor's post room row on each tick, so a plugin can add its own data.
+Filters the state saved in an editor's post room row on each tick, so a plugin can add its own data. Keep it stable between ticks, or every tick writes.
 ```php
 add_filter( 'wp_presence_editor_state', function( $state, $post_id, $user_id ) {
     $state['my_plugin_panel'] = 'seo';
@@ -468,13 +467,11 @@ wp presence recording set off --network   # Multisite only
 
 ## Relationship to the block editor
 
-Cursors, selections and who is in which block belong to the plugin implementing the block editor's collaboration storage, which can keep its awareness rows in this table.
+Cursors, selections and who is in which block belong to the plugin implementing the block editor's collaboration storage, which can keep its awareness rows in this table. When it does, someone editing a post also shows up in the admin bar and the post list.
 
 Gutenberg's [`__unstable_wp_sync_storage`](https://github.com/WordPress/gutenberg/pull/81697) filter takes one `WP_Sync_Storage` for both awareness and the CRDT update log, and [WordPress/gutenberg#83165](https://github.com/WordPress/gutenberg/issues/83165) asks for them to be separable. Until then, a plugin can route awareness to `wp_get_presence()`, `wp_set_presence()` and `wp_remove_presence()` behind its own filter, as [gutenberg-sync-engines](https://github.com/WordPress/gutenberg-sync-engines) does with `wp_sync_awareness_backend`. CRDT updates stay in the editor plugin's table.
 
 Both sides use `postType/{type}:{id}`, the grammar of Gutenberg's `WP_Sync_Config::parse_room()` and what [`wp_presence_post_room()`](#php-api) returns. The `client_id` prefix keeps their rows apart: `gse-{id}` for the editor plugin, `editor-{user_id}` for this one.
-
-Where an editor plugin uses this table, someone editing a post also shows up in the admin bar and the post list.
 
 A consumer like Gutenberg's sync poll loop ([presence-api#444](https://github.com/WordPress/presence-api/issues/444)) can wait for `presence-api.collaborationStarted` instead of polling to learn whether anyone else is in the room.
 
@@ -484,7 +481,7 @@ Keeps `_edit_lock` in the post room's `_lock` row instead of post meta, so refre
 
 ## Capability
 
-All features require editing at least one post type shown in the admin, so a role limited to pages or a custom post type is included.
+All features require editing at least one post type shown in the admin, so a role limited to pages or a custom post type is included. Network views need `manage_network`.
 
 ## Stale-screen detection
 
