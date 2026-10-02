@@ -36,6 +36,8 @@ npx wp-env start
 
 Then open [localhost:8888/wp-admin/](http://localhost:8888/wp-admin/) (admin / password).
 
+This also activates [Presence Scenes](plugins/presence-scenes/README.md), which plays real users through situations like two people editing one post: `wp presence scene run editing-together`.
+
 ## WordPress Playground
 
 No install needed: launch a scratch site straight from `main`.
