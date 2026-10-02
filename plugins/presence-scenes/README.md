@@ -11,6 +11,14 @@ Plays real users through probable situations, such as two people editing one pos
 
 Actors reach everything else through core's `heartbeat_received` filter, as a browser would.
 
+Gutenberg's collaboration end-to-end tests open a browser for each user and check what the block editor shows them. Scenes play users from the server instead, so one browser can watch several people arrive on admin screens, take over post locks, log out or lose their connection. That makes them useful for demos, for checking a change by hand in the debugger, and for replaying a situation on demand. Assertions about what the editor renders still belong in end-to-end tests.
+
+## Playground
+
+[![Launch Presence Scenes](https://img.shields.io/badge/Launch-3858E9?style=for-the-badge&logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint-scenes.json)
+
+Plays Editing together on the Posts screen. Steps play on your tab's Heartbeat, so a few land on each tick, and a tab left in the background catches up all at once when you return.
+
 ## WP-CLI
 
 `npm run env:start` activates it. Anywhere else, activate it after Presence API.
