@@ -73,8 +73,6 @@ add_action(
 	tr.is-fresh td { color: var(--wp-admin-text-dark, #1d2327); }
 	tr.is-stale td { color: var(--wp-admin-muted, #646970); }
 
-	.swatch { display: inline-block; width: 8px; height: 8px; margin-inline-end: 4px; border-radius: 50%; }
-
 	.empty { color: var(--wp-admin-muted, #646970); padding: 12px 6px; }
 </style>
 </head>
@@ -103,8 +101,7 @@ add_action(
 					}
 					$pairs = array();
 					foreach ( $decoded as $k => $v ) {
-							$swatch  = 'color' === $k && is_string( $v ) && sanitize_hex_color( $v ) ? '<span class="swatch" style="background:' . esc_attr( $v ) . '"></span>' : '';
-							$pairs[] = esc_html( $k ) . ': ' . $swatch . esc_html( $v );
+							$pairs[] = esc_html( $k ) . ': ' . esc_html( $v );
 					}
 					echo implode( ', ', $pairs ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Each pair is escaped individually above.
 				} else {

@@ -1054,10 +1054,7 @@ function wp_presence_admin_room() {
 }
 
 /**
- * Returns the color a user wears on every presence surface.
- *
- * The color held in their admin/online entry, or Gutenberg's pick for their ID
- * when they have none, so the admin and the block editor agree.
+ * Returns the color the block editor gives a user in a post room.
  *
  * @since 0.9.0
  *
@@ -1065,16 +1062,9 @@ function wp_presence_admin_room() {
  * @return string A `#RRGGBB` hex color from Gutenberg's collaborator palette.
  */
 function wp_presence_get_user_color( $user_id ) {
-	$user_id = absint( $user_id );
+	$palette = array( '#6F42C1', '#D94145', '#FBBF24', '#FF35EE', '#879F11', '#0F766E', '#00CFFF' );
 
-	// The prefix also matches user-10 for user-1, so each entry's owner is checked.
-	foreach ( wp_get_presence( wp_presence_admin_room(), null, 'user-' . $user_id ) as $entry ) {
-		if ( (int) $entry->user_id === $user_id ) {
-			return wp_presence_entry_color( $entry );
-		}
-	}
-
-	return wp_presence_default_user_color( $user_id );
+	return $palette[ absint( $user_id ) % count( $palette ) ];
 }
 
 /**
@@ -1668,128 +1658,4 @@ function wp_presence_add_post_type_support( $post_type, $post_type_object ) {
  */
 function wp_presence_forget_post_type( $post_type ) {
 	unset( $GLOBALS['_wp_presence_post_types_seen'][ $post_type ] );
-}
-
-/**
- * Returns Gutenberg's collaborator colors, in the order its getAvatarBorderColor() indexes them.
- *
- * @access private
- *
- * @since 0.9.0
- *
- * @return string[] Hex colors.
- */
-function wp_presence_color_palette() {
-	return array( '#6F42C1', '#D94145', '#FBBF24', '#FF35EE', '#879F11', '#0F766E', '#00CFFF' );
-}
-
-/**
- * Returns the color Gutenberg gives a user ID.
- *
- * @access private
- *
- * @since 0.9.0
- *
- * @param int $user_id User ID.
- * @return string A hex color.
- */
-function wp_presence_default_user_color( $user_id ) {
-	$palette = wp_presence_color_palette();
-
-	return $palette[ absint( $user_id ) % count( $palette ) ];
-}
-
-/**
- * Returns the color an admin/online entry holds, or its user's default.
- *
- * Only palette colors are trusted, since entry data can come from a client.
- *
- * @access private
- *
- * @since 0.9.0
- *
- * @param object $entry A presence entry.
- * @return string A hex color.
- */
-function wp_presence_entry_color( $entry ) {
-	$color = isset( $entry->data['color'] ) ? $entry->data['color'] : '';
-
-	return in_array( $color, wp_presence_color_palette(), true ) ? $color : wp_presence_default_user_color( $entry->user_id );
-}
-
-/**
- * Picks the color a user holds while online.
- *
- * Keeps a color already held, otherwise takes the one fewest others are wearing,
- * preferring Gutenberg's pick for the ID so the two only differ on a collision.
- *
- * @access private
- *
- * @since 0.9.0
- *
- * @param int $user_id User ID.
- * @return string A hex color.
- */
-function wp_presence_assign_user_color( $user_id ) {
-	$user_id = absint( $user_id );
-	$counts  = array_fill_keys( wp_presence_color_palette(), 0 );
-
-	foreach ( wp_get_presence( wp_presence_admin_room() ) as $entry ) {
-		$color = wp_presence_entry_color( $entry );
-
-		if ( (int) $entry->user_id === $user_id ) {
-			if ( isset( $entry->data['color'] ) && $entry->data['color'] === $color ) {
-				return $color;
-			}
-			continue;
-		}
-
-		++$counts[ $color ];
-	}
-
-	return wp_presence_pick_color( $user_id, $counts );
-}
-
-/**
- * Picks the color fewest others wear, preferring Gutenberg's pick for the ID.
- *
- * @access private
- *
- * @since 0.9.0
- *
- * @param int   $user_id User ID.
- * @param int[] $counts  How many others wear each palette color, keyed by color.
- * @return string A hex color.
- */
-function wp_presence_pick_color( $user_id, $counts ) {
-	$own = wp_presence_default_user_color( $user_id );
-
-	return min( $counts ) === $counts[ $own ] ? $own : (string) array_search( min( $counts ), $counts, true );
-}
-
-/**
- * Gives each of a group of users a color no other in the group wears, while colors last.
- *
- * Lower user IDs keep the color they hold.
- *
- * @access private
- *
- * @since 0.9.0
- *
- * @param string[] $colors Hex colors keyed by user ID.
- * @return string[] Hex colors keyed by user ID.
- */
-function wp_presence_spread_colors( $colors ) {
-	ksort( $colors );
-	$counts = array_fill_keys( wp_presence_color_palette(), 0 );
-
-	foreach ( $colors as $user_id => $color ) {
-		if ( ! empty( $counts[ $color ] ) ) {
-			$color              = wp_presence_pick_color( $user_id, $counts );
-			$colors[ $user_id ] = $color;
-		}
-		++$counts[ $color ];
-	}
-
-	return $colors;
 }

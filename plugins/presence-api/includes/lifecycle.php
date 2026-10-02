@@ -25,10 +25,7 @@ function wp_presence_on_login( $user_login, $user ) {
 	wp_set_presence(
 		wp_presence_admin_room(),
 		'user-' . $user->ID,
-		array(
-			'screen' => 'login',
-			'color'  => wp_presence_assign_user_color( $user->ID ),
-		),
+		array( 'screen' => 'login' ),
 		$user->ID
 	);
 }
