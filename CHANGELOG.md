@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.0](https://github.com/WordPress/presence-api/compare/v0.14.0...v0.15.0) (2026-10-02)
+
+
+### Features
+
+* show each presence row's data in the debugger ([#717](https://github.com/WordPress/presence-api/issues/717)) ([c560091](https://github.com/WordPress/presence-api/commit/c56009159f9b4415711df33017a8700b5a1e29e3))
+
 ## [0.14.0](https://github.com/WordPress/presence-api/compare/v0.13.0...v0.14.0) (2026-10-02)
 
 
