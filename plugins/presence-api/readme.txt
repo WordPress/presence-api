@@ -3,7 +3,7 @@ Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas,
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.1
-Stable tag: 0.14.0
+Stable tag: 0.15.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -70,6 +70,9 @@ For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/presence-api/blob/main/CHANGELOG.md
 
+= 0.15.0 =
+* Show each presence row's data in the debugger ([#717](https://github.com/WordPress/presence-api/issues/717)).
+
 = 0.14.0 =
 * REST presence entries no longer include `color`, and wp_presence_get_user_color() returns the block editor's color for the user ID instead of a stored one.
 * Stop saving and serving presence colors ([#707](https://github.com/WordPress/presence-api/issues/707)).
@@ -88,9 +91,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 
 = 0.12.1 =
 * Translate Heartbeat debugger plurals and units ([#660](https://github.com/WordPress/presence-api/issues/660)).
-
-= 0.12.0 =
-* Add an admin bar debugger and remove the Dashboard widget ([#652](https://github.com/WordPress/presence-api/issues/652)).
-* Label agent presence rows across the admin UI ([#653](https://github.com/WordPress/presence-api/issues/653)).
-* Let plugins add rows and indicators to the debugger ([#666](https://github.com/WordPress/presence-api/issues/666)).
-* Give the debugger and DB viewer's muted text AA contrast ([#648](https://github.com/WordPress/presence-api/issues/648)).
