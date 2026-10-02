@@ -69,6 +69,25 @@ class WP_Test_Presence_Debugger_Admin_Bar extends WP_Presence_UnitTestCase {
 	/**
 	 * @covers ::wp_presence_debugger_admin_bar_node
 	 */
+	public function test_lists_you_first_then_by_name() {
+		$admin = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $admin );
+		$room = 'postType/post:1';
+
+		// Freshest first is the reverse of the order expected.
+		wp_set_presence( $room, 'editor-me', array(), $admin, gmdate( 'Y-m-d H:i:s', time() - 30 ) );
+		wp_set_presence( $room, 'editor-ana', array(), self::factory()->user->create( array( 'display_name' => 'Ana' ) ), gmdate( 'Y-m-d H:i:s', time() - 20 ) );
+		wp_set_presence( $room, 'editor-bea', array(), self::factory()->user->create( array( 'display_name' => 'Bea' ) ), gmdate( 'Y-m-d H:i:s', time() - 10 ) );
+
+		$markup = wp_presence_debugger_admin_bar_markup();
+
+		$this->assertLessThan( strpos( $markup, 'editor-ana' ), strpos( $markup, 'editor-me' ) );
+		$this->assertLessThan( strpos( $markup, 'editor-bea' ), strpos( $markup, 'editor-ana' ) );
+	}
+
+	/**
+	 * @covers ::wp_presence_debugger_admin_bar_node
+	 */
 	public function test_renders_more_link_with_pluralization() {
 		$admin = self::factory()->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $admin );

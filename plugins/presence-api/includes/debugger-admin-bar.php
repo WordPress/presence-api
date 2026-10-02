@@ -106,6 +106,21 @@ function wp_presence_debugger_admin_bar_node( $wp_admin_bar ) {
 		// Reserved rows included, since the plugin's own bookkeeping is part of what is being debugged.
 		$rows = wp_presence_room_rows( $room );
 
+		// You first, then by name, so rows keep their place between ticks.
+		$me = get_current_user_id();
+		usort(
+			$rows,
+			function ( $a, $b ) use ( $me ) {
+				if ( ( $me === (int) $a->user_id ) !== ( $me === (int) $b->user_id ) ) {
+					return $me === (int) $a->user_id ? -1 : 1;
+				}
+				$user_a = get_userdata( (int) $a->user_id );
+				$user_b = get_userdata( (int) $b->user_id );
+				$order  = strcasecmp( $user_a ? $user_a->display_name : '', $user_b ? $user_b->display_name : '' );
+				return $order ? $order : strcmp( $a->client_id, $b->client_id );
+			}
+		);
+
 		$wp_admin_bar->add_node(
 			array(
 				'parent' => 'presence-debug-rooms',
