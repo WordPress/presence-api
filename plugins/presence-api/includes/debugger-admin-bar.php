@@ -176,7 +176,7 @@ function wp_presence_debugger_admin_bar_node( $wp_admin_bar ) {
 					'parent' => 'presence-debug-rooms',
 					'id'     => $group . '-' . $j,
 					'title'  => '<span><span class="presence-debug-color"' . ( wp_presence_admin_room() !== $room && $row->user_id && $page( $row ) === $shared ? ' style="background:' . ( get_current_user_id() === (int) $row->user_id ? 'var(--wp-admin-theme-color, #2271b1)' : esc_attr( wp_presence_get_user_color( $row->user_id ) ) ) . '"' : '' ) . ' aria-hidden="true"></span>' . esc_html( $user ? $user->display_name : '#' . $row->user_id ) . ' <code>' . esc_html( $row->client_id ) . '</code></span><span class="presence-debug-value" data-presence-debug-age="' . esc_attr( $age ) . '"></span>',
-					'meta'   => array( 'class' => 'presence-debug-row' ),
+					'meta'   => array( 'class' => 'presence-debug-row' . ( $here && count( $here ) === $j ? ' presence-debug-break' : '' ) ),
 				)
 			);
 		}
@@ -282,6 +282,7 @@ function wp_presence_debugger_admin_bar_assets() {
 		#wp-admin-bar-presence-debug .presence-debug-room > .ab-item { font-weight: 600; cursor: default; }
 		#wp-admin-bar-presence-debug .presence-debug-room .presence-debug-value { font-weight: 400; }
 		#wp-admin-bar-presence-debug .presence-debug-row code { opacity: 0.75; }
+		#wpadminbar #wp-admin-bar-presence-debug .presence-debug-break { margin-top: 6px; border-top: 1px solid color-mix(in srgb, currentColor 20%, transparent); padding-top: 6px; }
 		#wp-admin-bar-presence-debug .presence-debug-more > .ab-item { cursor: default; }
 		@media (prefers-reduced-motion: reduce) { #wp-admin-bar-presence-debug.is-beating .ab-icon { animation: none; } }
 	';
