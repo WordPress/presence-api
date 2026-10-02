@@ -91,6 +91,14 @@ function wp_presence_debugger_admin_bar_node( $wp_admin_bar ) {
 		);
 	}
 
+	// The catch-all admin room goes last, so the room for this screen leads.
+	usort(
+		$rooms,
+		function ( $a, $b ) {
+			return ( wp_presence_admin_room() === $a ) - ( wp_presence_admin_room() === $b );
+		}
+	);
+
 	if ( $rooms ) {
 		$wp_admin_bar->add_group(
 			array(
@@ -105,6 +113,21 @@ function wp_presence_debugger_admin_bar_node( $wp_admin_bar ) {
 
 		// Reserved rows included, since the plugin's own bookkeeping is part of what is being debugged.
 		$rows = wp_presence_room_rows( $room );
+
+		// You first, then by name, so rows keep their place between ticks.
+		$me = get_current_user_id();
+		usort(
+			$rows,
+			function ( $a, $b ) use ( $me ) {
+				if ( ( $me === (int) $a->user_id ) !== ( $me === (int) $b->user_id ) ) {
+					return $me === (int) $a->user_id ? -1 : 1;
+				}
+				$user_a = get_userdata( (int) $a->user_id );
+				$user_b = get_userdata( (int) $b->user_id );
+				$order  = strcasecmp( $user_a ? $user_a->display_name : '', $user_b ? $user_b->display_name : '' );
+				return $order ? $order : strcmp( $a->client_id, $b->client_id );
+			}
+		);
 
 		$wp_admin_bar->add_node(
 			array(
@@ -123,7 +146,7 @@ function wp_presence_debugger_admin_bar_node( $wp_admin_bar ) {
 			if ( ! current_user_can( 'view_presence_location', (int) $row->user_id ) ) {
 				return 'user:' . $row->user_id;
 			}
-			return wp_presence_admin_room() === $room ? ( $row->data['screen'] ?? '' ) . ':' . ( $row->data['post_id'] ?? '' ) . ':' . ( $row->data['object_id'] ?? '' ) : $room;
+			return $room;
 		};
 		$people = array();
 		$mine   = null;
@@ -134,18 +157,7 @@ function wp_presence_debugger_admin_bar_node( $wp_admin_bar ) {
 			}
 		}
 		$shared = null !== $mine && count( $people[ $mine ] ) > 1 ? $mine : null;
-		$here   = array();
-		$rest   = array();
-		foreach ( $rows as $row ) {
-			if ( $page( $row ) === $mine ) {
-				$here[] = $row;
-			} else {
-				$rest[] = $row;
-			}
-		}
-		// Your page comes first, so the row limit never hides who is with you.
-		$rows = array_merge( $here, $rest );
-		foreach ( array_slice( $rows, 0, 20 ) as $j => $row ) {
+		foreach ( $rows as $j => $row ) {
 			$user = get_userdata( (int) $row->user_id );
 			$age  = max( 0, time() - (int) strtotime( $row->date_gmt . ' UTC' ) );
 			$wp_admin_bar->add_node(
@@ -154,23 +166,6 @@ function wp_presence_debugger_admin_bar_node( $wp_admin_bar ) {
 					'id'     => $group . '-' . $j,
 					'title'  => '<span><span class="presence-debug-color"' . ( wp_presence_admin_room() !== $room && $row->user_id && $page( $row ) === $shared ? ' style="background:' . ( get_current_user_id() === (int) $row->user_id ? 'var(--wp-admin-theme-color, #2271b1)' : esc_attr( wp_presence_get_user_color( $row->user_id ) ) ) . '"' : '' ) . ' aria-hidden="true"></span>' . esc_html( $user ? $user->display_name : '#' . $row->user_id ) . ' <code>' . esc_html( $row->client_id ) . '</code></span><span class="presence-debug-value" data-presence-debug-age="' . esc_attr( $age ) . '"></span>',
 					'meta'   => array( 'class' => 'presence-debug-row' ),
-				)
-			);
-		}
-		$overflow = count( $rows ) - 20;
-		if ( $overflow > 0 ) {
-			$wp_admin_bar->add_node(
-				array(
-					'parent' => 'presence-debug-rooms',
-					'id'     => $group . '-more',
-					'title'  => esc_html(
-						sprintf(
-							/* translators: %s: Number of clients not listed. */
-							_n( '+%s more', '+%s more', $overflow, 'presence-api' ),
-							number_format_i18n( $overflow )
-						)
-					),
-					'meta'   => array( 'class' => 'presence-debug-more' ),
 				)
 			);
 		}
@@ -244,7 +239,6 @@ function wp_presence_debugger_admin_bar_assets() {
 		#wpadminbar #wp-admin-bar-presence-debug.is-pinned { position: relative; z-index: 1; }
 		#wpadminbar #wp-admin-bar-presence-debug .ab-submenu .ab-item { display: flex; align-items: center; height: auto; min-height: 26px; }
 		#wpadminbar #wp-admin-bar-presence-debug-rooms .presence-debug-row > .ab-item { padding-inline-start: 34px; }
-		#wpadminbar #wp-admin-bar-presence-debug-rooms .presence-debug-more > .ab-item { padding-inline-start: 58px; }
 		#wpadminbar #wp-admin-bar-presence-debug .ab-submenu .ab-item, #wpadminbar #wp-admin-bar-presence-debug .ab-submenu .ab-item > * { line-height: 1.4; }
 		#wp-admin-bar-presence-debug .presence-debug-row > .ab-item { gap: 16px; cursor: default; }
 		#wp-admin-bar-presence-debug .presence-debug-value { margin-inline-start: auto; font-variant-numeric: tabular-nums; user-select: none; }
@@ -259,7 +253,6 @@ function wp_presence_debugger_admin_bar_assets() {
 		#wp-admin-bar-presence-debug .presence-debug-room > .ab-item { font-weight: 600; cursor: default; }
 		#wp-admin-bar-presence-debug .presence-debug-room .presence-debug-value { font-weight: 400; }
 		#wp-admin-bar-presence-debug .presence-debug-row code { opacity: 0.75; }
-		#wp-admin-bar-presence-debug .presence-debug-more > .ab-item { cursor: default; }
 		@media (prefers-reduced-motion: reduce) { #wp-admin-bar-presence-debug.is-beating .ab-icon { animation: none; } }
 	';
 
