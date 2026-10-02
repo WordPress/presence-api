@@ -46,6 +46,35 @@ class WP_Test_Presence_Debugger_Admin_Bar extends WP_Presence_UnitTestCase {
 	/**
 	 * @covers ::wp_presence_debugger_admin_bar_node
 	 */
+	public function test_shows_each_rows_data_without_a_location_the_viewer_cannot_see() {
+		$admin = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		$other = self::factory()->user->create( array( 'role' => 'editor' ) );
+		wp_set_current_user( $admin );
+		$room = 'postType/post:1';
+
+		wp_set_presence( $room, 'editor-1', array(), $admin );
+		wp_set_presence(
+			$room,
+			'gse-42',
+			array(
+				'screen' => 'post',
+				'cursor' => 7,
+			),
+			$other
+		);
+
+		$this->assertStringContainsString( '{&quot;screen&quot;:&quot;post&quot;,&quot;cursor&quot;:7}', wp_presence_debugger_admin_bar_markup() );
+
+		wp_get_current_user()->add_cap( 'list_users', false );
+		$markup = wp_presence_debugger_admin_bar_markup();
+
+		$this->assertStringContainsString( '{&quot;cursor&quot;:7}', $markup, 'Data that names no location should still show.' );
+		$this->assertStringNotContainsString( '&quot;screen&quot;', $markup, 'A location the viewer may not see should be left out.' );
+	}
+
+	/**
+	 * @covers ::wp_presence_debugger_admin_bar_node
+	 */
 	public function test_lists_you_first_then_by_name() {
 		$admin = self::factory()->user->create( array( 'role' => 'administrator' ) );
 		wp_set_current_user( $admin );
