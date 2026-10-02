@@ -26,7 +26,7 @@ On a multisite network, Network Admin gets its own view of the same data: a Who'
 * Active Posts dashboard widget grouped by post
 * Editors column in the post list
 * Online filter in the Users list
-* AI agents labelled in Who's Online, the admin bar, and the Editors column, once a plugin such as Agent Users marks them
+* AI agents labelled in the admin bar, the Active Posts widget, and the Editors column, once a plugin such as Agent Users marks them
 
 = For Developers =
 
@@ -58,7 +58,7 @@ Anyone with the `manage_network` capability, which on a default network means su
 
 = Can a site stop recording presence? =
 
-Yes. Clear the **Presence** checkbox on Settings > General, or run `wp presence recording set off`. Every screen empties within one TTL as the rows already stored expire. On multisite, Network Admin > Settings has the same checkbox for every site at once; whichever switch is off decides.
+Yes. Clear the **Presence** checkbox on Settings > General, or run `wp presence recording set off`. Every screen empties as the rows already stored expire. On multisite, Network Admin > Settings has the same checkbox for every site at once; whichever switch is off decides.
 
 For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording_enabled` filters take the checkboxes as their defaults, so a filter always has the last word.
 
