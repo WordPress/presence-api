@@ -17,6 +17,16 @@ Knowing who is logged in, on which screen, and editing which post means frequent
 
 ![The dashboard with 101 people online, the admin bar's presence menu open, and Active Posts listing who is editing each post and page](plugins/presence-api/.wordpress-org/screenshot-1.png)
 
+## Features
+
+- Admin bar indicator showing who's online and who's on this page
+- Active Posts dashboard widget grouped by post
+- Editors column in the post list
+- Online filter in the Users list
+- AI agents labelled in Who's Online, the admin bar, and the Editors column (see [Agents](#agents))
+- Notice when someone else saves the screen you have open (see [Stale-screen detection](#stale-screen-detection))
+- On multisite, a Who's Online widget in Network Admin, an Online column in the Sites list, and an Online view, filter, and column in the Users list
+
 ## Run locally
 
 ```bash
