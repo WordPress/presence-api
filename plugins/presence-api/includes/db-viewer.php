@@ -36,7 +36,7 @@ add_action(
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$rows = $wpdb->get_results(
 				$wpdb->prepare(
-					"SELECT room, user_id, data, date_gmt FROM {$wpdb->presence} WHERE %s = '' OR room = %s ORDER BY date_gmt DESC",
+					"SELECT room, user_id, client_id, data, date_gmt, expires_gmt FROM {$wpdb->presence} WHERE %s = '' OR room = %s ORDER BY date_gmt DESC",
 					$room,
 					$room
 				)
@@ -62,12 +62,14 @@ add_action(
 	table { border-collapse: collapse; width: 100%; table-layout: fixed; }
 	th { text-align: left; padding: 4px 6px; color: var(--wp-admin-muted, #646970); font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; border-bottom: 1px solid var(--wp-admin-border, #f0f0f1); }
 	td { padding: 3px 6px; border-bottom: 1px solid var(--wp-admin-border, #f0f0f1); white-space: nowrap; }
-	td:nth-child(3) { white-space: normal; word-break: break-word; }
+	td:nth-child(4) { white-space: normal; word-break: break-word; }
 	tr:hover td { background: #f6f7f7; }
-	th:nth-child(1) { width: 30%; }
-	th:nth-child(2) { width: 10%; }
-	th:nth-child(3) { width: 48%; }
-	th:nth-child(4) { width: 12%; }
+	th:nth-child(1) { width: 24%; }
+	th:nth-child(2) { width: 7%; }
+	th:nth-child(3) { width: 13%; }
+	th:nth-child(4) { width: 38%; }
+	th:nth-child(5) { width: 9%; }
+	th:nth-child(6) { width: 9%; }
 
 	tr.is-new td { background: #f0f6e8; }
 	tr.is-fresh td { color: var(--wp-admin-text-dark, #1d2327); }
@@ -82,16 +84,21 @@ add_action(
 		<?php if ( ! empty( $rows ) ) : ?>
 <table>
 <thead>
-<tr><th>room</th><th>id</th><th>data</th><th>age</th></tr>
+<tr><th>room</th><th>id</th><th>client</th><th>data</th><th>age</th><th>expires</th></tr>
 </thead>
 <tbody>
 			<?php
 			foreach ( $rows as $row ) :
-				$ts_ms = (int) ( strtotime( $row->date_gmt . ' +0000' ) * 1000 );
+				$ts_ms  = (int) ( strtotime( $row->date_gmt . ' +0000' ) * 1000 );
+				$exp    = isset( $row->expires_gmt ) ? $row->expires_gmt : '';
+				$exp_ms = ( '' !== $exp && '0000-00-00 00:00:00' !== $exp )
+					? (int) ( strtotime( $exp . ' +0000' ) * 1000 )
+					: $ts_ms + $ttl * 1000;
 				?>
-<tr data-ts="<?php echo esc_attr( $ts_ms ); ?>">
+<tr data-ts="<?php echo esc_attr( $ts_ms ); ?>" data-expires="<?php echo esc_attr( $exp_ms ); ?>">
 	<td><?php echo esc_html( $row->room ); ?></td>
 	<td><?php echo (int) $row->user_id; ?></td>
+	<td><?php echo esc_html( $row->client_id ); ?></td>
 	<td>
 				<?php
 				$decoded = json_decode( $row->data, true );
@@ -110,6 +117,7 @@ add_action(
 				?>
 	</td>
 	<td class="age"></td>
+	<td class="expires"></td>
 </tr>
 	<?php endforeach; ?>
 </tbody>
@@ -120,21 +128,23 @@ add_action(
 (function(){
 	var serverNow = <?php echo (int) $now_ms; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Integer cast. ?>;
 	var offset = serverNow - Date.now();
-	var TTL = <?php echo (int) $ttl; ?>;
 	function tick(){
 		var now = Date.now() + offset;
 		var visible = 0;
 		var rows = document.querySelectorAll('tr[data-ts]');
 		rows.forEach(function(tr, i){
 			var age = Math.max(0, Math.round((now - Number(tr.dataset.ts)) / 1000));
-			if (age >= TTL) {
+			var remaining = Math.round((Number(tr.dataset.expires) - now) / 1000);
+			if (remaining <= 0) {
 				tr.style.display = 'none';
 				return;
 			}
 			tr.style.display = '';
 			visible++;
-			var cell = tr.querySelector('.age');
-			cell.textContent = age + 's';
+			var ageCell = tr.querySelector('.age');
+			if (ageCell) ageCell.textContent = age + 's';
+			var expCell = tr.querySelector('.expires');
+			if (expCell) expCell.textContent = remaining + 's';
 			tr.className = age < 5 ? 'is-new' : age < 30 ? 'is-fresh' : 'is-stale';
 		});
 		var table = document.querySelector('table');
