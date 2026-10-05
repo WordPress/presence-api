@@ -95,13 +95,13 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	 * Matches the recording switch: the network turning a feature off wins,
 	 * and a site cannot turn it back on.
 	 *
-	 * @group multisite
+	 * @group ms-required
 	 *
 	 * @covers ::wp_presence_feature_enabled
 	 */
 	public function test_the_network_switching_a_feature_off_wins_over_the_site() {
 		if ( ! is_multisite() ) {
-			$this->markTestSkipped( 'The network switch only exists on multisite.' );
+			$this->markTestSkipped( 'Requires multisite.' );
 		}
 
 		update_option( 'wp_presence_features', array( 'post-locks' => 1 ) );

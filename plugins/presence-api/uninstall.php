@@ -28,6 +28,7 @@ function wp_presence_uninstall_site() {
 
 	delete_option( 'wp_presence_db_version' );
 	delete_option( 'wp_presence_recording' );
+	delete_option( 'wp_presence_features' );
 	delete_option( 'wp_presence_screen_revisions' );
 	delete_option( 'wp_presence_network_pushed' );
 
@@ -70,6 +71,7 @@ if ( is_multisite() ) {
 	$wpdb->query( "DROP TABLE IF EXISTS {$summary_table}" );
 
 	delete_site_option( 'wp_presence_network_recording' );
+	delete_site_option( 'wp_presence_network_features' );
 	delete_site_option( 'wp_presence_network_screen_revisions' );
 	delete_site_option( 'wp_presence_network_summary_db_version' );
 	delete_site_option( 'wp_presence_network_summary_table.lock' );
