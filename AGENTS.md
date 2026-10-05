@@ -2,6 +2,10 @@
 
 Guidance for coding agents working in this repository. [`.github/CONTRIBUTING.md`](.github/CONTRIBUTING.md) covers local setup, the test commands, and the pull request conventions, and all of it applies here too.
 
+## One sentence
+
+Say each code comment, docblock description and pull request description in one sentence, and add a second only when one cannot carry it, because review here runs on volunteer time.
+
 ## Pull request descriptions
 
 `gh pr create --body` skips the pull request template, so an agent never sees the question it asks. It is this:
