@@ -207,8 +207,9 @@ function wp_presence_update_post_lock( $check, $post_id, $meta_key, $meta_value,
 
 	$date_gmt = gmdate( 'Y-m-d H:i:s', min( $time, time() ) );
 
-	// A lock holds only what core's meta did, so it skips the recording setting.
-	return wp_presence_write_row( $room, wp_presence_post_lock_client_id(), $user_id, '[]', $date_gmt, wp_presence_expiry_for( $date_gmt, $window ) );
+	// A lock holds only what core's meta did, and its reserved client ID is written with recording off.
+	// The window is floored at a second because wp_set_presence() rejects anything shorter.
+	return wp_set_presence( $room, wp_presence_post_lock_client_id(), array(), $user_id, $date_gmt, max( 1, $window ) );
 }
 
 /**

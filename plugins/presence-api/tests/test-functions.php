@@ -1242,6 +1242,22 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * A reserved row is bookkeeping, such as a post lock, which a site keeps
+	 * whether or not it records who is where.
+	 *
+	 * @covers ::wp_set_presence
+	 */
+	public function test_a_reserved_row_is_written_with_recording_off() {
+		add_filter( 'wp_presence_recording_enabled', '__return_false' );
+
+		$result = wp_set_presence( 'test/room', '_bookkeeping', array( 'count' => 1 ) );
+
+		$this->assertTrue( $result );
+		$this->assertCount( 1, wp_presence_room_rows( 'test/room', null, '_bookkeeping' ) );
+		$this->assertSame( array(), wp_get_presence( 'test/room' ), 'A reserved row is still not a participant.' );
+	}
+
+	/**
 	 * @covers ::wp_presence_recording_enabled
 	 */
 	public function test_the_network_can_switch_off_a_site_that_allows_recording() {

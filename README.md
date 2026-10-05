@@ -80,7 +80,7 @@ A `client_id` prefix tells this plugin's rows apart from anyone else's in the sa
 
 Anything else writing to a room, such as a plugin relaying awareness or a REST client, must use its own prefix, like `gse-` for [gutenberg-sync-engines](https://github.com/WordPress/gutenberg-sync-engines). Pass it as the third argument to read back only your rows: `wp_get_presence( $room, $timeout, 'gse-' )`.
 
-A leading `_` marks bookkeeping rows, which are not participants: `_collab` holds a post room's last editor count for the collaboration actions, and `_lock` holds the post's `_edit_lock`. `wp_get_presence()` and the REST collection leave them out, and the REST write and delete routes reject them.
+A leading `_` marks bookkeeping rows, which are not participants: `_collab` holds a post room's last editor count for the collaboration actions, and `_lock` holds the post's `_edit_lock`. `wp_get_presence()` and the REST collection leave them out, and the REST write and delete routes reject them. `wp_set_presence()` writes one even with recording off, which is how a post lock outlasts the switch.
 
 This plugin counts a post room's editors by the `editor-` prefix, so anyone else using it inflates the count.
 

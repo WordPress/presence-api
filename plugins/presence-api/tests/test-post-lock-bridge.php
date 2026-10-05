@@ -203,6 +203,7 @@ class WP_Test_Presence_Post_Lock_Bridge extends WP_Presence_UnitTestCase {
 	/**
 	 * @covers ::wp_presence_post_lock_room
 	 * @covers ::wp_presence_update_post_lock
+	 * @covers ::wp_set_presence
 	 */
 	public function test_post_lock_stays_out_of_meta_when_recording_is_off() {
 		add_filter( 'wp_presence_recording_enabled', '__return_false' );
