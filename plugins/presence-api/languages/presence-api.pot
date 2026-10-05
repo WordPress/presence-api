@@ -2,14 +2,14 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Presence API 0.8.0\n"
+"Project-Id-Version: Presence API 0.14.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/presence-api\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-27T03:20:01+00:00\n"
+"POT-Creation-Date: 2026-10-05T18:47:56+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: presence-api\n"
@@ -37,8 +37,17 @@ msgstr ""
 msgid "https://make.wordpress.org/core/"
 msgstr ""
 
+#: includes/admin-bar.php:161
+#: includes/widgets/class-wp-presence-widget-active-posts.php:264
+msgid "(no title)"
+msgstr ""
+
+#: includes/admin-bar.php:172
+msgid "Edit User"
+msgstr ""
+
 #. translators: %d: Number of online users, including the current user.
-#: includes/admin-bar.php:132
+#: includes/admin-bar.php:266
 #, php-format
 msgid "%d online"
 msgid_plural "%d online"
@@ -46,301 +55,194 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %d: Number of users currently online.
-#: includes/admin-bar.php:134
+#: includes/admin-bar.php:268
 #, php-format
 msgid "%d user online"
 msgid_plural "%d users online"
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/admin-bar.php:137
-msgid "Just you"
+#: includes/admin-bar.php:297
+#: includes/widgets/class-wp-presence-widget-active-posts.php:121
+msgid "Idle"
 msgstr ""
 
-#: includes/admin-bar.php:138
-msgid "Only you are online"
+#. translators: %s: Display name.
+#: includes/admin-bar.php:349
+#: includes/post-list.php:146
+#: includes/widgets/class-wp-presence-widget-active-posts.php:159
+#, php-format
+msgid "%s (agent)"
 msgstr ""
 
-#: includes/admin-bar.php:193
-msgid "On this page"
+#. translators: %d: Number of people on a screen whose names are not listed.
+#. translators: %d: Number of other people with the post open.
+#: includes/admin-bar.php:358
+#: includes/widgets/class-wp-presence-widget-active-posts.php:320
+#, php-format
+msgid "%d other"
+msgid_plural "%d others"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: Where the person is, such as a post title or an admin screen.
+#: includes/admin-bar.php:402
+#, php-format
+msgid "on %s"
 msgstr ""
 
-#: includes/admin-bar.php:206
-msgid "Elsewhere"
+#: includes/admin-bar.php:415
+msgid "See everyone online"
 msgstr ""
 
-#. translators: %d: Number of online users the menu leaves out.
-#: includes/admin-bar.php:252
+#. translators: %d: Number of people online the menu leaves out.
+#: includes/admin-bar.php:417
 #, php-format
 msgid "%d more"
 msgid_plural "%d more"
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/admin-bar.php:275
-msgid "View online users"
-msgstr ""
-
-#: includes/admin-bar.php:384
-msgid "Dashboard"
-msgstr ""
-
-#: includes/admin-bar.php:385
-msgid "Posts"
-msgstr ""
-
-#: includes/admin-bar.php:386
-#: includes/admin-bar.php:387
-#: includes/admin-bar.php:485
-msgid "Editing post"
-msgstr ""
-
-#: includes/admin-bar.php:388
-msgid "Writing post"
-msgstr ""
-
-#: includes/admin-bar.php:389
-msgid "Pages"
-msgstr ""
-
-#: includes/admin-bar.php:390
-#: includes/admin-bar.php:485
-msgid "Editing page"
-msgstr ""
-
-#: includes/admin-bar.php:391
-#: includes/admin-bar.php:392
-msgid "Media"
-msgstr ""
-
-#: includes/admin-bar.php:393
-#: includes/admin-bar.php:394
-msgid "Comments"
-msgstr ""
-
-#: includes/admin-bar.php:395
-msgid "Themes"
-msgstr ""
-
-#: includes/admin-bar.php:396
-msgid "Widgets"
-msgstr ""
-
-#: includes/admin-bar.php:397
-msgid "Menus"
-msgstr ""
-
-#: includes/admin-bar.php:398
-msgid "Plugins"
-msgstr ""
-
-#: includes/admin-bar.php:399
-#: includes/admin-bar.php:401
-msgid "Users"
-msgstr ""
-
-#: includes/admin-bar.php:400
-msgid "Profile"
-msgstr ""
-
-#: includes/admin-bar.php:402
-msgid "Tools"
-msgstr ""
-
-#: includes/admin-bar.php:403
-msgid "Import"
-msgstr ""
-
-#: includes/admin-bar.php:404
-msgid "Export"
-msgstr ""
-
-#: includes/admin-bar.php:405
-#: includes/admin-bar.php:406
-#: includes/admin-bar.php:407
-#: includes/admin-bar.php:408
-#: includes/admin-bar.php:409
-#: includes/admin-bar.php:410
-#: includes/plugin.php:151
-#: includes/plugin.php:189
-msgid "Settings"
-msgstr ""
-
-#: includes/admin-bar.php:411
-msgid "Viewing site"
-msgstr ""
-
-#: includes/admin-bar.php:412
-msgid "Logging in"
-msgstr ""
-
-#: includes/admin-bar.php:477
-msgid "Drafting page"
-msgstr ""
-
-#: includes/admin-bar.php:477
-msgid "Drafting post"
-msgstr ""
-
-#: includes/admin-bar.php:479
-msgid "Pending page"
-msgstr ""
-
-#: includes/admin-bar.php:479
-msgid "Pending post"
-msgstr ""
-
-#: includes/admin-bar.php:481
-msgid "Editing private page"
-msgstr ""
-
-#: includes/admin-bar.php:481
-msgid "Editing private post"
-msgstr ""
-
-#: includes/admin-bar.php:483
-msgid "Editing scheduled page"
-msgstr ""
-
-#: includes/admin-bar.php:483
-msgid "Editing scheduled post"
-msgstr ""
-
-#: includes/cli/class-wp-presence-cli-command.php:50
-#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:462
+#: includes/cli/class-wp-presence-cli-command.php:54
+#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:481
 msgid "Presence is not recorded on this site."
 msgstr ""
 
-#: includes/cli/class-wp-presence-cli-command.php:54
+#: includes/cli/class-wp-presence-cli-command.php:58
 msgid "User not found."
 msgstr ""
 
-#: includes/cli/class-wp-presence-cli-command.php:63
+#: includes/cli/class-wp-presence-cli-command.php:67
 msgid "Invalid JSON in --data."
 msgstr ""
 
 #. translators: 1: Room identifier, 2: Client identifier.
-#: includes/cli/class-wp-presence-cli-command.php:72
+#: includes/cli/class-wp-presence-cli-command.php:76
 #, php-format
 msgid "Presence set in room \"%1$s\" for client \"%2$s\"."
 msgstr ""
 
-#: includes/cli/class-wp-presence-cli-command.php:74
+#: includes/cli/class-wp-presence-cli-command.php:78
 msgid "Failed to set presence."
 msgstr ""
 
-#: includes/cli/class-wp-presence-cli-command.php:108
+#: includes/cli/class-wp-presence-cli-command.php:114
 msgid "Please specify a room. Usage: wp presence list <room>"
 msgstr ""
 
 #. translators: %s: Room identifier.
-#: includes/cli/class-wp-presence-cli-command.php:120
+#: includes/cli/class-wp-presence-cli-command.php:126
 #, php-format
 msgid "No presence entries in room \"%s\"."
 msgstr ""
 
 #. translators: %d: Total number of presence entries.
-#: includes/cli/class-wp-presence-cli-command.php:171
+#: includes/cli/class-wp-presence-cli-command.php:179
 #, php-format
 msgid "Total entries: %d"
 msgstr ""
 
 #. translators: %d: Total number of distinct users.
-#: includes/cli/class-wp-presence-cli-command.php:173
+#: includes/cli/class-wp-presence-cli-command.php:181
 #, php-format
 msgid "Total users:   %d"
 msgstr ""
 
-#: includes/cli/class-wp-presence-cli-command.php:176
-#: includes/cli/class-wp-presence-cli-command.php:274
+#: includes/cli/class-wp-presence-cli-command.php:184
+#: includes/cli/class-wp-presence-cli-command.php:284
 msgid "No presence data."
 msgstr ""
 
-#: includes/cli/class-wp-presence-cli-command.php:231
-#: includes/cli/class-wp-presence-cli-command.php:333
+#: includes/cli/class-wp-presence-cli-command.php:241
+#: includes/cli/class-wp-presence-cli-command.php:345
 msgid "This is not a multisite installation."
 msgstr ""
 
-#: includes/cli/class-wp-presence-cli-command.php:237
-#: includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php:116
+#: includes/cli/class-wp-presence-cli-command.php:247
+#: includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php:126
 msgid "Sorry, you are not allowed to view network presence."
 msgstr ""
 
-#: includes/cli/class-wp-presence-cli-command.php:243
-#: includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php:189
+#: includes/cli/class-wp-presence-cli-command.php:253
+#: includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php:205
 msgid "Invalid site ID."
 msgstr ""
 
-#: includes/cli/class-wp-presence-cli-command.php:264
+#: includes/cli/class-wp-presence-cli-command.php:274
 msgid "Presence is not aggregated across this network, so who is online cannot be reported."
 msgstr ""
 
 #. translators: %d: Number of sites with someone online.
-#: includes/cli/class-wp-presence-cli-command.php:269
+#: includes/cli/class-wp-presence-cli-command.php:279
 #, php-format
 msgid "Sites online: %d"
 msgstr ""
 
 #. translators: %d: Number of users online, summed per site.
-#: includes/cli/class-wp-presence-cli-command.php:271
+#: includes/cli/class-wp-presence-cli-command.php:281
 #, php-format
 msgid "Users online: %d"
 msgstr ""
 
-#: includes/cli/class-wp-presence-cli-command.php:347
+#: includes/cli/class-wp-presence-cli-command.php:359
 msgid "Specify on or off."
 msgstr ""
 
-#: includes/cli/class-wp-presence-cli-command.php:363
+#: includes/cli/class-wp-presence-cli-command.php:375
 msgid "Presence recording is on."
 msgstr ""
 
-#: includes/cli/class-wp-presence-cli-command.php:367
+#: includes/cli/class-wp-presence-cli-command.php:379
 msgid "Presence recording is off. Existing entries expire on their own."
 msgstr ""
 
 #. translators: %d: Number of deleted entries.
-#: includes/cli/class-wp-presence-cli-command.php:391
-#: includes/cli/class-wp-presence-cli-command.php:403
+#: includes/cli/class-wp-presence-cli-command.php:405
+#: includes/cli/class-wp-presence-cli-command.php:418
 #, php-format
 msgid "%d entries deleted."
 msgstr ""
 
-#: includes/cli/class-wp-presence-cli-command.php:396
+#: includes/cli/class-wp-presence-cli-command.php:410
 msgid "This will delete all presence data. Continue?"
 msgstr ""
 
-#: includes/cron.php:30
+#: includes/cron.php:34
 msgid "Every Minute (Presence Cleanup)"
 msgstr ""
 
-#: includes/db-viewer.php:80
-msgid "No entries."
-msgstr ""
-
-#: includes/heartbeat.php:106
+#: includes/heartbeat.php:149
 msgid "Home"
 msgstr ""
 
-#: includes/network-sites-list.php:24
-#: includes/network-user-list.php:44
-#: includes/network-user-list.php:98
-#: includes/user-list.php:37
+#: includes/network-sites-list.php:26
+#: includes/network-user-list.php:46
+#: includes/network-user-list.php:104
+#: includes/user-list.php:60
 msgid "Online"
 msgstr ""
 
-#: includes/network-sites-list.php:73
+#: includes/network-sites-list.php:79
 msgid "Presence is not aggregated across this network, so the Online column has no data."
 msgstr ""
 
-#: includes/plugin.php:145
-#: includes/plugin.php:182
+#: includes/plugin.php:163
+#: includes/plugin.php:202
 msgid "View Online Users"
 msgstr ""
 
-#: includes/post-list.php:46
-#: includes/post-list.php:53
+#: includes/plugin.php:169
+#: includes/plugin.php:209
+msgid "Settings"
+msgstr ""
+
+#: includes/post-list.php:50
+#: includes/post-list.php:57
 msgid "Editors"
+msgstr ""
+
+#: includes/presence.php:1602
+msgid "Agent"
 msgstr ""
 
 #: includes/privacy.php:28
@@ -375,8 +277,8 @@ msgstr ""
 
 #: includes/privacy.php:164
 #: includes/privacy.php:182
-#: includes/settings.php:31
-#: includes/settings.php:84
+#: includes/settings.php:33
+#: includes/settings.php:92
 #: includes/site-health.php:50
 msgid "Presence"
 msgstr ""
@@ -404,168 +306,166 @@ msgid "Presence could not be deleted."
 msgstr ""
 
 #. translators: %s: The reserved client_id prefix.
-#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:228
+#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:234
 #, php-format
 msgid "Client IDs beginning with %s are reserved."
 msgstr ""
 
 #. translators: %s: Parameter name.
-#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:249
+#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:257
 #, php-format
 msgid "%s must be an object."
 msgstr ""
 
-#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:259
+#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:267
 msgid "Presence data payload exceeds the maximum allowed size."
 msgstr ""
 
-#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:331
+#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:345
 msgid "Sorry, you are not allowed to view presence in this room."
 msgstr ""
 
-#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:438
+#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:455
 msgid "Sorry, you are not allowed to set presence in this room."
 msgstr ""
 
-#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:470
+#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:489
 msgid "Presence is not available on this site yet."
 msgstr ""
 
-#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:511
+#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:530
 msgid "This client_id is already in use by another user."
 msgstr ""
 
-#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:531
+#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:550
 msgid "You have reached the maximum number of presence entries."
 msgstr ""
 
-#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:542
+#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:561
 msgid "Could not set presence."
 msgstr ""
 
-#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:577
+#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:598
 msgid "Sorry, you are not allowed to remove presence in this room."
 msgstr ""
 
-#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:610
+#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:631
 msgid "Sorry, you are not allowed to remove another user's presence."
 msgstr ""
 
-#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:648
+#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:673
 msgid "Sorry, you are not allowed to view presence rooms."
 msgstr ""
 
-#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:781
+#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:808
 msgid "Sorry, you are not allowed to update this screen revision."
 msgstr ""
 
-#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:802
+#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:831
 msgid "Invalid or empty screen key provided."
 msgstr ""
 
-#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:831
+#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:862
 msgid "The presence room identifier."
 msgstr ""
 
-#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:837
+#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:868
 msgid "The client identifier within the room."
 msgstr ""
 
-#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:843
+#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:874
 msgid "The WordPress user ID associated with this presence entry."
 msgstr ""
 
-#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:849
-#: includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php:333
+#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:880
+#: includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php:355
 msgid "The display name of the user."
 msgstr ""
 
-#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:855
-#: includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php:337
+#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:886
+#: includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php:359
 msgid "The avatar URL of the user."
 msgstr ""
 
-#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:862
-msgid "Arbitrary presence state data. In the admin/online room, screen is omitted unless the current user can view that user's location."
+#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:893
+msgid "Presence state data. The plugin writes the keys listed below from Heartbeat; other plugins may store additional keys. In the admin/online room, it is empty unless the current user can view that user's location."
 msgstr ""
 
-#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:868
-msgid "The color the user wears on every presence surface, from the block editor's collaborator palette."
+#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:899
+msgid "Current WordPress screen ID (for example dashboard or post)."
 msgstr ""
 
-#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:874
+#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:904
+msgid "Related post ID when the user is on a post or a front-end permalink."
+msgstr ""
+
+#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:909
+msgid "Status of the related post when it is known (draft, publish, and so on)."
+msgstr ""
+
+#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:914
+msgid "Document title carried for a front-end URL so it can appear in the admin bar."
+msgstr ""
+
+#: includes/rest-api/endpoints/class-wp-rest-presence-controller.php:921
 msgid "The date the presence was last updated, in GMT."
 msgstr ""
 
-#: includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php:73
+#: includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php:79
 msgid "Unique identifier for the site."
 msgstr ""
 
-#: includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php:290
+#: includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php:312
 msgid "The site ID."
 msgstr ""
 
-#: includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php:296
+#: includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php:318
 msgid "The domain of the site."
 msgstr ""
 
-#: includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php:302
+#: includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php:324
 msgid "The path of the site."
 msgstr ""
 
-#: includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php:308
+#: includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php:330
 msgid "The URL of the site."
 msgstr ""
 
-#: includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php:315
+#: includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php:337
 msgid "How many users are online on the site, which the users list is capped below."
 msgstr ""
 
-#: includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php:321
+#: includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php:343
 msgid "The users online on the site."
 msgstr ""
 
-#: includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php:329
+#: includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php:351
 msgid "The WordPress user ID."
 msgstr ""
 
-#. translators: 1: display name, 2: relative time like "2 minutes ago".
-#: includes/screen-revisions.php:655
+#. translators: %s: human-readable time difference like "2 minutes".
+#: includes/screen-revisions.php:820
 #, php-format
-msgid "%1$s updated this screen %2$s."
+msgid "%s ago"
 msgstr ""
 
-#. translators: %s: relative time like "2 minutes ago".
-#: includes/screen-revisions.php:657
-#, php-format
-msgid "This screen was updated %s."
-msgstr ""
-
-#: includes/screen-revisions.php:658
-msgid "Reload"
-msgstr ""
-
-#: includes/screen-revisions.php:659
-msgid "Dismiss this notice."
-msgstr ""
-
-#: includes/settings.php:65
+#: includes/settings.php:71
 msgid "Record who is working where in the admin"
 msgstr ""
 
-#: includes/settings.php:68
+#: includes/settings.php:74
 msgid "Presence rows expire on their own, so switching this off empties every presence screen within a few minutes."
 msgstr ""
 
-#: includes/settings.php:87
+#: includes/settings.php:95
 msgid "Recording"
 msgstr ""
 
-#: includes/settings.php:91
+#: includes/settings.php:99
 msgid "Record presence on sites in this network"
 msgstr ""
 
-#: includes/settings.php:94
+#: includes/settings.php:102
 msgid "Switching this off stops recording everywhere, whatever an individual site has chosen."
 msgstr ""
 
@@ -598,68 +498,60 @@ msgstr ""
 msgid "A plugin that controls Heartbeat, or code removing its script, is the usual cause."
 msgstr ""
 
-#: includes/widgets/class-wp-presence-network-widget-whos-online.php:39
+#: includes/widgets/class-wp-presence-network-widget-whos-online.php:43
 msgid "Who's Online"
 msgstr ""
 
-#: includes/widgets/class-wp-presence-network-widget-whos-online.php:140
-#: includes/widgets/class-wp-presence-network-widget-whos-online.php:255
+#: includes/widgets/class-wp-presence-network-widget-whos-online.php:151
 msgid "Presence is not aggregated across this network, so who is online cannot be shown."
 msgstr ""
 
-#: includes/widgets/class-wp-presence-network-widget-whos-online.php:145
-#: includes/widgets/class-wp-presence-network-widget-whos-online.php:254
+#: includes/widgets/class-wp-presence-network-widget-whos-online.php:155
 msgid "No users are currently online anywhere on the network."
 msgstr ""
 
-#: includes/widgets/class-wp-presence-network-widget-whos-online.php:149
-#: includes/widgets/class-wp-presence-network-widget-whos-online.php:256
+#: includes/widgets/class-wp-presence-network-widget-whos-online.php:158
 msgid "Sites with online users"
 msgstr ""
 
 #. translators: %d: Number of additional sites with online users.
-#: includes/widgets/class-wp-presence-network-widget-whos-online.php:170
-#: includes/widgets/class-wp-presence-network-widget-whos-online.php:258
+#: includes/widgets/class-wp-presence-network-widget-whos-online.php:179
 #, php-format
 msgid "+%d more site — view all"
 msgid_plural "+%d more sites — view all"
 msgstr[0] ""
 msgstr[1] ""
 
-#. translators: %d: Number of additional sites with online users.
-#: includes/widgets/class-wp-presence-network-widget-whos-online.php:260
-#, php-format
-msgid "+%d more sites — view all"
-msgstr ""
-
-#: includes/widgets/class-wp-presence-widget-active-posts.php:30
+#: includes/widgets/class-wp-presence-widget-active-posts.php:34
 msgid "Active Posts"
 msgstr ""
 
-#: includes/widgets/class-wp-presence-widget-active-posts.php:107
-#: includes/widgets/class-wp-presence-widget-active-posts.php:125
+#: includes/widgets/class-wp-presence-widget-active-posts.php:106
 msgid "All quiet."
 msgstr ""
 
-#: includes/widgets/class-wp-presence-widget-active-posts.php:108
-#: includes/widgets/class-wp-presence-widget-active-posts.php:127
-msgid "Posts currently being edited"
-msgstr ""
-
 #: includes/widgets/class-wp-presence-widget-active-posts.php:109
-msgid "Editing"
+msgid "Posts people have open"
 msgstr ""
 
-#: includes/widgets/class-wp-presence-widget-active-posts.php:110
-#: includes/widgets/class-wp-presence-widget-active-posts.php:139
-msgid "Idle"
-msgstr ""
-
-#. translators: %d: Number of editors.
-#: includes/widgets/class-wp-presence-widget-active-posts.php:112
-#: includes/widgets/class-wp-presence-widget-active-posts.php:157
+#. translators: %s: User's display name.
+#: includes/widgets/class-wp-presence-widget-active-posts.php:312
 #, php-format
-msgid "%d editors"
+msgid "%s is currently editing"
+msgstr ""
+
+#. translators: %d: Number of people with the post open.
+#: includes/widgets/class-wp-presence-widget-active-posts.php:326
+#, php-format
+msgid "%d person"
+msgid_plural "%d people"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: 1: Who has the post open. 2: Singular post type name, such as Page.
+#: includes/widgets/class-wp-presence-widget-active-posts.php:332
+#, php-format
+msgid "%1$s · %2$s"
 msgstr ""
 
 #: presence-api.php:27
@@ -668,4 +560,24 @@ msgstr ""
 
 #: presence-api.php:41
 msgid "Presence API: The presence table is already registered by WordPress or another plugin."
+msgstr ""
+
+#: assets/js/stale-screen.js:149
+msgid "Reload"
+msgstr ""
+
+#: assets/js/stale-screen.js:161
+msgid "Dismiss this notice."
+msgstr ""
+
+#. translators: 1: display name, 2: relative time like "2 minutes ago".
+#: assets/js/stale-screen.js:181
+#, js-format
+msgid "%1$s updated this screen %2$s."
+msgstr ""
+
+#. translators: %s: relative time like "2 minutes ago".
+#: assets/js/stale-screen.js:188
+#, js-format
+msgid "This screen was updated %s."
 msgstr ""
