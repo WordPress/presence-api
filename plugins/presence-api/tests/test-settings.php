@@ -51,13 +51,18 @@ class WP_Test_Presence_Settings extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_render_recording_field
 	 */
 	public function test_the_checkbox_follows_the_stored_option() {
+		// The feature checkboxes render in the same field, so look at this box alone.
+		$checkbox = '/<input type="checkbox" id="wp_presence_recording"[^>]*>/';
+
 		update_option( 'wp_presence_recording', '1' );
-		$this->assertStringContainsString( 'checked', $this->render( 'wp_presence_render_recording_field' ) );
+		preg_match( $checkbox, $this->render( 'wp_presence_render_recording_field' ), $box );
+		$this->assertStringContainsString( 'checked', $box[0] );
 
 		update_option( 'wp_presence_recording', '0' );
 		$off = $this->render( 'wp_presence_render_recording_field' );
+		preg_match( $checkbox, $off, $box );
 
-		$this->assertStringNotContainsString( 'checked', $off );
+		$this->assertStringNotContainsString( 'checked', $box[0] );
 		// An unchecked box posts nothing, so the hidden field is what carries the off.
 		$this->assertStringContainsString( 'name="wp_presence_recording" value="0"', $off );
 	}
@@ -67,8 +72,10 @@ class WP_Test_Presence_Settings extends WP_Presence_UnitTestCase {
 	 */
 	public function test_the_network_checkbox_follows_the_stored_option() {
 		update_site_option( 'wp_presence_network_recording', '0' );
+		preg_match( '/<input type="checkbox" name="wp_presence_network_recording"[^>]*>/', $this->render( 'wp_presence_render_network_settings' ), $box );
 
-		$this->assertStringNotContainsString( 'checked', $this->render( 'wp_presence_render_network_settings' ) );
+		// The feature checkboxes share the screen, so look at this box alone.
+		$this->assertStringNotContainsString( 'checked', $box[0] );
 	}
 
 	/**
