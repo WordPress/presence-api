@@ -6,10 +6,12 @@ on:
     paths:
       - '.github/scripts/**'
       - 'scripts/make-pot.sh'
+      - 'scripts/sync-versions.sh'
   pull_request:
     paths:
       - '.github/scripts/**'
       - 'scripts/make-pot.sh'
+      - 'scripts/sync-versions.sh'
 
 # Disable permissions for all available scopes by default.
 # Any needed permissions should be configured at the job level.
