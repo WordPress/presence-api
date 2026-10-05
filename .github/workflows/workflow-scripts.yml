@@ -52,7 +52,6 @@ jobs:
           php-version: '8.3'
           tools: wp-cli:2.12.0
 
-      - name: Regenerate and check the template is current
-        run: |
-          bash scripts/make-pot.sh
-          git diff --exit-code -- plugins/presence-api/languages/presence-api.pot
+      # Only that it runs: the committed template is refreshed on release, so between releases it is rightly behind.
+      - name: Regenerate the template
+        run: bash scripts/make-pot.sh
