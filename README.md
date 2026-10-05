@@ -290,7 +290,7 @@ add_filter( 'wp_presence_recording_enabled', '__return_false' );
 On multisite, `wp_presence_network_recording_enabled` does the same for every site, defaulting to the **Presence** checkbox on Network Admin > Settings. Either switch turning recording off wins.
 
 #### `wp_presence_feature_enabled`
-Whether a piece of the plugin is on for this site, passed the feature key. Default: its checkbox under **Presence features** on Settings > General, on until switched off. On multisite, the same checkbox on Network Admin > Settings switches a feature off for every site. Hooks are registered when the plugin loads, so add this from a must-use plugin. Only `post-locks` can be switched off so far; the rest of the pieces follow in [#710](https://github.com/WordPress/presence-api/issues/710).
+Whether a piece of the plugin is on for this site, passed the feature key. Default: its checkbox on Settings > Presence API, on until switched off. On multisite, the same checkbox on Network Admin > Settings > Presence API switches a feature off for every site. Hooks are registered when the plugin loads, so add this from a must-use plugin. Only `post-locks` can be switched off so far; the rest of the pieces follow in [#710](https://github.com/WordPress/presence-api/issues/710).
 ```php
 add_filter( 'wp_presence_feature_enabled', function ( $enabled, $feature ) {
     return 'post-locks' === $feature ? false : $enabled;
@@ -494,7 +494,7 @@ A consumer like Gutenberg's sync poll loop ([presence-api#444](https://github.co
 
 ## Post-lock bridge
 
-Keeps `_edit_lock` in the post room's `_lock` row instead of post meta, so refreshing a lock no longer makes cached post queries stale. Meta short-circuits keep `wp_check_post_lock()` and other callers working, and it applies to every post type even with recording off. Switch off **Post locks** under **Presence features** on Settings > General and locks stay in post meta, as core keeps them.
+Keeps `_edit_lock` in the post room's `_lock` row instead of post meta, so refreshing a lock no longer makes cached post queries stale. Meta short-circuits keep `wp_check_post_lock()` and other callers working, and it applies to every post type even with recording off. Switch off **Post locks** on Settings > Presence API and locks stay in post meta, as core keeps them.
 
 ## Capability
 
