@@ -1,6 +1,7 @@
 <?php
 /**
- * Settings: the recording switch on Settings > General and Network Settings.
+ * Settings: the recording and feature switches on Settings > General and
+ * Network Settings.
  *
  * @package Presence_API
  */
@@ -24,6 +25,17 @@ function wp_presence_register_settings() {
 			'type'              => 'boolean',
 			'default'           => true,
 			'sanitize_callback' => 'wp_presence_sanitize_checkbox',
+			'show_in_rest'      => false,
+		)
+	);
+
+	register_setting(
+		'general',
+		'wp_presence_features',
+		array(
+			'type'              => 'object',
+			'default'           => array(),
+			'sanitize_callback' => 'wp_presence_sanitize_features',
 			'show_in_rest'      => false,
 		)
 	);
@@ -74,6 +86,42 @@ function wp_presence_render_recording_field() {
 		<?php esc_html_e( 'Presence rows expire on their own, so switching this off empties every presence screen within a few minutes.', 'presence-api' ); ?>
 	</p>
 	<?php
+	wp_presence_render_feature_checkboxes( 'wp_presence_features', get_option( 'wp_presence_features', array() ) );
+}
+
+/**
+ * Renders a checkbox per feature, posted as an array under one option name.
+ *
+ * Each box has a hidden 0 before it, so an unchecked box still posts and is
+ * stored as off rather than missing, which reads as on.
+ *
+ * @access private
+ *
+ * @since 0.16.0
+ *
+ * @param string $name   The option name the boxes post under.
+ * @param mixed  $stored The stored option value.
+ */
+function wp_presence_render_feature_checkboxes( $name, $stored ) {
+	$features = wp_presence_get_features();
+
+	if ( empty( $features ) ) {
+		return;
+	}
+	?>
+	<fieldset>
+		<legend class="screen-reader-text"><?php esc_html_e( 'Presence features', 'presence-api' ); ?></legend>
+		<?php foreach ( $features as $feature => $details ) : ?>
+			<?php $field_name = $name . '[' . $feature . ']'; ?>
+			<input type="hidden" name="<?php echo esc_attr( $field_name ); ?>" value="0" />
+			<label>
+				<input type="checkbox" name="<?php echo esc_attr( $field_name ); ?>" value="1" <?php checked( wp_presence_feature_stored_choice( $stored, $feature ) ); ?> />
+				<?php echo esc_html( $details['label'] ); ?>
+			</label>
+			<p class="description"><?php echo esc_html( $details['description'] ); ?></p>
+		<?php endforeach; ?>
+	</fieldset>
+	<?php
 }
 
 /**
@@ -103,6 +151,17 @@ function wp_presence_render_network_settings() {
 				</p>
 			</td>
 		</tr>
+		<?php if ( wp_presence_get_features() ) : ?>
+		<tr>
+			<th scope="row"><?php esc_html_e( 'Features', 'presence-api' ); ?></th>
+			<td>
+				<?php wp_presence_render_feature_checkboxes( 'wp_presence_network_features', get_site_option( 'wp_presence_network_features', array() ) ); ?>
+				<p class="description">
+					<?php esc_html_e( 'Switching a feature off here turns it off on every site, whatever an individual site has chosen.', 'presence-api' ); ?>
+				</p>
+			</td>
+		</tr>
+		<?php endif; ?>
 	</table>
 	<?php
 }
@@ -121,4 +180,9 @@ function wp_presence_save_network_settings() {
 	$submitted = ! empty( $_POST['wp_presence_network_recording'] );
 
 	update_site_option( 'wp_presence_network_recording', wp_presence_sanitize_checkbox( $submitted ) );
+
+	// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Verified by core in wp-admin/network/settings.php; sanitized to known keys and 0 or 1 below.
+	$features = isset( $_POST['wp_presence_network_features'] ) ? wp_unslash( $_POST['wp_presence_network_features'] ) : array();
+
+	update_site_option( 'wp_presence_network_features', wp_presence_sanitize_features( $features ) );
 }
