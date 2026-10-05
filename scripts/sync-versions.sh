@@ -120,6 +120,9 @@ for block in blocks:
         r'\.claude\b',               # internal .claude directory
         r'merge conflict',           # git housekeeping
         r'^\*\*test[^*]*:\*\*',     # **test:** scoped commits
+        r'\bDB viewer\b',            # WP_DEBUG-only tool, left out of the zip
+        r'\bdebugger\b',             # WP_DEBUG-only tool, left out of the zip
+        r'release-please',           # release tooling
     ]
 
     def _skip(text):
