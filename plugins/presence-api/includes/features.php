@@ -32,7 +32,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @access private
  *
- * @since 0.16.0
+ * @since 0.15.0
  *
  * @return array<string, array{label: string, description: string}> Features keyed by feature.
  */
@@ -61,7 +61,7 @@ function wp_presence_get_features() {
  * call the functions every feature is built on, and those are never switched
  * off.
  *
- * @since 0.16.0
+ * @since 0.15.0
  *
  * @param string $feature Feature key from wp_presence_get_features().
  * @return bool Whether the feature is on.
@@ -79,7 +79,7 @@ function wp_presence_feature_enabled( $feature ) {
 	 * Read when the plugin loads, so a callback has to be added before then,
 	 * from a must-use plugin or an earlier-loading plugin.
 	 *
-	 * @since 0.16.0
+	 * @since 0.15.0
 	 *
 	 * @param bool   $enabled Whether the feature is on. Default is the stored
 	 *                        choice, true when there is none.
@@ -93,7 +93,7 @@ function wp_presence_feature_enabled( $feature ) {
  *
  * @access private
  *
- * @since 0.16.0
+ * @since 0.15.0
  *
  * @param mixed  $stored  The stored option value.
  * @param string $feature Feature key.
@@ -116,7 +116,7 @@ function wp_presence_feature_stored_choice( $stored, $feature ) {
  *
  * @access private
  *
- * @since 0.16.0
+ * @since 0.15.0
  *
  * @param mixed $value The submitted value.
  * @return array<string, int> Each feature's choice, 1 for on and 0 for off.

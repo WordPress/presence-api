@@ -97,7 +97,7 @@ function wp_presence_render_recording_field() {
  *
  * @access private
  *
- * @since 0.16.0
+ * @since 0.15.0
  *
  * @param string $name   The option name the boxes post under.
  * @param mixed  $stored The stored option value.
