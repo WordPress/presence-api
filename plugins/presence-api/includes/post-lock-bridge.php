@@ -252,6 +252,12 @@ function wp_presence_delete_post_lock( $check, $post_id, $meta_key, $meta_value,
 function wp_presence_prime_post_locks( $post_ids ) {
 	global $wpdb, $_wp_presence_post_locks;
 
+	// Only wp_presence_get_post_lock() reads what this primes, so with it
+	// unhooked the locks come from post meta and the query would be wasted.
+	if ( ! has_filter( 'get_post_metadata', 'wp_presence_get_post_lock' ) ) {
+		return;
+	}
+
 	$rooms = array();
 
 	foreach ( $post_ids as $post_id ) {
