@@ -3,7 +3,7 @@
  * DB viewer: renders the wp_presence table as a minimal standalone page.
  *
  * Accessed via ?presence-db=1 on any WordPress URL. Shows live table data
- * sorted newest first with age indicators and TTL-based row expiry.
+ * sorted newest first with age indicators and each row's own expiry.
  *
  * @package Presence_API
  */
@@ -43,7 +43,6 @@ add_action(
 			);
 		}
 
-		$ttl    = wp_presence_get_timeout();
 		$now_ms = (int) ( microtime( true ) * 1000 );
 
 		header( 'Content-Type: text/html; charset=utf-8' );
@@ -90,10 +89,9 @@ add_action(
 			<?php
 			foreach ( $rows as $row ) :
 				$ts_ms  = (int) ( strtotime( $row->date_gmt . ' +0000' ) * 1000 );
-				$exp    = isset( $row->expires_gmt ) ? $row->expires_gmt : '';
-				$exp_ms = ( '' !== $exp && '0000-00-00 00:00:00' !== $exp )
-					? (int) ( strtotime( $exp . ' +0000' ) * 1000 )
-					: $ts_ms + $ttl * 1000;
+				$exp_ms = '0000-00-00 00:00:00' === $row->expires_gmt
+					? 0
+					: (int) ( strtotime( $row->expires_gmt . ' +0000' ) * 1000 );
 				?>
 <tr data-ts="<?php echo esc_attr( $ts_ms ); ?>" data-expires="<?php echo esc_attr( $exp_ms ); ?>">
 	<td><?php echo esc_html( $row->room ); ?></td>
