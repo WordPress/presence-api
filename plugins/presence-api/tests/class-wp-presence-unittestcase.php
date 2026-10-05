@@ -17,6 +17,8 @@ abstract class WP_Presence_UnitTestCase extends WP_UnitTestCase {
 		// after it the statement lands in a fresh transaction and is rolled back.
 		delete_option( 'wp_presence_recording' );
 		delete_site_option( 'wp_presence_network_recording' );
+		delete_option( 'wp_presence_features' );
+		delete_site_option( 'wp_presence_network_features' );
 		unset( $GLOBALS['_wp_presence_post_locks'] );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery
