@@ -527,9 +527,14 @@ function wp_presence_is_valid_date_gmt( $date_gmt ) {
  * Uses INSERT ... ON DUPLICATE KEY UPDATE for atomic upserts
  * via the UNIQUE KEY (room, client_id).
  *
+ * Nothing is written while recording is off, unless the client ID is
+ * reserved: a reserved row is the plugin's own bookkeeping, such as a post
+ * lock, which a site keeps whether or not it records who is where.
+ *
  * @since 0.1.1
  * @since 0.5.0 Added the $date_gmt parameter.
  * @since 0.7.0 Added the $expires_in parameter.
+ * @since 0.15.0 A reserved client ID is written with recording off.
  *
  * @param string      $room      The room identifier.
  * @param string      $client_id The client identifier.
@@ -561,7 +566,8 @@ function wp_presence_is_valid_date_gmt( $date_gmt ) {
  *              $date_gmt or an unusable $expires_in).
  */
 function wp_set_presence( $room, $client_id, $state, $user_id = 0, $date_gmt = null, $expires_in = null ) {
-	if ( ! wp_presence_recording_enabled() ) {
+	// A reserved row is bookkeeping rather than a participant, so recording does not decide it.
+	if ( ! wp_presence_is_reserved_client_id( $client_id ) && ! wp_presence_recording_enabled() ) {
 		return false;
 	}
 
