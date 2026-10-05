@@ -144,8 +144,10 @@ for block in blocks:
         if not bm:
             continue
         text = bm.group(1)
-        # Strip trailing commit link(s): ([abc123](url))
-        text = re.sub(r'\s+\(\[[\da-f]+\]\([^)]+\)(?:,\s*\[\w+\]\([^)]+\))*\)$', '', text)
+        # Strip trailing commit link(s): ([abc123](url)), plus the
+        # `, closes [#12](url)` release-please appends after them when the
+        # commit carries a `Fixes #12` footer.
+        text = re.sub(r'\s+\(\[[\da-f]+\]\([^)]+\)(?:,\s*\[\w+\]\([^)]+\))*\)(?:,\s*closes\s+\[#\d+\]\([^)]+\)(?:,?\s+\[#\d+\]\([^)]+\))*)?$', '', text)
         if _skip(text):
             continue
         # Strip leading **scope:** prefix added by release-please for scoped commits
