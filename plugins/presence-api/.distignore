@@ -1,6 +1,7 @@
 .distignore
 .wordpress-org
 tests
+assets/js/test/
 src/hooks/test/
 src/utils/test/
 includes/db-viewer.php

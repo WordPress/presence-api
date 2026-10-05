@@ -5,6 +5,7 @@ build/
 .cache/
 .phpunit.result.cache
 coverage.xml
+coverage-multisite.xml
 .env
 .wp-env.override.json
 plugin-check.json

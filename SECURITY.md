@@ -20,5 +20,5 @@ Only the most recent release receives security updates. The plugin is pre-1.0; b
 
 | Version | Supported |
 | --- | --- |
-| `0.1.x` | ✅ |
-| `< 0.1` | ❌ |
+| Latest release | ✅ |
+| Earlier releases | ❌ |
