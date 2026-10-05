@@ -74,7 +74,7 @@ class WP_Test_Presence_Settings extends WP_Presence_UnitTestCase {
 		update_site_option( 'wp_presence_network_recording', '0' );
 		preg_match( '/<input type="checkbox" name="wp_presence_network_recording"[^>]*>/', $this->render( 'wp_presence_render_network_settings' ), $box );
 
-		// The feature checkboxes share the screen, so look at this box alone.
+		// Read the box itself, so nothing else on the screen can satisfy the assertion.
 		$this->assertStringNotContainsString( 'checked', $box[0] );
 	}
 

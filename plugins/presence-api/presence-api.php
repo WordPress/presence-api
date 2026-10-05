@@ -134,6 +134,9 @@ add_action( 'cli_init', 'wp_maybe_create_presence_table' );
 wp_cache_add_non_persistent_groups( 'presence' );
 
 add_action( 'admin_init', 'wp_presence_register_settings' );
+add_action( 'admin_init', 'wp_presence_register_feature_settings' );
+// Priority 9, where Gutenberg adds its own page under Settings.
+add_action( 'admin_menu', 'wp_presence_add_features_page', 9 );
 
 add_filter( 'get_user_option_meta-box-order_dashboard', 'wp_presence_default_widget_order' );
 add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'wp_presence_plugin_action_links' );
@@ -155,6 +158,8 @@ if ( is_multisite() ) {
 	add_action( 'cli_init', 'wp_maybe_create_presence_network_summary_table' );
 	add_action( 'wpmu_options', 'wp_presence_render_network_settings' );
 	add_action( 'update_wpmu_options', 'wp_presence_save_network_settings' );
+	add_action( 'network_admin_menu', 'wp_presence_add_network_features_page' );
+	add_action( 'network_admin_edit_wp_presence_features', 'wp_presence_save_network_features' );
 	add_filter( 'network_admin_plugin_action_links_' . plugin_basename( __FILE__ ), 'wp_presence_network_plugin_action_links' );
 }
 

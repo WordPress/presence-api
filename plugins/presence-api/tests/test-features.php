@@ -24,7 +24,7 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	);
 
 	public function tear_down() {
-		unset( $_POST['wp_presence_network_features'], $_POST['wp_presence_network_recording'] );
+		unset( $_POST['wp_presence_network_features'], $_REQUEST['_wpnonce'] );
 		parent::tear_down();
 	}
 
@@ -189,64 +189,134 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * @covers ::wp_presence_register_settings
+	 * register_setting() is what lets options.php save the plugin's own page.
+	 *
+	 * @covers ::wp_presence_register_feature_settings
 	 */
-	public function test_the_option_is_allowed_through_options_php() {
-		wp_presence_register_settings();
+	public function test_the_option_is_saved_from_the_plugins_own_page() {
+		wp_presence_register_feature_settings();
 
-		$this->assertArrayHasKey( 'wp_presence_features', get_registered_settings() );
+		$registered = get_registered_settings();
+
+		$this->assertSame( 'presence-api', $registered['wp_presence_features']['group'] );
 	}
 
 	/**
-	 * A visible row heading is what labels the group for sighted users.
+	 * The recording switch is the setting a site keeps, so the feature switches stay off its screen.
 	 *
+	 * @covers ::wp_presence_register_feature_settings
 	 * @covers ::wp_presence_register_settings
 	 */
-	public function test_the_features_have_their_own_row_on_settings_general() {
+	public function test_each_feature_has_a_row_on_the_plugins_page_and_none_on_settings_general() {
 		global $wp_settings_fields;
 
 		wp_presence_register_settings();
+		wp_presence_register_feature_settings();
 
-		$this->assertSame( 'Presence features', $wp_settings_fields['general']['default']['wp_presence_features']['title'] );
+		$this->assertSame( 'Post locks', $wp_settings_fields['presence-api']['wp_presence_features']['wp_presence_features_post-locks']['title'] );
+		$this->assertArrayNotHasKey( 'wp_presence_features_post-locks', $wp_settings_fields['general']['default'] );
 		$this->assertStringNotContainsString( 'wp_presence_features', $this->render( 'wp_presence_render_recording_field' ) );
 	}
 
 	/**
-	 * @covers ::wp_presence_render_features_field
-	 * @covers ::wp_presence_render_feature_checkboxes
+	 * @covers ::wp_presence_add_features_page
 	 */
-	public function test_each_feature_has_a_checkbox_in_the_features_row() {
-		$checkbox = '/<input type="checkbox" name="wp_presence_features\[post-locks\]"[^>]*>/';
+	public function test_the_page_sits_under_settings() {
+		global $submenu;
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		wp_presence_add_features_page();
+
+		$this->assertContains( 'presence-api', wp_list_pluck( $submenu['options-general.php'], 2 ) );
+	}
+
+	/**
+	 * @covers ::wp_presence_render_feature_field
+	 */
+	public function test_a_feature_checkbox_follows_the_stored_option() {
+		$args     = array(
+			'label_for'   => 'wp_presence_features_post-locks',
+			'option'      => 'wp_presence_features',
+			'feature'     => 'post-locks',
+			'description' => 'Keep post locks in the presence table.',
+		);
+		$checkbox = '/<input type="checkbox"[^>]*name="wp_presence_features\[post-locks\]"[^>]*>/';
 
 		delete_option( 'wp_presence_features' );
-		$on = $this->render( 'wp_presence_render_features_field' );
-
-		$this->assertMatchesRegularExpression( $checkbox, $on );
+		$on = $this->render( 'wp_presence_render_feature_field', $args );
 		preg_match( $checkbox, $on, $box );
+
 		$this->assertStringContainsString( 'checked', $box[0], 'A feature never chosen renders checked.' );
-		$this->assertStringContainsString( 'aria-describedby="wp_presence_features-post-locks-description"', $box[0] );
-		$this->assertStringContainsString( 'id="wp_presence_features-post-locks-description"', $on, 'The description the box points at is on the page.' );
 		// An unchecked box posts nothing, so the hidden field is what carries the off.
 		$this->assertStringContainsString( '<input type="hidden" name="wp_presence_features[post-locks]" value="0"', $on );
 
 		update_option( 'wp_presence_features', array( 'post-locks' => 0 ) );
-		preg_match( $checkbox, $this->render( 'wp_presence_render_features_field' ), $box );
+		preg_match( $checkbox, $this->render( 'wp_presence_render_feature_field', $args ), $box );
 
 		$this->assertStringNotContainsString( 'checked', $box[0] );
 	}
 
 	/**
-	 * @covers ::wp_presence_save_network_settings
+	 * A site admin would otherwise see a checked box for a feature that is off.
+	 *
+	 * @group ms-required
+	 *
+	 * @covers ::wp_presence_render_feature_field
 	 */
-	public function test_the_network_features_save_both_ways() {
-		$_POST['wp_presence_network_features'] = array( 'post-locks' => '0' );
-		wp_presence_save_network_settings();
+	public function test_a_site_is_told_when_the_network_has_switched_a_feature_off() {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
 
-		$this->assertSame( array( 'post-locks' => 0 ), get_site_option( 'wp_presence_network_features' ) );
+		$args = array(
+			'label_for'   => 'wp_presence_features_post-locks',
+			'option'      => 'wp_presence_features',
+			'feature'     => 'post-locks',
+			'description' => 'Keep post locks in the presence table.',
+		);
 
-		$_POST['wp_presence_network_features'] = array( 'post-locks' => '1' );
-		wp_presence_save_network_settings();
+		$this->assertStringNotContainsString( 'Switched off for every site', $this->render( 'wp_presence_render_feature_field', $args ) );
 
-		$this->assertSame( array( 'post-locks' => 1 ), get_site_option( 'wp_presence_network_features' ) );
+		update_site_option( 'wp_presence_network_features', array( 'post-locks' => 0 ) );
+
+		$this->assertStringContainsString( 'Switched off for every site', $this->render( 'wp_presence_render_feature_field', $args ) );
+	}
+
+	/**
+	 * Stopped at the redirect, which is the last thing the handler does before it exits.
+	 *
+	 * @group ms-required
+	 *
+	 * @covers ::wp_presence_save_network_features
+	 */
+	public function test_the_network_page_saves_both_ways() {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		$admin_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		grant_super_admin( $admin_id );
+		wp_set_current_user( $admin_id );
+		add_filter(
+			'wp_redirect',
+			static function () {
+				throw new RuntimeException( 'redirected' );
+			}
+		);
+
+		$saved = array();
+
+		foreach ( array( '0', '1' ) as $choice ) {
+			$_REQUEST['_wpnonce']                  = wp_create_nonce( 'wp_presence_network_features' );
+			$_POST['wp_presence_network_features'] = array( 'post-locks' => $choice );
+
+			try {
+				wp_presence_save_network_features();
+			} catch ( RuntimeException $redirected ) {
+				$saved[] = get_site_option( 'wp_presence_network_features' );
+			}
+		}
+
+		$this->assertSame( array( array( 'post-locks' => 0 ), array( 'post-locks' => 1 ) ), $saved );
 	}
 }
