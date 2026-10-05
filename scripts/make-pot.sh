@@ -13,8 +13,10 @@
 #
 #   bash scripts/make-pot.sh
 #
-# A template whose only change is `POT-Creation-Date` is reverted, so the
-# release PR only gets a commit when a translatable string actually changed.
+# A template whose only changes are `POT-Creation-Date` and `X-Generator` is
+# reverted, so rerunning it (or running a different WP-CLI locally) leaves the
+# file alone. The release PR gets a commit when the version bumps and again
+# whenever a translatable string or its location changes.
 
 set -euo pipefail
 
@@ -35,9 +37,9 @@ wp i18n make-pot "$PLUGIN" "$POT" \
 	--domain=presence-api \
 	--exclude="$EXCLUDE"
 
-if git diff --quiet -I '^"POT-Creation-Date: ' -- "$POT"; then
+if git diff --quiet -I '^"POT-Creation-Date: ' -I '^"X-Generator: ' -- "$POT"; then
 	git checkout -- "$POT"
-	echo "No translatable strings changed; left ${POT} as it was"
+	echo "Nothing to translate changed; left ${POT} as it was"
 else
 	echo "Regenerated ${POT}"
 fi
