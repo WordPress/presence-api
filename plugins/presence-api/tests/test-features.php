@@ -24,7 +24,9 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	);
 
 	public function tear_down() {
-		unset( $_POST['wp_presence_network_features'], $_POST['wp_presence_network_recording'] );
+delete_option( 'wp_presence_features' );
+delete_site_option( 'wp_presence_network_features' );
+unset( $_POST['wp_presence_network_features'], $_POST['wp_presence_network_recording'] );
 		parent::tear_down();
 	}
 
