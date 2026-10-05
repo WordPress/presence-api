@@ -5,9 +5,11 @@ on:
     branches: [main]
     paths:
       - '.github/scripts/**'
+      - 'scripts/make-pot.sh'
   pull_request:
     paths:
       - '.github/scripts/**'
+      - 'scripts/make-pot.sh'
 
 # Disable permissions for all available scopes by default.
 # Any needed permissions should be configured at the job level.
@@ -28,3 +30,27 @@ jobs:
 
       - name: Run tests
         run: node --test .github/scripts/*.test.js
+
+  # scripts/make-pot.sh otherwise runs only on a release-please branch, so a
+  # broken WP-CLI setup would first surface as a failed release PR sync.
+  make-pot:
+    name: Regenerate the translation template
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.3'
+          tools: wp-cli:2.12.0
+
+      - name: Regenerate and check the template is current
+        run: |
+          bash scripts/make-pot.sh
+          git diff --exit-code -- plugins/presence-api/languages/presence-api.pot
