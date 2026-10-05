@@ -51,7 +51,7 @@ class WP_Test_Presence_Settings extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_render_recording_field
 	 */
 	public function test_the_checkbox_follows_the_stored_option() {
-		// The feature checkboxes render in the same field, so look at this box alone.
+		// Read the box itself, so nothing else in the field can satisfy the assertion.
 		$checkbox = '/<input type="checkbox" id="wp_presence_recording"[^>]*>/';
 
 		update_option( 'wp_presence_recording', '1' );

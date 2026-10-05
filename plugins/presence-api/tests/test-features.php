@@ -198,14 +198,28 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * @covers ::wp_presence_render_recording_field
+	 * A visible row heading is what labels the group for sighted users.
+	 *
+	 * @covers ::wp_presence_register_settings
+	 */
+	public function test_the_features_have_their_own_row_on_settings_general() {
+		global $wp_settings_fields;
+
+		wp_presence_register_settings();
+
+		$this->assertSame( 'Presence features', $wp_settings_fields['general']['default']['wp_presence_features']['title'] );
+		$this->assertStringNotContainsString( 'wp_presence_features', $this->render( 'wp_presence_render_recording_field' ) );
+	}
+
+	/**
+	 * @covers ::wp_presence_render_features_field
 	 * @covers ::wp_presence_render_feature_checkboxes
 	 */
-	public function test_each_feature_has_a_checkbox_beside_the_recording_switch() {
+	public function test_each_feature_has_a_checkbox_in_the_features_row() {
 		$checkbox = '/<input type="checkbox" name="wp_presence_features\[post-locks\]"[^>]*>/';
 
 		delete_option( 'wp_presence_features' );
-		$on = $this->render( 'wp_presence_render_recording_field' );
+		$on = $this->render( 'wp_presence_render_features_field' );
 
 		$this->assertMatchesRegularExpression( $checkbox, $on );
 		preg_match( $checkbox, $on, $box );
@@ -216,7 +230,7 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 		$this->assertStringContainsString( '<input type="hidden" name="wp_presence_features[post-locks]" value="0"', $on );
 
 		update_option( 'wp_presence_features', array( 'post-locks' => 0 ) );
-		preg_match( $checkbox, $this->render( 'wp_presence_render_recording_field' ), $box );
+		preg_match( $checkbox, $this->render( 'wp_presence_render_features_field' ), $box );
 
 		$this->assertStringNotContainsString( 'checked', $box[0] );
 	}

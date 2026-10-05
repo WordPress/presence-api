@@ -48,6 +48,16 @@ function wp_presence_register_settings() {
 		'default',
 		array( 'label_for' => 'wp_presence_recording' )
 	);
+
+	if ( wp_presence_get_features() ) {
+		add_settings_field(
+			'wp_presence_features',
+			__( 'Presence features', 'presence-api' ),
+			'wp_presence_render_features_field',
+			'general',
+			'default'
+		);
+	}
 }
 
 /**
@@ -86,7 +96,22 @@ function wp_presence_render_recording_field() {
 		<?php esc_html_e( 'Presence rows expire on their own, so switching this off empties every presence screen within a few minutes.', 'presence-api' ); ?>
 	</p>
 	<?php
+}
+
+/**
+ * Renders the feature checkboxes in their own row on Settings > General, so the row's heading labels the group.
+ *
+ * @access private
+ *
+ * @since 0.15.0
+ */
+function wp_presence_render_features_field() {
 	wp_presence_render_feature_checkboxes( 'wp_presence_features', get_option( 'wp_presence_features', array() ) );
+	?>
+	<p class="description">
+		<?php esc_html_e( 'With recording off, the features that show who is online have nothing to show, and post locks work as before.', 'presence-api' ); ?>
+	</p>
+	<?php
 }
 
 /**
