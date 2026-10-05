@@ -367,6 +367,30 @@ add_action( 'wp_presence_admin_room_changed', function() {
 } );
 ```
 
+#### `set_presence`
+Fires after `wp_set_presence()` writes a row, named like core's `set_transient`. A write skipped because the row was unchanged and recently stamped fires nothing, and neither does a reserved row such as `_lock` or `_collab`.
+```php
+add_action( 'set_presence', function( $room, $client_id, $state, $user_id ) {
+    // Push the change to a WebSocket server.
+}, 10, 4 );
+```
+
+#### `removed_presence`
+Fires after `wp_remove_presence()` deletes a client's row from a room, and not when there was no row to delete or the row is a reserved one. A row that expires fires nothing: it stops counting as present at its expiry and is cleaned up later by cron.
+```php
+add_action( 'removed_presence', function( $room, $client_id ) {
+    // Tell the room this client left.
+}, 10, 2 );
+```
+
+#### `removed_user_presence`
+Fires once after `wp_remove_user_presence()` deletes a user's rows across every room, such as on logout. It does not fire `removed_presence` for each row.
+```php
+add_action( 'removed_user_presence', function( $user_id ) {
+    // Drop anything cached for this user.
+} );
+```
+
 ### JS Actions
 Fired through `wp.hooks`, not PHP. The plugin's ping script is the only thing that computes these, so a consumer has to listen rather than poll for them.
 
