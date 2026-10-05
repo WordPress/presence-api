@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/WordPress/presence-api/compare/presence-scenes-v0.1.0...presence-scenes-v0.1.1) (2026-10-05)
+
+
+### Bug Fixes
+
+* mark a playing scene with a ticket instead of a play button ([#713](https://github.com/WordPress/presence-api/issues/713)) ([f1b50e5](https://github.com/WordPress/presence-api/commit/f1b50e5718e2fa956086ba82d163b1a573ac8d15))
+
 ## 0.1.0 (2026-09-30)
 
 
