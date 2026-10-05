@@ -24,9 +24,7 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	);
 
 	public function tear_down() {
-delete_option( 'wp_presence_features' );
-delete_site_option( 'wp_presence_network_features' );
-unset( $_POST['wp_presence_network_features'], $_POST['wp_presence_network_recording'] );
+		unset( $_POST['wp_presence_network_features'], $_POST['wp_presence_network_recording'] );
 		parent::tear_down();
 	}
 
@@ -157,6 +155,24 @@ unset( $_POST['wp_presence_network_features'], $_POST['wp_presence_network_recor
 
 		$this->assertNotEmpty( $stored, 'The lock should be written to post meta.' );
 		$this->assertStringEndsWith( ':' . $user_id, $stored );
+	}
+
+	/**
+	 * Only the unhooked lock filter would read what priming fetches, so the
+	 * Active Posts widget's call must not query the table for nothing.
+	 *
+	 * @covers ::wp_presence_prime_post_locks
+	 */
+	public function test_post_locks_switched_off_skip_priming() {
+		global $wpdb;
+
+		$this->register_hooks_with_post_locks( false );
+		$post_id = self::factory()->post->create();
+
+		$queries = $wpdb->num_queries;
+		wp_presence_prime_post_locks( array( $post_id ) );
+
+		$this->assertSame( $queries, $wpdb->num_queries );
 	}
 
 	/**
