@@ -167,4 +167,10 @@ On every release PR, `scripts/sync-versions.sh` copies the version from `.releas
 bash scripts/sync-versions.sh
 ```
 
+Right after it, `scripts/make-pot.sh` regenerates `plugins/presence-api/languages/presence-api.pot` with WP-CLI, skipping everything in the plugin's `.distignore`, so the template ships with the release it names. It needs [WP-CLI](https://wp-cli.org/) to run locally:
+
+```bash
+bash scripts/make-pot.sh
+```
+
 </details>
