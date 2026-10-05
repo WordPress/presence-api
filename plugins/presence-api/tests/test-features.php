@@ -184,16 +184,23 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_render_feature_checkboxes
 	 */
 	public function test_each_feature_has_a_checkbox_beside_the_recording_switch() {
+		$checkbox = '/<input type="checkbox" name="wp_presence_features\[post-locks\]"[^>]*>/';
+
 		delete_option( 'wp_presence_features' );
 		$on = $this->render( 'wp_presence_render_recording_field' );
 
-		$this->assertStringContainsString( 'name="wp_presence_features[post-locks]" value="1"  checked=\'checked\'', $on, 'A feature never chosen renders checked.' );
+		$this->assertMatchesRegularExpression( $checkbox, $on );
+		preg_match( $checkbox, $on, $box );
+		$this->assertStringContainsString( 'checked', $box[0], 'A feature never chosen renders checked.' );
+		$this->assertStringContainsString( 'aria-describedby="wp_presence_features-post-locks-description"', $box[0] );
+		$this->assertStringContainsString( 'id="wp_presence_features-post-locks-description"', $on, 'The description the box points at is on the page.' );
 		// An unchecked box posts nothing, so the hidden field is what carries the off.
-		$this->assertStringContainsString( 'name="wp_presence_features[post-locks]" value="0"', $on );
+		$this->assertStringContainsString( '<input type="hidden" name="wp_presence_features[post-locks]" value="0"', $on );
 
 		update_option( 'wp_presence_features', array( 'post-locks' => 0 ) );
+		preg_match( $checkbox, $this->render( 'wp_presence_render_recording_field' ), $box );
 
-		$this->assertStringNotContainsString( 'value="1"  checked=\'checked\'', $this->render( 'wp_presence_render_feature_checkboxes', 'wp_presence_features', get_option( 'wp_presence_features' ) ) );
+		$this->assertStringNotContainsString( 'checked', $box[0] );
 	}
 
 	/**

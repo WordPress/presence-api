@@ -112,13 +112,16 @@ function wp_presence_render_feature_checkboxes( $name, $stored ) {
 	<fieldset>
 		<legend class="screen-reader-text"><?php esc_html_e( 'Presence features', 'presence-api' ); ?></legend>
 		<?php foreach ( $features as $feature => $details ) : ?>
-			<?php $field_name = $name . '[' . $feature . ']'; ?>
+			<?php
+			$field_name     = $name . '[' . $feature . ']';
+			$description_id = $name . '-' . $feature . '-description';
+			?>
 			<input type="hidden" name="<?php echo esc_attr( $field_name ); ?>" value="0" />
 			<label>
-				<input type="checkbox" name="<?php echo esc_attr( $field_name ); ?>" value="1" <?php checked( wp_presence_feature_stored_choice( $stored, $feature ) ); ?> />
+				<input type="checkbox" name="<?php echo esc_attr( $field_name ); ?>" value="1" aria-describedby="<?php echo esc_attr( $description_id ); ?>" <?php checked( wp_presence_feature_stored_choice( $stored, $feature ) ); ?> />
 				<?php echo esc_html( $details['label'] ); ?>
 			</label>
-			<p class="description"><?php echo esc_html( $details['description'] ); ?></p>
+			<p class="description" id="<?php echo esc_attr( $description_id ); ?>"><?php echo esc_html( $details['description'] ); ?></p>
 		<?php endforeach; ?>
 	</fieldset>
 	<?php

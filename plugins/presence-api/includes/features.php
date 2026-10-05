@@ -52,6 +52,10 @@ function wp_presence_get_features() {
  * a feature off for every site, and a site cannot switch it back on, the same
  * way the recording switch works.
  *
+ * Hooks are registered once, when the plugin loads, so the answer for the
+ * site a request starts on holds for the whole request, including any
+ * switch_to_blog() inside it.
+ *
  * Unlike wp_presence_recording_enabled(), switching a feature off does not
  * stop rows being written: plugins that keep their own rows in the table only
  * call the functions every feature is built on, and those are never switched
