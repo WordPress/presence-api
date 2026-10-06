@@ -9,7 +9,7 @@ const { missing, MARKER } = run;
 const area = { name: '[Area] Admin UI' };
 const type = { name: '[Type] Bug' };
 
-function fakeGithub( comments ) {
+function fakeGithub( issue, comments ) {
 	const calls = [];
 	const record =
 		( name ) =>
@@ -21,6 +21,7 @@ function fakeGithub( comments ) {
 		paginate: async () => comments,
 		rest: {
 			issues: {
+				get: async () => ( { data: issue } ),
 				listComments: () => {},
 				createComment: record( 'create' ),
 				updateComment: record( 'update' ),
@@ -31,13 +32,14 @@ function fakeGithub( comments ) {
 }
 
 async function check( issue, comments = [] ) {
-	const github = fakeGithub( comments );
+	// The payload is stale on purpose: the fetched issue is what counts.
+	const github = fakeGithub( { state: 'open', ...issue }, comments );
 	await run( {
 		github,
 		context: {
 			repo: { owner: 'WordPress', repo: 'presence-api' },
 			serverUrl: 'https://github.com',
-			payload: { issue: { number: 7, state: 'open', ...issue } },
+			payload: { issue: { number: 7, labels: [], milestone: null } },
 		},
 		core: { info() {} },
 	} );

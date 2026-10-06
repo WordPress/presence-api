@@ -30,8 +30,13 @@ function formatComment( gaps, repoUrl ) {
 
 async function run( { github, context, core } ) {
 	const { owner, repo } = context.repo;
-	const issue = context.payload.issue;
-	const issue_number = issue.number;
+	const issue_number = context.payload.issue.number;
+	// A queued run's payload is from before the labels added since.
+	const { data: issue } = await github.rest.issues.get( {
+		owner,
+		repo,
+		issue_number,
+	} );
 
 	const comments = await github.paginate( github.rest.issues.listComments, {
 		owner,
