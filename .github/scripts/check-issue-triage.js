@@ -8,11 +8,7 @@ const MARKER = '<!-- presence-api:issue-triage -->';
 
 function missing( issue ) {
 	const gaps = [];
-	if (
-		! issue.labels.some( ( l ) =>
-			( l.name ?? l ).startsWith( '[Area]' )
-		)
-	) {
+	if ( ! issue.labels.some( ( l ) => l.name.startsWith( '[Area]' ) ) ) {
 		gaps.push( 'an `[Area]` label' );
 	}
 	if ( ! issue.milestone ) {
@@ -22,10 +18,10 @@ function missing( issue ) {
 }
 
 function formatComment( gaps, repoUrl ) {
-	return [
-		MARKER,
-		`This issue still needs ${ gaps.join( ' and ' ) }. See [Labels](${ repoUrl }/blob/main/.github/CONTRIBUTING.md#labels).`,
-	].join( '\n' );
+	const labels = `${ repoUrl }/blob/main/.github/CONTRIBUTING.md#labels`;
+	return `${ MARKER }\nThis issue still needs ${ gaps.join(
+		' and '
+	) }. See [Labels](${ labels }).`;
 }
 
 async function run( { github, context, core } ) {

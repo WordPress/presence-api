@@ -11,11 +11,9 @@ const type = { name: '[Type] Bug' };
 
 function fakeGithub( issue, comments ) {
 	const calls = [];
-	const record =
-		( name ) =>
-		async ( args ) => {
-			calls.push( [ name, args ] );
-		};
+	const record = ( name ) => async ( args ) => {
+		calls.push( [ name, args ] );
+	};
 	return {
 		calls,
 		paginate: async () => comments,
