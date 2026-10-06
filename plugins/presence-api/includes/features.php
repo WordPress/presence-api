@@ -44,6 +44,10 @@ function wp_presence_get_features() {
 			'label'       => __( 'Post locks', 'presence-api' ),
 			'description' => __( 'Keep post locks in the presence table instead of post meta, so refreshing a lock does not make cached post queries stale.', 'presence-api' ),
 		),
+		'post-list'  => array(
+			'label'       => __( 'Posts list', 'presence-api' ),
+			'description' => __( 'Show who has each post open in an Editors column on post lists.', 'presence-api' ),
+		),
 	);
 }
 

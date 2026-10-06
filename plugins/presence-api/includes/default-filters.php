@@ -66,8 +66,11 @@ add_action( 'pre_get_users', 'wp_presence_filter_online_users' );
 add_filter( 'heartbeat_received', 'wp_presence_users_list_heartbeat_received', 13, 3 );
 add_filter( 'heartbeat_received', 'wp_presence_users_online_count_heartbeat_received', 13, 3 );
 
-add_action( 'admin_init', 'wp_presence_register_post_list_columns' );
-add_filter( 'heartbeat_received', 'wp_presence_editors_column_heartbeat_received', 13, 2 );
+// Plugin only: the check comes off when core merges the piece.
+if ( wp_presence_feature_enabled( 'post-list' ) ) {
+	add_action( 'admin_init', 'wp_presence_register_post_list_columns' );
+	add_filter( 'heartbeat_received', 'wp_presence_editors_column_heartbeat_received', 13, 2 );
+}
 
 add_action( 'wp_dashboard_setup', array( 'WP_Presence_Widget_Active_Posts', 'register' ) );
 add_filter( 'heartbeat_received', array( 'WP_Presence_Widget_Active_Posts', 'heartbeat_received' ), 10, 3 );
