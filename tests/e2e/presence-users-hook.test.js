@@ -1,8 +1,7 @@
 /**
  * Presence API — usePresenceUsers E2E Tests
  *
- * Loads `wp.presence.usePresenceUsers()` in the block editor through a must-use
- * plugin that depends on the `wp-presence` script, as another plugin would.
+ * Loads `wp.presence.usePresenceUsers()` in the block editor from a must-use plugin that depends on `wp-presence`.
  *
  * @package Presence_API
  */
@@ -34,7 +33,7 @@ function wpEval( phpExpression ) {
 }
 
 test.describe( 'usePresenceUsers', () => {
-	// The repository root is mapped to ABSPATH/presence-api in .wp-env.json, and Classic Editor is active there.
+	// wp-env maps the repository to ABSPATH/presence-api and activates Classic Editor.
 	test.beforeAll( () => {
 		wpEval(
 			`wp_mkdir_p( WPMU_PLUGIN_DIR ); copy( ABSPATH . 'presence-api/tests/e2e/${ MU_PLUGIN }', WPMU_PLUGIN_DIR . '/${ MU_PLUGIN }' ); update_option( 'classic-editor-replace', 'block' );`

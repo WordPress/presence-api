@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Presence Users Hook Consumer
- * Description: Depends on the `wp-presence` script the way another plugin would, for presence-users-hook.test.js.
+ * Description: Depends on `wp-presence` as another plugin would, for presence-users-hook.test.js.
  *
  * @package Presence_API
  */
