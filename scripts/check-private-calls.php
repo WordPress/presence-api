@@ -25,28 +25,35 @@ foreach ( glob( $root . '/plugins/*', GLOB_ONLYDIR ) as $plugin ) {
 	}
 }
 
-// Files built on the Presence API, by part; everything else is the API itself.
-$parts = array(
-	'plugins/presence-api/includes/admin-bar.php'          => 'admin-bar',
-	'plugins/presence-api/includes/widgets/'               => 'widgets',
-	'plugins/presence-api/includes/post-lock-bridge.php'   => 'post-lock-bridge',
-	'plugins/presence-api/includes/user-list.php'          => 'users-list',
-	'plugins/presence-api/includes/network-user-list.php'  => 'users-list',
-	'plugins/presence-api/includes/network-sites-list.php' => 'sites-list',
-	'plugins/presence-api/includes/cli/'                   => 'cli',
-	'plugins/presence-api/includes/db-viewer.php'          => 'debugger',
-	'plugins/presence-api/includes/debugger-admin-bar.php' => 'debugger',
-	'plugins/presence-api/includes/post-list.php'          => 'editors-column',
-	'plugins/presence-scenes/'                             => 'scenes',
+// The Presence API itself; any other file is a feature, and a plugin directory is one feature.
+$api = array(
+	'plugins/presence-api/presence-api.php',
+	'plugins/presence-api/uninstall.php',
+	'plugins/presence-api/includes/avatar-stack.php',
+	'plugins/presence-api/includes/cron.php',
+	'plugins/presence-api/includes/default-filters.php',
+	'plugins/presence-api/includes/features.php',
+	'plugins/presence-api/includes/heartbeat.php',
+	'plugins/presence-api/includes/lifecycle.php',
+	'plugins/presence-api/includes/ms-default-filters.php',
+	'plugins/presence-api/includes/network-functions.php',
+	'plugins/presence-api/includes/plugin.php',
+	'plugins/presence-api/includes/presence.php',
+	'plugins/presence-api/includes/privacy.php',
+	'plugins/presence-api/includes/rest-api.php',
+	'plugins/presence-api/includes/rest-api/',
+	'plugins/presence-api/includes/schema.php',
+	'plugins/presence-api/includes/settings.php',
+	'plugins/presence-api/includes/site-health.php',
 );
 
-$part_of = static function ( $path ) use ( $parts ) {
-	foreach ( $parts as $prefix => $part ) {
+$part_of = static function ( $path ) use ( $api ) {
+	foreach ( $api as $prefix ) {
 		if ( str_starts_with( $path, $prefix ) ) {
-			return $part;
+			return 'api';
 		}
 	}
-	return null;
+	return str_starts_with( $path, 'plugins/presence-api/' ) ? $path : dirname( $path );
 };
 
 $skip = array( T_WHITESPACE, T_COMMENT, T_ATTRIBUTE );
@@ -79,22 +86,22 @@ foreach ( $files as $path => $tokens ) {
 $calls = array();
 foreach ( $files as $path => $tokens ) {
 	$part = $part_of( $path );
-	if ( null === $part ) {
+	if ( 'api' === $part ) {
 		continue;
 	}
 	foreach ( $tokens as $i => $token ) {
 		if ( ! is_array( $token ) || ! in_array( $token[0], array( T_STRING, T_NAME_FULLY_QUALIFIED ), true ) ) {
 			continue;
 		}
-		$name = strtolower( ltrim( $token[1], '\\' ) );
-		if ( ! isset( $private[ $name ] ) || $part_of( $private[ $name ] ) === $part ) {
+		$name = ltrim( $token[1], '\\' );
+		if ( ! isset( $private[ strtolower( $name ) ] ) || $part_of( $private[ strtolower( $name ) ] ) === $part ) {
 			continue;
 		}
 		for ( $j = $i + 1; isset( $tokens[ $j ] ) && is_array( $tokens[ $j ] ) && in_array( $tokens[ $j ][0], $skip, true ); $j++ );
 		for ( $k = $i - 1; $k >= 0 && is_array( $tokens[ $k ] ) && in_array( $tokens[ $k ][0], $skip, true ); $k-- );
 		$before = is_array( $tokens[ $k ] ) ? $tokens[ $k ][0] : $tokens[ $k ];
 		if ( '(' === ( $tokens[ $j ] ?? null ) && ! in_array( $before, array( T_FUNCTION, T_OBJECT_OPERATOR, T_NULLSAFE_OBJECT_OPERATOR, T_DOUBLE_COLON, T_NEW ), true ) ) {
-			$calls[ "$path {$token[1]}()" ] = true;
+			$calls[ "$path $name()" ] = true;
 		}
 	}
 }
@@ -108,7 +115,7 @@ if ( in_array( '--update', $argv, true ) ) {
 	exit( 0 );
 }
 
-$expected = file( $baseline, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES );
+$expected = file( $baseline, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES ) ?: array();
 $added    = array_diff( $actual, $expected );
 $removed  = array_diff( $expected, $actual );
 
