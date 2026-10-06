@@ -294,6 +294,7 @@ function wp_presence_enqueue_ping_script( $config ) {
  *
  * @since 0.16.0
  *
+ * @access private
  * @param WP_Scripts $scripts WP_Scripts object.
  */
 function wp_presence_register_packages_scripts( $scripts ) {
