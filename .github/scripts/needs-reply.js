@@ -97,7 +97,8 @@ if ( require.main === module ) {
 		process.exit( 1 );
 	}
 
-	const api = async ( path, init = {} ) => {
+	// `allowed` lists statuses that mean the work is already done.
+	const api = async ( path, init = {}, allowed = [] ) => {
 		const res = await fetch( `https://api.github.com${ path }`, {
 			...init,
 			headers: {
@@ -107,10 +108,11 @@ if ( require.main === module ) {
 			},
 		} );
 
-		return {
-			status: res.status,
-			body: await res.json().catch( () => null ),
-		};
+		if ( ! res.ok && ! allowed.includes( res.status ) ) {
+			throw new Error( `${ res.status } from ${ path }` );
+		}
+
+		return res.json().catch( () => null );
 	};
 
 	const all = async ( path ) => {
@@ -118,7 +120,7 @@ if ( require.main === module ) {
 
 		for ( let page = 1; ; page++ ) {
 			const sep = path.includes( '?' ) ? '&' : '?';
-			const { body } = await api(
+			const body = await api(
 				`${ path }${ sep }per_page=100&page=${ page }`
 			);
 
@@ -135,7 +137,7 @@ if ( require.main === module ) {
 			fs.readFileSync( '.github/CODEOWNERS', 'utf8' )
 		);
 		const now = Date.now();
-		let created = false;
+		let labelExists = false;
 
 		for ( const item of await all(
 			`/repos/${ repo }/issues?state=open`
@@ -156,18 +158,21 @@ if ( require.main === module ) {
 			} );
 
 			if ( 'add' === action ) {
-				if ( ! created ) {
-					// 422 means it already exists.
-					await api( `/repos/${ repo }/labels`, {
-						method: 'POST',
-						body: JSON.stringify( {
-							name: LABEL,
-							color: 'F2994A',
-							description:
-								'Someone outside the maintainers has waited over 48 hours for an answer',
-						} ),
-					} );
-					created = true;
+				if ( ! labelExists ) {
+					await api(
+						`/repos/${ repo }/labels`,
+						{
+							method: 'POST',
+							body: JSON.stringify( {
+								name: LABEL,
+								color: 'F2994A',
+								description:
+									'Someone outside the maintainers has waited over 48 hours for an answer',
+							} ),
+						},
+						[ 422 ]
+					);
+					labelExists = true;
 				}
 
 				await api( `/repos/${ repo }/issues/${ item.number }/labels`, {
@@ -180,7 +185,8 @@ if ( require.main === module ) {
 					`/repos/${ repo }/issues/${
 						item.number
 					}/labels/${ encodeURIComponent( LABEL ) }`,
-					{ method: 'DELETE' }
+					{ method: 'DELETE' },
+					[ 404 ]
 				);
 				console.log( `#${ item.number }: removed ${ LABEL }` );
 			}
