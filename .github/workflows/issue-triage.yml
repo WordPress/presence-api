@@ -1,0 +1,39 @@
+name: Issue Triage
+
+on:
+  schedule:
+    - cron: '43 9 * * *'
+  workflow_dispatch:
+  issues:
+    types:
+      - reopened
+      - closed
+      - labeled
+      - unlabeled
+      - milestoned
+      - demilestoned
+
+permissions:
+  contents: read
+
+# Triage fires events in bursts; queuing them keeps edits to the comment in order.
+concurrency:
+  group: issue-triage-${{ github.event.issue.number || 'sweep' }}
+
+jobs:
+  check:
+    name: Check type, area and milestone
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const run = require(`${process.env.GITHUB_WORKSPACE}/.github/scripts/check-issue-triage.js`);
+            await run({ github, context, core });

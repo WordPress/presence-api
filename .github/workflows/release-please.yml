@@ -116,6 +116,24 @@ jobs:
             const run = require(`${process.env.GITHUB_WORKSPACE}/.github/scripts/aggregate-props.js`);
             await run({ github, context, core });
 
+  # Runs on every push, like aggregate-props, so each merge lands in the open release's milestone.
+  sync-milestones:
+    needs: release-please
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const run = require(`${process.env.GITHUB_WORKSPACE}/.github/scripts/sync-milestones.js`);
+            await run({ github, context, core });
+
   # Zip each released plugin onto its GitHub Release, reading Presence API from
   # `plugins/presence-api` because its package path is the root `.`.
   build-release-asset:
