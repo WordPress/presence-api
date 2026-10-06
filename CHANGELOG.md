@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.15.0](https://github.com/WordPress/presence-api/compare/v0.14.0...v0.15.0) (2026-10-06)
+
+
+### Features
+
+* fire an action when a presence row is set or removed ([#756](https://github.com/WordPress/presence-api/issues/756)) ([dbf112d](https://github.com/WordPress/presence-api/commit/dbf112d40a3b6464ff29a8780a4631c556791214))
+* let a site switch off the pieces it does not want, starting with post locks ([#724](https://github.com/WordPress/presence-api/issues/724)) ([1ac34ce](https://github.com/WordPress/presence-api/commit/1ac34cefe9a20a8e3759f39711e3edc536f2de3a))
+* move the feature switches to the plugin's own page under Settings ([#755](https://github.com/WordPress/presence-api/issues/755)) ([0748d3d](https://github.com/WordPress/presence-api/commit/0748d3d5830191aceb954a467d5751228ffe5e0c))
+* show client_id and expiry in the DB viewer ([#719](https://github.com/WordPress/presence-api/issues/719)) ([4aa49ac](https://github.com/WordPress/presence-api/commit/4aa49ac7ee714a457cdbac44d6328ad375e36003)), closes [#715](https://github.com/WordPress/presence-api/issues/715)
+* show each presence row's data in the debugger ([#717](https://github.com/WordPress/presence-api/issues/717)) ([c560091](https://github.com/WordPress/presence-api/commit/c56009159f9b4415711df33017a8700b5a1e29e3))
+* write reserved rows with recording off, so post locks use wp_set_presence() ([#752](https://github.com/WordPress/presence-api/issues/752)) ([23dde0b](https://github.com/WordPress/presence-api/commit/23dde0b9342734a92418421b140014aae1569dd0))
+
+
+### Bug Fixes
+
+* hide rows from before 0.7 in the DB viewer, as the API does ([#723](https://github.com/WordPress/presence-api/issues/723)) ([53122b4](https://github.com/WordPress/presence-api/commit/53122b4d96dea9ed5b4abdb8b793572259b6ce3e))
+* strip release-please's closes links from the readme changelog ([#721](https://github.com/WordPress/presence-api/issues/721)) ([faff075](https://github.com/WordPress/presence-api/commit/faff075f7619bba37b5ea7d963edafac7a5a66c6))
+
 ## [0.14.0](https://github.com/WordPress/presence-api/compare/v0.13.0...v0.14.0) (2026-10-02)
 
 
