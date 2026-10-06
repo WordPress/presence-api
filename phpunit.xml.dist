@@ -19,6 +19,9 @@
 		<testsuite name="presence-scenes">
 			<directory prefix="test-" suffix=".php">plugins/presence-scenes/</directory>
 		</testsuite>
+		<testsuite name="presence-debugger">
+			<directory prefix="test-" suffix=".php">plugins/presence-debugger/</directory>
+		</testsuite>
 	</testsuites>
 	<coverage>
 		<include>
@@ -32,8 +35,6 @@
 			product code either. scripts/check-debug-exclusions.sh checks all three
 			lists agree.
 			-->
-			<file>plugins/presence-api/includes/db-viewer.php</file>
-			<file>plugins/presence-api/includes/debugger-admin-bar.php</file>
 			<!-- Only register hooks, and run during bootstrap before coverage starts. -->
 			<file>plugins/presence-api/includes/default-filters.php</file>
 			<file>plugins/presence-api/includes/ms-default-filters.php</file>

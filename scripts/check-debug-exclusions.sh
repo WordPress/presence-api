@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 #
-# includes/db-viewer.php and the includes/debugger-*.php files are WP_DEBUG-only
-# developer tools, excluded from measurement/distribution in three places:
+# The Presence API's WP_DEBUG-only developer tools now live in their own plugin
+# (plugins/presence-debugger). What remains excluded from measurement here are the
+# includes/*.php files that ship but only register hooks (the default-filters
+# files), kept consistent across two places:
 #
 #   - .distignore        keeps them out of the distributed zip
 #   - phpunit.xml.dist   keeps them out of PHPUnit coverage
@@ -22,12 +24,14 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-distignore=$(grep -E '^includes/.*\.php$' plugins/presence-api/.distignore | sort)
-phpunit=$(grep -oE '<file>plugins/presence-api/includes/[^<]+\.php</file>' phpunit.xml.dist | sed -E 's#<file>plugins/presence-api/(.*)</file>#\1#' | sort)
-codecov=$(grep -oE '"plugins/presence-api/includes/[^"]+\.php"' codecov.yml | tr -d '"' | sed 's#^plugins/presence-api/##' | sort)
+distignore=$(grep -E '^includes/.*\.php$' plugins/presence-api/.distignore | sort || true)
+phpunit=$(grep -oE '<file>plugins/presence-api/includes/[^<]+\.php</file>' phpunit.xml.dist | sed -E 's#<file>plugins/presence-api/(.*)</file>#\1#' | sort || true)
+codecov=$(grep -oE '"plugins/presence-api/includes/[^"]+\.php"' codecov.yml | tr -d '"' | sed 's#^plugins/presence-api/##' | sort || true)
 
-if [[ -z "$distignore" || -z "$phpunit" || -z "$codecov" ]]; then
-	echo "One of the three exclusion lists is empty — check the grep patterns still match." >&2
+# distignore may legitimately have no includes/*.php entries now that the debug
+# tools moved out; phpunit and codecov must still list the always-excluded files.
+if [[ -z "$phpunit" || -z "$codecov" ]]; then
+	echo "phpunit.xml.dist or codecov.yml exclusion list is empty — check the grep patterns still match." >&2
 	exit 1
 fi
 

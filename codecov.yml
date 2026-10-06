@@ -38,9 +38,8 @@ coverage:
 # Must match the coverage exclusions in phpunit.xml.dist, which CI checks with
 # scripts/check-debug-exclusions.sh.
 ignore:
-  # WP_DEBUG-only developer tools, not part of the distributed zip (.distignore).
-  - "plugins/presence-api/includes/db-viewer.php"
-  - "plugins/presence-api/includes/debugger-admin-bar.php"
+  # WP_DEBUG-only developer tools, now their own plugin (plugins/presence-debugger).
+  - "plugins/presence-debugger/**"
   # Only register hooks, and run during bootstrap before coverage starts.
   - "plugins/presence-api/includes/default-filters.php"
   - "plugins/presence-api/includes/ms-default-filters.php"
