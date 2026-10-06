@@ -57,6 +57,7 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	 * release must not switch itself off on them.
 	 *
 	 * @covers ::wp_presence_feature_enabled
+	 * @covers ::wp_presence_feature_stored_choice
 	 */
 	public function test_a_feature_with_no_stored_choice_is_on() {
 		delete_option( 'wp_presence_features' );
@@ -178,6 +179,7 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers ::wp_presence_sanitize_features
+	 * @covers ::wp_presence_get_features
 	 */
 	public function test_sanitizing_stores_every_feature_and_drops_the_rest() {
 		$this->assertSame(
