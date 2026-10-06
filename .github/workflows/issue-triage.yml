@@ -1,0 +1,38 @@
+name: Issue Triage
+
+on:
+  issues:
+    types:
+      - opened
+      - reopened
+      - closed
+      - labeled
+      - unlabeled
+      - milestoned
+      - demilestoned
+
+permissions:
+  contents: read
+
+# Triage fires several events in a row, so runs for one issue queue rather than
+# race to post the comment twice.
+concurrency:
+  group: issue-triage-${{ github.event.issue.number }}
+
+jobs:
+  check:
+    name: Check area and milestone
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const run = require(`${process.env.GITHUB_WORKSPACE}/.github/scripts/check-issue-triage.js`);
+            await run({ github, context, core });

@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security report
+    url: https://github.com/WordPress/presence-api/security/policy
+    about: Report a vulnerability privately, as SECURITY.md describes.
