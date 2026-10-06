@@ -105,6 +105,15 @@ test( 'creates the release milestone and files each PR under its own package', a
 		merged: [
 			mergedPR( 1, [ 'plugins/presence-scenes/library/a.json' ] ),
 			mergedPR( 2, [ 'plugins/presence-scenes/a.php', 'README.md' ] ),
+			{
+				...mergedPR( 3, [ 'README.md' ] ),
+				mergedAt: '2026-10-01T00:00:00Z',
+			},
+			{
+				...mergedPR( 4, [ '.release-please-manifest.json' ] ),
+				headRefName:
+					'release-please--branches--main--components--presence-scenes',
+			},
 		],
 	} );
 
