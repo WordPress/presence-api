@@ -113,7 +113,6 @@ Example live region pattern:
 ### Notes
 
 - The hook automatically subscribes to WordPress Heartbeat's `heartbeat-tick` event to avoid duplicating network traffic.
-- Requires `wp.heartbeat` to be available in the global scope.
 - Deduplicates users by ID.
 - Prevents race conditions: if a heartbeat tick fires while a fetch is in progress, the second request is skipped.
 - Coalesces polling across tabs and instances sharing a room and `fields`: one visible tab per site polls (via Web Locks, where available) and shares results with the rest over `BroadcastChannel`.
