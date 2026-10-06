@@ -69,6 +69,7 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers ::wp_presence_feature_enabled
+	 * @covers ::wp_presence_feature_stored_choice
 	 */
 	public function test_a_feature_switched_off_on_the_site_is_off() {
 		update_option( 'wp_presence_features', array( 'post-locks' => 0 ) );
