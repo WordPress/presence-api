@@ -65,6 +65,7 @@
 
 		let pending = null;
 		let release = null;
+		let destroyed = false;
 		let stopListening = function () {};
 
 		const resignLeadership = function () {
@@ -127,7 +128,12 @@
 				requestLeadership( false );
 			}
 		} else {
-			onLeader( false );
+			// Deferred so the caller holds the handle before onLeader runs.
+			Promise.resolve().then( function () {
+				if ( ! destroyed ) {
+					onLeader( false );
+				}
+			} );
 		}
 
 		if ( channel && relayedKeys.length ) {
@@ -164,6 +170,7 @@
 				}
 			},
 			destroy() {
+				destroyed = true;
 				stopListening();
 				resignLeadership();
 				if ( channel ) {
