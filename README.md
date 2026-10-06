@@ -133,8 +133,8 @@ These functions are the stable API. Treat every other function as internal, sinc
 // A $timeout you pass is the window used; with null, each row counts until its own expiry.
 $entries = wp_get_presence( $room, $timeout = null, $client_prefix = '' );
 
-// Read every room whose identifier starts with $prefix, newest first. Each
-// entry carries its room, so 'postType/' lists who is editing which post.
+// Read every room whose identifier starts with $prefix, newest first.
+// 'postType/' lists who is editing which post.
 $entries = wp_get_presence_by_room_prefix( $prefix, $timeout = null );
 
 // Upsert a client's presence state. Atomic via INSERT … ON DUPLICATE KEY UPDATE.
@@ -181,11 +181,11 @@ wp_presence_recording_enabled();
 wp_presence_is_available();
 ```
 
-The plugin's own screens still call a few internal helpers. Each does something a plugin can do with public functions:
+The plugin's screens also call internal helpers. A plugin can get the same result this way:
 
 | Internal helper | Use instead |
 | --- | --- |
-| `wp_presence_online_user_ids()` | `wp_list_pluck( $entries, 'user_id' )`, adding `get_current_user_id()` if the viewer should count while their own row is missing |
+| `wp_presence_online_user_ids()` | `wp_list_pluck( $entries, 'user_id' )`, plus `get_current_user_id()` if the viewer always counts |
 | `wp_presence_render_avatar_stack()` | `get_avatar()` for each user, with your own markup |
 | `wp_presence_render_agent_badge()` | `wp_presence_is_agent_user()`, with your own label |
 | `wp_presence_fragment_request()` | Core's `heartbeat_received` filter, under a key of your own |
