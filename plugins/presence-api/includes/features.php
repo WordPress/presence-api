@@ -36,15 +36,42 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 0.15.0
  *
- * @return array<string, array{label: string, description: string}> Features keyed by feature.
+ * A feature marked `network` has a row on the network page alone. Its key
+ * also has to be in wp_presence_get_network_features(), which load time can
+ * read without the labels.
+ *
+ * @return array<string, array{label: string, description: string, network?: bool}> Features keyed by feature.
  */
 function wp_presence_get_features() {
 	return array(
-		'post-locks' => array(
+		'post-locks'    => array(
 			'label'       => __( 'Post locks', 'presence-api' ),
 			'description' => __( 'Keep post locks in the presence table instead of post meta, so refreshing a lock does not make cached post queries stale.', 'presence-api' ),
 		),
+		'network-admin' => array(
+			'label'       => __( 'Network Admin screens', 'presence-api' ),
+			'description' => __( 'Show who is online on Network Admin: a column on Sites, a view and column on Users, and the Who\'s Online dashboard widget.', 'presence-api' ),
+			'network'     => true,
+		),
 	);
+}
+
+/**
+ * Returns the keys of the features only the network can switch.
+ *
+ * These decide network-wide screens, so a site's choice would decide them by
+ * whichever site the request started on. Kept apart from
+ * wp_presence_get_features() because wp_presence_feature_enabled() runs at
+ * load time, before the labels can be translated.
+ *
+ * @access private
+ *
+ * @since 0.16.0
+ *
+ * @return string[] Feature keys.
+ */
+function wp_presence_get_network_features() {
+	return array( 'network-admin' );
 }
 
 /**
@@ -52,7 +79,8 @@ function wp_presence_get_features() {
  *
  * A feature with no stored choice is on. On multisite, the network can switch
  * a feature off for every site, and a site cannot switch it back on, the same
- * way the recording switch works.
+ * way the recording switch works. A feature from
+ * wp_presence_get_network_features() reads only the network's choice.
  *
  * Hooks are registered once, when the plugin loads, so the answer for the
  * site a request starts on holds for the whole request, including any
@@ -69,7 +97,8 @@ function wp_presence_get_features() {
  * @return bool Whether the feature is on.
  */
 function wp_presence_feature_enabled( $feature ) {
-	$enabled = wp_presence_feature_stored_choice( get_option( 'wp_presence_features', array() ), $feature );
+	$network_only = in_array( $feature, wp_presence_get_network_features(), true );
+	$enabled      = $network_only || wp_presence_feature_stored_choice( get_option( 'wp_presence_features', array() ), $feature );
 
 	if ( $enabled && is_multisite() ) {
 		$enabled = wp_presence_feature_stored_choice( get_site_option( 'wp_presence_network_features', array() ), $feature );
@@ -114,20 +143,27 @@ function wp_presence_feature_stored_choice( $stored, $feature ) {
  *
  * Every known feature is written, on or off, so an unchecked box is stored as
  * off rather than missing, and missing keeps meaning "never chosen". Keys that
- * are not features are dropped.
+ * are not features are dropped, and so are network-only features unless the
+ * network is saving.
  *
  * @access private
  *
  * @since 0.15.0
+ * @since 0.16.0 Added the `$network` parameter.
  *
- * @param mixed $value The submitted value.
+ * @param mixed $value   The submitted value.
+ * @param bool  $network Optional. Whether the network option is being saved. Default false.
  * @return array<string, int> Each feature's choice, 1 for on and 0 for off.
  */
-function wp_presence_sanitize_features( $value ) {
+function wp_presence_sanitize_features( $value, $network = false ) {
 	$value     = is_array( $value ) ? $value : array();
 	$sanitized = array();
 
-	foreach ( array_keys( wp_presence_get_features() ) as $feature ) {
+	foreach ( wp_presence_get_features() as $feature => $details ) {
+		if ( ! $network && ! empty( $details['network'] ) ) {
+			continue;
+		}
+
 		$sanitized[ $feature ] = empty( $value[ $feature ] ) ? 0 : 1;
 	}
 
@@ -163,6 +199,10 @@ function wp_presence_register_feature_settings() {
 		add_settings_section( 'wp_presence_features', __( 'Features', 'presence-api' ), 'wp_presence_render_features_section', $page );
 
 		foreach ( wp_presence_get_features() as $feature => $details ) {
+			if ( 'presence-api' === $page && ! empty( $details['network'] ) ) {
+				continue;
+			}
+
 			add_settings_field(
 				$option . '_' . $feature,
 				$details['label'],
@@ -267,7 +307,7 @@ function wp_presence_save_network_features() {
 	// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Reduced to known keys and 0 or 1 by wp_presence_sanitize_features().
 	$features = isset( $_POST['wp_presence_network_features'] ) ? wp_unslash( $_POST['wp_presence_network_features'] ) : array();
 
-	update_site_option( 'wp_presence_network_features', wp_presence_sanitize_features( $features ) );
+	update_site_option( 'wp_presence_network_features', wp_presence_sanitize_features( $features, true ) );
 
 	wp_safe_redirect(
 		add_query_arg(
