@@ -20,6 +20,13 @@
 			}
 		},
 		{
+			"step": "installPlugin",
+			"pluginData": {
+				"resource": "url",
+				"url": "https://raw.githubusercontent.com/WordPress/presence-api/preview-main/presence-debugger.zip"
+			}
+		},
+		{
 			"step": "writeFile",
 			"path": "/wordpress/wp-content/plugins/presence-api/demo-seeder.php",
 			"data": {

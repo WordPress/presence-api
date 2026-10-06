@@ -41,9 +41,16 @@ jobs:
           mkdir -p build/presence-api
           rsync -a --exclude-from='plugins/presence-api/.distignore' plugins/presence-api/ build/presence-api/
           cp LICENSE build/presence-api/
-          # The admin-bar debugger and DB viewer are now their own plugin
-          # (plugins/presence-debugger); presence-api no longer carries them.
           (cd build && zip -qr presence-api.zip presence-api/)
+
+      # Its own plugin now; the blueprints install it next to presence-api.
+      - name: Build presence-debugger.zip
+        run: |
+          set -euo pipefail
+          mkdir -p build/presence-debugger
+          rsync -a --exclude-from='plugins/presence-debugger/.distignore' plugins/presence-debugger/ build/presence-debugger/
+          cp LICENSE build/presence-debugger/
+          (cd build && zip -qr presence-debugger.zip presence-debugger/)
 
       # Same guard as the PR preview: a `.distignore` that drifts out of
       # sync with the `require_once` graph installs fine and then fatals.
@@ -51,7 +58,8 @@ jobs:
         run: |
           set -euo pipefail
           test -f build/presence-api/presence-api.php
-          find build/presence-api -name '*.php' -print0 \
+          test -f build/presence-debugger/load.php
+          find build/presence-api build/presence-debugger -name '*.php' -print0 \
             | xargs -0 -n1 -P 4 php -l > /dev/null
 
       - name: Publish to the preview-main branch
@@ -66,6 +74,7 @@ jobs:
           # to it; raw serves it with a five-minute cache.
           mkdir -p preview
           cp build/presence-api.zip preview/
+          cp build/presence-debugger.zip preview/
 
           cd preview
           git init -q -b preview-main

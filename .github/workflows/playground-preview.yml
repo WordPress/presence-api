@@ -54,9 +54,16 @@ jobs:
           mkdir -p build/presence-api
           rsync -a --exclude-from='plugins/presence-api/.distignore' plugins/presence-api/ build/presence-api/
           cp LICENSE build/presence-api/
-          # The admin-bar debugger and DB viewer are now their own plugin
-          # (plugins/presence-debugger); presence-api no longer carries them.
           (cd build && zip -qr presence-api.zip presence-api/)
+
+      # Its own plugin now; the demo runs WP_DEBUG, so the preview ships it too.
+      - name: Build presence-debugger.zip
+        run: |
+          set -euo pipefail
+          mkdir -p build/presence-debugger
+          rsync -a --exclude-from='plugins/presence-debugger/.distignore' plugins/presence-debugger/ build/presence-debugger/
+          cp LICENSE build/presence-debugger/
+          (cd build && zip -qr presence-debugger.zip presence-debugger/)
 
       # Cheap smoke test: parse every PHP file in the staged plugin and
       # confirm the entry file is present. Catches the regression class
@@ -66,13 +73,15 @@ jobs:
         run: |
           set -euo pipefail
           test -f build/presence-api/presence-api.php
-          find build/presence-api -name '*.php' -print0 \
+          test -f build/presence-debugger/load.php
+          find build/presence-api build/presence-debugger -name '*.php' -print0 \
             | xargs -0 -n1 -P 4 php -l > /dev/null
 
       # Asserts each blueprint matches the shape the publish workflow
-      # rewrites — exactly one URL-resource `installPlugin` of presence-api,
-      # two URL-resource `writeFile`s, and only the step types we expect.
-      # The one other plugin a blueprint may install is the GSE release.
+      # rewrites — exactly one URL-resource `installPlugin` each of
+      # presence-api and presence-debugger, two URL-resource `writeFile`s,
+      # and only the step types we expect. The one other plugin a blueprint
+      # may install is the GSE release.
       # Fork PRs can't sneak in additional `installPlugin` steps that
       # pull from attacker URLs because the publish workflow uses the
       # BASE-REF blueprints, but this still catches accidental breakage.
@@ -89,7 +98,8 @@ jobs:
               (.steps | length > 0)
               and (.steps | all(.step | IN("defineWpConfigConsts", "installPlugin", "writeFile", "runPHP", "enableMultisite", "wp-cli")))
               and (.steps | map(select(.step == "installPlugin" and (.pluginData.resource // "") == "url" and (.pluginData.url | endswith("/presence-api.zip")))) | length == 1)
-              and (.steps | map(select(.step == "installPlugin" and ((.pluginData.resource // "") != "url" or (.pluginData.url | endswith("/presence-api.zip") | not)))) | all(.pluginData.url == "https://github.com/WordPress/gutenberg-sync-engines/releases/latest/download/gutenberg-sync-engines.zip"))
+              and (.steps | map(select(.step == "installPlugin" and (.pluginData.resource // "") == "url" and (.pluginData.url | endswith("/presence-debugger.zip")))) | length == 1)
+              and (.steps | map(select(.step == "installPlugin" and ((.pluginData.resource // "") != "url" or ((.pluginData.url | endswith("/presence-api.zip") | not) and (.pluginData.url | endswith("/presence-debugger.zip") | not))))) | all(.pluginData.url == "https://github.com/WordPress/gutenberg-sync-engines/releases/latest/download/gutenberg-sync-engines.zip"))
               and (.steps | map(select(.step == "writeFile" and (.data.resource // "") == "url")) | length == 2)
             ' "$f" > /dev/null
           done
@@ -99,6 +109,7 @@ jobs:
           set -euo pipefail
           mkdir -p release-assets
           cp build/presence-api.zip release-assets/
+          cp build/presence-debugger.zip release-assets/
           cp tests/e2e/demo-seeder.php release-assets/
           cp tests/e2e/screen-stale-demo-helper.php release-assets/
 
