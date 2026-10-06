@@ -119,7 +119,7 @@ describe( 'subscribeToPresencePolling', () => {
 	it( 'does not call apiFetch until this tab wins the Web Lock', async () => {
 		let grantLock;
 		global.navigator.locks = {
-			request: vi.fn( ( name, options, callback ) => {
+			request: vi.fn( ( name, callback ) => {
 				return new Promise( ( resolve ) => {
 					grantLock = () => callback().then( resolve );
 				} );
@@ -136,8 +136,7 @@ describe( 'subscribeToPresencePolling', () => {
 		await flush();
 		expect( apiFetch ).not.toHaveBeenCalled();
 		expect( global.navigator.locks.request ).toHaveBeenCalledWith(
-			'wp-presence-poll:room-lock:user_id',
-			expect.any( Object ),
+			'|wp-presence-poll:room-lock:user_id',
 			expect.any( Function )
 		);
 

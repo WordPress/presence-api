@@ -31,7 +31,7 @@
 
 	const tabCoordinator = window.wpPresenceCreateTabCoordinator(
 		pingContextKey,
-		[ 'presence-screen-rev' ]
+		{ relayedKeys: [ 'presence-screen-rev' ] }
 	);
 
 	window.wp = window.wp || {};
