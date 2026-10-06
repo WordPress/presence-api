@@ -1,14 +1,8 @@
 <?php
 /**
- * Lists every call from a feature to an `@access private` function defined
- * outside it, and fails unless the list matches scripts/private-calls.txt
- * exactly. A new call fails until it is added there;
- * a removed call fails until its line is deleted, so the list only shrinks.
+ * Fails when the calls from features to private functions outside them differ from scripts/private-calls.txt, so that list can only shrink.
  *
- * Called from .github/workflows/phpcs.yml. Also runnable locally:
- *
- *   php scripts/check-private-calls.php           # compare
- *   php scripts/check-private-calls.php --update  # rewrite the list
+ *   php scripts/check-private-calls.php [--update]
  */
 
 $root     = dirname( __DIR__ );
@@ -31,7 +25,7 @@ foreach ( glob( $root . '/plugins/*', GLOB_ONLYDIR ) as $plugin ) {
 	}
 }
 
-// The Presence API itself; any other file is a feature, and a plugin directory is one feature.
+// The API itself; every other file is a feature, and each bundled plugin counts as one.
 $api = array(
 	'plugins/presence-api/presence-api.php',
 	'plugins/presence-api/uninstall.php',
@@ -62,7 +56,7 @@ $part_of = static function ( $path ) use ( $api ) {
 	return str_starts_with( $path, 'plugins/presence-api/' ) ? $path : dirname( $path );
 };
 
-// Pass 1: top-level and namespaced functions whose docblock says @access private.
+// Top-level functions whose docblock says @access private.
 $private = array();
 foreach ( $files as $path => $tokens ) {
 	$doc   = '';
@@ -83,7 +77,7 @@ foreach ( $files as $path => $tokens ) {
 	}
 }
 
-// Pass 2: calls to those functions from a feature other than the one defining it.
+// Calls to them from a feature other than the one defining them.
 $calls = array();
 foreach ( $files as $path => $tokens ) {
 	$part = $part_of( $path );
@@ -108,7 +102,6 @@ sort( $actual );
 
 if ( in_array( '--update', $argv, true ) ) {
 	file_put_contents( $baseline, implode( "\n", $actual ) . "\n" );
-	echo 'Wrote ' . count( $actual ) . " calls to scripts/private-calls.txt.\n";
 	exit( 0 );
 }
 
@@ -117,13 +110,13 @@ $added    = array_diff( $actual, $expected );
 $removed  = array_diff( $expected, $actual );
 
 if ( $added ) {
-	fwrite( STDERR, "New calls to a private function outside the feature. Use a public function, or add the line to scripts/private-calls.txt:\n  " . implode( "\n  ", $added ) . "\n" );
+	fwrite( STDERR, "New private calls; use a public function or list them in scripts/private-calls.txt:\n  " . implode( "\n  ", $added ) . "\n" );
 }
 if ( $removed ) {
-	fwrite( STDERR, "No longer called. Delete these lines from scripts/private-calls.txt:\n  " . implode( "\n  ", $removed ) . "\n" );
+	fwrite( STDERR, "No longer called; delete from scripts/private-calls.txt:\n  " . implode( "\n  ", $removed ) . "\n" );
 }
 if ( $added || $removed ) {
 	exit( 1 );
 }
 
-echo count( $actual ) . " private calls from features, all listed in scripts/private-calls.txt.\n";
+echo count( $actual ) . " private calls, all in scripts/private-calls.txt.\n";
