@@ -147,6 +147,32 @@ describe( 'subscribeToPresencePolling', () => {
 		unsubscribe();
 	} );
 
+	it( 'releases the Web Lock once every subscriber has left', async () => {
+		let held;
+		global.navigator.locks = {
+			request: vi.fn( ( name, callback ) => {
+				held = callback();
+				return held;
+			} ),
+		};
+		apiFetch.mockResolvedValue( [] );
+
+		const unsubscribe = subscribeToPresencePolling(
+			'room-release',
+			'user_id',
+			vi.fn()
+		);
+		const released = vi.fn();
+		held.then( released );
+
+		await flush();
+		expect( released ).not.toHaveBeenCalled();
+
+		unsubscribe();
+		await flush();
+		expect( released ).toHaveBeenCalled();
+	} );
+
 	it( 'delivers results received over BroadcastChannel without fetching itself', () => {
 		let messageHandler;
 		global.BroadcastChannel = function () {
