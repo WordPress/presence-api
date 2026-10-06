@@ -15,17 +15,38 @@ With `WP_DEBUG` on, which wp-env sets, administrators get a heart in the toolbar
 
 ## Running tests
 
+Before pushing, one command runs everything that works without wp-env, which is coding standards, static analysis, the JavaScript lint, the JavaScript unit tests, and the workflow script tests. It stops at the first failure.
+
 ```bash
 # PHP dependencies (PHPCS, PHPStan, PHPUnit, Polyfills)
 composer install
 
+npm run check
+```
+
+Most coding-standard errors it reports can be fixed in place:
+
+```bash
+composer phpcbf
+```
+
+The individual commands, for when you want just one of them:
+
+```bash
 # Coding standards
-./vendor/bin/phpcs --standard=phpcs.xml.dist
+composer phpcs
 
 # Static analysis
-./vendor/bin/phpstan analyse --configuration=phpstan.neon.dist --memory-limit=2G
+composer phpstan
 
-# Unit tests (requires wp-env running)
+# JavaScript lint and unit tests
+npm run lint:js
+npm run test:unit
+
+# Workflow script tests
+npm run test:scripts
+
+# PHP unit tests (requires wp-env running)
 npm test
 
 # Multisite tests (requires wp-env running)
