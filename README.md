@@ -368,7 +368,7 @@ add_action( 'wp_presence_admin_room_changed', function() {
 ```
 
 #### `set_presence`
-Fires after `wp_set_presence()` writes a row, named like core's `set_transient`. A write skipped because the row was unchanged and recently stamped fires nothing, and neither does a reserved row such as `_lock` or `_collab`.
+Fires after `wp_set_presence()` writes a row, named like core's `set_transient`. A write skipped because the row was unchanged and recently stamped fires nothing, and neither does a reserved row such as `_lock` or `_collab`. The skip holds on MySQL; SQLite counts an unchanged write as a change, so it fires there.
 ```php
 add_action( 'set_presence', function( $room, $client_id, $state, $user_id ) {
     // Push the change to a WebSocket server.

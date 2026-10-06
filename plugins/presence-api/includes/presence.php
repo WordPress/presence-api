@@ -605,7 +605,8 @@ function wp_set_presence( $room, $client_id, $state, $user_id = 0, $date_gmt = n
 		 * Fires after a client's presence row is written to a room.
 		 *
 		 * Does not fire for a write skipped because the row was unchanged and
-		 * recently stamped, or for a reserved row.
+		 * recently stamped, or for a reserved row. The skip holds on MySQL;
+		 * SQLite counts an unchanged write as a change, so it fires there.
 		 *
 		 * @since 0.15.0
 		 *
