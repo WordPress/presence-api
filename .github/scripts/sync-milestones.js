@@ -4,9 +4,7 @@ const RELEASE_BRANCH = 'release-please--branches--main--components--';
 const SCENES_PATH = 'plugins/presence-scenes/';
 const NEXT = 'n.e.x.t';
 
-// One entry per release-please package. A pull request counts toward Presence
-// Scenes only when every file it touches is under that plugin, matching the
-// `exclude-paths` that keeps those commits out of Presence API's release.
+// A pull request counts toward Presence Scenes only when every file it touches is under that plugin, mirroring Presence API's `exclude-paths`.
 const PACKAGES = [
 	{
 		component: 'presence-api',
@@ -24,7 +22,6 @@ const PACKAGES = [
 	},
 ];
 
-// The version after a prefix, or null when the name is not one of that shape.
 function versionAfter( prefix, name ) {
 	const rest = name.startsWith( prefix ) ? name.slice( prefix.length ) : '';
 	return /^\d+\.\d+\.\d+$/.test( rest ) ? rest : null;
@@ -68,8 +65,7 @@ const MERGED_QUERY = `
 	}
 `;
 
-// Pull requests merged since the cutoff that belong to this package, and the
-// issues they closed.
+// This package's pull requests merged since the cutoff, and the issues they closed.
 async function releaseItems( { github, owner, repo, pkg, cutoff } ) {
 	const { repository } = await github.graphql( MERGED_QUERY, {
 		owner,
@@ -85,8 +81,7 @@ async function releaseItems( { github, owner, repo, pkg, cutoff } ) {
 		.flatMap( ( pr ) => [ pr, ...pr.closingIssuesReferences.nodes ] );
 }
 
-// Version milestones close once their tag is published, and an item only
-// moves out of n.e.x.t or out of no milestone, so theme milestones keep theirs.
+// Items move only out of n.e.x.t or no milestone, so theme milestones keep theirs.
 async function run( { github, context, core } ) {
 	const { owner, repo } = context.repo;
 
@@ -145,7 +140,7 @@ async function run( { github, context, core } ) {
 		);
 		let milestone = own.find( ( m ) => m.title === title );
 
-		if ( ! milestone && previous && ! isReleased( previous ) ) {
+		if ( ! milestone && previous ) {
 			// The release PR's version moved, say from a patch to a minor.
 			( { data: milestone } = await github.rest.issues.updateMilestone( {
 				owner,
@@ -189,4 +184,3 @@ async function run( { github, context, core } ) {
 module.exports = run;
 module.exports.PACKAGES = PACKAGES;
 module.exports.findCutoff = findCutoff;
-module.exports.versionAfter = versionAfter;
