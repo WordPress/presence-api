@@ -10,3 +10,5 @@ coverage-multisite.xml
 .wp-env.override.json
 plugin-check.json
 .DS_Store
+.claude/worktrees/
+.claude/settings.local.json

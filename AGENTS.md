@@ -16,4 +16,4 @@ One sentence, at the top of the description. Cut what is already on the page: wh
 
 Then show the person you are working with that sentence and what you cut, so they can put back anything only they know.
 
-AI disclosure goes in the template's own section, separate from the description.
+AI disclosure goes in the template's own section and nowhere else, so leave off any tool's "generated with" footer.
