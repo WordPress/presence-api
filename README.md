@@ -31,6 +31,7 @@ Tracking who is logged in, on which screen and in which post takes frequent writ
 
 ```bash
 npm install
+npm run build
 npx wp-env start
 ```
 
@@ -216,6 +217,9 @@ add_action( 'init', function () {
 ```
 
 Without support, `wp_presence_post_room()` returns `false` for that post type and no per-post room is created. Its post locks still move out of post meta.
+
+### React hook
+Add `wp-presence` to a script's dependencies to use [`wp.presence.usePresenceUsers()`](plugins/presence-api/src/README.md), which lists who else is in a room.
 
 <details>
 <summary>Filters and actions</summary>

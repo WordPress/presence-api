@@ -4,6 +4,7 @@
 
 ```bash
 npm install
+npm run build
 npx wp-env start
 ```
 
