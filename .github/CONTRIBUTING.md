@@ -77,6 +77,8 @@ Every open issue carries one `[Type]`, at least one `[Area]`, and a milestone. `
 
 Color groups labels rather than identifying them. Labels on most rows stay in a highlighter tone, saturation is reserved for the few that want something from you, and anything a bot applies is gray.
 
+`Needs Reply` is the one bot label in color, because it wants something from a maintainer: `needs-reply.yml` adds it hourly once someone outside CODEOWNERS has waited 48 hours, and removes it when a maintainer answers.
+
 <details>
 <summary>What each color marks</summary>
 
