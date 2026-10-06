@@ -32,7 +32,6 @@
 				$( document ).trigger( 'heartbeat-tick', [ data ] );
 			};
 
-		// Followers wait for the next interval otherwise.
 		const onLeader =
 			options.onLeader ||
 			function ( tookOver ) {

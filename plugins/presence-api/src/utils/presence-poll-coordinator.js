@@ -139,8 +139,10 @@ function createCoordinator( room, fields ) {
 	coordinator.teardown = function () {
 		coordinator.started = false;
 
-		coordinator.heartbeatCleanup();
-		coordinator.heartbeatCleanup = null;
+		if ( coordinator.heartbeatCleanup ) {
+			coordinator.heartbeatCleanup();
+			coordinator.heartbeatCleanup = null;
+		}
 
 		if ( coordinator.abortController ) {
 			coordinator.abortController.abort();
