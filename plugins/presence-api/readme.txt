@@ -3,7 +3,7 @@ Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas,
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.1
-Stable tag: 0.14.0
+Stable tag: 0.15.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -70,10 +70,15 @@ For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/presence-api/blob/main/CHANGELOG.md
 
+= 0.15.0 =
+* Fire an action when a presence row is set or removed ([#756](https://github.com/WordPress/presence-api/issues/756)).
+* Let a site switch off the pieces it does not want, starting with post locks ([#724](https://github.com/WordPress/presence-api/issues/724)).
+* Move the feature switches to the plugin's own page under Settings ([#755](https://github.com/WordPress/presence-api/issues/755)).
+* Write reserved rows with recording off, so post locks use wp_set_presence() ([#752](https://github.com/WordPress/presence-api/issues/752)).
+
 = 0.14.0 =
 * REST presence entries no longer include `color`, and wp_presence_get_user_color() returns the block editor's color for the user ID instead of a stored one.
 * Stop saving and serving presence colors ([#707](https://github.com/WordPress/presence-api/issues/707)).
-* List everyone in the debugger, you first, then by name ([#709](https://github.com/WordPress/presence-api/issues/709)).
 
 = 0.13.0 =
 * Write an agent's presence row when it saves a post ([#697](https://github.com/WordPress/presence-api/issues/697)).
@@ -87,10 +92,4 @@ Only the most recent releases are listed here. For the full history, see https:/
 * Trust the presence table's version option and recheck it only after a failed write ([#682](https://github.com/WordPress/presence-api/issues/682)).
 
 = 0.12.1 =
-* Translate Heartbeat debugger plurals and units ([#660](https://github.com/WordPress/presence-api/issues/660)).
-
-= 0.12.0 =
-* Add an admin bar debugger and remove the Dashboard widget ([#652](https://github.com/WordPress/presence-api/issues/652)).
-* Label agent presence rows across the admin UI ([#653](https://github.com/WordPress/presence-api/issues/653)).
-* Let plugins add rows and indicators to the debugger ([#666](https://github.com/WordPress/presence-api/issues/666)).
-* Give the debugger and DB viewer's muted text AA contrast ([#648](https://github.com/WordPress/presence-api/issues/648)).
+* Maintenance release.
