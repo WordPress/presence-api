@@ -181,10 +181,9 @@ jobs:
           BLUEPRINT_RTC=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" blueprint-rtc.json)
           BLUEPRINT_MS_RTC=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" blueprint-multisite-rtc.json)
 
-          # The settings buttons are the post-locks sites, landing on the
-          # screens that hold the Presence switches instead of the post list.
-          BLUEPRINT_SETTINGS=$(jq '.landingPage = "/wp-admin/options-general.php"' <<< "$BLUEPRINT")
-          BLUEPRINT_MS_SETTINGS=$(jq '.landingPage = "/wp-admin/network/settings.php"' <<< "$BLUEPRINT_MS")
+          # The settings buttons are the post-locks sites, landing on the plugin's own settings page instead of the post list.
+          BLUEPRINT_SETTINGS=$(jq '.landingPage = "/wp-admin/options-general.php?page=presence-api"' <<< "$BLUEPRINT")
+          BLUEPRINT_MS_SETTINGS=$(jq '.landingPage = "/wp-admin/network/settings.php?page=presence-api"' <<< "$BLUEPRINT_MS")
 
           encode() { printf '%s' "$1" | base64 -w0; }
 
