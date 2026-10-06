@@ -53,7 +53,7 @@ $part_of = static function ( $path ) use ( $api ) {
 			return 'api';
 		}
 	}
-	return str_starts_with( $path, 'plugins/presence-api/' ) ? $path : dirname( $path );
+	return str_starts_with( $path, 'plugins/presence-api/' ) ? $path : implode( '/', array_slice( explode( '/', $path ), 0, 2 ) );
 };
 
 // Top-level functions whose docblock says @access private.
