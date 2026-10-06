@@ -73,7 +73,7 @@ Assigned issues left quiet for two weeks may be unassigned. Comment to pick one 
 
 ### Labels
 
-Every open issue carries one `[Type]`, at least one `[Area]`, and a milestone. `[Area] Infrastructure` covers CI and the toolchain. The issue forms apply the `[Type]`, a bot comments until the other two are set, and blank issues are still welcome.
+Every open issue carries one `[Type]`, at least one `[Area]`, and a milestone. `[Area] Infrastructure` covers CI and the toolchain. A bot comments on an issue still missing one a day after it opens.
 
 Color groups labels rather than identifying them. Labels on most rows stay in a highlighter tone, saturation is reserved for the few that want something from you, and anything a bot applies is gray.
 

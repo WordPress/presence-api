@@ -1,9 +1,11 @@
 name: Issue Triage
 
 on:
+  schedule:
+    - cron: '43 9 * * *'
+  workflow_dispatch:
   issues:
     types:
-      - opened
       - reopened
       - closed
       - labeled
@@ -14,13 +16,13 @@ on:
 permissions:
   contents: read
 
-# Triage fires events in bursts; queuing them stops two runs posting the comment.
+# Triage fires events in bursts; queuing them keeps edits to the comment in order.
 concurrency:
-  group: issue-triage-${{ github.event.issue.number }}
+  group: issue-triage-${{ github.event.issue.number || 'sweep' }}
 
 jobs:
   check:
-    name: Check area and milestone
+    name: Check type, area and milestone
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
