@@ -34,7 +34,9 @@ function findCutoff( releases, pkg ) {
 	return releases
 		.filter(
 			( r ) =>
-				! r.draft && r.published_at && versionAfter( pkg.tag, r.tag_name )
+				! r.draft &&
+				r.published_at &&
+				versionAfter( pkg.tag, r.tag_name )
 		)
 		.map( ( r ) => r.published_at )
 		.sort()
@@ -138,20 +140,20 @@ async function run( { github, context, core } ) {
 		}
 
 		const title = pkg.milestone + version;
-		const unreleased = own.filter( ( m ) => ! isReleased( m ) );
-		let milestone = unreleased.find( ( m ) => m.title === title );
+		const previous = own.find(
+			( m ) => m.number === releasePR.milestone?.number
+		);
+		let milestone = own.find( ( m ) => m.title === title );
 
-		if ( ! milestone && unreleased.length ) {
+		if ( ! milestone && previous && ! isReleased( previous ) ) {
 			// The release PR's version moved, say from a patch to a minor.
 			( { data: milestone } = await github.rest.issues.updateMilestone( {
 				owner,
 				repo,
-				milestone_number: unreleased[ 0 ].number,
+				milestone_number: previous.number,
 				title,
 			} ) );
-			core.info(
-				`Renamed milestone ${ unreleased[ 0 ].title } to ${ title }.`
-			);
+			core.info( `Renamed milestone ${ previous.title } to ${ title }.` );
 		} else if ( ! milestone ) {
 			( { data: milestone } = await github.rest.issues.createMilestone( {
 				owner,

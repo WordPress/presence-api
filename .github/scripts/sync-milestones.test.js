@@ -15,7 +15,9 @@ function releasePR( number, component, title ) {
 		number,
 		title,
 		milestone: null,
-		head: { ref: `release-please--branches--main--components--${ component }` },
+		head: {
+			ref: `release-please--branches--main--components--${ component }`,
+		},
 	};
 }
 
@@ -31,7 +33,12 @@ function mergedPR( number, files, { milestone = null, closes = [] } = {} ) {
 }
 
 // Records every write as [ method, params ] so a test can assert on the calls.
-function buildGithub( { milestones = [], releases = [], openPRs = [], merged = [] } ) {
+function buildGithub( {
+	milestones = [],
+	releases = [],
+	openPRs = [],
+	merged = [],
+} ) {
 	const writes = [];
 	const write = ( method ) => async ( params ) => {
 		writes.push( [ method, params ] );
@@ -71,7 +78,11 @@ test( 'findCutoff: reads only its own package tags, skipping drafts', () => {
 		published( 'v0.15.0', '2026-10-06T01:00:00Z' ),
 		published( 'presence-scenes-v0.1.1', '2026-10-07T00:00:00Z' ),
 		published( 'preview-pr-12', '2026-10-08T00:00:00Z' ),
-		{ tag_name: 'v0.16.0', published_at: '2026-10-09T00:00:00Z', draft: true },
+		{
+			tag_name: 'v0.16.0',
+			published_at: '2026-10-09T00:00:00Z',
+			draft: true,
+		},
 	];
 	assert.equal( findCutoff( releases, API ), '2026-10-06T01:00:00Z' );
 	assert.equal( findCutoff( releases, SCENES ), '2026-10-07T00:00:00Z' );
@@ -79,10 +90,17 @@ test( 'findCutoff: reads only its own package tags, skipping drafts', () => {
 
 test( 'creates the release milestone and files each PR under its own package', async () => {
 	const { github, writes } = buildGithub( {
-		releases: [ published( 'v0.15.0' ), published( 'presence-scenes-v0.1.1' ) ],
+		releases: [
+			published( 'v0.15.0' ),
+			published( 'presence-scenes-v0.1.1' ),
+		],
 		openPRs: [
 			releasePR( 759, 'presence-api', 'chore(main): release 0.16.0' ),
-			releasePR( 761, 'presence-scenes', 'chore(main): release presence-scenes 0.1.2' ),
+			releasePR(
+				761,
+				'presence-scenes',
+				'chore(main): release presence-scenes 0.1.2'
+			),
 		],
 		merged: [
 			mergedPR( 1, [ 'plugins/presence-scenes/library/a.json' ] ),
@@ -93,11 +111,15 @@ test( 'creates the release milestone and files each PR under its own package', a
 	await run( { github, context, core } );
 
 	assert.deepEqual(
-		writes.filter( ( [ m ] ) => m === 'createMilestone' ).map( ( [ , p ] ) => p.title ),
+		writes
+			.filter( ( [ m ] ) => m === 'createMilestone' )
+			.map( ( [ , p ] ) => p.title ),
 		[ '0.16.0', 'Presence Scenes 0.1.2' ]
 	);
 	assert.deepEqual(
-		writes.filter( ( [ m ] ) => m === 'update' ).map( ( [ , p ] ) => p.issue_number ),
+		writes
+			.filter( ( [ m ] ) => m === 'update' )
+			.map( ( [ , p ] ) => p.issue_number ),
 		[ 759, 2, 761, 1 ]
 	);
 } );
@@ -106,7 +128,9 @@ test( 'moves closed issues out of n.e.x.t but leaves theme milestones alone', as
 	const { github, writes } = buildGithub( {
 		milestones: [ { number: 31, title: '0.16.0' } ],
 		releases: [ published( 'v0.15.0' ) ],
-		openPRs: [ releasePR( 759, 'presence-api', 'chore(main): release 0.16.0' ) ],
+		openPRs: [
+			releasePR( 759, 'presence-api', 'chore(main): release 0.16.0' ),
+		],
 		merged: [
 			mergedPR( 3, [ 'README.md' ], {
 				milestone: 'Public API freeze',
@@ -129,15 +153,17 @@ test( 'moves closed issues out of n.e.x.t but leaves theme milestones alone', as
 	);
 } );
 
-test( 'renames an unreleased milestone when the version moves, and closes released ones', async () => {
+test( 'renames the release PR milestone when the version moves, and closes released ones', async () => {
+	const pr = releasePR( 759, 'presence-api', 'chore(main): release 0.16.0' );
+	pr.milestone = { number: 31, title: '0.15.1' };
 	const { github, writes } = buildGithub( {
 		milestones: [
 			{ number: 23, title: '0.15.0' },
+			{ number: 30, title: '1.0.0' },
 			{ number: 31, title: '0.15.1' },
-			{ number: 7, title: 'Future Release' },
 		],
 		releases: [ published( 'v0.15.0' ) ],
-		openPRs: [ releasePR( 759, 'presence-api', 'chore(main): release 0.16.0' ) ],
+		openPRs: [ pr ],
 	} );
 
 	await run( { github, context, core } );
@@ -145,11 +171,21 @@ test( 'renames an unreleased milestone when the version moves, and closes releas
 	assert.deepEqual( writes.slice( 0, 2 ), [
 		[
 			'updateMilestone',
-			{ owner: 'WordPress', repo: 'presence-api', milestone_number: 23, state: 'closed' },
+			{
+				owner: 'WordPress',
+				repo: 'presence-api',
+				milestone_number: 23,
+				state: 'closed',
+			},
 		],
 		[
 			'updateMilestone',
-			{ owner: 'WordPress', repo: 'presence-api', milestone_number: 31, title: '0.16.0' },
+			{
+				owner: 'WordPress',
+				repo: 'presence-api',
+				milestone_number: 31,
+				title: '0.16.0',
+			},
 		],
 	] );
 } );
