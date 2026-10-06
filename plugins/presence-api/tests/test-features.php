@@ -380,7 +380,19 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 			}
 		}
 
-		$this->assertSame( array( array( 'post-locks' => 0 ), array( 'post-locks' => 1 ) ), $saved );
+		$this->assertSame(
+			array(
+				array(
+					'post-locks' => 0,
+					'post-list'  => 0,
+				),
+				array(
+					'post-locks' => 1,
+					'post-list'  => 0,
+				),
+			),
+			$saved
+		);
 	}
 
 	/**
