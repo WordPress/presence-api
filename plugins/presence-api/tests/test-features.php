@@ -24,7 +24,8 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	);
 
 	public function tear_down() {
-		unset( $_POST['wp_presence_network_features'], $_REQUEST['_wpnonce'] );
+		unset( $_POST['wp_presence_network_features'], $_REQUEST['_wpnonce'], $_GET['updated'], $GLOBALS['title'] );
+		set_current_screen( 'front' );
 		parent::tear_down();
 	}
 
@@ -318,5 +319,99 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 		}
 
 		$this->assertSame( array( array( 'post-locks' => 0 ), array( 'post-locks' => 1 ) ), $saved );
+	}
+
+	/**
+	 * @covers ::wp_presence_render_features_page
+	 * @covers ::wp_presence_render_features_section
+	 * @covers ::wp_presence_render_feature_field
+	 */
+	public function test_the_site_page_is_a_form_options_php_can_save() {
+		$GLOBALS['title'] = 'Presence API';
+		wp_presence_register_feature_settings();
+
+		$page = $this->render( 'wp_presence_render_features_page' );
+
+		$this->assertStringContainsString( '<h1>Presence API</h1>', $page );
+		$this->assertStringContainsString( 'action="options.php"', $page );
+		$this->assertMatchesRegularExpression( '/name=[\'"]option_page[\'"] value=[\'"]presence-api[\'"]/', $page, 'options.php saves only the group the form names.' );
+		$this->assertStringContainsString( 'name="wp_presence_features[post-locks]" value="1"', $page );
+		$this->assertStringContainsString( 'while WordPress core adopts each feature', $page );
+	}
+
+	/**
+	 * @group ms-required
+	 *
+	 * @covers ::wp_presence_add_network_features_page
+	 */
+	public function test_the_network_page_sits_under_network_settings() {
+		global $submenu;
+
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		$admin_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		grant_super_admin( $admin_id );
+		wp_set_current_user( $admin_id );
+		wp_presence_add_network_features_page();
+
+		$this->assertContains( 'presence-api', wp_list_pluck( $submenu['settings.php'], 2 ) );
+	}
+
+	/**
+	 * options.php only saves site options, so the network form has to post to its own handler with its own nonce.
+	 *
+	 * @group ms-required
+	 *
+	 * @covers ::wp_presence_render_network_features_page
+	 * @covers ::wp_presence_render_features_section
+	 * @covers ::wp_presence_render_feature_field
+	 */
+	public function test_the_network_page_posts_to_its_own_handler() {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		$GLOBALS['title'] = 'Presence API';
+		set_current_screen( 'settings-network' );
+		wp_presence_register_feature_settings();
+		update_site_option( 'wp_presence_network_features', array( 'post-locks' => 0 ) );
+
+		$page = $this->render( 'wp_presence_render_network_features_page' );
+
+		$this->assertStringContainsString( 'edit.php?action=wp_presence_features', $page );
+		$this->assertStringContainsString( 'name="_wpnonce"', $page );
+		$this->assertMatchesRegularExpression( '/<input type="checkbox"[^>]*name="wp_presence_network_features\[post-locks\]" value="1"\s*\/>/', $page, 'The box follows the network option, which is off.' );
+		$this->assertStringContainsString( 'turns it off on every site', $page );
+		$this->assertStringNotContainsString( 'Settings saved.', $page );
+
+		$_GET['updated'] = 'true';
+
+		$this->assertStringContainsString( 'Settings saved.', $this->render( 'wp_presence_render_network_features_page' ) );
+	}
+
+	/**
+	 * A valid nonce is not enough: a site administrator on the network must not change every site.
+	 *
+	 * @group ms-required
+	 *
+	 * @covers ::wp_presence_save_network_features
+	 */
+	public function test_the_network_page_refuses_a_user_who_cannot_manage_the_network() {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$_REQUEST['_wpnonce']                  = wp_create_nonce( 'wp_presence_network_features' );
+		$_POST['wp_presence_network_features'] = array( 'post-locks' => '0' );
+
+		try {
+			wp_presence_save_network_features();
+			$this->fail( 'The save should have been refused.' );
+		} catch ( WPDieException $refused ) {
+			$this->assertFalse( get_site_option( 'wp_presence_network_features' ), 'Nothing was stored.' );
+		}
 	}
 }
