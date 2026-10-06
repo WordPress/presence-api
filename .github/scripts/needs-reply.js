@@ -1,7 +1,6 @@
 /**
- * Labels open issues and pull requests where someone outside CODEOWNERS spoke
- * last and has waited more than 48 hours, and unlabels them once a code owner
- * answers.
+ * Labels open threads where someone outside CODEOWNERS has waited 48 hours for
+ * a reply, and unlabels them once a code owner answers.
  *
  * Usage: node needs-reply.js
  * Env:   GH_TOKEN, GITHUB_REPOSITORY
@@ -31,8 +30,7 @@ function parseCodeowners( text ) {
 const isBot = ( user ) =>
 	! user || 'Bot' === user.type || user.login.endsWith( '[bot]' );
 
-// The opening counts as the author's first word, so an issue nobody has
-// answered at all is caught too.
+// The opening counts, so a thread nobody has answered is caught too.
 function latestActivity( item, timeline ) {
 	const events = [ { user: item.user, at: item.created_at } ];
 
@@ -70,8 +68,7 @@ function latestActivity( item, timeline ) {
 		);
 }
 
-// 'add', 'remove', or null to leave the label as it is. A fresh outside
-// comment on a labeled item keeps the label: they are still waiting.
+// 'add', 'remove', or null to leave the label alone.
 function decide( { latest, owners, labeled, now } ) {
 	if ( ! latest ) {
 		return null;
