@@ -31,6 +31,7 @@ Tracking who is logged in, on which screen and in which post takes frequent writ
 
 ```bash
 npm install
+npm run build
 npx wp-env start
 ```
 

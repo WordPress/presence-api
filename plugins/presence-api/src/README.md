@@ -2,16 +2,15 @@
 
 ## Usage
 
-The hooks are shipped as source in the plugin. Import them in your block editor code:
+The plugin registers the hooks as the `wp-presence` script, exposed as `wp.presence`. Add it to your script's dependencies:
 
-```js
-import { usePresenceUsers } from './path/to/presence-api/src';
-
-// Or if you've aliased the plugin path:
-import { usePresenceUsers } from '@presence-api/src';
+```php
+wp_enqueue_script( 'my-plugin', plugins_url( 'build/index.js', __FILE__ ), array( 'wp-presence' ) );
 ```
 
-Dependencies: `@wordpress/element`, `@wordpress/data`, `@wordpress/api-fetch` (available in Gutenberg/block editor context).
+```js
+const { usePresenceUsers } = wp.presence;
+```
 
 ## usePresenceUsers
 
@@ -20,7 +19,7 @@ Subscribes to WordPress Heartbeat to poll for presence room occupants.
 ### Example
 
 ```js
-import { usePresenceUsers } from '@presence-api/src';
+const { usePresenceUsers } = wp.presence;
 
 function MyComponent( { postId } ) {
 	const { isPresent, isLoading, users, error } = usePresenceUsers( 
