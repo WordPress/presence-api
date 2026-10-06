@@ -20,7 +20,13 @@ foreach ( glob( $root . '/plugins/*', GLOB_ONLYDIR ) as $plugin ) {
 	foreach ( $iterator as $file ) {
 		$path = substr( $file->getPathname(), strlen( $root ) + 1 );
 		if ( 'php' === $file->getExtension() && ! preg_match( '#/(tests|vendor|node_modules)/#', $path ) ) {
-			$files[ $path ] = token_get_all( file_get_contents( $file->getPathname() ) );
+			$files[ $path ] = array();
+			foreach ( token_get_all( file_get_contents( $file->getPathname() ) ) as $token ) {
+				$token = (array) $token + array( 1 => $token );
+				if ( ! in_array( $token[0], array( T_WHITESPACE, T_COMMENT ), true ) ) {
+					$files[ $path ][] = $token;
+				}
+			}
 		}
 	}
 }
@@ -56,27 +62,22 @@ $part_of = static function ( $path ) use ( $api ) {
 	return str_starts_with( $path, 'plugins/presence-api/' ) ? $path : dirname( $path );
 };
 
-$skip = array( T_WHITESPACE, T_COMMENT, T_ATTRIBUTE );
-
 // Pass 1: top-level and namespaced functions whose docblock says @access private.
 $private = array();
 foreach ( $files as $path => $tokens ) {
 	$doc   = '';
 	$depth = 0;
 	foreach ( $tokens as $i => $token ) {
-		if ( '{' === $token || ( is_array( $token ) && in_array( $token[0], array( T_CURLY_OPEN, T_DOLLAR_OPEN_CURLY_BRACES ), true ) ) ) {
+		if ( in_array( $token[0], array( '{', T_CURLY_OPEN, T_DOLLAR_OPEN_CURLY_BRACES ), true ) ) {
 			++$depth;
-		} elseif ( '}' === $token ) {
+		} elseif ( '}' === $token[0] ) {
 			--$depth;
-		} elseif ( is_array( $token ) && T_DOC_COMMENT === $token[0] ) {
+		} elseif ( T_DOC_COMMENT === $token[0] ) {
 			$doc = $token[1];
-		} elseif ( is_array( $token ) && T_FUNCTION === $token[0] && 0 === $depth ) {
-			for ( $j = $i + 1; is_array( $tokens[ $j ] ) && in_array( $tokens[ $j ][0], $skip, true ); $j++ );
-			if ( is_array( $tokens[ $j ] ) && T_STRING === $tokens[ $j ][0] && str_contains( $doc, '@access private' ) ) {
-				$private[ strtolower( $tokens[ $j ][1] ) ] = $path;
-			}
-			$doc = '';
-		} elseif ( ';' === $token ) {
+		} elseif ( T_FUNCTION === $token[0] && 0 === $depth && T_STRING === $tokens[ $i + 1 ][0] && str_contains( $doc, '@access private' ) ) {
+			$private[ strtolower( $tokens[ $i + 1 ][1] ) ] = $path;
+		}
+		if ( in_array( $token[0], array( T_FUNCTION, ';' ), true ) ) {
 			$doc = '';
 		}
 	}
@@ -90,17 +91,13 @@ foreach ( $files as $path => $tokens ) {
 		continue;
 	}
 	foreach ( $tokens as $i => $token ) {
-		if ( ! is_array( $token ) || ! in_array( $token[0], array( T_STRING, T_NAME_FULLY_QUALIFIED ), true ) ) {
+		if ( ! in_array( $token[0], array( T_STRING, T_NAME_FULLY_QUALIFIED ), true ) || '(' !== ( $tokens[ $i + 1 ][0] ?? null ) ) {
 			continue;
 		}
-		$name = ltrim( $token[1], '\\' );
-		if ( ! isset( $private[ strtolower( $name ) ] ) || $part_of( $private[ strtolower( $name ) ] ) === $part ) {
-			continue;
-		}
-		for ( $j = $i + 1; isset( $tokens[ $j ] ) && is_array( $tokens[ $j ] ) && in_array( $tokens[ $j ][0], $skip, true ); $j++ );
-		for ( $k = $i - 1; $k >= 0 && is_array( $tokens[ $k ] ) && in_array( $tokens[ $k ][0], $skip, true ); $k-- );
-		$before = is_array( $tokens[ $k ] ) ? $tokens[ $k ][0] : $tokens[ $k ];
-		if ( '(' === ( $tokens[ $j ] ?? null ) && ! in_array( $before, array( T_FUNCTION, T_OBJECT_OPERATOR, T_NULLSAFE_OBJECT_OPERATOR, T_DOUBLE_COLON, T_NEW ), true ) ) {
+		$name    = ltrim( $token[1], '\\' );
+		$defined = $private[ strtolower( $name ) ] ?? null;
+		$before  = $tokens[ $i - 1 ][0] ?? null;
+		if ( $defined && $part_of( $defined ) !== $part && ! in_array( $before, array( T_FUNCTION, T_OBJECT_OPERATOR, T_NULLSAFE_OBJECT_OPERATOR, T_DOUBLE_COLON, T_NEW ), true ) ) {
 			$calls[ "$path $name()" ] = true;
 		}
 	}
@@ -115,7 +112,7 @@ if ( in_array( '--update', $argv, true ) ) {
 	exit( 0 );
 }
 
-$expected = file( $baseline, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES ) ?: array();
+$expected = file( $baseline, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES );
 $added    = array_diff( $actual, $expected );
 $removed  = array_diff( $expected, $actual );
 
