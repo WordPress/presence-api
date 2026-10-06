@@ -1,13 +1,7 @@
 /**
- * Cross-tab coordinator.
- *
  * Elects one visible tab per key and site to do work every tab would otherwise
- * repeat; other tabs receive the elected tab's results over BroadcastChannel
- * instead. Falls back to every tab doing the work when Web Locks or
- * BroadcastChannel aren't available.
- *
- * Loaded as a classic script by the plugin's screens and imported by the
- * React hook in src/, so it must stay free of imports and exports.
+ * repeat and relays its results to the rest, loaded both as a classic script
+ * and as an import from src/, so it has no imports or exports.
  *
  * @package Presence_API
  */
@@ -18,8 +12,8 @@
 	 * @param {string}                  key                   Unique lock/channel name.
 	 * @param {Object}                  [options]
 	 * @param {string[]}                [options.relayedKeys] heartbeat-tick response keys to relay from the leader to followers.
-	 * @param {function(Object): void}  [options.onMessage]   Receives what the leader posts. Defaults to replaying it as a heartbeat-tick.
-	 * @param {function(boolean): void} [options.onLeader]    Called when this tab becomes the leader, with true when it took over on becoming visible. Defaults to connecting Heartbeat at once on takeover.
+	 * @param {function(Object): void}  [options.onMessage]   Receives what the leader posts, replayed as a heartbeat-tick by default.
+	 * @param {function(boolean): void} [options.onLeader]    Runs on taking the lead, passed true when that happened on being shown, and connects Heartbeat at once in that case by default.
 	 * @return {{isLeader: function(): boolean, postMessage: function(Object): void, destroy: function(): void}} Coordinator handle.
 	 */
 	window.wpPresenceCreateTabCoordinator = function ( key, options = {} ) {
@@ -83,7 +77,7 @@
 		};
 
 		if ( hasLocks ) {
-			// Only visible tabs queue; one that takes over on becoming visible tells onLeader so followers don't wait an interval.
+			// Only visible tabs queue.
 			const requestLeadership = function ( tookOver ) {
 				const request = {};
 				pending = request;
