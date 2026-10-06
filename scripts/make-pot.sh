@@ -3,9 +3,7 @@
 # Regenerates plugins/presence-api/languages/presence-api.pot from the source
 # that ships, so the template never lags the release it is bundled with.
 #
-# Everything in the plugin's .distignore is excluded too. The WP_DEBUG-only
-# developer tools whose strings this used to drop now live in their own plugin
-# (plugins/presence-debugger), so they are no longer part of this template.
+# Everything in the plugin's .distignore is excluded too.
 #
 # Called from .github/workflows/release-please.yml right after
 # scripts/sync-versions.sh, so `Project-Id-Version` carries the new version.
