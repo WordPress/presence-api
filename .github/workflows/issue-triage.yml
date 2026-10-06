@@ -14,8 +14,7 @@ on:
 permissions:
   contents: read
 
-# Triage fires several events in a row, so runs for one issue queue rather than
-# race to post the comment twice.
+# Triage fires events in bursts; queuing them stops two runs posting the comment.
 concurrency:
   group: issue-triage-${{ github.event.issue.number }}
 

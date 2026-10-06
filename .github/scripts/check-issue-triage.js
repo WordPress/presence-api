@@ -1,8 +1,6 @@
 'use strict';
 
-// CONTRIBUTING asks every open issue for an `[Area]` label and a milestone.
-// This keeps one comment on an issue missing either, and deletes it once both
-// are there.
+// Keeps one comment on an open issue missing an `[Area]` or milestone, deleted once it has both.
 
 const MARKER = '<!-- presence-api:issue-triage -->';
 
