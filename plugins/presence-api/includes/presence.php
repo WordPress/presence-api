@@ -535,6 +535,7 @@ function wp_presence_is_valid_date_gmt( $date_gmt ) {
  * @since 0.5.0 Added the $date_gmt parameter.
  * @since 0.7.0 Added the $expires_in parameter.
  * @since 0.15.0 A reserved client ID is written with recording off.
+ * @since 0.15.0 Fires the `set_presence` action.
  *
  * @param string      $room      The room identifier.
  * @param string      $client_id The client identifier.
@@ -597,7 +598,27 @@ function wp_set_presence( $room, $client_id, $state, $user_id = 0, $date_gmt = n
 	 */
 	$refresh_cutoff = null === $date_gmt && null === $expires_in ? wp_presence_refresh_cutoff( $room ) : '';
 
-	return wp_presence_write_row( $room, $client_id, $user_id, $data_json, $now, $expires_gmt, $refresh_cutoff );
+	$written = wp_presence_write_row( $room, $client_id, $user_id, $data_json, $now, $expires_gmt, $refresh_cutoff );
+
+	if ( $written > 0 && ! wp_presence_is_reserved_client_id( $client_id ) ) {
+		/**
+		 * Fires after a client's presence row is written to a room.
+		 *
+		 * Does not fire for a write skipped because the row was unchanged and
+		 * recently stamped, or for a reserved row. The skip holds on MySQL;
+		 * SQLite counts an unchanged write as a change, so it fires there.
+		 *
+		 * @since 0.15.0
+		 *
+		 * @param string $room      The room identifier.
+		 * @param string $client_id The client identifier.
+		 * @param array  $state     The presence state data.
+		 * @param int    $user_id   The user ID, 0 when the row has no user.
+		 */
+		do_action( 'set_presence', $room, $client_id, $state, $user_id );
+	}
+
+	return false !== $written;
 }
 
 /**
@@ -730,6 +751,7 @@ function wp_presence_max_expires_in() {
  * @since 0.6.0
  * @since 0.7.0 Added the `$expires_gmt` and `$refresh_cutoff` parameters.
  * @since 0.11.0 No longer checks whether recording is on, so post locks can bypass it.
+ * @since 0.15.0 Returns the number of rows affected instead of true.
  *
  * @global wpdb $wpdb WordPress database abstraction object.
  *
@@ -742,7 +764,8 @@ function wp_presence_max_expires_in() {
  *                                    Default the site TTL from `$date_gmt`.
  * @param string      $refresh_cutoff Optional. As returned by wp_presence_refresh_cutoff().
  *                                    Default empty, which always stamps $date_gmt.
- * @return bool True on success, false on failure.
+ * @return int|false The number of rows affected, 0 when an unchanged row was left
+ *                   alone, or false on failure.
  */
 function wp_presence_write_row( $room, $client_id, $user_id, $data_json, $date_gmt, $expires_gmt = null, $refresh_cutoff = '' ) {
 	global $wpdb;
@@ -790,13 +813,14 @@ function wp_presence_write_row( $room, $client_id, $user_id, $data_json, $date_g
 		}
 	}
 
-	return false !== $result;
+	return false === $result ? false : (int) $result;
 }
 
 /**
  * Removes a client from a room.
  *
  * @since 0.1.1
+ * @since 0.15.0 Fires the `removed_presence` action.
  *
  * @param string $room      The room identifier.
  * @param string $client_id The client identifier.
@@ -824,6 +848,21 @@ function wp_remove_presence( $room, $client_id ) {
 
 		if ( wp_presence_admin_room() === $room ) {
 			wp_presence_admin_room_changed();
+		}
+
+		if ( ! wp_presence_is_reserved_client_id( $client_id ) ) {
+			/**
+			 * Fires after a client's presence row is removed from a room.
+			 *
+			 * Does not fire when there was no row to remove, for a reserved
+			 * row, or for a row that expires and is cleaned up later.
+			 *
+			 * @since 0.15.0
+			 *
+			 * @param string $room      The room identifier.
+			 * @param string $client_id The client identifier.
+			 */
+			do_action( 'removed_presence', $room, $client_id );
 		}
 	}
 
@@ -878,6 +917,7 @@ function wp_presence_leave( $room, $client_id, $timeout = null, $client_prefix =
  * Removes all presence entries for a given user across all rooms.
  *
  * @since 0.1.1
+ * @since 0.15.0 Fires the `removed_user_presence` action.
  *
  * @param int $user_id The user ID.
  * @return bool True on success, false on failure.
@@ -900,6 +940,17 @@ function wp_remove_user_presence( $user_id ) {
 	if ( $result > 0 ) {
 		wp_cache_set_last_changed( 'presence' );
 		wp_presence_admin_room_changed();
+
+		/**
+		 * Fires after all of a user's presence rows are removed, across every room.
+		 *
+		 * Does not fire when the user had no rows.
+		 *
+		 * @since 0.15.0
+		 *
+		 * @param int $user_id The user ID.
+		 */
+		do_action( 'removed_user_presence', $user_id );
 	}
 
 	return false !== $result;
