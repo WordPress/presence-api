@@ -167,6 +167,8 @@ On every release PR, `scripts/sync-versions.sh` copies the version from `.releas
 bash scripts/sync-versions.sh
 ```
 
+It also rebuilds the changelog in `readme.txt` from `CHANGELOG.md` and leaves out entries that never reach a site, which it recognizes by the title naming the debugger, the DB viewer, release-please, a workflow or a test tool.
+
 Right after it, `scripts/make-pot.sh` regenerates `plugins/presence-api/languages/presence-api.pot` with WP-CLI, skipping everything in the plugin's `.distignore`, so the template ships with the release it names. It needs [WP-CLI](https://wp-cli.org/) to run locally:
 
 ```bash
