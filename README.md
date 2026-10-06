@@ -133,6 +133,10 @@ These functions are the stable API. Treat every other function as internal, sinc
 // A $timeout you pass is the window used; with null, each row counts until its own expiry.
 $entries = wp_get_presence( $room, $timeout = null, $client_prefix = '' );
 
+// Read every room whose identifier starts with $prefix, newest first. Each
+// entry carries its room, so 'postType/' lists who is editing which post.
+$entries = wp_get_presence_by_room_prefix( $prefix, $timeout = null );
+
 // Upsert a client's presence state. Atomic via INSERT … ON DUPLICATE KEY UPDATE.
 // $date_gmt ('Y-m-d H:i:s') lets a relay keep each client's own timestamp.
 // Future values are clamped to now, invalid dates return false. Defaults to now.
@@ -160,6 +164,10 @@ wp_can_access_presence_room( $room, $user_id = 0 );
 // does not support presence.
 $room = wp_presence_post_room( $post );
 
+// The reverse: array( 'post_type' => 'post', 'post_id' => 42 ), or false
+// for a room that is not a post's.
+$parts = wp_presence_parse_room( $room );
+
 // Return the site-wide room, 'admin/online'.
 $room = wp_presence_admin_room();
 
@@ -172,6 +180,15 @@ wp_presence_recording_enabled();
 // Whether presence can be used here: the table exists and recording is on.
 wp_presence_is_available();
 ```
+
+The plugin's own screens still call a few internal helpers. Each does something a plugin can do with public functions:
+
+| Internal helper | Use instead |
+| --- | --- |
+| `wp_presence_online_user_ids()` | `wp_list_pluck( $entries, 'user_id' )`, adding `get_current_user_id()` if the viewer should count while their own row is missing |
+| `wp_presence_render_avatar_stack()` | `get_avatar()` for each user, with your own markup |
+| `wp_presence_render_agent_badge()` | `wp_presence_is_agent_user()`, with your own label |
+| `wp_presence_fragment_request()` | Core's `heartbeat_received` filter, under a key of your own |
 
 If you build on this plugin, check `wp_presence_is_available()` before you depend on it. The `function_exists()` guard covers the plugin not being loaded:
 
