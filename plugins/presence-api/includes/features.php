@@ -36,11 +36,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 0.15.0
  *
- * A feature marked `network` has a row on the network page alone. Its key
- * also has to be in wp_presence_get_network_features(), which load time can
- * read without the labels.
+ * A feature listed in wp_presence_get_network_features() as well has a row
+ * on the network page alone.
  *
- * @return array<string, array{label: string, description: string, network?: bool}> Features keyed by feature.
+ * @return array<string, array{label: string, description: string}> Features keyed by feature.
  */
 function wp_presence_get_features() {
 	return array(
@@ -51,7 +50,6 @@ function wp_presence_get_features() {
 		'network-admin' => array(
 			'label'       => __( 'Network Admin screens', 'presence-api' ),
 			'description' => __( 'Show who is online on Network Admin: a column on Sites, a view and column on Users, and the Who\'s Online dashboard widget.', 'presence-api' ),
-			'network'     => true,
 		),
 	);
 }
@@ -159,8 +157,8 @@ function wp_presence_sanitize_features( $value, $network = false ) {
 	$value     = is_array( $value ) ? $value : array();
 	$sanitized = array();
 
-	foreach ( wp_presence_get_features() as $feature => $details ) {
-		if ( ! $network && ! empty( $details['network'] ) ) {
+	foreach ( array_keys( wp_presence_get_features() ) as $feature ) {
+		if ( ! $network && in_array( $feature, wp_presence_get_network_features(), true ) ) {
 			continue;
 		}
 
@@ -199,7 +197,7 @@ function wp_presence_register_feature_settings() {
 		add_settings_section( 'wp_presence_features', __( 'Features', 'presence-api' ), 'wp_presence_render_features_section', $page );
 
 		foreach ( wp_presence_get_features() as $feature => $details ) {
-			if ( 'presence-api' === $page && ! empty( $details['network'] ) ) {
+			if ( 'presence-api' === $page && in_array( $feature, wp_presence_get_network_features(), true ) ) {
 				continue;
 			}
 
