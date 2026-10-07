@@ -129,26 +129,34 @@ function wp_presence_editors_stack( $editors ) {
 		return '';
 	}
 
-	$count = count( $editors );
-	$index = 0;
-	$html  = '<div class="presence-editors-stack">';
-
+	$titles = array();
 	foreach ( $editors as $entry ) {
 		$user = get_userdata( $entry->user_id );
 
-		if ( ! $user ) {
-			continue;
+		if ( $user ) {
+			$titles[ $user->ID ] = wp_presence_is_agent_user( $user->ID )
+				/* translators: %s: Display name. */
+				? sprintf( __( '%s (agent)', 'presence-api' ), $user->display_name )
+				: $user->display_name;
 		}
+	}
 
-		$z     = $count - $index;
-		$title = wp_presence_is_agent_user( $user->ID )
-			/* translators: %s: Display name. */
-			? sprintf( __( '%s (agent)', 'presence-api' ), $user->display_name )
-			: $user->display_name;
-		$avatar = get_avatar( $user->ID, 24, '', $user->display_name );
-		$avatar = str_replace( '<img ', '<img style="z-index:' . $z . '" title="' . esc_attr( $title ) . '" ', $avatar );
+	// Three faces and a count fit the column's 80px.
+	$shown = count( $titles ) > 4 ? array_slice( $titles, 0, 3, true ) : $titles;
+	$z     = count( $shown );
+	$html  = '<div class="presence-editors-stack">';
+
+	foreach ( $shown as $user_id => $title ) {
+		$avatar = str_replace( '<img ', '<img style="z-index:' . ( $z-- ) . '" title="' . esc_attr( $title ) . '" ', get_avatar( $user_id, 24, '', $title ) );
 		$html  .= wp_kses_post( $avatar );
-		++$index;
+	}
+
+	$hidden = array_diff_key( $titles, $shown );
+	if ( $hidden ) {
+		$names = wp_sprintf( '%l', $hidden );
+		/* translators: %s: Number of editors not shown. */
+		$html .= '<span class="presence-editors-more" title="' . esc_attr( $names ) . '" aria-hidden="true">' . esc_html( sprintf( __( '+%s', 'presence-api' ), number_format_i18n( count( $hidden ) ) ) ) . '</span>';
+		$html .= '<span class="screen-reader-text">' . esc_html( $names ) . '</span>';
 	}
 
 	return $html . '</div>';
@@ -217,6 +225,7 @@ function wp_presence_editors_column_css( $hook_suffix ) {
 			position: relative;
 		}
 		.presence-editors-stack img:first-child { margin-inline-start: 0; }
+		.presence-editors-more { margin-inline-start: 4px; font-size: 12px; }
 	';
 
 	wp_register_style( 'presence-post-list', false, array(), WP_PRESENCE_VERSION );
