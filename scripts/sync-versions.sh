@@ -6,7 +6,7 @@
 #   - plugins/presence-api/presence-api.php plugin header `* Version:`
 #   - plugins/presence-api/presence-api.php `WP_PRESENCE_VERSION` define
 #   - plugins/presence-api/readme.txt `Stable tag:`
-#   - plugins/presence-api/.wordpress-org/blueprints/blueprint.json tag-pinned demo seeder URLs
+#   - plugins/presence-api/.wordpress-org/blueprints/blueprint.json tag-pinned demo seeder URLs and debugger ref
 #   - the `* Version:` header of every other plugin in the manifest
 #
 # Called from .github/workflows/release-please.yml after release-please opens
@@ -51,6 +51,7 @@ sed -i.bak "s|^ \* Version: .*$| * Version: ${VERSION}|" "$MAIN"
 sed -i.bak "s|^\(define( 'WP_PRESENCE_VERSION', '\)[^']*\(' );\)|\1${VERSION}\2|" "$MAIN"
 sed -i.bak "s|^Stable tag: .*$|Stable tag: ${VERSION}|" "$README"
 sed -i.bak "s|\(raw\.githubusercontent\.com/WordPress/presence-api/\)v[^/]*|\1v${VERSION}|g" "$BLUEPRINT"
+sed -i.bak "s|^\(\t*\"ref\": \"\)v[^\"]*|\1v${VERSION}|" "$BLUEPRINT"
 
 grep -qFx " * Version: ${VERSION}" "$MAIN" \
 	|| { echo "Failed to update plugin header version in presence-api.php" >&2; exit 1; }
@@ -65,6 +66,8 @@ if grep -o 'raw\.githubusercontent\.com/WordPress/presence-api/v[^/]*' "$BLUEPRI
 	echo "A stale seeder tag remains in ${BLUEPRINT}" >&2
 	exit 1
 fi
+grep -qF "\"ref\": \"v${VERSION}\"" "$BLUEPRINT" \
+	|| { echo "Failed to update the debugger ref in ${BLUEPRINT}" >&2; exit 1; }
 
 rm -f "${MAIN}.bak" "${README}.bak" "${BLUEPRINT}.bak"
 

@@ -99,16 +99,17 @@ jobs:
           set -euo pipefail
           # PR-built archive: copy exactly the expected entries out by name; never let unzip create files or symlinks.
           archive="$RUNNER_TEMP/release-assets.zip"
-          expected=$'demo-seeder.php\npresence-api.zip\nscreen-stale-demo-helper.php'
+          expected=$'demo-seeder.php\npresence-api.zip\npresence-debugger.zip\nscreen-stale-demo-helper.php'
           if [[ "$(unzip -Z1 "$archive" | sort)" != "$expected" ]]; then
             echo "Refusing to publish: release-assets does not contain exactly the expected files."
             exit 1
           fi
           mkdir -p "$RUNNER_TEMP/release-assets"
-          for asset in presence-api.zip demo-seeder.php screen-stale-demo-helper.php; do
+          for asset in presence-api.zip presence-debugger.zip demo-seeder.php screen-stale-demo-helper.php; do
             unzip -p "$archive" "$asset" > "$RUNNER_TEMP/release-assets/$asset"
           done
           unzip -tq "$RUNNER_TEMP/release-assets/presence-api.zip"
+          unzip -tq "$RUNNER_TEMP/release-assets/presence-debugger.zip"
 
       # Playground fetches these from the browser. Release assets send no
       # `Access-Control-Allow-Origin`; raw.githubusercontent.com does.
@@ -146,40 +147,45 @@ jobs:
           # Always the base repository, never the PR's head repository.
           RAW="https://raw.githubusercontent.com/${REPO}/preview-pr-${PR_NUMBER}/${HEAD_SHA}"
           PLUGIN_URL="${RAW}/presence-api.zip"
+          DEBUGGER_URL="${RAW}/presence-debugger.zip"
           SEEDER_URL="${RAW}/demo-seeder.php"
           HELPER_URL="${RAW}/screen-stale-demo-helper.php"
 
           # raw's CDN can lag the push by a few seconds.
           for _ in $(seq 30); do
-            if curl -sf -o /dev/null "$PLUGIN_URL"; then
+            if curl -sf -o /dev/null "$PLUGIN_URL" && curl -sf -o /dev/null "$DEBUGGER_URL"; then
               break
             fi
             sleep 2
           done
           curl -sf -o /dev/null "$PLUGIN_URL" \
             || { echo "Preview assets never appeared at $PLUGIN_URL"; exit 1; }
+          curl -sf -o /dev/null "$DEBUGGER_URL" \
+            || { echo "Preview assets never appeared at $DEBUGGER_URL"; exit 1; }
 
           # writeFile steps are matched by trailing path component so the
           # seeder and helper get distinct URLs without depending on the
           # order they appear in the blueprint.
           transform() {
-            jq --arg plugin "$1" --arg seeder "$2" --arg helper "$3" '
+            jq --arg plugin "$1" --arg debugger "$2" --arg seeder "$3" --arg helper "$4" '
               .steps |= map(
                 if .step == "installPlugin" and (.pluginData.resource == "url") and (.pluginData.url | endswith("/presence-api.zip")) then
                   .pluginData.url = $plugin
+                elif .step == "installPlugin" and (.pluginData.resource == "url") and (.pluginData.url | endswith("/presence-debugger.zip")) then
+                  .pluginData.url = $debugger
                 elif .step == "writeFile" and (.data.resource == "url") then
                   if (.path | endswith("/demo-seeder.php")) then .data.url = $seeder
                   elif (.path | endswith("/screen-stale-demo-helper.php")) then .data.url = $helper
                   else . end
                 else . end
               )
-            ' "$4"
+            ' "$5"
           }
 
-          BLUEPRINT=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" blueprint.json)
-          BLUEPRINT_MS=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" blueprint-multisite.json)
-          BLUEPRINT_RTC=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" blueprint-rtc.json)
-          BLUEPRINT_MS_RTC=$(transform "$PLUGIN_URL" "$SEEDER_URL" "$HELPER_URL" blueprint-multisite-rtc.json)
+          BLUEPRINT=$(transform "$PLUGIN_URL" "$DEBUGGER_URL" "$SEEDER_URL" "$HELPER_URL" blueprint.json)
+          BLUEPRINT_MS=$(transform "$PLUGIN_URL" "$DEBUGGER_URL" "$SEEDER_URL" "$HELPER_URL" blueprint-multisite.json)
+          BLUEPRINT_RTC=$(transform "$PLUGIN_URL" "$DEBUGGER_URL" "$SEEDER_URL" "$HELPER_URL" blueprint-rtc.json)
+          BLUEPRINT_MS_RTC=$(transform "$PLUGIN_URL" "$DEBUGGER_URL" "$SEEDER_URL" "$HELPER_URL" blueprint-multisite-rtc.json)
 
           # The settings buttons are the post-locks sites, landing on the plugin's own settings page instead of the post list.
           BLUEPRINT_SETTINGS=$(jq '.landingPage = "/wp-admin/options-general.php?page=presence-api"' <<< "$BLUEPRINT")

@@ -46,7 +46,7 @@ function changelogFor( changelog ) {
 	);
 	fs.writeFileSync(
 		path.join( blueprints, 'blueprint.json' ),
-		'{ "url": "https://raw.githubusercontent.com/WordPress/presence-api/v0.0.0/demo-seeder.php" }'
+		'{\n\t"url": "https://raw.githubusercontent.com/WordPress/presence-api/v0.0.0/demo-seeder.php",\n\t"ref": "v0.0.0"\n}\n'
 	);
 
 	try {

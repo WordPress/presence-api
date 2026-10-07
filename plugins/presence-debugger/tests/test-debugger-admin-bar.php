@@ -8,7 +8,7 @@
  */
 
 // The plugin loads this only under WP_DEBUG, which the suite does not set.
-require_once WP_PRESENCE_PLUGIN_DIR . 'includes/debugger-admin-bar.php';
+require_once __DIR__ . '/../debugger-admin-bar.php';
 
 class WP_Test_Presence_Debugger_Admin_Bar extends WP_Presence_UnitTestCase {
 

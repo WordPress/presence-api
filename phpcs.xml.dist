@@ -12,6 +12,7 @@
 	<file>plugins/presence-api/includes/</file>
 	<file>plugins/presence-api/uninstall.php</file>
 	<file>plugins/presence-scenes/</file>
+	<file>plugins/presence-debugger/</file>
 
 	<!-- Exclude test and demo files from coding standards. -->
 	<exclude-pattern>tests/</exclude-pattern>

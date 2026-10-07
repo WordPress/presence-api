@@ -11,7 +11,7 @@ class WP_Test_Presence_Scene_Debugger extends WP_Presence_UnitTestCase {
 
 	public static function set_up_before_class() {
 		parent::set_up_before_class();
-		require_once WP_PRESENCE_PLUGIN_DIR . 'includes/debugger-admin-bar.php';
+		require_once __DIR__ . '/../../presence-debugger/debugger-admin-bar.php';
 	}
 
 	/**
