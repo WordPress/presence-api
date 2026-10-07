@@ -44,6 +44,10 @@ function wp_presence_get_features() {
 			'label'       => __( 'Post locks', 'presence-api' ),
 			'description' => __( 'Keep post locks in the presence table instead of post meta, so refreshing a lock does not make cached post queries stale.', 'presence-api' ),
 		),
+		'admin-bar'  => array(
+			'label'       => __( 'Admin bar', 'presence-api' ),
+			'description' => __( 'Show the faces of who is online in the admin bar, with a menu of where each person is.', 'presence-api' ),
+		),
 	);
 }
 
