@@ -26,7 +26,7 @@
 		"@wordpress/scripts": "^36.0.0",
 		"globals": "^17.12.0",
 		"jquery": "^4.0.0",
-		"jsdom": "^26.1.0",
+		"jsdom": "^30.1.1",
 		"vite": "^8.3.1",
 		"vitest": "^5.0.3"
 	},
