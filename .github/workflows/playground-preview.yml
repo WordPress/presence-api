@@ -56,7 +56,6 @@ jobs:
           cp LICENSE build/presence-api/
           (cd build && zip -qr presence-api.zip presence-api/)
 
-      # Its own plugin now; the demo runs WP_DEBUG, so the preview ships it too.
       - name: Build presence-debugger.zip
         run: |
           set -euo pipefail

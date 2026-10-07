@@ -43,7 +43,6 @@ jobs:
           cp LICENSE build/presence-api/
           (cd build && zip -qr presence-api.zip presence-api/)
 
-      # Its own plugin now; the blueprints install it next to presence-api.
       - name: Build presence-debugger.zip
         run: |
           set -euo pipefail

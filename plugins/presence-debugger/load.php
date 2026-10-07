@@ -12,10 +12,7 @@
  * License: GPL-2.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  *
- * The tools keep the `presence-api` text domain they had when they lived in the
- * Presence API plugin: their strings only ever show under WP_DEBUG and were
- * deliberately kept out of the translation template, so moving them must not add
- * a new domain for translators to fill.
+ * Uses the presence-api text domain so translators get no new domain for strings only WP_DEBUG shows.
  *
  * @package Presence_API
  */
@@ -24,8 +21,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Developer tools only. A normal site never loads them, exactly as when they
-// were guarded by this same WP_DEBUG check inside Presence API itself.
 if ( ! ( defined( 'WP_DEBUG' ) && WP_DEBUG ) ) {
 	return;
 }

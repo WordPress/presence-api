@@ -57,9 +57,7 @@ function wp_presence_debugger_admin_bar_node( $wp_admin_bar ) {
 		'interval' => __( 'Interval', 'presence-api' ),
 		'ttl'      => __( 'TTL', 'presence-api' ),
 	);
-	// The TTL row reports wp_presence_get_timeout(), a presence-api internal:
-	// there is no public getter for the resolved window, so the debugger shows
-	// exactly the TTL the server applies after the wp_presence_default_ttl filter.
+	// No public function returns the TTL after the wp_presence_default_ttl filter.
 	foreach ( $rows as $key => $label ) {
 		$wp_admin_bar->add_node(
 			array(
@@ -83,10 +81,7 @@ function wp_presence_debugger_admin_bar_node( $wp_admin_bar ) {
 	global $wpdb;
 
 	$rooms = array();
-	// wp_presence_has_table() is a presence-api internal. The debugger guards on
-	// the table existing, not wp_presence_is_available(), so it still lists rooms
-	// when recording is off, and reads the table directly since no public function
-	// returns the rooms a given user is in.
+	// No public function returns a user's rooms, and recording off should still list them.
 	if ( wp_presence_has_table() ) {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$rooms = $wpdb->get_col(
@@ -118,9 +113,7 @@ function wp_presence_debugger_admin_bar_node( $wp_admin_bar ) {
 	foreach ( $rooms as $i => $room ) {
 		$group = 'presence-debug-room-' . $i;
 
-		// Reserved rows included, since the plugin's own bookkeeping is part of what
-		// is being debugged: wp_presence_room_rows() is a presence-api internal, and
-		// the public wp_get_presence() drops exactly these rows.
+		// Reserved rows included, since the plugin's own bookkeeping is part of what is being debugged.
 		$rows = wp_presence_room_rows( $room );
 
 		// You first, then by name, so rows keep their place between ticks.
@@ -227,9 +220,7 @@ function wp_presence_debugger_admin_bar_markup() {
  * @return array The Heartbeat response.
  */
 function wp_presence_debugger_heartbeat_received( $response, $data ) {
-	// wp_presence_fragment_request() is a presence-api internal shared with the
-	// live surfaces in presence-ping.js; the debugger reads the client's request
-	// under the same key rather than reaching into $data on its own.
+	// Reads the request under the key the live surfaces in presence-ping.js use.
 	if ( ! wp_presence_fragment_request( $data, 'debugger' ) || ! current_user_can( 'manage_options' ) ) {
 		return $response;
 	}

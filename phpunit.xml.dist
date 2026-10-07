@@ -29,12 +29,6 @@
 			<directory suffix=".php">plugins/presence-scenes/</directory>
 		</include>
 		<exclude>
-			<!--
-			WP_DEBUG-only developer tools. Excluded from the distributed zip via
-			.distignore and from codecov.yml, so they are not measured as shipped
-			product code either. scripts/check-debug-exclusions.sh checks all three
-			lists agree.
-			-->
 			<!-- Only register hooks, and run during bootstrap before coverage starts. -->
 			<file>plugins/presence-api/includes/default-filters.php</file>
 			<file>plugins/presence-api/includes/ms-default-filters.php</file>

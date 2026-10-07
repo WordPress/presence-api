@@ -31,10 +31,7 @@ add_action(
 
 		$rows = array();
 
-		// wp_presence_has_table() is a presence-api internal. The viewer guards on
-		// the table existing, not wp_presence_is_available(), so it still shows stored
-		// rows when recording is off, and reads the table directly because rendering
-		// the raw rows is the whole point of the viewer.
+		// Not wp_presence_is_available(), so stored rows still show with recording off.
 		if ( wp_presence_has_table() ) {
 			$room = isset( $_GET['room'] ) ? sanitize_text_field( wp_unslash( $_GET['room'] ) ) : '';
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching

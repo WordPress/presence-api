@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 #
-# The Presence API's WP_DEBUG-only developer tools now live in their own plugin
-# (plugins/presence-debugger). What remains excluded from measurement here are
-# the includes/*.php files that ship but only register hooks (the default-filters
-# files), kept consistent across two places:
+# The includes/*.php files that ship but only register hooks (the default-filters
+# files) are excluded from measurement in two places:
 #
 #   - phpunit.xml.dist   keeps them out of PHPUnit coverage
 #   - codecov.yml        keeps them out of the Codecov report
