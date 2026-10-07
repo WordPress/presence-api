@@ -225,6 +225,21 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Switching the Editors panel off leaves it unhooked from the block editor.
+	 *
+	 * @covers ::wp_presence_feature_enabled
+	 */
+	public function test_switching_the_editors_panel_off_leaves_it_unhooked() {
+		foreach ( array( false, true ) as $enabled ) {
+			remove_action( 'enqueue_block_editor_assets', 'wp_presence_enqueue_editors_panel' );
+			update_option( 'wp_presence_features', array( 'editors-panel' => $enabled ? 1 : 0 ) );
+			include WP_PRESENCE_PLUGIN_DIR . 'includes/default-filters.php';
+
+			$this->assertSame( $enabled ? 10 : false, has_action( 'enqueue_block_editor_assets', 'wp_presence_enqueue_editors_panel' ) );
+		}
+	}
+
+	/**
 	 * With its hooks gone, the admin bar renders without the presence node.
 	 *
 	 * @covers ::wp_presence_feature_enabled
@@ -295,6 +310,7 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 				'post-locks' => 0,
 				'admin-bar'  => 0,
 				'post-list'  => 0,
+				'editors-panel' => 0,
 			),
 			wp_presence_sanitize_features( array( 'not-a-feature' => '1' ) ),
 			'A feature that posted nothing is stored as off, and unknown keys are dropped.'
@@ -304,6 +320,7 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 				'post-locks' => 1,
 				'admin-bar'  => 0,
 				'post-list'  => 0,
+				'editors-panel' => 0,
 			),
 			wp_presence_sanitize_features( array( 'post-locks' => '1' ) )
 		);
@@ -312,6 +329,7 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 				'post-locks' => 0,
 				'admin-bar'  => 0,
 				'post-list'  => 0,
+				'editors-panel' => 0,
 			),
 			wp_presence_sanitize_features( 'garbage' )
 		);
@@ -456,11 +474,13 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 					'post-locks' => 0,
 					'admin-bar'  => 0,
 					'post-list'  => 0,
+					'editors-panel' => 0,
 				),
 				array(
 					'post-locks' => 1,
 					'admin-bar'  => 0,
 					'post-list'  => 0,
+					'editors-panel' => 0,
 				),
 			),
 			$saved
