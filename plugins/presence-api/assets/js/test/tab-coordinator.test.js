@@ -114,7 +114,9 @@ function openTab( key, relayedKeys ) {
 	);
 
 	return {
-		coordinator: window.wpPresenceCreateTabCoordinator( key, relayedKeys ),
+		coordinator: window.wpPresenceCreateTabCoordinator( key, {
+			relayedKeys,
+		} ),
 		jQuery: fakeJQuery,
 		ticks,
 	};

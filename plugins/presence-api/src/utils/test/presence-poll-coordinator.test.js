@@ -119,7 +119,7 @@ describe( 'subscribeToPresencePolling', () => {
 	it( 'does not call apiFetch until this tab wins the Web Lock', async () => {
 		let grantLock;
 		global.navigator.locks = {
-			request: vi.fn( ( name, options, callback ) => {
+			request: vi.fn( ( name, callback ) => {
 				return new Promise( ( resolve ) => {
 					grantLock = () => callback().then( resolve );
 				} );
@@ -136,8 +136,7 @@ describe( 'subscribeToPresencePolling', () => {
 		await flush();
 		expect( apiFetch ).not.toHaveBeenCalled();
 		expect( global.navigator.locks.request ).toHaveBeenCalledWith(
-			'wp-presence-poll:room-lock:user_id',
-			expect.any( Object ),
+			'|wp-presence-poll:room-lock:user_id',
 			expect.any( Function )
 		);
 
@@ -146,6 +145,32 @@ describe( 'subscribeToPresencePolling', () => {
 		expect( apiFetch ).toHaveBeenCalledTimes( 1 );
 
 		unsubscribe();
+	} );
+
+	it( 'releases the Web Lock once every subscriber has left', async () => {
+		let held;
+		global.navigator.locks = {
+			request: vi.fn( ( name, callback ) => {
+				held = callback();
+				return held;
+			} ),
+		};
+		apiFetch.mockResolvedValue( [] );
+
+		const unsubscribe = subscribeToPresencePolling(
+			'room-release',
+			'user_id',
+			vi.fn()
+		);
+		const released = vi.fn();
+		held.then( released );
+
+		await flush();
+		expect( released ).not.toHaveBeenCalled();
+
+		unsubscribe();
+		await flush();
+		expect( released ).toHaveBeenCalled();
 	} );
 
 	it( 'delivers results received over BroadcastChannel without fetching itself', () => {

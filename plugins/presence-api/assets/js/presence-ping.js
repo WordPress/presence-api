@@ -102,7 +102,7 @@
 
 	const tabCoordinator = window.wpPresenceCreateTabCoordinator(
 		pingContextKey,
-		RELAYED_TICK_KEYS
+		{ relayedKeys: RELAYED_TICK_KEYS }
 	);
 
 	// Each surface the server keeps current, by the key its Heartbeat feed answers under.
