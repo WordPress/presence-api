@@ -48,6 +48,10 @@ function wp_presence_get_features() {
 			'label'       => __( 'Admin bar', 'presence-api' ),
 			'description' => __( 'Show the faces of who is online in the admin bar, with a menu of where each person is.', 'presence-api' ),
 		),
+		'post-list'  => array(
+			'label'       => __( 'Posts list', 'presence-api' ),
+			'description' => __( 'Show who has each post open in an Editors column on post lists.', 'presence-api' ),
+		),
 	);
 }
 
