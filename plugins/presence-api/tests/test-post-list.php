@@ -170,6 +170,36 @@ class WP_Test_Presence_Post_List extends WP_Presence_UnitTestCase {
 		$this->assertSame( '', $this->render_column( $post_many ), 'Who is editing stays with those who could edit it too.' );
 	}
 
+	/**
+	 * Four faces fit the column; a fifth editor folds the rest into a count that names them.
+	 */
+	public function test_more_than_four_editors_show_three_faces_and_a_count() {
+		$four = self::factory()->post->create();
+		$five = self::factory()->post->create();
+
+		foreach ( array( 'Ana', 'Ben', 'Cy', 'Dee', 'Eli' ) as $index => $name ) {
+			$user_id = self::factory()->user->create(
+				array(
+					'role'         => 'editor',
+					'display_name' => $name,
+				)
+			);
+			wp_set_presence( wp_presence_post_room( $five ), 'editor-' . $user_id, array(), $user_id );
+			if ( $index < 4 ) {
+				wp_set_presence( wp_presence_post_room( $four ), 'editor-' . $user_id, array(), $user_id );
+			}
+		}
+
+		$map    = wp_presence_post_list_editors();
+		$output = wp_presence_editors_stack( $map[ $four ] );
+		$this->assertSame( 4, substr_count( $output, '<img' ) );
+		$this->assertStringNotContainsString( 'presence-editors-more', $output );
+
+		$output = wp_presence_editors_stack( $map[ $five ] );
+		$this->assertSame( 3, substr_count( $output, '<img' ) );
+		$this->assertMatchesRegularExpression( '#<span class="presence-editors-more" title="(Ana and Ben|Ben and Ana)">\+2</span>#', $output );
+	}
+
 	public function test_editors_column_css_enqueues_only_on_edit_php() {
 		wp_presence_editors_column_css( 'upload.php' );
 		$this->assertFalse( wp_style_is( 'presence-post-list', 'enqueued' ) );
