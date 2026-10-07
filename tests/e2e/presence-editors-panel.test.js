@@ -1,7 +1,7 @@
 /**
- * Presence API — usePresenceUsers E2E Tests
+ * Presence API — Editors panel E2E Tests
  *
- * Loads `wp.presence.usePresenceUsers()` in the block editor from a must-use plugin that depends on `wp-presence`.
+ * The block editor's Editors panel, the plugin's own consumer of `wp.presence.usePresenceUsers()`.
  *
  * @package Presence_API
  */
@@ -23,8 +23,6 @@ const COLLABORATOR = {
 	roles: [ 'editor' ],
 };
 
-const MU_PLUGIN = 'presence-users-hook-plugin.php';
-
 function wpEval( phpExpression ) {
 	execSync(
 		`npx wp-env run cli wp eval ${ JSON.stringify( phpExpression ) }`,
@@ -32,12 +30,10 @@ function wpEval( phpExpression ) {
 	);
 }
 
-test.describe( 'usePresenceUsers', () => {
-	// wp-env maps the repository to ABSPATH/presence-api and activates Classic Editor.
+test.describe( 'Editors panel', () => {
+	// wp-env activates Classic Editor.
 	test.beforeAll( () => {
-		wpEval(
-			`wp_mkdir_p( WPMU_PLUGIN_DIR ); copy( ABSPATH . 'presence-api/tests/e2e/${ MU_PLUGIN }', WPMU_PLUGIN_DIR . '/${ MU_PLUGIN }' ); update_option( 'classic-editor-replace', 'block' );`
-		);
+		wpEval( `update_option( 'classic-editor-replace', 'block' );` );
 	} );
 
 	test.afterEach( async ( { requestUtils } ) => {
@@ -46,26 +42,39 @@ test.describe( 'usePresenceUsers', () => {
 	} );
 
 	test.afterAll( () => {
-		wpEval(
-			`wp_delete_file( WPMU_PLUGIN_DIR . '/${ MU_PLUGIN }' ); delete_option( 'classic-editor-replace' );`
-		);
+		wpEval( `delete_option( 'classic-editor-replace' );` );
 	} );
 
 	test( 'lists another editor of the post', async ( {
 		admin,
+		editor,
 		page,
 		requestUtils,
 	} ) => {
-		const collaborator = await requestUtils.createUser( COLLABORATOR );
+		await requestUtils.createUser( COLLABORATOR );
 		const post = await requestUtils.createPost( {
 			title: 'Election night results',
 			status: 'publish',
 		} );
-		const editUrl = `${ BASE_URL }/wp-admin/post.php?post=${ post.id }&action=edit`;
+
+		await admin.editPost( post.id );
+		// Panel state persists per user, so start from the editor's default of only Status open.
+		await editor.setPreferences( 'core', {
+			openPanels: [ 'post-status' ],
+		} );
+		await editor.openDocumentSettingsSidebar();
+		const settings = page.getByRole( 'region', {
+			name: 'Editor settings',
+		} );
+		await settings.getByRole( 'button', { name: 'Editors' } ).click();
+		await expect(
+			settings.getByText( 'No one else is editing.' )
+		).toBeVisible();
 
 		const browser = await chromium.launch( { headless: true } );
 
 		try {
+			const editUrl = `${ BASE_URL }/wp-admin/post.php?post=${ post.id }&action=edit`;
 			const context = await browser.newContext( { baseURL: BASE_URL } );
 			await context.request.post( `${ BASE_URL }/wp-login.php`, {
 				form: {
@@ -89,14 +98,12 @@ test.describe( 'usePresenceUsers', () => {
 					} )
 			);
 
-			await admin.visitAdminPage(
-				'post.php',
-				`post=${ post.id }&action=edit`
-			);
-
-			const output = page.locator( '#presence-users-hook-consumer' );
-			await expect( output ).toHaveAttribute( 'data-loading', 'false' );
-			await expect( output ).toHaveText( String( collaborator.id ) );
+			await page.evaluate( () => wp.heartbeat.connectNow() );
+			await expect(
+				settings
+					.getByRole( 'listitem' )
+					.filter( { hasText: 'Maria Lopez' } )
+			).toBeVisible();
 		} finally {
 			await browser.close();
 		}
