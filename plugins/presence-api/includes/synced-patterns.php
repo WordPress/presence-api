@@ -1,6 +1,6 @@
 <?php
 /**
- * Disables a synced pattern in the block editor while someone else is editing it, built on `wp.presence.usePresenceUsers()`.
+ * Block editor notice on a synced pattern someone else is editing, built on `wp.presence.usePresenceUsers()`.
  *
  * @package Presence_API
  */
@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Enqueues the synced pattern lock for someone who can edit synced patterns.
+ * Enqueues the synced pattern notice for someone who can edit synced patterns.
  *
  * @since 0.17.0
  */

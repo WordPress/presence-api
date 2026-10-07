@@ -177,13 +177,14 @@ add_action( 'wp_loaded', 'presence_demo_refresh_collaborators' );
  * Keeps the synced pattern playground's editor in the pattern, and opens the post that uses it from `?presence_demo=pattern`.
  */
 function presence_demo_refresh_pattern_editor() {
-	$post_id = (int) get_option( 'presence_demo_pattern_post' );
-	$seeder  = WP_PLUGIN_DIR . '/presence-api/demo-seeder.php';
-	if ( ! $post_id || ! function_exists( 'wp_presence_post_room' ) || ! file_exists( $seeder ) ) {
+	$seeded = get_option( 'presence_demo_pattern' );
+	$seeder = WP_PLUGIN_DIR . '/presence-api/demo-seeder.php';
+	if ( empty( $seeded['post'] ) || ! function_exists( 'wp_presence_post_room' ) || ! file_exists( $seeder ) ) {
 		return;
 	}
 	require_once $seeder;
-	wp_presence_demo_seed_pattern_editor( (int) get_option( 'presence_demo_pattern' ) );
+	wp_presence_demo_seed_pattern_editor( (int) $seeded['pattern'] );
+	$post_id = (int) $seeded['post'];
 
 	// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 	if ( is_admin() && isset( $_GET['presence_demo'] ) && 'pattern' === $_GET['presence_demo'] && current_user_can( 'edit_post', $post_id ) ) {

@@ -54,7 +54,7 @@ function wp_presence_get_features() {
 		),
 		'synced-patterns' => array(
 			'label'       => __( 'Synced patterns', 'presence-api' ),
-			'description' => __( 'Disable a synced pattern in the block editor while someone else is editing the pattern itself.', 'presence-api' ),
+			'description' => __( 'Show a notice on a synced pattern in the block editor while someone else is editing the pattern itself.', 'presence-api' ),
 		),
 	);
 }

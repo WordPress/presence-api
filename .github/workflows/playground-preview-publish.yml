@@ -192,7 +192,7 @@ jobs:
           BLUEPRINT_MS_SETTINGS=$(jq '.landingPage = "/wp-admin/network/settings.php?page=presence-api"' <<< "$BLUEPRINT_MS")
 
           # The synced pattern buttons are the post-locks sites with someone editing a pattern, opened on a post that uses it.
-          PATTERN_STEP=$(jq -n '{ step: "runPHP", code: "<?php require \"/wordpress/wp-load.php\"; require \"/wordpress/wp-content/plugins/presence-api/demo-seeder.php\"; global $wpdb; $post_id = wp_presence_demo_seed_pattern_editor(); update_option( \"presence_demo_pattern_post\", $post_id ); update_option( \"presence_demo_pattern\", parse_blocks( get_post( $post_id )->post_content )[1][\"attrs\"][\"ref\"] ); update_user_meta( 1, $wpdb->get_blog_prefix() . \"persisted_preferences\", array( \"core\" => array( \"welcomeGuide\" => false ), \"core/edit-post\" => array( \"welcomeGuide\" => false ), \"_modified\" => gmdate( \"c\" ) ) ); ?>" }')
+          PATTERN_STEP=$(jq -n '{ step: "runPHP", code: "<?php require \"/wordpress/wp-load.php\"; require \"/wordpress/wp-content/plugins/presence-api/demo-seeder.php\"; global $wpdb; update_option( \"presence_demo_pattern\", wp_presence_demo_seed_pattern_editor() ); update_user_meta( 1, $wpdb->get_blog_prefix() . \"persisted_preferences\", array( \"core\" => array( \"welcomeGuide\" => false ), \"core/edit-post\" => array( \"welcomeGuide\" => false ), \"_modified\" => gmdate( \"c\" ) ) ); ?>" }')
           BLUEPRINT_PATTERN=$(jq --argjson step "$PATTERN_STEP" '.landingPage = "/wp-admin/?presence_demo=pattern" | .steps += [ $step ]' <<< "$BLUEPRINT")
           BLUEPRINT_MS_PATTERN=$(jq --argjson step "$PATTERN_STEP" '.landingPage = "/wp-admin/?presence_demo=pattern" | .steps += [ $step ]' <<< "$BLUEPRINT_MS")
 

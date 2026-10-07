@@ -22,7 +22,7 @@ Tracking who is logged in, on which screen and in which post takes frequent writ
 - Admin bar indicator showing who's online and who's on this page (switch off **Admin bar** on Settings > Presence API to remove it)
 - Active Posts dashboard widget grouped by post
 - Editors column in the post list (switch off **Posts list** on Settings > Presence API to remove it)
-- Synced patterns disabled in the block editor while someone else is editing the pattern itself (switch off **Synced patterns** on Settings > Presence API to remove it)
+- A notice on synced patterns in the block editor while someone else is editing the pattern itself (switch off **Synced patterns** on Settings > Presence API to remove it)
 - Online filter in the Users list
 - AI agents labelled in the admin bar, the Active Posts widget, and the Editors column (see [Agents](#agents))
 - Notice when someone else saves the screen you have open (see [Stale-screen detection](#stale-screen-detection))

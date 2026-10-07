@@ -1,6 +1,6 @@
 <?php
 /**
- * Tests for the synced pattern lock in the block editor.
+ * Tests for the synced pattern notice in the block editor.
  *
  * @package Presence_API
  *

@@ -548,12 +548,15 @@ function wp_presence_demo_seed_collaborators( $post_id = 0, $count = 2 ) {
  * @since 0.17.0
  *
  * @param int $pattern_id Optional. The pattern to stay in, refreshing a row the 150-second read window would otherwise drop.
- * @return int The post that uses the pattern, or 0 when there is no demo user.
+ * @return int[] The `post` that uses the `pattern`, both 0 when there is no demo user.
  */
 function wp_presence_demo_seed_pattern_editor( $pattern_id = 0 ) {
 	$user = get_user_by( 'login', 'presence-demo-1' );
 	if ( ! $user ) {
-		return 0;
+		return array(
+			'post'    => 0,
+			'pattern' => 0,
+		);
 	}
 
 	$post_id = 0;
@@ -588,7 +591,10 @@ function wp_presence_demo_seed_pattern_editor( $pattern_id = 0 ) {
 		$user->ID
 	);
 
-	return (int) $post_id;
+	return array(
+		'post'    => (int) $post_id,
+		'pattern' => (int) $pattern_id,
+	);
 }
 
 /**

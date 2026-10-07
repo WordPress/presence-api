@@ -1,7 +1,7 @@
 /**
- * Presence API — Synced pattern lock E2E Tests
+ * Presence API — Synced pattern notice E2E Tests
  *
- * Disables a synced pattern while someone else edits it, through `wp.presence.usePresenceUsers()`.
+ * Says on a synced pattern that someone else is editing it, through `wp.presence.usePresenceUsers()`.
  *
  * @package Presence_API
  */
@@ -30,7 +30,7 @@ function wpEval( phpExpression ) {
 	);
 }
 
-test.describe( 'Synced pattern lock', () => {
+test.describe( 'Synced pattern notice', () => {
 	// wp-env activates Classic Editor.
 	test.beforeAll( () => {
 		wpEval( `update_option( 'classic-editor-replace', 'block' );` );
@@ -46,7 +46,7 @@ test.describe( 'Synced pattern lock', () => {
 		wpEval( `delete_option( 'classic-editor-replace' );` );
 	} );
 
-	test( 'disables a synced pattern someone else is editing', async ( {
+	test( 'says who else is editing a synced pattern', async ( {
 		admin,
 		editor,
 		requestUtils,
@@ -94,21 +94,9 @@ test.describe( 'Synced pattern lock', () => {
 			await admin.editPost( post.id );
 			await expect(
 				editor.canvas.getByText(
-					'Maria Lopez is editing this pattern. Changes are disabled.'
+					'Maria Lopez is editing this pattern.'
 				)
 			).toBeVisible();
-
-			await expect
-				.poll( () =>
-					editor.page.evaluate( () => {
-						const { getBlockEditingMode, getBlocksByName } =
-							window.wp.data.select( 'core/block-editor' );
-						return getBlockEditingMode(
-							getBlocksByName( 'core/block' )[ 0 ]
-						);
-					} )
-				)
-				.toBe( 'disabled' );
 		} finally {
 			await browser.close();
 		}
