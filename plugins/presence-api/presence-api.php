@@ -86,7 +86,7 @@ require_once WP_PRESENCE_PLUGIN_DIR . 'includes/avatar-stack.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/admin-bar.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/user-list.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/post-list.php';
-require_once WP_PRESENCE_PLUGIN_DIR . 'includes/editors-panel.php';
+require_once WP_PRESENCE_PLUGIN_DIR . 'includes/synced-patterns.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/widgets/class-wp-presence-widget-active-posts.php';
 // Plugin only, ahead of the hooks: decides which switchable pieces they register.
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/features.php';

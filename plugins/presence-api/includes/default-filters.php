@@ -78,8 +78,8 @@ if ( wp_presence_feature_enabled( 'post-list' ) ) {
 }
 
 // Plugin only: the check comes off when core merges the piece.
-if ( wp_presence_feature_enabled( 'editors-panel' ) ) {
-	add_action( 'enqueue_block_editor_assets', 'wp_presence_enqueue_editors_panel' );
+if ( wp_presence_feature_enabled( 'synced-patterns' ) ) {
+	add_action( 'enqueue_block_editor_assets', 'wp_presence_enqueue_synced_pattern_notice' );
 }
 
 add_action( 'wp_dashboard_setup', array( 'WP_Presence_Widget_Active_Posts', 'register' ) );

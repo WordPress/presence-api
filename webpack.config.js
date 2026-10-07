@@ -1,5 +1,5 @@
 /**
- * Builds `src/` into the `wp-presence` script, exposed as `wp.presence`, and the Editors panel that uses it.
+ * Builds `src/` into the `wp-presence` script, exposed as `wp.presence`, and the synced pattern notice that uses it.
  *
  * @package Presence_API
  */
@@ -18,9 +18,9 @@ module.exports = {
 			// stale-screen.js also writes to wp.presence, so merge rather than replace.
 			library: { name: [ 'wp', 'presence' ], type: 'assign-properties' },
 		},
-		'editors-panel': path.resolve(
+		'synced-patterns': path.resolve(
 			__dirname,
-			'plugins/presence-api/src/editors-panel/index.js'
+			'plugins/presence-api/src/synced-patterns/index.js'
 		),
 	},
 	output: {

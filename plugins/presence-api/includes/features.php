@@ -40,21 +40,21 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 function wp_presence_get_features() {
 	return array(
-		'post-locks'    => array(
+		'post-locks'      => array(
 			'label'       => __( 'Post locks', 'presence-api' ),
 			'description' => __( 'Keep post locks in the presence table instead of post meta, so refreshing a lock does not make cached post queries stale.', 'presence-api' ),
 		),
-		'admin-bar'     => array(
+		'admin-bar'       => array(
 			'label'       => __( 'Admin bar', 'presence-api' ),
 			'description' => __( 'Show the faces of who is online in the admin bar, with a menu of where each person is.', 'presence-api' ),
 		),
-		'post-list'     => array(
+		'post-list'       => array(
 			'label'       => __( 'Posts list', 'presence-api' ),
 			'description' => __( 'Show who has each post open in an Editors column on post lists.', 'presence-api' ),
 		),
-		'editors-panel' => array(
-			'label'       => __( 'Editors panel', 'presence-api' ),
-			'description' => __( 'Show who else has the post open in an Editors panel in the block editor sidebar.', 'presence-api' ),
+		'synced-patterns' => array(
+			'label'       => __( 'Synced patterns', 'presence-api' ),
+			'description' => __( 'Disable a synced pattern in the block editor while someone else is editing the pattern itself.', 'presence-api' ),
 		),
 	);
 }
