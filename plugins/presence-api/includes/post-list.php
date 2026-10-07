@@ -143,14 +143,12 @@ function wp_presence_editors_stack( $editors ) {
 
 	// Three faces and a count fit the column's 80px.
 	$shown = count( $titles ) > 4 ? array_slice( $titles, 0, 3, true ) : $titles;
-	$index = 0;
+	$z     = count( $shown );
 	$html  = '<div class="presence-editors-stack">';
 
 	foreach ( $shown as $user_id => $title ) {
-		$avatar = get_avatar( $user_id, 24, '', get_userdata( $user_id )->display_name );
-		$avatar = str_replace( '<img ', '<img style="z-index:' . ( count( $shown ) - $index ) . '" title="' . esc_attr( $title ) . '" ', $avatar );
+		$avatar = str_replace( '<img ', '<img style="z-index:' . ( $z-- ) . '" title="' . esc_attr( $title ) . '" ', get_avatar( $user_id, 24, '', $title ) );
 		$html  .= wp_kses_post( $avatar );
-		++$index;
 	}
 
 	$hidden = array_diff_key( $titles, $shown );
