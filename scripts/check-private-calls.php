@@ -110,10 +110,10 @@ $added    = array_diff( $actual, $expected );
 $removed  = array_diff( $expected, $actual );
 
 if ( $added ) {
-	fwrite( STDERR, "New private calls; use a public function or list them in scripts/private-calls.txt:\n  " . implode( "\n  ", $added ) . "\n" );
+	fwrite( STDERR, "New private calls; use a public function, add the file to \$api if it is part of the API, or list them with php scripts/check-private-calls.php --update:\n  " . implode( "\n  ", $added ) . "\n" );
 }
 if ( $removed ) {
-	fwrite( STDERR, "No longer called; delete from scripts/private-calls.txt:\n  " . implode( "\n  ", $removed ) . "\n" );
+	fwrite( STDERR, "No longer called; drop them with php scripts/check-private-calls.php --update:\n  " . implode( "\n  ", $removed ) . "\n" );
 }
 if ( $added || $removed ) {
 	exit( 1 );
