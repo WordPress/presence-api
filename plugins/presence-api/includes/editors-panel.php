@@ -15,13 +15,14 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @since 0.17.0
  */
 function wp_presence_enqueue_editors_panel() {
-	$room = wp_presence_post_room( get_post() );
+	$room       = wp_presence_post_room( get_post() );
+	$asset_file = WP_PRESENCE_PLUGIN_DIR . 'build/editors-panel.asset.php';
 
-	if ( ! $room || ! wp_can_access_presence_room( $room ) || ! wp_script_is( 'wp-presence', 'registered' ) ) {
+	if ( ! $room || ! wp_can_access_presence_room( $room ) || ! wp_script_is( 'wp-presence', 'registered' ) || ! file_exists( $asset_file ) ) {
 		return;
 	}
 
-	$asset = require WP_PRESENCE_PLUGIN_DIR . 'build/editors-panel.asset.php';
+	$asset = require $asset_file;
 
 	wp_enqueue_script(
 		'wp-presence-editors-panel',
