@@ -979,13 +979,13 @@ function wp_presence_admin_room_changed() {
 }
 
 /**
- * Parses a room identifier.
+ * Parses a post room identifier.
  *
- * Room format: `postType/{post_type}:{post_id}`
- *
- * @access private
+ * Room format: `postType/{post_type}:{post_id}`, the inverse of wp_presence_post_room().
  *
  * @since 0.1.11
+ * @since 0.16.0 No longer private.
+ *
  * @param string $room The room identifier.
  * @return array|false An array containing 'post_type' and 'post_id' on success, false otherwise.
  */
@@ -1303,14 +1303,16 @@ function wp_presence_get_timeout( $timeout = null ) {
 }
 
 /**
- * Gets all presence entries for rooms matching a prefix.
+ * Gets all present clients in every room whose identifier starts with a prefix.
  *
- * @access private
+ * Reserved rows are left out, as in wp_get_presence().
  *
  * @since 0.1.1
- * @param string $prefix  The room prefix to match (e.g., 'postType/').
+ * @since 0.16.0 No longer private.
+ *
+ * @param string $prefix  The room prefix to match, matched literally (e.g., 'postType/').
  * @param int    $timeout Optional. Timeout in seconds. Default null, the site's filtered TTL.
- * @return array Array of presence entry objects.
+ * @return array Array of presence entry objects, newest first.
  */
 function wp_get_presence_by_room_prefix( $prefix, $timeout = null ) {
 	global $wpdb;
