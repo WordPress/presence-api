@@ -66,6 +66,11 @@ For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording
 == Screenshots ==
 
 1. The dashboard with 101 people online, the admin bar's presence menu open, and Active Posts listing who is editing each post and page.
+2. The Posts list, with an Editors column showing who has each post open.
+3. The Users list filtered to the people online right now.
+4. The notice someone sees when another person saves the settings screen they have open.
+5. Settings > Presence API, where a site switches features off.
+6. Network Admin's Who's Online widget, listing the busiest sites and how many people are on each.
 
 == Changelog ==
 
