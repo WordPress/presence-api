@@ -48,6 +48,12 @@ jobs:
       # The PR controls this job; `--no-scripts` is not a boundary, the read-only token is.
       - run: composer install --no-dev --no-interaction --optimize-autoloader --no-scripts
 
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run build
+
       - name: Build presence-api.zip
         run: |
           set -euo pipefail

@@ -25,6 +25,7 @@ add_action( 'wp_login', 'wp_presence_on_login', 10, 2 );
 add_action( 'wp_logout', 'wp_presence_on_logout', 10, 1 );
 add_action( 'deleted_user', 'wp_presence_on_user_removed', 10, 1 );
 
+add_action( 'wp_default_scripts', 'wp_presence_register_packages_scripts' );
 add_action( 'admin_enqueue_scripts', 'wp_presence_enqueue_heartbeat_ping' );
 add_action( 'wp_enqueue_scripts', 'wp_presence_enqueue_heartbeat_ping' );
 // Priority 9 so the admin/online write lands before any widget reads the room at 10.

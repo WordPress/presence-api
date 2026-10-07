@@ -290,6 +290,33 @@ function wp_presence_enqueue_ping_script( $config ) {
 }
 
 /**
+ * Registers the `wp-presence` script, which exposes `wp.presence.usePresenceUsers()`.
+ *
+ * @since 0.16.0
+ *
+ * @access private
+ * @param WP_Scripts $scripts WP_Scripts object.
+ */
+function wp_presence_register_packages_scripts( $scripts ) {
+	$asset_file = WP_PRESENCE_PLUGIN_DIR . 'build/index.asset.php';
+
+	if ( ! file_exists( $asset_file ) ) {
+		return;
+	}
+
+	$asset = require $asset_file;
+
+	// The hook reads the current user from the core store and polls on Heartbeat ticks.
+	$scripts->add(
+		'wp-presence',
+		WP_PRESENCE_PLUGIN_URL . 'build/index.js',
+		array_merge( $asset['dependencies'], array( 'heartbeat', 'wp-core-data' ) ),
+		$asset['version']
+	);
+	$scripts->add_data( 'wp-presence', 'group', 1 );
+}
+
+/**
  * Records the current user's presence in the admin/online room on every tick.
  *
  * This is the API's primary write path. It runs regardless of which dashboard
