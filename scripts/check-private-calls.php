@@ -14,13 +14,8 @@ foreach ( glob( $root . '/plugins/*', GLOB_ONLYDIR ) as $plugin ) {
 	foreach ( $iterator as $file ) {
 		$path = substr( $file->getPathname(), strlen( $root ) + 1 );
 		if ( 'php' === $file->getExtension() && ! preg_match( '#/(tests|vendor|node_modules)/#', $path ) ) {
-			$files[ $path ] = array();
-			foreach ( token_get_all( file_get_contents( $file->getPathname() ) ) as $token ) {
-				$token = (array) $token + array( 1 => $token );
-				if ( ! in_array( $token[0], array( T_WHITESPACE, T_COMMENT ), true ) ) {
-					$files[ $path ][] = $token;
-				}
-			}
+			$tokens         = PhpToken::tokenize( file_get_contents( $file->getPathname() ) );
+			$files[ $path ] = array_values( array_filter( $tokens, static fn( $token ) => ! $token->is( array( T_WHITESPACE, T_COMMENT ) ) ) );
 		}
 	}
 }
@@ -62,16 +57,16 @@ foreach ( $files as $path => $tokens ) {
 	$doc   = '';
 	$depth = 0;
 	foreach ( $tokens as $i => $token ) {
-		if ( in_array( $token[0], array( '{', T_CURLY_OPEN, T_DOLLAR_OPEN_CURLY_BRACES ), true ) ) {
+		if ( $token->is( array( '{', T_CURLY_OPEN, T_DOLLAR_OPEN_CURLY_BRACES ) ) ) {
 			++$depth;
-		} elseif ( '}' === $token[0] ) {
+		} elseif ( $token->is( '}' ) ) {
 			--$depth;
-		} elseif ( T_DOC_COMMENT === $token[0] ) {
-			$doc = $token[1];
-		} elseif ( T_FUNCTION === $token[0] && 0 === $depth && T_STRING === $tokens[ $i + 1 ][0] && str_contains( $doc, '@access private' ) ) {
-			$private[ strtolower( $tokens[ $i + 1 ][1] ) ] = $path;
+		} elseif ( $token->is( T_DOC_COMMENT ) ) {
+			$doc = $token->text;
+		} elseif ( $token->is( T_FUNCTION ) && 0 === $depth && $tokens[ $i + 1 ]->is( T_STRING ) && str_contains( $doc, '@access private' ) ) {
+			$private[ strtolower( $tokens[ $i + 1 ]->text ) ] = $path;
 		}
-		if ( in_array( $token[0], array( T_FUNCTION, ';' ), true ) ) {
+		if ( $token->is( array( T_FUNCTION, ';' ) ) ) {
 			$doc = '';
 		}
 	}
@@ -85,13 +80,13 @@ foreach ( $files as $path => $tokens ) {
 		continue;
 	}
 	foreach ( $tokens as $i => $token ) {
-		if ( ! in_array( $token[0], array( T_STRING, T_NAME_FULLY_QUALIFIED ), true ) || '(' !== ( $tokens[ $i + 1 ][0] ?? null ) ) {
+		if ( ! $token->is( array( T_STRING, T_NAME_FULLY_QUALIFIED ) ) || ! ( $tokens[ $i + 1 ] ?? null )?->is( '(' ) ) {
 			continue;
 		}
-		$name    = ltrim( $token[1], '\\' );
+		$name    = ltrim( $token->text, '\\' );
 		$defined = $private[ strtolower( $name ) ] ?? null;
-		$before  = $tokens[ $i - 1 ][0] ?? null;
-		if ( $defined && $part_of( $defined ) !== $part && ! in_array( $before, array( T_FUNCTION, T_OBJECT_OPERATOR, T_NULLSAFE_OBJECT_OPERATOR, T_DOUBLE_COLON, T_NEW ), true ) ) {
+		$before  = $tokens[ $i - 1 ] ?? null;
+		if ( $defined && $part_of( $defined ) !== $part && ! $before?->is( array( T_FUNCTION, T_OBJECT_OPERATOR, T_NULLSAFE_OBJECT_OPERATOR, T_DOUBLE_COLON, T_NEW ) ) ) {
 			$calls[ "$path $name()" ] = true;
 		}
 	}
