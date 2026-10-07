@@ -77,5 +77,8 @@ if ( wp_presence_feature_enabled( 'post-list' ) ) {
 	add_filter( 'heartbeat_received', 'wp_presence_editors_column_heartbeat_received', 13, 2 );
 }
 
-add_action( 'wp_dashboard_setup', array( 'WP_Presence_Widget_Active_Posts', 'register' ) );
-add_filter( 'heartbeat_received', array( 'WP_Presence_Widget_Active_Posts', 'heartbeat_received' ), 10, 3 );
+// Plugin only: the check comes off when core merges the piece.
+if ( wp_presence_feature_enabled( 'dashboard-widget' ) ) {
+	add_action( 'wp_dashboard_setup', array( 'WP_Presence_Widget_Active_Posts', 'register' ) );
+	add_filter( 'heartbeat_received', array( 'WP_Presence_Widget_Active_Posts', 'heartbeat_received' ), 10, 3 );
+}
