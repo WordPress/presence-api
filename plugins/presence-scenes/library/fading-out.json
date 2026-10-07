@@ -1,0 +1,14 @@
+{
+	"apiVersion": 1,
+	"name": "fading-out",
+	"title": "Losing connection for good",
+	"cast": [ "author", "editor" ],
+	"steps": [
+		{ "at": 0, "actor": 1, "step": "visit", "place": "dashboard" },
+		{ "at": 3, "actor": 2, "step": "visit", "place": "posts" },
+		{ "at": 8, "actor": 2, "step": "drop" },
+		{ "at": 70, "actor": 2, "step": "checkOnline" },
+		{ "at": 170, "actor": 2, "step": "checkOffline" },
+		{ "at": 172, "actor": 1, "step": "leave" }
+	]
+}
