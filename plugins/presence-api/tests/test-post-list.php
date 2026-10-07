@@ -197,7 +197,7 @@ class WP_Test_Presence_Post_List extends WP_Presence_UnitTestCase {
 
 		$output = wp_presence_editors_stack( $map[ $five ] );
 		$this->assertSame( 3, substr_count( $output, '<img' ) );
-		$this->assertMatchesRegularExpression( '#<span class="presence-editors-more" title="(Ana and Ben|Ben and Ana)">\+2</span>#', $output );
+		$this->assertMatchesRegularExpression( '#<span class="presence-editors-more" title="(Ana and Ben|Ben and Ana)" aria-hidden="true">\+2</span><span class="screen-reader-text">\1</span>#', $output, 'Screen readers hear the folded names, not "+2".' );
 	}
 
 	public function test_editors_column_css_enqueues_only_on_edit_php() {

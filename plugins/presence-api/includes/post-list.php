@@ -155,8 +155,10 @@ function wp_presence_editors_stack( $editors ) {
 
 	$hidden = array_diff_key( $titles, $shown );
 	if ( $hidden ) {
+		$names = wp_sprintf( '%l', $hidden );
 		/* translators: %s: Number of editors not shown. */
-		$html .= '<span class="presence-editors-more" title="' . esc_attr( wp_sprintf( '%l', $hidden ) ) . '">' . esc_html( sprintf( __( '+%s', 'presence-api' ), number_format_i18n( count( $hidden ) ) ) ) . '</span>';
+		$html .= '<span class="presence-editors-more" title="' . esc_attr( $names ) . '" aria-hidden="true">' . esc_html( sprintf( __( '+%s', 'presence-api' ), number_format_i18n( count( $hidden ) ) ) ) . '</span>';
+		$html .= '<span class="screen-reader-text">' . esc_html( $names ) . '</span>';
 	}
 
 	return $html . '</div>';
