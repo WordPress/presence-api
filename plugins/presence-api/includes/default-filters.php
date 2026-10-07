@@ -54,11 +54,15 @@ add_action( 'profile_update', 'wp_presence_on_profile_update' );
 add_action( 'edited_term', 'wp_presence_on_edited_term', 10, 3 );
 add_action( 'edit_comment', 'wp_presence_on_edit_comment' );
 
-add_action( 'admin_bar_menu', 'wp_presence_admin_bar_node', 80 );
-add_action( 'admin_enqueue_scripts', 'wp_presence_admin_bar_assets' );
-add_action( 'wp_enqueue_scripts', 'wp_presence_admin_bar_assets' );
-// After the admin/online write at 9, so the node counts this tick.
-add_filter( 'heartbeat_received', 'wp_presence_admin_bar_heartbeat_received', 13, 2 );
+// Plugin only: the check comes off when core merges the piece.
+if ( wp_presence_feature_enabled( 'admin-bar' ) ) {
+	add_action( 'admin_bar_menu', 'wp_presence_admin_bar_node', 80 );
+	add_action( 'admin_enqueue_scripts', 'wp_presence_admin_bar_assets' );
+	add_action( 'wp_enqueue_scripts', 'wp_presence_admin_bar_assets' );
+	// After the admin/online write at 9, so the node counts this tick.
+	add_filter( 'heartbeat_received', 'wp_presence_admin_bar_heartbeat_received', 13, 2 );
+}
+// Outside the switch: presence-ping.js needs the token on every admin page, faces or not.
 add_filter( 'wp_refresh_nonces', 'wp_presence_refresh_screen_token', 10, 3 );
 
 add_filter( 'views_users', 'wp_presence_users_views' );
