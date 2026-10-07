@@ -79,6 +79,7 @@ class WP_Test_Presence_Scenes extends WP_Presence_UnitTestCase {
 					array( 'id' => $row->id )
 				);
 			}
+			wp_cache_set_last_changed( 'presence' );
 		}
 
 		$run = wp_presence_scene_strike( $run );
