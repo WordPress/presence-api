@@ -25,6 +25,7 @@ add_action( 'wp_login', 'wp_presence_on_login', 10, 2 );
 add_action( 'wp_logout', 'wp_presence_on_logout', 10, 1 );
 add_action( 'deleted_user', 'wp_presence_on_user_removed', 10, 1 );
 
+add_action( 'wp_default_scripts', 'wp_presence_register_packages_scripts' );
 add_action( 'admin_enqueue_scripts', 'wp_presence_enqueue_heartbeat_ping' );
 add_action( 'wp_enqueue_scripts', 'wp_presence_enqueue_heartbeat_ping' );
 // Priority 9 so the admin/online write lands before any widget reads the room at 10.
@@ -54,11 +55,15 @@ add_action( 'profile_update', 'wp_presence_on_profile_update' );
 add_action( 'edited_term', 'wp_presence_on_edited_term', 10, 3 );
 add_action( 'edit_comment', 'wp_presence_on_edit_comment' );
 
-add_action( 'admin_bar_menu', 'wp_presence_admin_bar_node', 80 );
-add_action( 'admin_enqueue_scripts', 'wp_presence_admin_bar_assets' );
-add_action( 'wp_enqueue_scripts', 'wp_presence_admin_bar_assets' );
-// After the admin/online write at 9, so the node counts this tick.
-add_filter( 'heartbeat_received', 'wp_presence_admin_bar_heartbeat_received', 13, 2 );
+// Plugin only: the check comes off when core merges the piece.
+if ( wp_presence_feature_enabled( 'admin-bar' ) ) {
+	add_action( 'admin_bar_menu', 'wp_presence_admin_bar_node', 80 );
+	add_action( 'admin_enqueue_scripts', 'wp_presence_admin_bar_assets' );
+	add_action( 'wp_enqueue_scripts', 'wp_presence_admin_bar_assets' );
+	// After the admin/online write at 9, so the node counts this tick.
+	add_filter( 'heartbeat_received', 'wp_presence_admin_bar_heartbeat_received', 13, 2 );
+}
+// Outside the switch: presence-ping.js needs the token on every admin page, faces or not.
 add_filter( 'wp_refresh_nonces', 'wp_presence_refresh_screen_token', 10, 3 );
 
 add_filter( 'views_users', 'wp_presence_users_views' );
@@ -66,8 +71,11 @@ add_action( 'pre_get_users', 'wp_presence_filter_online_users' );
 add_filter( 'heartbeat_received', 'wp_presence_users_list_heartbeat_received', 13, 3 );
 add_filter( 'heartbeat_received', 'wp_presence_users_online_count_heartbeat_received', 13, 3 );
 
-add_action( 'admin_init', 'wp_presence_register_post_list_columns' );
-add_filter( 'heartbeat_received', 'wp_presence_editors_column_heartbeat_received', 13, 2 );
+// Plugin only: the check comes off when core merges the piece.
+if ( wp_presence_feature_enabled( 'post-list' ) ) {
+	add_action( 'admin_init', 'wp_presence_register_post_list_columns' );
+	add_filter( 'heartbeat_received', 'wp_presence_editors_column_heartbeat_received', 13, 2 );
+}
 
 add_action( 'wp_dashboard_setup', array( 'WP_Presence_Widget_Active_Posts', 'register' ) );
 add_filter( 'heartbeat_received', array( 'WP_Presence_Widget_Active_Posts', 'heartbeat_received' ), 10, 3 );

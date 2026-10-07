@@ -6,15 +6,14 @@ import apiFetch from '@wordpress/api-fetch';
 /**
  * Internal dependencies
  */
+import '../../assets/js/tab-coordinator';
 import { onHeartbeatTick } from './heartbeat-events';
 
 /**
  * Coalesces presence polling for a given room + fields pair.
  *
- * All subscribers for the same room and `_fields` share one coordinator.
- * Web Locks elects one tab as the poller; BroadcastChannel relays its
- * results to the rest. Falls back to independent per-tab polling if either
- * API is unavailable.
+ * All subscribers for the same room and `_fields` share one coordinator,
+ * and the tab coordinator elects one tab to poll for the rest.
  *
  * Keyed room -> fields -> coordinator, so the two can't collide as a string.
  */
@@ -64,8 +63,6 @@ export function subscribeToPresencePolling( room, fields, callback ) {
 }
 
 function createCoordinator( room, fields ) {
-	const lockName = `wp-presence-poll:${ room }:${ fields }`;
-
 	const coordinator = {
 		subscribers: new Set(),
 		lastResult: null,
@@ -73,15 +70,7 @@ function createCoordinator( room, fields ) {
 		fetchInProgress: false,
 		abortController: null,
 		heartbeatCleanup: null,
-		releaseLock: null,
-		lockAbortController:
-			typeof AbortController === 'function'
-				? new AbortController()
-				: null,
-		channel:
-			typeof BroadcastChannel === 'function'
-				? new BroadcastChannel( lockName )
-				: null,
+		tabCoordinator: null,
 	};
 
 	function notify( result ) {
@@ -89,17 +78,9 @@ function createCoordinator( room, fields ) {
 		coordinator.subscribers.forEach( ( callback ) => callback( result ) );
 	}
 
-	if ( coordinator.channel ) {
-		coordinator.channel.addEventListener( 'message', ( event ) => {
-			notify( event.data );
-		} );
-	}
-
 	function deliver( result ) {
 		notify( result );
-		if ( coordinator.channel ) {
-			coordinator.channel.postMessage( result );
-		}
+		coordinator.tabCoordinator.postMessage( result );
 	}
 
 	async function fetchAndBroadcast() {
@@ -137,47 +118,22 @@ function createCoordinator( room, fields ) {
 		}
 	}
 
-	function becomeLeader() {
-		fetchAndBroadcast();
-		coordinator.heartbeatCleanup = onHeartbeatTick( () =>
-			fetchAndBroadcast()
-		);
-	}
-
 	coordinator.start = function () {
 		if ( coordinator.started ) {
 			return;
 		}
 		coordinator.started = true;
 
-		const hasLocks =
-			typeof navigator !== 'undefined' &&
-			navigator.locks &&
-			typeof navigator.locks.request === 'function';
+		coordinator.tabCoordinator = window.wpPresenceCreateTabCoordinator(
+			`wp-presence-poll:${ room }:${ fields }`,
+			{ onMessage: notify, onLeader: fetchAndBroadcast }
+		);
 
-		if ( ! hasLocks ) {
-			becomeLeader();
-			return;
-		}
-
-		const options = coordinator.lockAbortController
-			? { signal: coordinator.lockAbortController.signal }
-			: {};
-
-		// All tabs queue on this lock; whichever gets it becomes leader.
-		// The rest wait and listen on BroadcastChannel instead. Closing or
-		// crashing the leader's tab releases the lock automatically.
-		navigator.locks
-			.request(
-				lockName,
-				options,
-				() =>
-					new Promise( ( resolve ) => {
-						coordinator.releaseLock = resolve;
-						becomeLeader();
-					} )
-			)
-			.catch( () => {} );
+		coordinator.heartbeatCleanup = onHeartbeatTick( () => {
+			if ( coordinator.tabCoordinator.isLeader() ) {
+				fetchAndBroadcast();
+			}
+		} );
 	};
 
 	coordinator.teardown = function () {
@@ -192,18 +148,7 @@ function createCoordinator( room, fields ) {
 			coordinator.abortController.abort();
 		}
 
-		if ( coordinator.lockAbortController ) {
-			coordinator.lockAbortController.abort();
-		}
-
-		if ( coordinator.releaseLock ) {
-			coordinator.releaseLock();
-			coordinator.releaseLock = null;
-		}
-
-		if ( coordinator.channel ) {
-			coordinator.channel.close();
-		}
+		coordinator.tabCoordinator.destroy();
 	};
 
 	return coordinator;

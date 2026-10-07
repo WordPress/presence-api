@@ -23,6 +23,28 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 		array( 'delete_post_metadata', 'wp_presence_delete_post_lock', 10 ),
 	);
 
+	/**
+	 * The hooks the admin-bar switch decides, as registered in default-filters.php.
+	 *
+	 * @var array<int, array{0: string, 1: string, 2: int}>
+	 */
+	private static $admin_bar_hooks = array(
+		array( 'admin_bar_menu', 'wp_presence_admin_bar_node', 80 ),
+		array( 'admin_enqueue_scripts', 'wp_presence_admin_bar_assets', 10 ),
+		array( 'wp_enqueue_scripts', 'wp_presence_admin_bar_assets', 10 ),
+		array( 'heartbeat_received', 'wp_presence_admin_bar_heartbeat_received', 13 ),
+	);
+
+	/**
+	 * The hooks the post-list switch decides, as registered in default-filters.php.
+	 *
+	 * @var array<int, array{0: string, 1: string, 2: int}>
+	 */
+	private static $post_list_hooks = array(
+		array( 'admin_init', 'wp_presence_register_post_list_columns', 10 ),
+		array( 'heartbeat_received', 'wp_presence_editors_column_heartbeat_received', 13 ),
+	);
+
 	public function tear_down() {
 		unset( $_POST['wp_presence_network_features'], $_REQUEST['_wpnonce'], $_GET['updated'], $GLOBALS['title'] );
 		set_current_screen( 'front' );
@@ -49,6 +71,31 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 		}
 
 		update_option( 'wp_presence_features', array( 'post-locks' => $enabled ? 1 : 0 ) );
+		include WP_PRESENCE_PLUGIN_DIR . 'includes/default-filters.php';
+	}
+
+	/**
+	 * Re-runs default-filters.php with the admin-bar switch in the given position.
+	 */
+	private function register_hooks_with_admin_bar( $enabled ) {
+		foreach ( self::$admin_bar_hooks as $hook ) {
+			remove_filter( $hook[0], $hook[1], $hook[2] );
+		}
+
+		update_option( 'wp_presence_features', array( 'admin-bar' => $enabled ? 1 : 0 ) );
+		include WP_PRESENCE_PLUGIN_DIR . 'includes/default-filters.php';
+	}
+
+	/**
+	 * Re-runs default-filters.php the way the plugin does at load, with the
+	 * post-list switch in the given position.
+	 */
+	private function register_hooks_with_post_list( $enabled ) {
+		foreach ( self::$post_list_hooks as $hook ) {
+			remove_filter( $hook[0], $hook[1], $hook[2] );
+		}
+
+		update_option( 'wp_presence_features', array( 'post-list' => $enabled ? 1 : 0 ) );
 		include WP_PRESENCE_PLUGIN_DIR . 'includes/default-filters.php';
 	}
 
@@ -138,6 +185,66 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Switching the admin bar off takes the faces away and leaves the screen token every admin page needs.
+	 *
+	 * @covers ::wp_presence_feature_enabled
+	 */
+	public function test_switching_the_admin_bar_off_leaves_its_hooks_unregistered() {
+		$this->register_hooks_with_admin_bar( false );
+
+		foreach ( self::$admin_bar_hooks as $hook ) {
+			$this->assertFalse( has_filter( $hook[0], $hook[1] ), "{$hook[1]} should not be hooked to {$hook[0]}." );
+		}
+
+		$this->assertSame( 10, has_filter( 'wp_refresh_nonces', 'wp_presence_refresh_screen_token' ), 'presence-ping.js still needs a fresh screen token.' );
+
+		$this->register_hooks_with_admin_bar( true );
+
+		foreach ( self::$admin_bar_hooks as $hook ) {
+			$this->assertSame( $hook[2], has_filter( $hook[0], $hook[1] ), "{$hook[1]} should be hooked to {$hook[0]} at {$hook[2]}." );
+		}
+	}
+
+	/**
+	 * Switching the post list off leaves the Editors column unhooked.
+	 *
+	 * @covers ::wp_presence_feature_enabled
+	 */
+	public function test_switching_post_list_off_leaves_its_hooks_unregistered() {
+		$this->register_hooks_with_post_list( false );
+
+		foreach ( self::$post_list_hooks as $hook ) {
+			$this->assertFalse( has_filter( $hook[0], $hook[1] ), "{$hook[1]} should not be hooked to {$hook[0]}." );
+		}
+
+		$this->register_hooks_with_post_list( true );
+
+		foreach ( self::$post_list_hooks as $hook ) {
+			$this->assertSame( $hook[2], has_filter( $hook[0], $hook[1] ), "{$hook[1]} should be hooked to {$hook[0]} at {$hook[2]}." );
+		}
+	}
+
+	/**
+	 * With its hooks gone, the admin bar renders without the presence node.
+	 *
+	 * @covers ::wp_presence_feature_enabled
+	 */
+	public function test_the_admin_bar_switched_off_adds_no_node() {
+		require_once ABSPATH . WPINC . '/class-wp-admin-bar.php';
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+
+		foreach ( array( false, true ) as $enabled ) {
+			$this->register_hooks_with_admin_bar( $enabled );
+
+			$bar = new WP_Admin_Bar();
+			do_action_ref_array( 'admin_bar_menu', array( &$bar ) );
+
+			$this->assertSame( $enabled, null !== $bar->get_node( 'presence-online' ) );
+		}
+	}
+
+	/**
 	 * With the bridge unhooked, a lock goes to post meta and reads back from it.
 	 *
 	 * @covers ::wp_presence_feature_enabled
@@ -184,12 +291,30 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	 */
 	public function test_sanitizing_stores_every_feature_and_drops_the_rest() {
 		$this->assertSame(
-			array( 'post-locks' => 0 ),
+			array(
+				'post-locks' => 0,
+				'admin-bar'  => 0,
+				'post-list'  => 0,
+			),
 			wp_presence_sanitize_features( array( 'not-a-feature' => '1' ) ),
 			'A feature that posted nothing is stored as off, and unknown keys are dropped.'
 		);
-		$this->assertSame( array( 'post-locks' => 1 ), wp_presence_sanitize_features( array( 'post-locks' => '1' ) ) );
-		$this->assertSame( array( 'post-locks' => 0 ), wp_presence_sanitize_features( 'garbage' ) );
+		$this->assertSame(
+			array(
+				'post-locks' => 1,
+				'admin-bar'  => 0,
+				'post-list'  => 0,
+			),
+			wp_presence_sanitize_features( array( 'post-locks' => '1' ) )
+		);
+		$this->assertSame(
+			array(
+				'post-locks' => 0,
+				'admin-bar'  => 0,
+				'post-list'  => 0,
+			),
+			wp_presence_sanitize_features( 'garbage' )
+		);
 	}
 
 	/**
@@ -218,7 +343,11 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 		wp_presence_register_feature_settings();
 
 		$this->assertSame( 'Post locks', $wp_settings_fields['presence-api']['wp_presence_features']['wp_presence_features_post-locks']['title'] );
+		$this->assertSame( 'Admin bar', $wp_settings_fields['presence-api']['wp_presence_features']['wp_presence_features_admin-bar']['title'] );
+		$this->assertSame( 'Posts list', $wp_settings_fields['presence-api']['wp_presence_features']['wp_presence_features_post-list']['title'] );
 		$this->assertArrayNotHasKey( 'wp_presence_features_post-locks', $wp_settings_fields['general']['default'] );
+		$this->assertArrayNotHasKey( 'wp_presence_features_admin-bar', $wp_settings_fields['general']['default'] );
+		$this->assertArrayNotHasKey( 'wp_presence_features_post-list', $wp_settings_fields['general']['default'] );
 		$this->assertStringNotContainsString( 'wp_presence_features', $this->render( 'wp_presence_render_recording_field' ) );
 	}
 
@@ -321,7 +450,21 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 			}
 		}
 
-		$this->assertSame( array( array( 'post-locks' => 0 ), array( 'post-locks' => 1 ) ), $saved );
+		$this->assertSame(
+			array(
+				array(
+					'post-locks' => 0,
+					'admin-bar'  => 0,
+					'post-list'  => 0,
+				),
+				array(
+					'post-locks' => 1,
+					'admin-bar'  => 0,
+					'post-list'  => 0,
+				),
+			),
+			$saved
+		);
 	}
 
 	/**

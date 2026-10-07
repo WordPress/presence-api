@@ -2,6 +2,7 @@
 	"name": "presence-api",
 	"private": true,
 	"scripts": {
+		"build": "wp-scripts build",
 		"check": "bash scripts/check.sh",
 		"env:start": "wp-env start",
 		"env:start:multisite": "bash scripts/start-multisite-env.sh",
