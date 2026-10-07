@@ -70,7 +70,6 @@ For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording
 4. The notice someone sees when another person saves the settings screen they have open.
 5. Settings > Presence API, where a site switches features off.
 6. Network Admin's Who's Online widget, listing the busiest sites and how many people are on each.
-7. The Online column in Network Admin's Sites list.
 
 == Changelog ==
 
