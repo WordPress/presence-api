@@ -191,6 +191,11 @@ jobs:
           BLUEPRINT_SETTINGS=$(jq '.landingPage = "/wp-admin/options-general.php?page=presence-api"' <<< "$BLUEPRINT")
           BLUEPRINT_MS_SETTINGS=$(jq '.landingPage = "/wp-admin/network/settings.php?page=presence-api"' <<< "$BLUEPRINT_MS")
 
+          # The editors panel buttons are the post-locks sites with two people seeded into a post, opened in the block editor with the panel expanded.
+          EDITOR_STEP=$(jq -n '{ step: "runPHP", code: "<?php require \"/wordpress/wp-load.php\"; require \"/wordpress/wp-content/plugins/presence-api/demo-seeder.php\"; global $wpdb; update_option( \"presence_demo_rtc_post\", wp_presence_demo_seed_collaborators() ); update_user_meta( 1, $wpdb->get_blog_prefix() . \"persisted_preferences\", array( \"core\" => array( \"welcomeGuide\" => false, \"openPanels\" => array( \"post-status\", \"presence-editors/presence-editors\" ) ), \"core/edit-post\" => array( \"welcomeGuide\" => false ), \"_modified\" => gmdate( \"c\" ) ) ); ?>" }')
+          BLUEPRINT_EDITOR=$(jq --argjson step "$EDITOR_STEP" '.landingPage = "/wp-admin/?presence_demo=editor" | .steps += [ $step ]' <<< "$BLUEPRINT")
+          BLUEPRINT_MS_EDITOR=$(jq --argjson step "$EDITOR_STEP" '.landingPage = "/wp-admin/?presence_demo=editor" | .steps += [ $step ]' <<< "$BLUEPRINT_MS")
+
           encode() { printf '%s' "$1" | base64 -w0; }
 
           {
@@ -200,6 +205,8 @@ jobs:
             echo "url_multisite_rtc=https://playground.wordpress.net/#$(encode "$BLUEPRINT_MS_RTC")"
             echo "url_settings=https://playground.wordpress.net/#$(encode "$BLUEPRINT_SETTINGS")"
             echo "url_multisite_settings=https://playground.wordpress.net/#$(encode "$BLUEPRINT_MS_SETTINGS")"
+            echo "url_editor=https://playground.wordpress.net/#$(encode "$BLUEPRINT_EDITOR")"
+            echo "url_multisite_editor=https://playground.wordpress.net/#$(encode "$BLUEPRINT_MS_EDITOR")"
           } >> "$GITHUB_OUTPUT"
 
       - name: Post or update sticky comment
@@ -214,6 +221,8 @@ jobs:
           PLAYGROUND_URL_MULTISITE_RTC: ${{ steps.playground.outputs.url_multisite_rtc }}
           PLAYGROUND_URL_SETTINGS: ${{ steps.playground.outputs.url_settings }}
           PLAYGROUND_URL_MULTISITE_SETTINGS: ${{ steps.playground.outputs.url_multisite_settings }}
+          PLAYGROUND_URL_EDITOR: ${{ steps.playground.outputs.url_editor }}
+          PLAYGROUND_URL_MULTISITE_EDITOR: ${{ steps.playground.outputs.url_multisite_editor }}
         with:
           script: |
             const marker = '<!-- presence-api:playground-preview -->';
@@ -223,6 +232,8 @@ jobs:
             const urlMultisiteRtc = process.env.PLAYGROUND_URL_MULTISITE_RTC;
             const urlSettings = process.env.PLAYGROUND_URL_SETTINGS;
             const urlMultisiteSettings = process.env.PLAYGROUND_URL_MULTISITE_SETTINGS;
+            const urlEditor = process.env.PLAYGROUND_URL_EDITOR;
+            const urlMultisiteEditor = process.env.PLAYGROUND_URL_MULTISITE_EDITOR;
             const fullSha = process.env.HEAD_SHA;
             const sha = fullSha.slice(0, 7);
             const commitUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/commit/${fullSha}`;
@@ -242,10 +253,10 @@ jobs:
               // emits, which the timeline's sha links are not.
               `Built from <a href="${commitUrl}"><samp>${sha}</samp></a>`,
               '',
-              '|  | Post locks | RTC | Settings |',
-              '| --- | --- | --- | --- |',
-              `| **Single site** | ${launch(url, 'Launch post locks, single site')} | ${launch(urlRtc, 'Launch RTC, single site')} | ${launch(urlSettings, 'Launch settings, single site')} |`,
-              `| **Multisite** | ${launch(urlMultisite, 'Launch post locks, multisite')} | ${launch(urlMultisiteRtc, 'Launch RTC, multisite')} | ${launch(urlMultisiteSettings, 'Launch network settings, multisite')} |`,
+              '|  | Post locks | RTC | Editors panel | Settings |',
+              '| --- | --- | --- | --- | --- |',
+              `| **Single site** | ${launch(url, 'Launch post locks, single site')} | ${launch(urlRtc, 'Launch RTC, single site')} | ${launch(urlEditor, 'Launch editors panel, single site')} | ${launch(urlSettings, 'Launch settings, single site')} |`,
+              `| **Multisite** | ${launch(urlMultisite, 'Launch post locks, multisite')} | ${launch(urlMultisiteRtc, 'Launch RTC, multisite')} | ${launch(urlMultisiteEditor, 'Launch editors panel, multisite')} | ${launch(urlMultisiteSettings, 'Launch network settings, multisite')} |`,
               '',
             ].join('\n');
 
