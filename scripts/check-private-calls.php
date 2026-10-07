@@ -1,6 +1,6 @@
 <?php
 /**
- * Fails when the calls from features to private functions outside them differ from scripts/private-calls.txt, so that list can only shrink.
+ * Fails when the calls from features to private functions outside them differ from scripts/private-calls.txt, so a new one only gets in where a reviewer sees it.
  *
  *   php scripts/check-private-calls.php [--update]
  */
