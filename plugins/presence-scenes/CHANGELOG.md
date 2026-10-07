@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.0](https://github.com/WordPress/presence-api/compare/presence-scenes-v0.1.1...presence-scenes-v0.2.0) (2026-10-07)
+
+
+### Features
+
+* add arrivals, coming-back and fading-out scenes ([#775](https://github.com/WordPress/presence-api/issues/775)) ([d1d704b](https://github.com/WordPress/presence-api/commit/d1d704bb8606f807daa7d6c8f8131c27e55b1a3e))
+* move the debugger and DB viewer into a presence-debugger plugin ([#760](https://github.com/WordPress/presence-api/issues/760)) ([7577905](https://github.com/WordPress/presence-api/commit/757790564efe9fc2a17fa2bc4b2d1882d2796d58))
+
 ## [0.1.1](https://github.com/WordPress/presence-api/compare/presence-scenes-v0.1.0...presence-scenes-v0.1.1) (2026-10-05)
 
 
