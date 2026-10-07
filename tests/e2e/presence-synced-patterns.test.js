@@ -1,7 +1,7 @@
 /**
- * Presence API — Editors panel E2E Tests
+ * Presence API — Synced pattern lock E2E Tests
  *
- * The block editor's Editors panel, the plugin's own consumer of `wp.presence.usePresenceUsers()`.
+ * Disables a synced pattern while someone else edits it, through `wp.presence.usePresenceUsers()`.
  *
  * @package Presence_API
  */
@@ -30,7 +30,7 @@ function wpEval( phpExpression ) {
 	);
 }
 
-test.describe( 'Editors panel', () => {
+test.describe( 'Synced pattern lock', () => {
 	// wp-env activates Classic Editor.
 	test.beforeAll( () => {
 		wpEval( `update_option( 'classic-editor-replace', 'block' );` );
@@ -38,6 +38,7 @@ test.describe( 'Editors panel', () => {
 
 	test.afterEach( async ( { requestUtils } ) => {
 		await requestUtils.deleteAllPosts();
+		await requestUtils.deleteAllBlocks();
 		await requestUtils.deleteAllUsers();
 	} );
 
@@ -45,51 +46,43 @@ test.describe( 'Editors panel', () => {
 		wpEval( `delete_option( 'classic-editor-replace' );` );
 	} );
 
-	test( 'lists another editor of the post', async ( {
+	test( 'disables a synced pattern someone else is editing', async ( {
 		admin,
 		editor,
-		page,
 		requestUtils,
 	} ) => {
 		await requestUtils.createUser( COLLABORATOR );
-		const post = await requestUtils.createPost( {
-			title: 'Election night results',
+		const pattern = await requestUtils.createBlock( {
+			title: 'Newsletter signup',
 			status: 'publish',
+			content:
+				'<!-- wp:paragraph --><p>Sign up for the weekly briefing.</p><!-- /wp:paragraph -->',
 		} );
-
-		await admin.editPost( post.id );
-		// Panel state persists per user, so start from the editor's default of only Status open.
-		await editor.setPreferences( 'core', {
-			openPanels: [ 'post-status' ],
+		const post = await requestUtils.createPost( {
+			title: 'Weekend Arts Guide',
+			status: 'draft',
+			content: `<!-- wp:block {"ref":${ pattern.id }} /-->`,
 		} );
-		await editor.openDocumentSettingsSidebar();
-		const settings = page.getByRole( 'region', {
-			name: 'Editor settings',
-		} );
-		await settings.getByRole( 'button', { name: 'Editors' } ).click();
-		await expect(
-			settings.getByText( 'No one else is editing.' )
-		).toBeVisible();
 
 		const browser = await chromium.launch( { headless: true } );
 
 		try {
-			const editUrl = `${ BASE_URL }/wp-admin/post.php?post=${ post.id }&action=edit`;
+			const patternUrl = `${ BASE_URL }/wp-admin/post.php?post=${ pattern.id }&action=edit`;
 			const context = await browser.newContext( { baseURL: BASE_URL } );
 			await context.request.post( `${ BASE_URL }/wp-login.php`, {
 				form: {
 					log: COLLABORATOR.username,
 					pwd: COLLABORATOR.password,
-					redirect_to: editUrl,
+					redirect_to: patternUrl,
 					testcookie: '1',
 				},
 			} );
 			const collaboratorPage = await context.newPage();
-			await collaboratorPage.goto( editUrl );
+			await collaboratorPage.goto( patternUrl );
 			await collaboratorPage.waitForFunction(
 				() => window.wp?.heartbeat?.connectNow
 			);
-			// Waits for the tick that writes the collaborator into the post room.
+			// Waits for the tick that writes the collaborator into the pattern's room.
 			await collaboratorPage.evaluate(
 				() =>
 					new Promise( ( resolve ) => {
@@ -98,12 +91,24 @@ test.describe( 'Editors panel', () => {
 					} )
 			);
 
-			await page.evaluate( () => wp.heartbeat.connectNow() );
+			await admin.editPost( post.id );
 			await expect(
-				settings
-					.getByRole( 'listitem' )
-					.filter( { hasText: 'Maria Lopez' } )
+				editor.canvas.getByText(
+					'Maria Lopez is editing this pattern. Changes are disabled.'
+				)
 			).toBeVisible();
+
+			await expect
+				.poll( () =>
+					editor.page.evaluate( () => {
+						const { getBlockEditingMode, getBlocksByName } =
+							window.wp.data.select( 'core/block-editor' );
+						return getBlockEditingMode(
+							getBlocksByName( 'core/block' )[ 0 ]
+						);
+					} )
+				)
+				.toBe( 'disabled' );
 		} finally {
 			await browser.close();
 		}
