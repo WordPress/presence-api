@@ -171,21 +171,22 @@ Releases are automated by [release-please](https://github.com/googleapis/release
 - `feat!: ...` or a `BREAKING CHANGE:` footer → major bump (or, pre-1.0, a minor bump)
 - `chore:`, `docs:`, `refactor:`, `test:`, `ci:`, `build:`, `style:` → no version bump
 
-Merging a plugin's release PR tags it `<plugin>-vX.Y.Z` and attaches its zip to the GitHub Release, except Presence API, which is tagged `vX.Y.Z` and also ships to WordPress.org.
+Merging the release PR tags Presence API `vX.Y.Z`, attaches its zip to the GitHub Release and ships it to WordPress.org.
 
 <details>
-<summary>Releasing a new plugin</summary>
+<summary>Adding a plugin</summary>
 
-1. Add its directory to `packages` in `release-please-config.json` with its `package-name`, `"include-component-in-tag": true`, and an `"initial-version"` matching its `Version:` header.
-2. Add the directory to presence-api's `exclude-paths` so its commits stay out of the Presence API changelog.
-3. Give it a `.distignore` listing what the zip leaves out, starting with `.distignore`, `CHANGELOG.md`, and `tests`.
+The other plugins in `plugins/` are tooling or components that ship inside Presence API, so none has releases of its own.
+
+1. Give its main file only the `Plugin Name`, `Description` and `Requires Plugins: presence-api` headers.
+2. Add its directory to presence-api's `exclude-paths` in `release-please-config.json` so its commits stay out of the Presence API changelog.
 
 </details>
 
 <details>
 <summary>Keeping the version numbers in step</summary>
 
-On every release PR, `scripts/sync-versions.sh` copies the version from `.release-please-manifest.json` into every plugin's `Version:` header, plus Presence API's `WP_PRESENCE_VERSION` constant and `readme.txt` `Stable tag:`, and you can run it locally too:
+On every release PR, `scripts/sync-versions.sh` copies the version from `.release-please-manifest.json` into Presence API's `Version:` header, `WP_PRESENCE_VERSION` constant and `readme.txt` `Stable tag:`, and you can run it locally too:
 
 ```bash
 bash scripts/sync-versions.sh
