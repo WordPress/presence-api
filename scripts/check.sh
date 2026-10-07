@@ -20,6 +20,7 @@ step() {
 }
 
 step composer phpcs
+step php scripts/check-private-calls.php
 step composer phpstan
 step npm run lint:js
 step npm run test:unit

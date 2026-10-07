@@ -50,6 +50,7 @@ jobs:
               - 'phpstan.neon.dist'
               - 'phpunit.xml.dist'
               - 'plugins/presence-api/readme.txt'
+              - 'scripts/private-calls.txt'
               - '.github/workflows/**'
 
   phpcs:

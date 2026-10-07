@@ -1,0 +1,30 @@
+{
+	"apiVersion": 1,
+	"name": "coming-back",
+	"title": "Coming back to a post",
+	"cast": [ "author", "editor", "editor" ],
+	"steps": [
+		{ "at": 0, "actor": 1, "step": "visit", "place": "posts" },
+		{ "at": 1, "actor": 1, "step": "write", "title": "Product launch plan" },
+		{ "at": 3, "actor": 1, "step": "type", "post": "Product launch plan", "text": "Goals, dates and owners." },
+		{ "at": 5, "actor": 2, "step": "visit", "place": "posts" },
+		{ "at": 6, "actor": 2, "step": "open", "post": "Product launch plan" },
+		{ "at": 7, "actor": 2, "step": "checkLocked", "post": "Product launch plan" },
+		{ "at": 9, "actor": 3, "step": "visit", "place": "posts" },
+		{ "at": 10, "actor": 3, "step": "open", "post": "Product launch plan" },
+		{ "at": 11, "actor": 3, "step": "checkLocked", "post": "Product launch plan" },
+		{ "at": 13, "actor": 1, "step": "close", "post": "Product launch plan" },
+		{ "at": 14, "actor": 1, "step": "visit", "place": "profile" },
+		{ "at": 15, "actor": 2, "step": "checkUnlocked", "post": "Product launch plan" },
+		{ "at": 16, "actor": 2, "step": "open", "post": "Product launch plan" },
+		{ "at": 18, "actor": 2, "step": "type", "post": "Product launch plan", "text": "Added the press timeline." },
+		{ "at": 20, "actor": 1, "step": "visit", "place": "posts" },
+		{ "at": 21, "actor": 1, "step": "open", "post": "Product launch plan" },
+		{ "at": 22, "actor": 1, "step": "checkLocked", "post": "Product launch plan" },
+		{ "at": 24, "actor": 2, "step": "close", "post": "Product launch plan" },
+		{ "at": 25, "actor": 1, "step": "checkUnlocked", "post": "Product launch plan" },
+		{ "at": 26, "actor": 1, "step": "open", "post": "Product launch plan" },
+		{ "at": 28, "actor": 1, "step": "type", "post": "Product launch plan", "text": "Signed off on the dates." },
+		{ "at": 31, "actor": "cast", "step": "leave" }
+	]
+}
