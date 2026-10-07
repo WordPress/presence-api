@@ -197,7 +197,11 @@ class WP_Test_Presence_Post_List extends WP_Presence_UnitTestCase {
 
 		$output = wp_presence_editors_stack( $map[ $five ] );
 		$this->assertSame( 3, substr_count( $output, '<img' ) );
-		$this->assertMatchesRegularExpression( '#<span class="presence-editors-more" title="(Ana and Ben|Ben and Ana)" aria-hidden="true">\+2</span><span class="screen-reader-text">\1</span>#', $output, 'Screen readers hear the folded names, not "+2".' );
+		// Databases return the room in different orders, so check the folded names are the two without a face.
+		$this->assertMatchesRegularExpression( '#<span class="presence-editors-more" title="(\w+) and (\w+)" aria-hidden="true">\+2</span><span class="screen-reader-text">\1 and \2</span>#', $output, 'Screen readers hear the folded names, not "+2".' );
+		preg_match( '#title="(\w+) and (\w+)"#', $output, $matches );
+		$this->assertStringNotContainsString( 'alt="' . $matches[1] . '"', $output );
+		$this->assertStringNotContainsString( 'alt="' . $matches[2] . '"', $output );
 	}
 
 	public function test_editors_column_css_enqueues_only_on_edit_php() {
