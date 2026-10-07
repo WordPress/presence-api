@@ -27,11 +27,15 @@
 			}
 		},
 		{
-			"step": "writeFile",
-			"path": "/wordpress/wp-content/plugins/presence-api/includes/debugger-admin-bar.php",
-			"data": {
-				"resource": "url",
-				"url": "https://raw.githubusercontent.com/WordPress/presence-api/v0.15.0/plugins/presence-api/includes/debugger-admin-bar.php"
+			"step": "installPlugin",
+			"pluginData": {
+				"resource": "git:directory",
+				"url": "https://github.com/WordPress/presence-api",
+				"ref": "v0.15.0",
+				"path": "plugins/presence-debugger"
+			},
+			"options": {
+				"targetFolderName": "presence-debugger"
 			}
 		},
 		{

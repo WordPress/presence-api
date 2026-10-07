@@ -1,6 +1,6 @@
 {
 	"core": null,
-	"plugins": [ "./plugins/presence-api", "./plugins/presence-scenes", "https://downloads.wordpress.org/plugin/classic-editor.zip" ],
+	"plugins": [ "./plugins/presence-api", "./plugins/presence-debugger", "./plugins/presence-scenes", "https://downloads.wordpress.org/plugin/classic-editor.zip" ],
 	"config": {
 		"WP_DEBUG": true,
 		"WP_DEBUG_LOG": true,

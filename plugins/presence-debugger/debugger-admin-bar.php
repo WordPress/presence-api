@@ -57,6 +57,7 @@ function wp_presence_debugger_admin_bar_node( $wp_admin_bar ) {
 		'interval' => __( 'Interval', 'presence-api' ),
 		'ttl'      => __( 'TTL', 'presence-api' ),
 	);
+	// No public function returns the TTL after the wp_presence_default_ttl filter.
 	foreach ( $rows as $key => $label ) {
 		$wp_admin_bar->add_node(
 			array(
@@ -80,6 +81,7 @@ function wp_presence_debugger_admin_bar_node( $wp_admin_bar ) {
 	global $wpdb;
 
 	$rooms = array();
+	// No public function returns a user's rooms, and recording off should still list them.
 	if ( wp_presence_has_table() ) {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$rooms = $wpdb->get_col(
@@ -218,6 +220,7 @@ function wp_presence_debugger_admin_bar_markup() {
  * @return array The Heartbeat response.
  */
 function wp_presence_debugger_heartbeat_received( $response, $data ) {
+	// Reads the request under the key the live surfaces in presence-ping.js use.
 	if ( ! wp_presence_fragment_request( $data, 'debugger' ) || ! current_user_can( 'manage_options' ) ) {
 		return $response;
 	}

@@ -22,6 +22,13 @@
 		{
 			"step": "installPlugin",
 			"pluginData": {
+				"resource": "url",
+				"url": "https://raw.githubusercontent.com/WordPress/presence-api/preview-main/presence-debugger.zip"
+			}
+		},
+		{
+			"step": "installPlugin",
+			"pluginData": {
 				"resource": "git:directory",
 				"url": "https://github.com/WordPress/presence-api",
 				"ref": "main",
