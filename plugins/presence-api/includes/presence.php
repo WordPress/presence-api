@@ -130,7 +130,7 @@ function wp_presence_positional_args( $function_name, $given, $index, $keys ) {
 
 	_deprecated_argument(
 		esc_html( $function_name ),
-		'0.17.0',
+		'0.18.0',
 		/* translators: %s: The `$args` keys, such as user_id, date_gmt, expires_in. */
 		esc_html( sprintf( __( 'Pass the optional arguments in an $args array: %s.', 'presence-api' ), implode( ', ', $keys ) ) )
 	);
