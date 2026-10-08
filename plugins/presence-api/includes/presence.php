@@ -107,7 +107,8 @@ function wp_get_presence( $room, $args = array() ) {
 /**
  * Maps a call made with the positional parameters from before 0.17.0 onto `$args`.
  *
- * Those calls passed a number or null, or more arguments, where `$args` now goes.
+ * Those calls passed a number or null where `$args` now goes, so an array or a
+ * query string there is `$args`, whatever follows it.
  *
  * @access private
  *
@@ -119,11 +120,11 @@ function wp_get_presence( $room, $args = array() ) {
  * @return array|null The arguments as `$args`, or null for a call that already passes `$args`.
  */
 function wp_presence_positional_args( $given, $index, $keys ) {
-	if ( count( $given ) <= $index + 1 ) {
-		$args = $given[ $index ] ?? array();
-		if ( ! ( null === $args || is_numeric( $args ) ) ) {
-			return null;
-		}
+	// Not ??, which would read an explicit null, the old form's default, as missing.
+	$args = array_key_exists( $index, $given ) ? $given[ $index ] : array();
+
+	if ( ! ( null === $args || is_numeric( $args ) ) ) {
+		return null;
 	}
 
 	$values = array_slice( $given, $index, count( $keys ) );

@@ -269,6 +269,20 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * A stray argument after `$args` cannot turn the array into a user ID and write the row as someone else.
+	 *
+	 * @covers ::wp_presence_exchange
+	 * @covers ::wp_presence_positional_args
+	 */
+	public function test_an_argument_after_args_leaves_the_args_alone() {
+		$user_id = self::factory()->user->create();
+
+		wp_presence_exchange( 'admin/half', 'gse-1', array(), array( 'user_id' => $user_id ), 30 );
+
+		$this->assertSame( $user_id, (int) wp_get_presence( 'admin/half' )[0]->user_id );
+	}
+
+	/**
 	 * @covers ::wp_set_presence
 	 */
 	public function test_set_presence_upserts() {
