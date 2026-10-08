@@ -91,3 +91,8 @@ if ( wp_presence_feature_enabled( 'dashboard-widget' ) ) {
 	// Puts Active Posts first for anyone without a saved Dashboard layout.
 	add_filter( 'get_user_option_meta-box-order_dashboard', 'wp_presence_default_widget_order' );
 }
+
+// Plugin only: the check comes off when core merges the piece.
+if ( wp_presence_feature_enabled( 'synced-patterns' ) ) {
+	add_action( 'enqueue_block_editor_assets', 'wp_presence_enqueue_synced_pattern_notice' );
+}

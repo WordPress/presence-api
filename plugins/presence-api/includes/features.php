@@ -67,6 +67,10 @@ function wp_presence_get_features() {
 			'label'       => __( 'Stale-screen notice', 'presence-api' ),
 			'description' => __( 'Show a notice when someone else saves changes to what you have open.', 'presence-api' ),
 		),
+		'synced-patterns'  => array(
+			'label'       => __( 'Synced patterns', 'presence-api' ),
+			'description' => __( 'Show a notice on a synced pattern in the block editor while someone else is editing the pattern itself.', 'presence-api' ),
+		),
 		'network-admin'    => array(
 			'label'       => __( 'Network Admin screens', 'presence-api' ),
 			'description' => __( 'Show who is online on Network Admin: a column on Sites, a view and column on Users, and the Who\'s Online dashboard widget.', 'presence-api' ),
