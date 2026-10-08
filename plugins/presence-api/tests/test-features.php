@@ -432,6 +432,26 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * With its hooks gone, a covered screen loads no stale-screen script.
+	 *
+	 * @covers ::wp_presence_feature_enabled
+	 */
+	public function test_the_stale_screen_switched_off_loads_no_script() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		set_current_screen( 'options-general' );
+
+		foreach ( array( false, true ) as $enabled ) {
+			$this->register_hooks_with_stale_screen( $enabled );
+			wp_deregister_script( 'wp-presence-stale-screen' );
+			wp_scripts()->queue = array();
+
+			do_action( 'admin_enqueue_scripts', 'options-general.php' );
+
+			$this->assertSame( $enabled, wp_script_is( 'wp-presence-stale-screen', 'enqueued' ) );
+		}
+	}
+
+	/**
 	 * With its hooks gone, the admin bar renders without the presence node.
 	 *
 	 * @covers ::wp_presence_feature_enabled
