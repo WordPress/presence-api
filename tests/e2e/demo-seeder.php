@@ -543,61 +543,6 @@ function wp_presence_demo_seed_collaborators( $post_id = 0, $count = 2 ) {
 }
 
 /**
- * Puts a demo user in a synced pattern's editor, first creating the pattern and a post that uses it.
- *
- * @since 0.17.0
- *
- * @param int $pattern_id Optional. The pattern to stay in, refreshing a row the 150-second read window would otherwise drop.
- * @return int[] The `post` that uses the `pattern`, both 0 when there is no demo user.
- */
-function wp_presence_demo_seed_pattern_editor( $pattern_id = 0 ) {
-	$user = get_user_by( 'login', 'presence-demo-1' );
-	if ( ! $user ) {
-		return array(
-			'post'    => 0,
-			'pattern' => 0,
-		);
-	}
-
-	$post_id = 0;
-	if ( ! $pattern_id ) {
-		$pattern_id = wp_insert_post(
-			array(
-				'post_type'    => 'wp_block',
-				'post_status'  => 'publish',
-				'post_title'   => 'Newsletter signup',
-				'post_content' => '<!-- wp:paragraph --><p>Sign up for the weekly briefing.</p><!-- /wp:paragraph -->',
-			)
-		);
-
-		// A post of its own, since the post-locks playground locks every demo post.
-		$post_id = wp_insert_post(
-			array(
-				'post_status'  => 'draft',
-				'post_author'  => 1,
-				'post_title'   => 'Museum Late Nights Return',
-				'post_content' => '<!-- wp:paragraph --><p>Three galleries stay open until ten on Fridays this month.</p><!-- /wp:paragraph --><!-- wp:block {"ref":' . (int) $pattern_id . '} /-->',
-			)
-		);
-	}
-
-	wp_set_presence(
-		wp_presence_post_room( $pattern_id ),
-		'editor-' . $user->ID,
-		array(
-			'action' => 'editing',
-			'screen' => 'wp_block',
-		),
-		$user->ID
-	);
-
-	return array(
-		'post'    => (int) $post_id,
-		'pattern' => (int) $pattern_id,
-	);
-}
-
-/**
  * Removes all demo users and their presence entries.
  *
  * @since 7.1.0
