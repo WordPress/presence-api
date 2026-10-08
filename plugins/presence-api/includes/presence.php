@@ -90,9 +90,9 @@ function wp_presence_read_floor( $timeout ) {
  * @return array Array of presence entry objects.
  */
 function wp_get_presence( $room, $args = array() ) {
-	$given = func_get_args();
-	if ( wp_presence_is_positional_call( $given, 2 ) ) {
-		$args = wp_presence_positional_args( array_slice( $given, 1 ), array( 'timeout', 'client_prefix' ) );
+	$positional = wp_presence_positional_args( func_get_args(), 1, array( 'timeout', 'client_prefix' ) );
+	if ( null !== $positional ) {
+		$args = $positional;
 	}
 
 	$defaults    = array(
@@ -105,43 +105,28 @@ function wp_get_presence( $room, $args = array() ) {
 }
 
 /**
- * Whether a call uses the positional parameters from before 0.17.0, which passed a number or null where `$args` now goes.
- *
- * @access private
- *
- * @since 0.17.0
- *
- * @param array $given    The arguments the function received.
- * @param int   $position How many arguments come before `$args`, plus one.
- * @return bool Whether the call is positional.
- */
-function wp_presence_is_positional_call( $given, $position ) {
-	if ( count( $given ) > $position ) {
-		return true;
-	}
-
-	if ( count( $given ) < $position ) {
-		return false;
-	}
-
-	$args = $given[ $position - 1 ];
-
-	return null === $args || is_int( $args ) || ( is_string( $args ) && is_numeric( $args ) );
-}
-
-/**
  * Maps a call made with the positional parameters from before 0.17.0 onto `$args`.
  *
+ * Those calls passed a number or null, or more arguments, where `$args` now goes.
+ *
  * @access private
  *
  * @since 0.17.0
  *
- * @param array    $values The arguments passed after the required ones.
- * @param string[] $keys   The `$args` keys those positions now have, in order.
- * @return array The arguments as `$args`.
+ * @param array    $given The arguments the function received.
+ * @param int      $index Where `$args` sits among them.
+ * @param string[] $keys  The `$args` keys the old positions map to, in order.
+ * @return array|null The arguments as `$args`, or null for a call that already passes `$args`.
  */
-function wp_presence_positional_args( $values, $keys ) {
-	$values = array_slice( $values, 0, count( $keys ) );
+function wp_presence_positional_args( $given, $index, $keys ) {
+	if ( count( $given ) <= $index + 1 ) {
+		$args = $given[ $index ] ?? array();
+		if ( ! ( null === $args || is_int( $args ) || ( is_string( $args ) && is_numeric( $args ) ) ) ) {
+			return null;
+		}
+	}
+
+	$values = array_slice( $given, $index, count( $keys ) );
 
 	return array_combine( array_slice( $keys, 0, count( $values ) ), $values );
 }
@@ -617,9 +602,9 @@ function wp_presence_is_valid_date_gmt( $date_gmt ) {
  *              `date_gmt` or an unusable `expires_in`).
  */
 function wp_set_presence( $room, $client_id, $state, $args = array() ) {
-	$given = func_get_args();
-	if ( wp_presence_is_positional_call( $given, 4 ) ) {
-		$args = wp_presence_positional_args( array_slice( $given, 3 ), array( 'user_id', 'date_gmt', 'expires_in' ) );
+	$positional = wp_presence_positional_args( func_get_args(), 3, array( 'user_id', 'date_gmt', 'expires_in' ) );
+	if ( null !== $positional ) {
+		$args = $positional;
 	}
 
 	$defaults    = array(
@@ -957,9 +942,9 @@ function wp_remove_presence( $room, $client_id ) {
  * @return array Array of presence entry objects, as returned by wp_get_presence().
  */
 function wp_presence_exchange( $room, $client_id, $state, $args = array() ) {
-	$given = func_get_args();
-	if ( wp_presence_is_positional_call( $given, 4 ) ) {
-		$args = wp_presence_positional_args( array_slice( $given, 3 ), array( 'user_id', 'timeout', 'client_prefix' ) );
+	$positional = wp_presence_positional_args( func_get_args(), 3, array( 'user_id', 'timeout', 'client_prefix' ) );
+	if ( null !== $positional ) {
+		$args = $positional;
 	}
 
 	$defaults    = array(
@@ -999,9 +984,9 @@ function wp_presence_exchange( $room, $client_id, $state, $args = array() ) {
  * @return array Array of presence entry objects, as returned by wp_get_presence().
  */
 function wp_presence_leave( $room, $client_id, $args = array() ) {
-	$given = func_get_args();
-	if ( wp_presence_is_positional_call( $given, 3 ) ) {
-		$args = wp_presence_positional_args( array_slice( $given, 2 ), array( 'timeout', 'client_prefix' ) );
+	$positional = wp_presence_positional_args( func_get_args(), 2, array( 'timeout', 'client_prefix' ) );
+	if ( null !== $positional ) {
+		$args = $positional;
 	}
 
 	wp_remove_presence( $room, $client_id );

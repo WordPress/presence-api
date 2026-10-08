@@ -194,7 +194,6 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_get_presence
 	 * @covers ::wp_presence_exchange
 	 * @covers ::wp_presence_leave
-	 * @covers ::wp_presence_is_positional_call
 	 * @covers ::wp_presence_positional_args
 	 */
 	public function test_args_query_string_and_positional_forms_match() {
