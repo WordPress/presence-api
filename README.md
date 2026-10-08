@@ -79,7 +79,7 @@ A `client_id` prefix tells this plugin's rows apart from anyone else's in the sa
 | `editor-{user_id}` | Post rooms | Heartbeat, post locks |
 | `cli-{user_id}` | Any | `wp presence set` when given no client ID |
 
-Anything else writing to a room, such as a plugin relaying awareness or a REST client, must use its own prefix, like `gse-` for [gutenberg-sync-engines](https://github.com/WordPress/gutenberg-sync-engines). Pass it as the third argument to read back only your rows: `wp_get_presence( $room, $timeout, 'gse-' )`.
+Anything else writing to a room, such as a plugin relaying awareness or a REST client, must use its own prefix, like `gse-` for [gutenberg-sync-engines](https://github.com/WordPress/gutenberg-sync-engines). Pass it as `client_prefix` to read back only your rows: `wp_get_presence( $room, array( 'client_prefix' => 'gse-' ) )`.
 
 A leading `_` marks bookkeeping rows, which are not participants: `_collab` holds a post room's last editor count for the collaboration actions, and `_lock` holds the post's `_edit_lock`. `wp_get_presence()` and the REST collection leave them out, and the REST write and delete routes reject them. `wp_set_presence()` writes one even with recording off, which is how a post lock outlasts the switch.
 
@@ -95,10 +95,10 @@ To show up before its first save, an agent can still write the row itself:
 
 ```php
 // Join: write a row that expires in 60 seconds if nothing renews it.
-wp_set_presence( 'postType/post:42', 'agent-' . $user_id, array(), $user_id, null, 60 );
+wp_set_presence( 'postType/post:42', 'agent-' . $user_id, array(), array( 'user_id' => $user_id, 'expires_in' => 60 ) );
 
 // While still working, write again before the window runs out, to stay present.
-wp_set_presence( 'postType/post:42', 'agent-' . $user_id, array(), $user_id, null, 60 );
+wp_set_presence( 'postType/post:42', 'agent-' . $user_id, array(), array( 'user_id' => $user_id, 'expires_in' => 60 ) );
 
 // Leave, once done. Otherwise the row simply expires on its own.
 wp_remove_presence( 'postType/post:42', 'agent-' . $user_id );
@@ -125,34 +125,34 @@ This plugin already registers it, so nothing more is needed once `wpai_is_agent_
 <details>
 <summary>Functions, return shapes, and network variants</summary>
 
-These functions are the stable API. Treat every other function as internal, since it may change without notice.
+These functions are the stable API. Treat every other function as internal, since it may change without notice. Optional arguments go in `$args`, an array or query string as core's `wp_parse_args()` takes them; the positional parameters from before 0.17.0 still work.
 
 ```php
 // Read all presence entries in a room, or only those whose client_id starts
-// with $client_prefix. The prefix is matched literally, in the query.
-// A $timeout you pass is the window used; with null, each row counts until its own expiry.
-$entries = wp_get_presence( $room, $timeout = null, $client_prefix = '' );
+// with 'client_prefix'. The prefix is matched literally, in the query.
+// A 'timeout' you pass is the window used; with null, each row counts until its own expiry.
+$entries = wp_get_presence( $room, array( 'timeout' => null, 'client_prefix' => '' ) );
 
 // Read every room whose identifier starts with $prefix, newest first.
 // 'postType/' lists who is editing which post.
 $entries = wp_get_presence_by_room_prefix( $prefix, $timeout = null );
 
 // Upsert a client's presence state. Atomic via INSERT … ON DUPLICATE KEY UPDATE.
-// $date_gmt ('Y-m-d H:i:s') lets a relay keep each client's own timestamp.
+// 'date_gmt' ('Y-m-d H:i:s') lets a relay keep each client's own timestamp.
 // Future values are clamped to now, invalid dates return false. Defaults to now.
-// $expires_in (seconds from $date_gmt) is how long the row counts as present,
+// 'expires_in' (seconds from 'date_gmt') is how long the row counts as present,
 // for a writer that removes its own rows when clients leave. Capped by
 // wp_presence_max_expires_in (default one hour); under one second returns
 // false. Defaults to the site TTL.
 // Passing either one always writes, even when the row is unchanged.
-wp_set_presence( $room, $client_id, $state, $user_id = 0, $date_gmt = null, $expires_in = null );
+wp_set_presence( $room, $client_id, $state, array( 'user_id' => 0, 'date_gmt' => null, 'expires_in' => null ) );
 
 // Remove a single client from a room.
 wp_remove_presence( $room, $client_id );
 
 // Write or remove a client, then read the room back, in one call.
-$entries = wp_presence_exchange( $room, $client_id, $state, $user_id = 0, $timeout = null, $client_prefix = '' );
-$entries = wp_presence_leave( $room, $client_id, $timeout = null, $client_prefix = '' );
+$entries = wp_presence_exchange( $room, $client_id, $state, array( 'user_id' => 0, 'timeout' => null, 'client_prefix' => '' ) );
+$entries = wp_presence_leave( $room, $client_id, array( 'timeout' => null, 'client_prefix' => '' ) );
 
 // Remove all presence entries for a user across all rooms.
 wp_remove_user_presence( $user_id );
@@ -247,7 +247,7 @@ The TTL in seconds for writes and reads that don't name their own window. Defaul
 
 Values under 120 drop open tabs, since 120 is core's Heartbeat interval for an unfocused or idle tab.
 
-An explicit `$timeout`, such as `wp_get_presence( $room, 30 )`, is left alone, so widening the TTL never makes that caller read stale clients as present.
+An explicit `timeout`, such as `wp_get_presence( $room, array( 'timeout' => 30 ) )`, is left alone, so widening the TTL never makes that caller read stale clients as present.
 ```php
 add_filter( 'wp_presence_default_ttl', function( $timeout ) {
     return 300; // Override TTL to 5 minutes.
