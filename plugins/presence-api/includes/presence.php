@@ -578,6 +578,7 @@ function wp_presence_is_valid_date_gmt( $date_gmt ) {
  * @since 0.7.0 Added the $expires_in parameter.
  * @since 0.15.0 A reserved client ID is written with recording off.
  * @since 0.15.0 Fires the `set_presence` action.
+ * @since 0.17.0 Takes `$args` in place of the `$user_id`, `$date_gmt` and `$expires_in` parameters.
  *
  * @param string       $room      The room identifier.
  * @param string       $client_id The client identifier.
