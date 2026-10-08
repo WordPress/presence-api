@@ -148,12 +148,15 @@ class WP_Test_Presence_Privacy extends WP_Presence_UnitTestCase {
 	public function test_add_privacy_policy_content() {
 		global $wp_current_filter;
 
+		// Core registers nothing unless is_admin() and admin_init is running.
+		set_current_screen( 'options-privacy' );
 		$wp_current_filter[] = 'admin_init';
 
 		try {
 			wp_presence_add_privacy_policy_content();
 		} finally {
 			array_pop( $wp_current_filter );
+			set_current_screen( 'front' );
 		}
 
 		$registered = wp_list_pluck( WP_Privacy_Policy_Content::get_suggested_policy_text(), 'policy_text', 'plugin_name' );
