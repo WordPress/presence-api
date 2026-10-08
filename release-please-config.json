@@ -22,16 +22,6 @@
 		".": {
 			"package-name": "presence-api",
 			"exclude-paths": [ "plugins/presence-scenes", "plugins/presence-debugger" ]
-		},
-		"plugins/presence-scenes": {
-			"package-name": "presence-scenes",
-			"include-component-in-tag": true,
-			"initial-version": "0.1.0"
-		},
-		"plugins/presence-debugger": {
-			"package-name": "presence-debugger",
-			"include-component-in-tag": true,
-			"initial-version": "0.1.0"
 		}
 	}
 }

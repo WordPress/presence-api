@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.16.1](https://github.com/WordPress/presence-api/compare/v0.16.0...v0.16.1) (2026-10-08)
+
+
+### Bug Fixes
+
+* show identicons in the WordPress.org live preview ([#782](https://github.com/WordPress/presence-api/issues/782)) ([3e3effc](https://github.com/WordPress/presence-api/commit/3e3effc07288e8cbcec0898e47e2f4a4e170a77b))
+
+## [0.16.0](https://github.com/WordPress/presence-api/compare/v0.15.0...v0.16.0) (2026-10-07)
+
+
+### Features
+
+* add npm run check for every check that works without wp-env ([#758](https://github.com/WordPress/presence-api/issues/758)) ([432a3f8](https://github.com/WordPress/presence-api/commit/432a3f862b82d6c57abaa76d5cc7a5dc10ec0064))
+* let a site switch off the admin bar faces ([#773](https://github.com/WordPress/presence-api/issues/773)) ([89dcacd](https://github.com/WordPress/presence-api/commit/89dcacd71e10236db3df634848b8b7fb3cfc407e))
+* let a site switch off the Editors column on post lists ([#768](https://github.com/WordPress/presence-api/issues/768)) ([e104b13](https://github.com/WordPress/presence-api/commit/e104b1340179cb9486cfe23d31a037435cb3bc53))
+* make the room prefix read and the room parser public ([#766](https://github.com/WordPress/presence-api/issues/766)) ([c462654](https://github.com/WordPress/presence-api/commit/c4626549a4d0c7608aa0ed49191a057a7e1c7e82))
+* move the debugger and DB viewer into a presence-debugger plugin ([#760](https://github.com/WordPress/presence-api/issues/760)) ([7577905](https://github.com/WordPress/presence-api/commit/757790564efe9fc2a17fa2bc4b2d1882d2796d58))
+* register usePresenceUsers as the wp-presence script ([#767](https://github.com/WordPress/presence-api/issues/767)) ([dfcf141](https://github.com/WordPress/presence-api/commit/dfcf141b2a530211a618b2635e8e8be860c72efa))
+
+
+### Bug Fixes
+
+* keep the Editors column's faces inside the column on a busy post ([#780](https://github.com/WordPress/presence-api/issues/780)) ([b671bb0](https://github.com/WordPress/presence-api/commit/b671bb01c19e3ccb675cd8aaa8aa8251d80190d9))
+
+
+### Dependencies
+
+* **deps-dev:** bump jsdom from 26.1.0 to 30.1.1 ([#770](https://github.com/WordPress/presence-api/issues/770)) ([7bb39a9](https://github.com/WordPress/presence-api/commit/7bb39a9d6626fcbe6146e6743ff9a3f2ae8fd1a5))
+* **deps-dev:** update phpstan/phpstan requirement ([#769](https://github.com/WordPress/presence-api/issues/769)) ([8e8985e](https://github.com/WordPress/presence-api/commit/8e8985ee51c12eeaf3c88f7fe3f62161a8f72805))
+* **deps:** bump crate-ci/typos from 1.50.2 to 1.50.3 ([#772](https://github.com/WordPress/presence-api/issues/772)) ([4512186](https://github.com/WordPress/presence-api/commit/45121864c7f14b89e854a9cb3bf5fdeaaf9d1869))
+* **deps:** bump the codeql-action group with 3 updates ([#771](https://github.com/WordPress/presence-api/issues/771)) ([77658c1](https://github.com/WordPress/presence-api/commit/77658c1460f219b4d635c2948b05211f3ddb99d6))
+
 ## [0.15.0](https://github.com/WordPress/presence-api/compare/v0.14.0...v0.15.0) (2026-10-06)
 
 

@@ -1,9 +1,9 @@
 === Presence API ===
-Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas, aldorza, bejignesh, stfulldev, obenland, moriikuri, ishitaj34, theaminuldev, muneebashraf, mindctrl, zahidui, mitgiselle, jaredrethman, jooahmed
+Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas, aldorza, bejignesh, stfulldev, obenland, moriikuri, ishitaj34, theaminuldev, muneebashraf, mindctrl, zahidui, mitgiselle, jaredrethman, jooahmed, noruzzaman
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.1
-Stable tag: 0.15.0
+Stable tag: 0.16.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -65,10 +65,25 @@ For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording
 == Screenshots ==
 
 1. The dashboard with 101 people online, the admin bar's presence menu open, and Active Posts listing who is editing each post and page.
+2. The Posts list, with an Editors column showing who has each post open.
+3. The Users list filtered to the people online right now.
+4. The notice someone sees when another person saves the settings screen they have open.
+5. Settings > Presence API, where a site switches features off.
+6. Network Admin's Who's Online widget, listing the busiest sites and how many people are on each.
 
 == Changelog ==
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/presence-api/blob/main/CHANGELOG.md
+
+= 0.16.1 =
+* Show identicons in the WordPress.org live preview ([#782](https://github.com/WordPress/presence-api/issues/782)).
+
+= 0.16.0 =
+* Add npm run check for every check that works without wp-env ([#758](https://github.com/WordPress/presence-api/issues/758)).
+* Let a site switch off the admin bar faces ([#773](https://github.com/WordPress/presence-api/issues/773)).
+* Make the room prefix read and the room parser public ([#766](https://github.com/WordPress/presence-api/issues/766)).
+* Register usePresenceUsers as the wp-presence script ([#767](https://github.com/WordPress/presence-api/issues/767)).
+* Keep the Editors column's faces inside the column on a busy post ([#780](https://github.com/WordPress/presence-api/issues/780)).
 
 = 0.15.0 =
 * Fire an action when a presence row is set or removed ([#756](https://github.com/WordPress/presence-api/issues/756)).
@@ -84,12 +99,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 * Write an agent's presence row when it saves a post ([#697](https://github.com/WordPress/presence-api/issues/697)).
 * Skip trashing in the agent save hook and test only the guards it needs ([#700](https://github.com/WordPress/presence-api/issues/700)).
 * Style the agent badge like the block editor's Badge ([#701](https://github.com/WordPress/presence-api/issues/701)).
-
-= 0.12.2 =
-* Elect the Heartbeat ping leader per site among visible tabs ([#675](https://github.com/WordPress/presence-api/issues/675)).
-* Avoid repeated network summary table checks ([#657](https://github.com/WordPress/presence-api/issues/657)).
-* Read each presence query once per request until the table changes ([#678](https://github.com/WordPress/presence-api/issues/678)).
-* Trust the presence table's version option and recheck it only after a failed write ([#682](https://github.com/WordPress/presence-api/issues/682)).
-
-= 0.12.1 =
-* Maintenance release.
