@@ -126,7 +126,7 @@ This plugin already registers it, so nothing more is needed once `wpai_is_agent_
 <details>
 <summary>Functions, return shapes, and network variants</summary>
 
-These functions are the stable API. Treat every other function as internal, since it may change without notice. Optional arguments go in `$args`, an array or query string as core's `wp_parse_args()` takes them; the positional parameters from before 0.17.0 still work.
+These functions are the stable API. Treat every other function as internal, since it may change without notice. Optional arguments go in `$args`, an array or query string as core's `wp_parse_args()` takes them; the positional parameters from before 0.17.0 still work, with a deprecation notice.
 
 ```php
 // Read all presence entries in a room, or only those whose client_id starts
