@@ -78,15 +78,72 @@ function wp_presence_read_floor( $timeout ) {
  * @since 0.1.1
  * @since 0.7.0 Added the `$client_prefix` parameter.
  * @since 0.7.0 An explicit `$timeout` is no longer overridden by `wp_presence_default_ttl`.
+ * @since 0.17.0 Takes `$args` in place of the `$timeout` and `$client_prefix` parameters.
  *
- * @param string $room          The room identifier.
- * @param int    $timeout       Optional. Timeout in seconds. Default null, the site's filtered TTL.
- * @param string $client_prefix Optional. Only return clients whose client_id starts with this.
- *                              Default empty.
+ * @param string       $room The room identifier.
+ * @param array|string $args {
+ *     Optional. Array or string of arguments for reading the room.
+ *
+ *     @type int|null $timeout       Timeout in seconds. Default null, the site's filtered TTL.
+ *     @type string   $client_prefix Only return clients whose client_id starts with this. Default empty.
+ * }
  * @return array Array of presence entry objects.
  */
-function wp_get_presence( $room, $timeout = null, $client_prefix = '' ) {
-	return wp_presence_client_rows( wp_presence_room_rows( $room, $timeout, $client_prefix ) );
+function wp_get_presence( $room, $args = array() ) {
+	$given = func_get_args();
+	if ( wp_presence_is_positional_call( $given, 2 ) ) {
+		$args = wp_presence_positional_args( array_slice( $given, 1 ), array( 'timeout', 'client_prefix' ) );
+	}
+
+	$defaults    = array(
+		'timeout'       => null,
+		'client_prefix' => '',
+	);
+	$parsed_args = wp_parse_args( $args, $defaults );
+
+	return wp_presence_client_rows( wp_presence_room_rows( $room, $parsed_args['timeout'], $parsed_args['client_prefix'] ) );
+}
+
+/**
+ * Whether a call uses the positional parameters from before 0.17.0, which passed a number or null where `$args` now goes.
+ *
+ * @access private
+ *
+ * @since 0.17.0
+ *
+ * @param array $given    The arguments the function received.
+ * @param int   $position How many arguments come before `$args`, plus one.
+ * @return bool Whether the call is positional.
+ */
+function wp_presence_is_positional_call( $given, $position ) {
+	if ( count( $given ) > $position ) {
+		return true;
+	}
+
+	if ( count( $given ) < $position ) {
+		return false;
+	}
+
+	$args = $given[ $position - 1 ];
+
+	return null === $args || is_int( $args ) || ( is_string( $args ) && is_numeric( $args ) );
+}
+
+/**
+ * Maps a call made with the positional parameters from before 0.17.0 onto `$args`.
+ *
+ * @access private
+ *
+ * @since 0.17.0
+ *
+ * @param array    $values The arguments passed after the required ones.
+ * @param string[] $keys   The `$args` keys those positions now have, in order.
+ * @return array The arguments as `$args`.
+ */
+function wp_presence_positional_args( $values, $keys ) {
+	$values = array_slice( $values, 0, count( $keys ) );
+
+	return array_combine( array_slice( $keys, 0, count( $values ) ), $values );
 }
 
 /**
@@ -537,36 +594,44 @@ function wp_presence_is_valid_date_gmt( $date_gmt ) {
  * @since 0.15.0 A reserved client ID is written with recording off.
  * @since 0.15.0 Fires the `set_presence` action.
  *
- * @param string      $room      The room identifier.
- * @param string      $client_id The client identifier.
- * @param array       $state     The presence state data.
- * @param int         $user_id   Optional. The user ID. Default 0.
- * @param string|null $date_gmt  Optional. The GMT timestamp to stamp the row
- *                                with, as 'Y-m-d H:i:s' (the same shape
- *                                `wp_get_presence()` returns as `date_gmt`).
- *                                For a caller relaying awareness on behalf of
- *                                other clients, so it can preserve their
- *                                timestamps instead of stamping every
- *                                relayed row with its own clock. A value in
- *                                the future is clamped to now, since
- *                                otherwise a caller could pin a row past the
- *                                TTL indefinitely. Must be a real calendar
- *                                date or the write is rejected. Default null
- *                                (now).
- * @param int|null    $expires_in Optional. Seconds from `$date_gmt` that the
- *                                row counts as present, for a caller that
- *                                knows when its clients leave and removes
- *                                their rows itself: the window is then the
- *                                backstop for a departure that never arrived,
- *                                rather than the interval it has to keep
- *                                re-stamping inside. Capped by the
- *                                `wp_presence_max_expires_in` filter, and a
- *                                value below one second is rejected. Default
- *                                null (the site TTL).
+ * @param string       $room      The room identifier.
+ * @param string       $client_id The client identifier.
+ * @param array        $state     The presence state data.
+ * @param array|string $args {
+ *     Optional. Array or string of arguments for writing the row.
+ *
+ *     @type int         $user_id    The user ID. Default 0.
+ *     @type string|null $date_gmt   The GMT timestamp to stamp the row with, as 'Y-m-d H:i:s'
+ *                                   (the shape `wp_get_presence()` returns as `date_gmt`), for a
+ *                                   caller relaying awareness on behalf of other clients so their
+ *                                   timestamps survive. A future value is clamped to now so a row
+ *                                   cannot be pinned past the TTL, and an invalid date rejects
+ *                                   the write. Default null (now).
+ *     @type int|null    $expires_in Seconds from `date_gmt` that the row counts as present, for a
+ *                                   caller that removes its clients' rows itself, so the window is
+ *                                   the backstop for a departure that never arrived. Capped by the
+ *                                   `wp_presence_max_expires_in` filter, and a value below one
+ *                                   second rejects the write. Default null (the site TTL).
+ * }
  * @return bool True on success, false on failure (including a malformed
- *              $date_gmt or an unusable $expires_in).
+ *              `date_gmt` or an unusable `expires_in`).
  */
-function wp_set_presence( $room, $client_id, $state, $user_id = 0, $date_gmt = null, $expires_in = null ) {
+function wp_set_presence( $room, $client_id, $state, $args = array() ) {
+	$given = func_get_args();
+	if ( wp_presence_is_positional_call( $given, 4 ) ) {
+		$args = wp_presence_positional_args( array_slice( $given, 3 ), array( 'user_id', 'date_gmt', 'expires_in' ) );
+	}
+
+	$defaults    = array(
+		'user_id'    => 0,
+		'date_gmt'   => null,
+		'expires_in' => null,
+	);
+	$parsed_args = wp_parse_args( $args, $defaults );
+	$user_id     = $parsed_args['user_id'];
+	$date_gmt    = $parsed_args['date_gmt'];
+	$expires_in  = $parsed_args['expires_in'];
+
 	// A reserved row is bookkeeping rather than a participant, so recording does not decide it.
 	if ( ! wp_presence_is_reserved_client_id( $client_id ) && ! wp_presence_recording_enabled() ) {
 		return false;
@@ -661,7 +726,7 @@ function wp_presence_set_presence_in_rows( $rows, $room, $client_id, $state, $us
 		return $rows;
 	}
 
-	if ( ! wp_set_presence( $room, $client_id, $state, $user_id ) ) {
+	if ( ! wp_set_presence( $room, $client_id, $state, array( 'user_id' => $user_id ) ) ) {
 		return $rows;
 	}
 
@@ -877,20 +942,42 @@ function wp_remove_presence( $room, $client_id ) {
  * caller's own rows without the ones other clients keep in the same room.
  *
  * @since 0.8.0
+ * @since 0.17.0 Takes `$args` in place of the `$user_id`, `$timeout` and `$client_prefix` parameters.
  *
- * @param string $room          The room identifier.
- * @param string $client_id     The client identifier.
- * @param array  $state         The presence state data.
- * @param int    $user_id       Optional. The user ID. Default 0.
- * @param int    $timeout       Optional. Timeout in seconds. Default null, the site's filtered TTL.
- * @param string $client_prefix Optional. Only return clients whose client_id starts with this.
- *                              Default empty.
+ * @param string       $room      The room identifier.
+ * @param string       $client_id The client identifier.
+ * @param array        $state     The presence state data.
+ * @param array|string $args {
+ *     Optional. Array or string of arguments for writing the row and reading the room.
+ *
+ *     @type int      $user_id       The user ID. Default 0.
+ *     @type int|null $timeout       Timeout in seconds. Default null, the site's filtered TTL.
+ *     @type string   $client_prefix Only return clients whose client_id starts with this. Default empty.
+ * }
  * @return array Array of presence entry objects, as returned by wp_get_presence().
  */
-function wp_presence_exchange( $room, $client_id, $state, $user_id = 0, $timeout = null, $client_prefix = '' ) {
-	wp_set_presence( $room, $client_id, $state, $user_id );
+function wp_presence_exchange( $room, $client_id, $state, $args = array() ) {
+	$given = func_get_args();
+	if ( wp_presence_is_positional_call( $given, 4 ) ) {
+		$args = wp_presence_positional_args( array_slice( $given, 3 ), array( 'user_id', 'timeout', 'client_prefix' ) );
+	}
 
-	return wp_get_presence( $room, $timeout, $client_prefix );
+	$defaults    = array(
+		'user_id'       => 0,
+		'timeout'       => null,
+		'client_prefix' => '',
+	);
+	$parsed_args = wp_parse_args( $args, $defaults );
+
+	wp_set_presence( $room, $client_id, $state, array( 'user_id' => $parsed_args['user_id'] ) );
+
+	return wp_get_presence(
+		$room,
+		array(
+			'timeout'       => $parsed_args['timeout'],
+			'client_prefix' => $parsed_args['client_prefix'],
+		)
+	);
 }
 
 /**
@@ -899,18 +986,27 @@ function wp_presence_exchange( $room, $client_id, $state, $user_id = 0, $timeout
  * The removal counterpart to wp_presence_exchange().
  *
  * @since 0.8.0
+ * @since 0.17.0 Takes `$args` in place of the `$timeout` and `$client_prefix` parameters.
  *
- * @param string $room          The room identifier.
- * @param string $client_id     The client identifier.
- * @param int    $timeout       Optional. Timeout in seconds. Default null, the site's filtered TTL.
- * @param string $client_prefix Optional. Only return clients whose client_id starts with this.
- *                              Default empty.
+ * @param string       $room      The room identifier.
+ * @param string       $client_id The client identifier.
+ * @param array|string $args {
+ *     Optional. Array or string of arguments for reading the room, as wp_get_presence() takes them.
+ *
+ *     @type int|null $timeout       Timeout in seconds. Default null, the site's filtered TTL.
+ *     @type string   $client_prefix Only return clients whose client_id starts with this. Default empty.
+ * }
  * @return array Array of presence entry objects, as returned by wp_get_presence().
  */
-function wp_presence_leave( $room, $client_id, $timeout = null, $client_prefix = '' ) {
+function wp_presence_leave( $room, $client_id, $args = array() ) {
+	$given = func_get_args();
+	if ( wp_presence_is_positional_call( $given, 3 ) ) {
+		$args = wp_presence_positional_args( array_slice( $given, 2 ), array( 'timeout', 'client_prefix' ) );
+	}
+
 	wp_remove_presence( $room, $client_id );
 
-	return wp_get_presence( $room, $timeout, $client_prefix );
+	return wp_get_presence( $room, $args );
 }
 
 /**
@@ -1207,7 +1303,15 @@ function wp_presence_on_agent_post_saved( $post_id, $post ) {
 		return;
 	}
 
-	wp_set_presence( $room, 'agent-' . $user_id, array(), $user_id, null, wp_presence_idle_threshold() );
+	wp_set_presence(
+		$room,
+		'agent-' . $user_id,
+		array(),
+		array(
+			'user_id'    => $user_id,
+			'expires_in' => wp_presence_idle_threshold(),
+		)
+	);
 }
 
 /**
@@ -1237,7 +1341,7 @@ function wp_presence_on_agent_post_saved( $post_id, $post ) {
  * @return array Array of presence entry objects, as returned by wp_get_presence().
  */
 function wp_presence_admin_room_entries( $timeout = null ) {
-	$entries = wp_get_presence( wp_presence_admin_room(), $timeout );
+	$entries = wp_get_presence( wp_presence_admin_room(), array( 'timeout' => $timeout ) );
 
 	$known_user_ids = array_map( 'intval', wp_list_pluck( $entries, 'user_id' ) );
 
