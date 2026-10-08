@@ -22,7 +22,7 @@ Tracking who is logged in, on which screen and in which post takes frequent writ
 - Admin bar indicator showing who's online and who's on this page (switch off **Admin bar** on Settings > Presence API to remove it)
 - Active Posts dashboard widget grouped by post
 - Editors column in the post list (switch off **Posts list** on Settings > Presence API to remove it)
-- Online filter in the Users list
+- Online filter in the Users list (switch off **Users list** on Settings > Presence API to remove it)
 - AI agents labelled in the admin bar, the Active Posts widget, and the Editors column (see [Agents](#agents))
 - Notice when someone else saves the screen you have open (see [Stale-screen detection](#stale-screen-detection))
 - On multisite, a Who's Online widget in Network Admin, an Online column in the Sites list, and an Online view, filter, and column in the Users list
@@ -311,7 +311,7 @@ add_filter( 'wp_presence_recording_enabled', '__return_false' );
 On multisite, `wp_presence_network_recording_enabled` does the same for every site, defaulting to the **Presence** checkbox on Network Admin > Settings. Either switch turning recording off wins.
 
 #### `wp_presence_feature_enabled`
-Whether a piece of the plugin is on for this site, passed the feature key. Default: its checkbox on Settings > Presence API, on until switched off. On multisite, the same checkbox on Network Admin > Settings > Presence API switches a feature off for every site. Hooks are registered when the plugin loads, so add this from a must-use plugin. Only `post-locks`, `admin-bar` and `post-list` can be switched off so far; the rest of the pieces follow in [#710](https://github.com/WordPress/presence-api/issues/710).
+Whether a piece of the plugin is on for this site, passed the feature key. Default: its checkbox on Settings > Presence API, on until switched off. On multisite, the same checkbox on Network Admin > Settings > Presence API switches a feature off for every site. Hooks are registered when the plugin loads, so add this from a must-use plugin. Only `post-locks`, `admin-bar`, `post-list`, and `user-list` can be switched off so far; the rest of the pieces follow in [#710](https://github.com/WordPress/presence-api/issues/710).
 ```php
 add_filter( 'wp_presence_feature_enabled', function ( $enabled, $feature ) {
     return 'post-locks' === $feature ? false : $enabled;

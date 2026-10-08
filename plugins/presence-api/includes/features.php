@@ -52,6 +52,10 @@ function wp_presence_get_features() {
 			'label'       => __( 'Posts list', 'presence-api' ),
 			'description' => __( 'Show who has each post open in an Editors column on post lists.', 'presence-api' ),
 		),
+		'user-list'  => array(
+			'label'       => __( 'Users list', 'presence-api' ),
+			'description' => __( 'Show who is online in an Online view with a live count on the Users list.', 'presence-api' ),
+		),
 	);
 }
 
