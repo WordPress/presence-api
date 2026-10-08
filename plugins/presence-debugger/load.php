@@ -2,15 +2,7 @@
 /**
  * Plugin Name: Presence Debugger
  * Description: The WP_DEBUG-only developer tools for the Presence API: the admin-bar debugger and the ?presence-db=1 table viewer. A separate plugin so releases of Presence API ship without them.
- * Version: 0.1.0
- * Requires at least: 7.0
- * Requires PHP: 7.4
  * Requires Plugins: presence-api
- * Author: WordPress Core Team
- * Author URI: https://make.wordpress.org/core/
- * Text Domain: presence-api
- * License: GPL-2.0-or-later
- * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  *
  * Uses the presence-api text domain so translators get no new domain for strings only WP_DEBUG shows.
  *

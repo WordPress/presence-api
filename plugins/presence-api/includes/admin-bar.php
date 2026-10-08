@@ -249,7 +249,8 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	$stack_html = '' !== $stack_html ? '<span class="presence-bar-avatars" aria-hidden="true">' . $stack_html . '</span>' : '';
 
 	$online_ids = wp_presence_online_user_ids( $entries );
-	$users_url  = current_user_can( 'list_users' ) ? wp_presence_online_users_url() : false;
+	// The Online view the link opens is gone with the Users list switched off.
+	$users_url = current_user_can( 'list_users' ) && wp_presence_feature_enabled( 'user-list' ) ? wp_presence_online_users_url() : false;
 
 	// Network screens count and link the network Online view, which reads empty when the network does not aggregate.
 	if ( is_multisite() && $in_network && current_user_can( 'manage_network_users' ) && current_user_can( wp_presence_network_capability() ) ) {
