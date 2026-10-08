@@ -2,14 +2,14 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Presence API 0.16.1\n"
+"Project-Id-Version: Presence API 0.17.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/presence-api\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-08T00:09:04+00:00\n"
+"POT-Creation-Date: 2026-10-08T18:43:07+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: presence-api\n"
@@ -47,7 +47,7 @@ msgid "Edit User"
 msgstr ""
 
 #. translators: %d: Number of online users, including the current user.
-#: includes/admin-bar.php:266
+#: includes/admin-bar.php:267
 #, php-format
 msgid "%d online"
 msgid_plural "%d online"
@@ -55,20 +55,20 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %d: Number of users currently online.
-#: includes/admin-bar.php:268
+#: includes/admin-bar.php:269
 #, php-format
 msgid "%d user online"
 msgid_plural "%d users online"
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/admin-bar.php:297
+#: includes/admin-bar.php:298
 #: includes/widgets/class-wp-presence-widget-active-posts.php:121
 msgid "Idle"
 msgstr ""
 
 #. translators: %s: Display name.
-#: includes/admin-bar.php:349
+#: includes/admin-bar.php:350
 #: includes/post-list.php:139
 #: includes/widgets/class-wp-presence-widget-active-posts.php:159
 #, php-format
@@ -77,7 +77,7 @@ msgstr ""
 
 #. translators: %d: Number of people on a screen whose names are not listed.
 #. translators: %d: Number of other people with the post open.
-#: includes/admin-bar.php:358
+#: includes/admin-bar.php:359
 #: includes/widgets/class-wp-presence-widget-active-posts.php:320
 #, php-format
 msgid "%d other"
@@ -86,17 +86,17 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: Where the person is, such as a post title or an admin screen.
-#: includes/admin-bar.php:402
+#: includes/admin-bar.php:403
 #, php-format
 msgid "on %s"
 msgstr ""
 
-#: includes/admin-bar.php:415
+#: includes/admin-bar.php:416
 msgid "See everyone online"
 msgstr ""
 
 #. translators: %d: Number of people online the menu leaves out.
-#: includes/admin-bar.php:417
+#: includes/admin-bar.php:418
 #, php-format
 msgid "%d more"
 msgid_plural "%d more"
@@ -211,51 +211,91 @@ msgstr ""
 msgid "Every Minute (Presence Cleanup)"
 msgstr ""
 
-#: includes/features.php:44
+#: includes/features.php:47
 msgid "Post locks"
 msgstr ""
 
-#: includes/features.php:45
+#: includes/features.php:48
 msgid "Keep post locks in the presence table instead of post meta, so refreshing a lock does not make cached post queries stale."
 msgstr ""
 
-#: includes/features.php:48
+#: includes/features.php:51
 msgid "Admin bar"
 msgstr ""
 
-#: includes/features.php:49
+#: includes/features.php:52
 msgid "Show the faces of who is online in the admin bar, with a menu of where each person is."
 msgstr ""
 
-#: includes/features.php:52
+#: includes/features.php:55
 msgid "Posts list"
 msgstr ""
 
-#: includes/features.php:53
+#: includes/features.php:56
 msgid "Show who has each post open in an Editors column on post lists."
 msgstr ""
 
-#: includes/features.php:171
+#: includes/features.php:59
+msgid "Users list"
+msgstr ""
+
+#: includes/features.php:60
+msgid "Show who is online in an Online view with a live count on the Users list."
+msgstr ""
+
+#: includes/features.php:63
+msgid "Dashboard widget"
+msgstr ""
+
+#: includes/features.php:64
+msgid "Show the posts people have open right now in an Active Posts widget on the Dashboard."
+msgstr ""
+
+#: includes/features.php:67
+msgid "Stale-screen notice"
+msgstr ""
+
+#: includes/features.php:68
+msgid "Show a notice when someone else saves changes to what you have open."
+msgstr ""
+
+#: includes/features.php:71
+msgid "Synced patterns"
+msgstr ""
+
+#: includes/features.php:72
+msgid "Show a notice on a synced pattern in the block editor while someone else is editing the pattern itself."
+msgstr ""
+
+#: includes/features.php:75
+msgid "Network Admin screens"
+msgstr ""
+
+#: includes/features.php:76
+msgid "Show who is online on Network Admin: a column on Sites, a view and column on Users, and the Who's Online dashboard widget."
+msgstr ""
+
+#: includes/features.php:221
 msgid "Features"
 msgstr ""
 
-#: includes/features.php:248
+#: includes/features.php:302
 msgid "Settings saved."
 msgstr ""
 
-#: includes/features.php:272
+#: includes/features.php:326
 msgid "Sorry, you are not allowed to manage options for this network."
 msgstr ""
 
-#: includes/features.php:305
+#: includes/features.php:359
 msgid "Switching a feature off here turns it off on every site, whatever an individual site has chosen."
 msgstr ""
 
-#: includes/features.php:307
+#: includes/features.php:361
 msgid "These switches last only while WordPress core adopts each feature, and with recording off the ones that show who is online have nothing to show."
 msgstr ""
 
-#: includes/features.php:334
+#: includes/features.php:388
 msgid "Switched off for every site on this network."
 msgstr ""
 
@@ -274,13 +314,13 @@ msgstr ""
 msgid "Presence is not aggregated across this network, so the Online column has no data."
 msgstr ""
 
-#: includes/plugin.php:163
-#: includes/plugin.php:202
+#: includes/plugin.php:167
+#: includes/plugin.php:205
 msgid "View Online Users"
 msgstr ""
 
-#: includes/plugin.php:169
-#: includes/plugin.php:209
+#: includes/plugin.php:174
+#: includes/plugin.php:212
 msgid "Settings"
 msgstr ""
 
@@ -295,7 +335,7 @@ msgstr ""
 msgid "+%s"
 msgstr ""
 
-#: includes/presence.php:1661
+#: includes/presence.php:1746
 msgid "Agent"
 msgstr ""
 
@@ -635,3 +675,17 @@ msgstr ""
 #, js-format
 msgid "This screen was updated %s."
 msgstr ""
+
+#. translators: %s: Display name.
+#: src/synced-patterns/index.js:30
+#, js-format
+msgid "%s is editing this pattern."
+msgstr ""
+
+#. translators: 1: Display name, 2: Number of other people.
+#: src/synced-patterns/index.js:35
+#, js-format
+msgid "%1$s and %2$d other person are editing this pattern."
+msgid_plural "%1$s and %2$d other people are editing this pattern."
+msgstr[0] ""
+msgstr[1] ""

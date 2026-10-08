@@ -1,9 +1,9 @@
 === Presence API ===
-Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas, aldorza, bejignesh, stfulldev, obenland, moriikuri, ishitaj34, theaminuldev, muneebashraf, mindctrl, zahidui, mitgiselle, jaredrethman, jooahmed, noruzzaman
+Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas, aldorza, bejignesh, stfulldev, obenland, moriikuri, ishitaj34, theaminuldev, muneebashraf, mindctrl, zahidui, mitgiselle, jaredrethman, jooahmed, noruzzaman, huzaifaalmesbah
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.1
-Stable tag: 0.16.1
+Stable tag: 0.17.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -76,6 +76,12 @@ For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/presence-api/blob/main/CHANGELOG.md
 
+= 0.17.0 =
+* Let a network switch off the network admin screens ([#788](https://github.com/WordPress/presence-api/issues/788)).
+* Let a site switch off the Active Posts dashboard widget ([#774](https://github.com/WordPress/presence-api/issues/774)).
+* Show who else is editing a synced pattern on its block ([#779](https://github.com/WordPress/presence-api/issues/779)).
+* Take an $args array in the presence functions ([#789](https://github.com/WordPress/presence-api/issues/789)).
+
 = 0.16.1 =
 * Show identicons in the WordPress.org live preview ([#782](https://github.com/WordPress/presence-api/issues/782)).
 
@@ -95,8 +101,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 = 0.14.0 =
 * REST presence entries no longer include `color`, and wp_presence_get_user_color() returns the block editor's color for the user ID instead of a stored one.
 * Stop saving and serving presence colors ([#707](https://github.com/WordPress/presence-api/issues/707)).
-
-= 0.13.0 =
-* Write an agent's presence row when it saves a post ([#697](https://github.com/WordPress/presence-api/issues/697)).
-* Skip trashing in the agent save hook and test only the guards it needs ([#700](https://github.com/WordPress/presence-api/issues/700)).
-* Style the agent badge like the block editor's Badge ([#701](https://github.com/WordPress/presence-api/issues/701)).
