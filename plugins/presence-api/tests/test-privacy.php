@@ -148,20 +148,18 @@ class WP_Test_Presence_Privacy extends WP_Presence_UnitTestCase {
 	public function test_add_privacy_policy_content() {
 		global $wp_current_filter;
 
-		set_current_screen( 'options-privacy' );
 		$wp_current_filter[] = 'admin_init';
 
 		try {
 			wp_presence_add_privacy_policy_content();
-
-			$this->assertStringContainsString(
-				'wp_presence_recording_enabled',
-				wp_presence_get_privacy_policy_content()
-			);
 		} finally {
 			array_pop( $wp_current_filter );
-			set_current_screen( 'front' );
 		}
+
+		$registered = wp_list_pluck( WP_Privacy_Policy_Content::get_suggested_policy_text(), 'policy_text', 'plugin_name' );
+
+		$this->assertArrayHasKey( 'Presence API', $registered );
+		$this->assertStringContainsString( 'wp_presence_recording_enabled', $registered['Presence API'] );
 	}
 
 	/**
@@ -272,8 +270,8 @@ class WP_Test_Presence_Privacy extends WP_Presence_UnitTestCase {
 
 		wp_set_presence( 'admin', 'client-fail', array( 'screen' => 'dashboard' ), self::$editor_id );
 
-		$fail_query = static function ( $query ) {
-			if ( false !== stripos( $query, 'DELETE' ) && false !== stripos( $query, 'presence' ) ) {
+		$fail_query = static function ( $query ) use ( $wpdb ) {
+			if ( false !== stripos( $query, 'DELETE' ) && false !== strpos( $query, $wpdb->presence ) ) {
 				return 'INVALID SQL SYNTAX';
 			}
 			return $query;
