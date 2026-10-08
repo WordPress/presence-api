@@ -123,7 +123,6 @@ add_action( 'admin_init', 'wp_presence_register_feature_settings' );
 // Priority 9, where Gutenberg adds its own page under Settings.
 add_action( 'admin_menu', 'wp_presence_add_features_page', 9 );
 
-add_filter( 'get_user_option_meta-box-order_dashboard', 'wp_presence_default_widget_order' );
 add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'wp_presence_plugin_action_links' );
 
 if ( is_multisite() ) {

@@ -20,7 +20,7 @@ Tracking who is logged in, on which screen and in which post takes frequent writ
 ## Features
 
 - Admin bar indicator showing who's online and who's on this page (switch off **Admin bar** on Settings > Presence API to remove it)
-- Active Posts dashboard widget grouped by post
+- Active Posts dashboard widget grouped by post (switch off **Dashboard widget** on Settings > Presence API to remove it)
 - Editors column in the post list (switch off **Posts list** on Settings > Presence API to remove it)
 - Online filter in the Users list (switch off **Users list** on Settings > Presence API to remove it)
 - AI agents labelled in the admin bar, the Active Posts widget, and the Editors column (see [Agents](#agents))
@@ -311,7 +311,7 @@ add_filter( 'wp_presence_recording_enabled', '__return_false' );
 On multisite, `wp_presence_network_recording_enabled` does the same for every site, defaulting to the **Presence** checkbox on Network Admin > Settings. Either switch turning recording off wins.
 
 #### `wp_presence_feature_enabled`
-Whether a piece of the plugin is on for this site, passed the feature key. Default: its checkbox on Settings > Presence API, on until switched off. On multisite, the same checkbox on Network Admin > Settings > Presence API switches a feature off for every site. `network-admin`, the Network Admin screens, has its checkbox on the network page alone and follows only the network's choice. Hooks are registered when the plugin loads, so add this from a must-use plugin. Only `post-locks`, `admin-bar`, `post-list`, `user-list`, `stale-screen`, and `network-admin` can be switched off so far; the rest of the pieces follow in [#710](https://github.com/WordPress/presence-api/issues/710).
+Whether a piece of the plugin is on for this site, passed the feature key. Default: its checkbox on Settings > Presence API, on until switched off. On multisite, the same checkbox on Network Admin > Settings > Presence API switches a feature off for every site. `network-admin`, the Network Admin screens, has its checkbox on the network page alone and follows only the network's choice. Hooks are registered when the plugin loads, so add this from a must-use plugin. Only `post-locks`, `admin-bar`, `post-list`, `user-list`, `dashboard-widget`, `stale-screen` and `network-admin` can be switched off so far; the rest of the pieces follow in [#710](https://github.com/WordPress/presence-api/issues/710).
 ```php
 add_filter( 'wp_presence_feature_enabled', function ( $enabled, $feature ) {
     return 'post-locks' === $feature ? false : $enabled;
