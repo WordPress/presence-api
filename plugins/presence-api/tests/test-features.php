@@ -133,6 +133,27 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * What saving the features stores: every feature off but those in `$on`, network-only features on the network alone.
+	 *
+	 * @param string[] $on      Features stored as on.
+	 * @param bool     $network Whether the network option is being saved.
+	 * @return array<string, int> Each feature's stored choice.
+	 */
+	private function stored_features( $on = array(), $network = false ) {
+		$features = array_keys( wp_presence_get_features() );
+		if ( ! $network ) {
+			$features = array_diff( $features, wp_presence_get_network_features() );
+		}
+
+		$stored = array_fill_keys( $features, 0 );
+		foreach ( $on as $feature ) {
+			$stored[ $feature ] = 1;
+		}
+
+		return $stored;
+	}
+
+	/**
 	 * Re-runs default-filters.php the way the plugin does at load, with the
 	 * post-locks switch in the given position.
 	 *
@@ -533,42 +554,12 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	 */
 	public function test_sanitizing_stores_every_feature_and_drops_the_rest() {
 		$this->assertSame(
-			array(
-				'post-locks' => 0,
-				'admin-bar'  => 0,
-				'post-list'  => 0,
-				'user-list'  => 0,
-				'dashboard-widget' => 0,
-				'stale-screen' => 0,
-				'synced-patterns' => 0,
-			),
+			$this->stored_features(),
 			wp_presence_sanitize_features( array( 'not-a-feature' => '1' ) ),
 			'A feature that posted nothing is stored as off, and unknown keys are dropped.'
 		);
-		$this->assertSame(
-			array(
-				'post-locks' => 1,
-				'admin-bar'  => 0,
-				'post-list'  => 0,
-				'user-list'  => 0,
-				'dashboard-widget' => 0,
-				'stale-screen' => 0,
-				'synced-patterns' => 0,
-			),
-			wp_presence_sanitize_features( array( 'post-locks' => '1' ) )
-		);
-		$this->assertSame(
-			array(
-				'post-locks' => 0,
-				'admin-bar'  => 0,
-				'post-list'  => 0,
-				'user-list'  => 0,
-				'dashboard-widget' => 0,
-				'stale-screen' => 0,
-				'synced-patterns' => 0,
-			),
-			wp_presence_sanitize_features( 'garbage' )
-		);
+		$this->assertSame( $this->stored_features( array( 'post-locks' ) ), wp_presence_sanitize_features( array( 'post-locks' => '1' ) ) );
+		$this->assertSame( $this->stored_features(), wp_presence_sanitize_features( 'garbage' ) );
 	}
 
 	/**
@@ -596,18 +587,11 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 		wp_presence_register_settings();
 		wp_presence_register_feature_settings();
 
-		$this->assertSame( 'Post locks', $wp_settings_fields['presence-api']['wp_presence_features']['wp_presence_features_post-locks']['title'] );
-		$this->assertSame( 'Admin bar', $wp_settings_fields['presence-api']['wp_presence_features']['wp_presence_features_admin-bar']['title'] );
-		$this->assertSame( 'Posts list', $wp_settings_fields['presence-api']['wp_presence_features']['wp_presence_features_post-list']['title'] );
-		$this->assertSame( 'Users list', $wp_settings_fields['presence-api']['wp_presence_features']['wp_presence_features_user-list']['title'] );
-		$this->assertSame( 'Dashboard widget', $wp_settings_fields['presence-api']['wp_presence_features']['wp_presence_features_dashboard-widget']['title'] );
-		$this->assertSame( 'Stale-screen notice', $wp_settings_fields['presence-api']['wp_presence_features']['wp_presence_features_stale-screen']['title'] );
-		$this->assertArrayNotHasKey( 'wp_presence_features_post-locks', $wp_settings_fields['general']['default'] );
-		$this->assertArrayNotHasKey( 'wp_presence_features_admin-bar', $wp_settings_fields['general']['default'] );
-		$this->assertArrayNotHasKey( 'wp_presence_features_post-list', $wp_settings_fields['general']['default'] );
-		$this->assertArrayNotHasKey( 'wp_presence_features_user-list', $wp_settings_fields['general']['default'] );
-		$this->assertArrayNotHasKey( 'wp_presence_features_dashboard-widget', $wp_settings_fields['general']['default'] );
-		$this->assertArrayNotHasKey( 'wp_presence_features_stale-screen', $wp_settings_fields['general']['default'] );
+		$features = wp_presence_get_features();
+		foreach ( array_keys( $this->stored_features() ) as $feature ) {
+			$this->assertSame( $features[ $feature ]['label'], $wp_settings_fields['presence-api']['wp_presence_features'][ 'wp_presence_features_' . $feature ]['title'] );
+			$this->assertArrayNotHasKey( 'wp_presence_features_' . $feature, $wp_settings_fields['general']['default'] );
+		}
 		$this->assertStringNotContainsString( 'wp_presence_features', $this->render( 'wp_presence_render_recording_field' ) );
 	}
 
@@ -711,28 +695,7 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 		}
 
 		$this->assertSame(
-			array(
-				array(
-					'post-locks'    => 0,
-					'admin-bar'     => 0,
-					'post-list'     => 0,
-					'user-list'     => 0,
-					'dashboard-widget' => 0,
-					'stale-screen' => 0,
-					'synced-patterns' => 0,
-					'network-admin' => 0,
-				),
-				array(
-					'post-locks'    => 1,
-					'admin-bar'     => 0,
-					'post-list'     => 0,
-					'user-list'     => 0,
-					'dashboard-widget' => 0,
-					'stale-screen' => 0,
-					'synced-patterns' => 0,
-					'network-admin' => 0,
-				),
-			),
+			array( $this->stored_features( array(), true ), $this->stored_features( array( 'post-locks' ), true ) ),
 			$saved,
 			'A network-only feature that posted nothing is stored as off, like any other.'
 		);
