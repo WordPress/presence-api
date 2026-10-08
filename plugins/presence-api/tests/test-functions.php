@@ -187,6 +187,68 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	/**
 	 * @covers ::wp_set_presence
 	 */
+	/**
+	 * The `$args` array, its query string form and the positional form from before 0.17.0 write and read the same rows.
+	 *
+	 * @covers ::wp_set_presence
+	 * @covers ::wp_get_presence
+	 * @covers ::wp_presence_exchange
+	 * @covers ::wp_presence_leave
+	 * @covers ::wp_presence_is_positional_call
+	 * @covers ::wp_presence_positional_args
+	 */
+	public function test_args_query_string_and_positional_forms_match() {
+		$user_id = self::factory()->user->create();
+		$past    = gmdate( 'Y-m-d H:i:s', time() - 10 );
+
+		wp_set_presence(
+			'admin/args',
+			'gse-1',
+			array( 'a' => 1 ),
+			array(
+				'user_id'  => $user_id,
+				'date_gmt' => $past,
+			)
+		);
+		wp_set_presence( 'admin/positional', 'gse-1', array( 'a' => 1 ), $user_id, $past );
+		wp_set_presence( 'admin/positional', 'editor-1', array(), $user_id );
+		wp_set_presence( 'admin/args', 'editor-1', array(), "user_id={$user_id}" );
+
+		foreach ( array( 'admin/args', 'admin/positional' ) as $room ) {
+			$rows = wp_get_presence( $room, array( 'client_prefix' => 'gse-' ) );
+			$this->assertCount( 1, $rows, $room );
+			$this->assertSame( $user_id, (int) $rows[0]->user_id, $room );
+			$this->assertSame( $past, $rows[0]->date_gmt, $room );
+			$this->assertCount( 2, wp_get_presence( $room ), $room );
+		}
+
+		$this->assertEquals( wp_get_presence( 'admin/args', 'client_prefix=gse-' ), wp_get_presence( 'admin/args', null, 'gse-' ) );
+		$this->assertEquals( wp_get_presence( 'admin/args', array( 'timeout' => 60 ) ), wp_get_presence( 'admin/args', 60 ) );
+
+		$this->assertCount(
+			1,
+			wp_presence_exchange(
+				'admin/args',
+				'gse-2',
+				array(),
+				array(
+					'user_id'       => $user_id,
+					'client_prefix' => 'editor-',
+				)
+			)
+		);
+		$this->assertCount( 1, wp_presence_exchange( 'admin/positional', 'gse-2', array(), $user_id, null, 'editor-' ) );
+		foreach (
+			array(
+				wp_presence_leave( 'admin/args', 'editor-1', array( 'client_prefix' => 'gse-' ) ),
+				wp_presence_leave( 'admin/positional', 'editor-1', null, 'gse-' ),
+			) as $left
+		) {
+			$this->assertContains( 'gse-2', wp_list_pluck( $left, 'client_id' ) );
+			$this->assertNotContains( 'editor-1', wp_list_pluck( $left, 'client_id' ) );
+		}
+	}
+
 	public function test_set_presence_upserts() {
 		wp_set_presence( 'test/room', 'client-1', array( 'v' => 1 ), self::$editor_id );
 		wp_set_presence( 'test/room', 'client-1', array( 'v' => 2 ), self::$editor_id );
