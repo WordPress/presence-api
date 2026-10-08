@@ -191,6 +191,11 @@ jobs:
           BLUEPRINT_SETTINGS=$(jq '.landingPage = "/wp-admin/options-general.php?page=presence-api"' <<< "$BLUEPRINT")
           BLUEPRINT_MS_SETTINGS=$(jq '.landingPage = "/wp-admin/network/settings.php?page=presence-api"' <<< "$BLUEPRINT_MS")
 
+          # The synced pattern buttons are the post-locks sites with someone editing a pattern, opened on a post that uses it.
+          PATTERN_STEP=$(jq -n '{ step: "runPHP", code: "<?php require \"/wordpress/wp-load.php\"; require \"/wordpress/wp-content/plugins/presence-api/demo-seeder.php\"; global $wpdb; update_option( \"presence_demo_pattern\", wp_presence_demo_seed_pattern_editor() ); update_user_meta( 1, $wpdb->get_blog_prefix() . \"persisted_preferences\", array( \"core\" => array( \"welcomeGuide\" => false ), \"core/edit-post\" => array( \"welcomeGuide\" => false ), \"_modified\" => gmdate( \"c\" ) ) ); ?>" }')
+          BLUEPRINT_PATTERN=$(jq --argjson step "$PATTERN_STEP" '.landingPage = "/wp-admin/?presence_demo=pattern" | .steps += [ $step ]' <<< "$BLUEPRINT")
+          BLUEPRINT_MS_PATTERN=$(jq --argjson step "$PATTERN_STEP" '.landingPage = "/wp-admin/?presence_demo=pattern" | .steps += [ $step ]' <<< "$BLUEPRINT_MS")
+
           encode() { printf '%s' "$1" | base64 -w0; }
 
           {
@@ -200,6 +205,8 @@ jobs:
             echo "url_multisite_rtc=https://playground.wordpress.net/#$(encode "$BLUEPRINT_MS_RTC")"
             echo "url_settings=https://playground.wordpress.net/#$(encode "$BLUEPRINT_SETTINGS")"
             echo "url_multisite_settings=https://playground.wordpress.net/#$(encode "$BLUEPRINT_MS_SETTINGS")"
+            echo "url_pattern=https://playground.wordpress.net/#$(encode "$BLUEPRINT_PATTERN")"
+            echo "url_multisite_pattern=https://playground.wordpress.net/#$(encode "$BLUEPRINT_MS_PATTERN")"
           } >> "$GITHUB_OUTPUT"
 
       - name: Post or update sticky comment
@@ -214,6 +221,8 @@ jobs:
           PLAYGROUND_URL_MULTISITE_RTC: ${{ steps.playground.outputs.url_multisite_rtc }}
           PLAYGROUND_URL_SETTINGS: ${{ steps.playground.outputs.url_settings }}
           PLAYGROUND_URL_MULTISITE_SETTINGS: ${{ steps.playground.outputs.url_multisite_settings }}
+          PLAYGROUND_URL_PATTERN: ${{ steps.playground.outputs.url_pattern }}
+          PLAYGROUND_URL_MULTISITE_PATTERN: ${{ steps.playground.outputs.url_multisite_pattern }}
         with:
           script: |
             const marker = '<!-- presence-api:playground-preview -->';
@@ -223,6 +232,8 @@ jobs:
             const urlMultisiteRtc = process.env.PLAYGROUND_URL_MULTISITE_RTC;
             const urlSettings = process.env.PLAYGROUND_URL_SETTINGS;
             const urlMultisiteSettings = process.env.PLAYGROUND_URL_MULTISITE_SETTINGS;
+            const urlPattern = process.env.PLAYGROUND_URL_PATTERN;
+            const urlMultisitePattern = process.env.PLAYGROUND_URL_MULTISITE_PATTERN;
             const fullSha = process.env.HEAD_SHA;
             const sha = fullSha.slice(0, 7);
             const commitUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/commit/${fullSha}`;
@@ -242,10 +253,10 @@ jobs:
               // emits, which the timeline's sha links are not.
               `Built from <a href="${commitUrl}"><samp>${sha}</samp></a>`,
               '',
-              '|  | Post locks | RTC | Settings |',
-              '| --- | --- | --- | --- |',
-              `| **Single site** | ${launch(url, 'Launch post locks, single site')} | ${launch(urlRtc, 'Launch RTC, single site')} | ${launch(urlSettings, 'Launch settings, single site')} |`,
-              `| **Multisite** | ${launch(urlMultisite, 'Launch post locks, multisite')} | ${launch(urlMultisiteRtc, 'Launch RTC, multisite')} | ${launch(urlMultisiteSettings, 'Launch network settings, multisite')} |`,
+              '|  | Post locks | RTC | Synced patterns | Settings |',
+              '| --- | --- | --- | --- | --- |',
+              `| **Single site** | ${launch(url, 'Launch post locks, single site')} | ${launch(urlRtc, 'Launch RTC, single site')} | ${launch(urlPattern, 'Launch synced patterns, single site')} | ${launch(urlSettings, 'Launch settings, single site')} |`,
+              `| **Multisite** | ${launch(urlMultisite, 'Launch post locks, multisite')} | ${launch(urlMultisiteRtc, 'Launch RTC, multisite')} | ${launch(urlMultisitePattern, 'Launch synced patterns, multisite')} | ${launch(urlMultisiteSettings, 'Launch network settings, multisite')} |`,
               '',
             ].join('\n');
 
