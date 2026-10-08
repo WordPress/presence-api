@@ -146,12 +146,16 @@ class WP_Test_Presence_Privacy extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_get_privacy_policy_content
 	 */
 	public function test_add_privacy_policy_content() {
-		wp_presence_add_privacy_policy_content();
+		set_current_screen( 'options-privacy' );
+
+		do_action( 'admin_init' );
 
 		$this->assertStringContainsString(
 			'wp_presence_recording_enabled',
 			wp_presence_get_privacy_policy_content()
 		);
+
+		set_current_screen( 'front' );
 	}
 
 	/**
