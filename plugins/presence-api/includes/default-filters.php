@@ -32,7 +32,6 @@ add_action( 'wp_enqueue_scripts', 'wp_presence_enqueue_heartbeat_ping' );
 add_filter( 'heartbeat_received', 'wp_presence_admin_heartbeat_received', 9, 3 );
 add_filter( 'heartbeat_received', 'wp_presence_online_hash_heartbeat_received', 10, 2 );
 add_filter( 'heartbeat_received', 'wp_presence_editor_heartbeat_received', 10, 3 );
-add_filter( 'heartbeat_received', 'wp_presence_screen_heartbeat_received', 12, 3 );
 add_filter( 'site_status_tests', 'wp_presence_site_status_tests' );
 
 // Plugin only: the check comes off when core merges the piece.
@@ -45,15 +44,20 @@ if ( wp_presence_feature_enabled( 'post-locks' ) ) {
 	add_filter( 'delete_post_metadata', 'wp_presence_delete_post_lock', 10, 5 );
 }
 
-add_action( 'admin_enqueue_scripts', 'wp_presence_enqueue_stale_screen_banner' );
-add_action( 'added_option', 'wp_presence_on_updated_option' );
-add_action( 'updated_option', 'wp_presence_on_updated_option' );
-add_action( 'update_option_wp_page_for_privacy_policy', 'wp_presence_on_privacy_policy_page_updated' );
-add_action( 'post_updated', 'wp_presence_on_post_updated', 10, 3 );
+// Plugin only: the check comes off when core merges the piece.
+if ( wp_presence_feature_enabled( 'stale-screen' ) ) {
+	add_filter( 'heartbeat_received', 'wp_presence_screen_heartbeat_received', 12, 3 );
+	add_action( 'admin_enqueue_scripts', 'wp_presence_enqueue_stale_screen_banner' );
+	add_action( 'added_option', 'wp_presence_on_updated_option' );
+	add_action( 'updated_option', 'wp_presence_on_updated_option' );
+	add_action( 'update_option_wp_page_for_privacy_policy', 'wp_presence_on_privacy_policy_page_updated' );
+	add_action( 'post_updated', 'wp_presence_on_post_updated', 10, 3 );
+	add_action( 'profile_update', 'wp_presence_on_profile_update' );
+	add_action( 'edited_term', 'wp_presence_on_edited_term', 10, 3 );
+	add_action( 'edit_comment', 'wp_presence_on_edit_comment' );
+}
+
 add_action( 'wp_after_insert_post', 'wp_presence_on_agent_post_saved', 10, 2 );
-add_action( 'profile_update', 'wp_presence_on_profile_update' );
-add_action( 'edited_term', 'wp_presence_on_edited_term', 10, 3 );
-add_action( 'edit_comment', 'wp_presence_on_edit_comment' );
 
 // Plugin only: the check comes off when core merges the piece.
 if ( wp_presence_feature_enabled( 'admin-bar' ) ) {
@@ -86,4 +90,9 @@ if ( wp_presence_feature_enabled( 'dashboard-widget' ) ) {
 	add_filter( 'heartbeat_received', array( 'WP_Presence_Widget_Active_Posts', 'heartbeat_received' ), 10, 3 );
 	// Puts Active Posts first for anyone without a saved Dashboard layout.
 	add_filter( 'get_user_option_meta-box-order_dashboard', 'wp_presence_default_widget_order' );
+}
+
+// Plugin only: the check comes off when core merges the piece.
+if ( wp_presence_feature_enabled( 'synced-patterns' ) ) {
+	add_action( 'enqueue_block_editor_assets', 'wp_presence_enqueue_synced_pattern_notice' );
 }

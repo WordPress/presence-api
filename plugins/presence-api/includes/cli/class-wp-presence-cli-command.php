@@ -69,7 +69,7 @@ class WP_Presence_CLI_Command extends WP_CLI_Command {
 			$data = $decoded;
 		}
 
-		$result = wp_set_presence( $room, $client_id, $data, $user_id );
+		$result = wp_set_presence( $room, $client_id, $data, array( 'user_id' => $user_id ) );
 
 		if ( $result ) {
 			/* translators: 1: Room identifier, 2: Client identifier. */

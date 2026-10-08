@@ -26,7 +26,7 @@ function wp_presence_on_login( $user_login, $user ) {
 		wp_presence_admin_room(),
 		'user-' . $user->ID,
 		array( 'screen' => 'login' ),
-		$user->ID
+		array( 'user_id' => $user->ID )
 	);
 }
 
