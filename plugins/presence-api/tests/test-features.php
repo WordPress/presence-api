@@ -464,8 +464,9 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 		wp_presence_register_settings();
 		wp_presence_register_feature_settings();
 
-		foreach ( array_diff_key( wp_presence_get_features(), array_flip( wp_presence_get_network_features() ) ) as $feature => $details ) {
-			$this->assertSame( $details['label'], $wp_settings_fields['presence-api']['wp_presence_features'][ 'wp_presence_features_' . $feature ]['title'] );
+		$features = wp_presence_get_features();
+		foreach ( array_keys( $this->stored_features() ) as $feature ) {
+			$this->assertSame( $features[ $feature ]['label'], $wp_settings_fields['presence-api']['wp_presence_features'][ 'wp_presence_features_' . $feature ]['title'] );
 			$this->assertArrayNotHasKey( 'wp_presence_features_' . $feature, $wp_settings_fields['general']['default'] );
 		}
 		$this->assertStringNotContainsString( 'wp_presence_features', $this->render( 'wp_presence_render_recording_field' ) );
