@@ -330,4 +330,53 @@ class WP_Test_Network_Users_List extends WP_Presence_Network_UnitTestCase {
 
 		$this->assertSame( '(1)', $response['presence-fragments']['users-online-count'] );
 	}
+
+	/**
+	 * Only one view can be current, so All gives up the marker while Online holds it.
+	 *
+	 * @covers ::wp_presence_network_users_views
+	 */
+	public function test_the_online_view_takes_current_from_all() {
+		$this->become_network_admin();
+		$_GET['presence_status'] = 'online';
+
+		$views = wp_presence_network_users_views( array( 'all' => '<a href="#" class="current">All</a>' ) );
+
+		$this->assertStringNotContainsString( 'class="current"', $views['all'] );
+		$this->assertStringContainsString( 'class="current"', $views['presence_online'] );
+	}
+
+	/**
+	 * Without the Online view, or without a valid nonce for it, the query is left alone.
+	 *
+	 * @covers ::wp_presence_filter_network_online_users
+	 */
+	public function test_users_query_filter_needs_the_online_view_and_its_nonce() {
+		$this->become_network_admin();
+		set_current_screen( 'users-network' );
+
+		$blog_id = $this->create_blog();
+		$this->set_presence_on_site( $blog_id, self::$editor_id );
+
+		$this->assertArrayNotHasKey( 'include', wp_presence_filter_network_online_users( array() ), 'No view asked for.' );
+
+		$_GET['presence_status'] = 'online';
+
+		$this->assertArrayNotHasKey( 'include', wp_presence_filter_network_online_users( array() ), 'No nonce.' );
+
+		$_GET['_wpnonce'] = 'not-a-nonce';
+
+		$this->assertArrayNotHasKey( 'include', wp_presence_filter_network_online_users( array() ), 'A bad nonce.' );
+	}
+
+	/**
+	 * Core calls this for every column, so another column's output passes through untouched.
+	 *
+	 * @covers ::wp_presence_render_network_users_column
+	 */
+	public function test_users_column_leaves_other_columns_alone() {
+		$this->become_network_admin();
+
+		$this->assertSame( 'kept', wp_presence_render_network_users_column( 'kept', 'email', self::$editor_id ) );
+	}
 }

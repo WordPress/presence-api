@@ -1441,4 +1441,163 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 
 		$this->fail( 'The presence ping config was not printed.' );
 	}
+
+	/**
+	 * A signed-out visitor occupies no room, so nothing loads and nothing is written.
+	 *
+	 * @covers ::wp_presence_enqueue_heartbeat_ping
+	 */
+	public function test_a_signed_out_visitor_gets_no_ping() {
+		wp_set_current_user( 0 );
+		$this->reset_scripts();
+
+		wp_presence_enqueue_heartbeat_ping();
+
+		$this->assertFalse( wp_script_is( 'wp-presence-ping', 'enqueued' ) );
+		$this->assertEmpty( wp_get_presence( wp_presence_admin_room() ) );
+	}
+
+	/**
+	 * On the front end the ping rides on the admin bar, so a page without one stays quiet.
+	 *
+	 * @covers ::wp_presence_enqueue_heartbeat_ping
+	 */
+	public function test_the_front_end_without_the_admin_bar_gets_no_ping() {
+		wp_set_current_user( self::$editor_id );
+		add_filter( 'show_admin_bar', '__return_false' );
+		$this->reset_scripts();
+
+		wp_presence_enqueue_heartbeat_ping();
+
+		$this->assertFalse( wp_script_is( 'wp-presence-ping', 'enqueued' ) );
+		$this->assertEmpty( wp_get_presence( wp_presence_admin_room() ) );
+	}
+
+	/**
+	 * The front page has no title of its own once the site name is stripped, so it reads as Home.
+	 *
+	 * @covers ::wp_presence_enqueue_heartbeat_ping
+	 */
+	public function test_the_front_page_is_recorded_as_home() {
+		wp_set_current_user( self::$editor_id );
+		add_filter( 'show_admin_bar', '__return_true' );
+		$this->go_to( home_url( '/' ) );
+		$this->reset_scripts();
+
+		wp_presence_enqueue_heartbeat_ping();
+
+		$entries = wp_get_presence( wp_presence_admin_room() );
+
+		$this->assertCount( 1, $entries );
+		$this->assertSame( 'front', $entries[0]->data['screen'] );
+		$this->assertSame( 'Home', $entries[0]->data['title'] );
+		$this->assertArrayNotHasKey( 'post_id', $entries[0]->data );
+	}
+
+	/**
+	 * A single post records its own title, without the site name, and the post it is.
+	 *
+	 * @covers ::wp_presence_enqueue_heartbeat_ping
+	 */
+	public function test_a_single_post_records_its_title_and_id() {
+		$post_id = self::factory()->post->create( array( 'post_title' => 'Presence on the front end' ) );
+
+		wp_set_current_user( self::$editor_id );
+		add_filter( 'show_admin_bar', '__return_true' );
+		$this->go_to( get_permalink( $post_id ) );
+		$this->reset_scripts();
+
+		wp_presence_enqueue_heartbeat_ping();
+
+		$entries = wp_get_presence( wp_presence_admin_room() );
+
+		$this->assertCount( 1, $entries );
+		$this->assertSame( 'Presence on the front end', $entries[0]->data['title'] );
+		$this->assertSame( $post_id, $entries[0]->data['post_id'] );
+	}
+
+	/**
+	 * A client that sends the editor ping without refreshing the lock still has its post status recorded.
+	 *
+	 * @covers ::wp_presence_admin_heartbeat_received
+	 */
+	public function test_admin_heartbeat_reads_the_post_from_the_editor_ping() {
+		register_post_type( 'book', array( 'show_ui' => true ) );
+		$post_id = self::factory()->post->create( array( 'post_type' => 'book', 'post_status' => 'pending' ) );
+
+		wp_set_current_user( self::$editor_id );
+
+		wp_presence_admin_heartbeat_received(
+			array(),
+			array(
+				'presence-ping'        => array( 'screen' => 'book' ),
+				'presence-editor-ping' => array( 'post_id' => $post_id ),
+			),
+			'book'
+		);
+
+		$entries = wp_get_presence( wp_presence_admin_room() );
+
+		$this->assertSame( 'pending', $entries[0]->data['post_status'] );
+
+		unregister_post_type( 'book' );
+	}
+
+	/**
+	 * A type without presence support has no room for the editor to occupy.
+	 *
+	 * @covers ::wp_presence_editor_heartbeat_received
+	 */
+	public function test_editor_heartbeat_skips_a_type_without_presence() {
+		register_post_type( 'no_presence', array( 'show_ui' => true, 'supports' => array( 'title' ) ) );
+		$post_id = self::factory()->post->create( array( 'post_type' => 'no_presence' ) );
+
+		wp_set_current_user( self::$editor_id );
+
+		$response = wp_presence_editor_heartbeat_received(
+			array( 'kept' => true ),
+			array( 'presence-editor-ping' => array( 'post_id' => $post_id ) ),
+			'no_presence'
+		);
+
+		$this->assertSame( array( 'kept' => true ), $response );
+		$this->assertEmpty( wp_get_presence( 'postType/no_presence:' . $post_id ) );
+
+		unregister_post_type( 'no_presence' );
+	}
+
+	/**
+	 * Only a comment, user or term screen names an object, and only a positive ID can be one.
+	 *
+	 * @covers ::wp_presence_screen_object_id
+	 */
+	public function test_the_screen_object_id_is_zero_outside_an_object_screen() {
+		wp_set_current_user( self::$editor_id );
+
+		$this->assertSame( 0, wp_presence_screen_object_id( 'dashboard', self::$editor_id ) );
+		$this->assertSame( 0, wp_presence_screen_object_id( 'user-edit', 0 ) );
+		$this->assertSame( 0, wp_presence_screen_object_id( 'user-edit', 'not-a-number' ) );
+	}
+
+	/**
+	 * A surface that did not ask gets null, so the feed can skip building its HTML.
+	 *
+	 * @covers ::wp_presence_fragment_request
+	 */
+	public function test_a_fragment_request_is_read_by_its_key() {
+		$data = array( 'presence-fragments' => array( 'admin-bar' => array( 'room' => 'admin/online' ) ) );
+
+		$this->assertSame( array( 'room' => 'admin/online' ), wp_presence_fragment_request( $data, 'admin-bar' ) );
+		$this->assertNull( wp_presence_fragment_request( $data, 'dashboard' ) );
+		$this->assertNull( wp_presence_fragment_request( array(), 'admin-bar' ) );
+	}
+
+	/**
+	 * Empties the script queue so a test sees only what it enqueued.
+	 */
+	private function reset_scripts() {
+		$wp_scripts        = wp_scripts();
+		$wp_scripts->queue = array();
+		$wp_scripts->done  = array();
+	}
 }
