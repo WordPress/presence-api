@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.16.1](https://github.com/WordPress/presence-api/compare/v0.16.0...v0.16.1) (2026-10-08)
+
+
+### Bug Fixes
+
+* show identicons in the WordPress.org live preview ([#782](https://github.com/WordPress/presence-api/issues/782)) ([3e3effc](https://github.com/WordPress/presence-api/commit/3e3effc07288e8cbcec0898e47e2f4a4e170a77b))
+
 ## [0.16.0](https://github.com/WordPress/presence-api/compare/v0.15.0...v0.16.0) (2026-10-07)
 
 
