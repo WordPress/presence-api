@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Presence API
  * Description: System-wide presence and awareness for WordPress.
- * Version: 0.15.0
+ * Version: 0.16.1
  * Requires at least: 7.0
  * Requires PHP: 7.4
  * Author: WordPress Core Team
@@ -45,7 +45,7 @@ if ( isset( $wpdb->presence ) ) {
 	return;
 }
 
-define( 'WP_PRESENCE_VERSION', '0.15.0' );
+define( 'WP_PRESENCE_VERSION', '0.16.1' );
 define( 'WP_PRESENCE_DB_VERSION', 3 );
 define( 'WP_PRESENCE_NETWORK_SUMMARY_DB_VERSION', 1 );
 define( 'WP_PRESENCE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -124,7 +124,6 @@ add_action( 'admin_init', 'wp_presence_register_feature_settings' );
 // Priority 9, where Gutenberg adds its own page under Settings.
 add_action( 'admin_menu', 'wp_presence_add_features_page', 9 );
 
-add_filter( 'get_user_option_meta-box-order_dashboard', 'wp_presence_default_widget_order' );
 add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'wp_presence_plugin_action_links' );
 
 if ( is_multisite() ) {

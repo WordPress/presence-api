@@ -30,6 +30,20 @@ class WP_Test_Presence_Plugin_Action_Links extends WP_UnitTestCase {
 	}
 
 	/**
+	 * With the Users list switched off there is no Online view, so only the settings link is added.
+	 *
+	 * @covers ::wp_presence_plugin_action_links
+	 */
+	public function test_leaves_out_the_online_link_with_the_users_list_switched_off() {
+		update_option( 'wp_presence_features', array( 'user-list' => 0 ) );
+
+		$links = wp_presence_plugin_action_links( $this->core_links() );
+
+		$this->assertCount( 2, $links );
+		$this->assertSame( 'Settings', wp_strip_all_tags( reset( $links ) ) );
+	}
+
+	/**
 	 * @covers ::wp_presence_plugin_action_links
 	 */
 	public function test_preserves_existing_links_and_their_keys() {
