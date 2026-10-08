@@ -264,7 +264,7 @@ class WP_Test_Presence_Privacy extends WP_Presence_UnitTestCase {
 
 		$fail_query = static function ( $query ) {
 			if ( false !== stripos( $query, 'DELETE' ) && false !== stripos( $query, 'presence' ) ) {
-				return 'SELCT INVALID_SQL_SYNTAX';
+				return 'INVALID SQL SYNTAX';
 			}
 			return $query;
 		};
