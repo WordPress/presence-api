@@ -580,6 +580,7 @@ function wp_presence_is_valid_date_gmt( $date_gmt ) {
  * @since 0.15.0 A reserved client ID is written with recording off.
  * @since 0.15.0 Fires the `set_presence` action.
  * @since 0.17.0 Takes `$args` in place of the `$user_id`, `$date_gmt` and `$expires_in` parameters.
+ * @since 0.17.0 Added the `wp_error` argument.
  *
  * @param string       $room      The room identifier.
  * @param string       $client_id The client identifier.
@@ -599,9 +600,13 @@ function wp_presence_is_valid_date_gmt( $date_gmt ) {
  *                                   the backstop for a departure that never arrived. Capped by the
  *                                   `wp_presence_max_expires_in` filter, and a value below one
  *                                   second rejects the write. Default null (the site TTL).
+ *     @type bool        $wp_error   Whether to return a WP_Error rather than false when the write
+ *                                   is refused or fails. Default false.
  * }
- * @return bool True on success, false on failure (including a malformed
- *              `date_gmt` or an unusable `expires_in`).
+ * @return bool|WP_Error True on success. On failure, false, or with `wp_error` a WP_Error coded
+ *                       `presence_recording_disabled`, `presence_missing_table`,
+ *                       `presence_invalid_date_gmt`, `presence_invalid_expires_in` or
+ *                       `presence_write_failed`.
  */
 function wp_set_presence( $room, $client_id, $state, $args = array() ) {
 	$positional = wp_presence_positional_args( func_get_args(), 3, array( 'user_id', 'date_gmt', 'expires_in' ) );
@@ -613,27 +618,29 @@ function wp_set_presence( $room, $client_id, $state, $args = array() ) {
 		'user_id'    => 0,
 		'date_gmt'   => null,
 		'expires_in' => null,
+		'wp_error'   => false,
 	);
 	$parsed_args = wp_parse_args( $args, $defaults );
 	$user_id     = (int) $parsed_args['user_id'];
 	$date_gmt    = $parsed_args['date_gmt'];
 	$expires_in  = $parsed_args['expires_in'];
+	$wp_error    = (bool) $parsed_args['wp_error'];
 
 	// A reserved row is bookkeeping rather than a participant, so recording does not decide it.
 	if ( ! wp_presence_is_reserved_client_id( $client_id ) && ! wp_presence_recording_enabled() ) {
-		return false;
+		return $wp_error ? new WP_Error( 'presence_recording_disabled', __( 'Presence is not recorded on this site.', 'presence-api' ) ) : false;
 	}
 
 	if ( ! wp_presence_has_table() ) {
-		return false;
+		return $wp_error ? new WP_Error( 'presence_missing_table', __( 'Presence is not available on this site yet.', 'presence-api' ) ) : false;
 	}
 
 	if ( null !== $date_gmt && ! wp_presence_is_valid_date_gmt( $date_gmt ) ) {
-		return false;
+		return $wp_error ? new WP_Error( 'presence_invalid_date_gmt', __( 'The date_gmt argument is not a valid date.', 'presence-api' ) ) : false;
 	}
 
 	if ( null !== $expires_in && ( ! is_numeric( $expires_in ) || (int) $expires_in < 1 ) ) {
-		return false;
+		return $wp_error ? new WP_Error( 'presence_invalid_expires_in', __( 'The expires_in argument must be at least one second.', 'presence-api' ) ) : false;
 	}
 
 	$data_json = wp_json_encode( $state );
@@ -670,7 +677,11 @@ function wp_set_presence( $room, $client_id, $state, $args = array() ) {
 		do_action( 'set_presence', $room, $client_id, $state, $user_id );
 	}
 
-	return false !== $written;
+	if ( false === $written ) {
+		return $wp_error ? new WP_Error( 'presence_write_failed', __( 'Presence could not be written.', 'presence-api' ) ) : false;
+	}
+
+	return true;
 }
 
 /**
@@ -930,6 +941,7 @@ function wp_remove_presence( $room, $client_id ) {
  *
  * @since 0.8.0
  * @since 0.17.0 Takes `$args` in place of the `$user_id`, `$timeout` and `$client_prefix` parameters.
+ * @since 0.17.0 Added the `wp_error` argument.
  *
  * @param string       $room      The room identifier.
  * @param string       $client_id The client identifier.
@@ -940,8 +952,11 @@ function wp_remove_presence( $room, $client_id ) {
  *     @type int      $user_id       The user ID. Default 0.
  *     @type int|null $timeout       Timeout in seconds. Default null, the site's filtered TTL.
  *     @type string   $client_prefix Only return clients whose client_id starts with this. Default empty.
+ *     @type bool     $wp_error      Whether to return the write's WP_Error instead of reading the room
+ *                                   when the write is refused or fails. Default false.
  * }
- * @return array Array of presence entry objects, as returned by wp_get_presence().
+ * @return array|WP_Error Array of presence entry objects, as returned by wp_get_presence(), or
+ *                        with `wp_error` the WP_Error from wp_set_presence().
  */
 function wp_presence_exchange( $room, $client_id, $state, $args = array() ) {
 	$positional = wp_presence_positional_args( func_get_args(), 3, array( 'user_id', 'timeout', 'client_prefix' ) );
@@ -953,10 +968,23 @@ function wp_presence_exchange( $room, $client_id, $state, $args = array() ) {
 		'user_id'       => 0,
 		'timeout'       => null,
 		'client_prefix' => '',
+		'wp_error'      => false,
 	);
 	$parsed_args = wp_parse_args( $args, $defaults );
 
-	wp_set_presence( $room, $client_id, $state, array( 'user_id' => $parsed_args['user_id'] ) );
+	$written = wp_set_presence(
+		$room,
+		$client_id,
+		$state,
+		array(
+			'user_id'  => $parsed_args['user_id'],
+			'wp_error' => $parsed_args['wp_error'],
+		)
+	);
+
+	if ( is_wp_error( $written ) ) {
+		return $written;
+	}
 
 	return wp_get_presence( $room, $parsed_args );
 }
