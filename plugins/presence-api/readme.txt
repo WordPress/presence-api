@@ -25,6 +25,7 @@ On a multisite network, Network Admin gets its own view of the same data: a Who'
 * Admin bar indicator showing who's online and who's on this page
 * Active Posts dashboard widget grouped by post
 * Editors column in the post list
+* A notice on synced patterns in the block editor while someone else is editing them
 * Online filter in the Users list
 * AI agents labelled in the admin bar, the Active Posts widget, and the Editors column, once a plugin such as Agent Users marks them
 
