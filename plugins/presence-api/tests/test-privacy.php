@@ -196,7 +196,7 @@ class WP_Test_Presence_Privacy extends WP_Presence_UnitTestCase {
 		);
 		$room    = 'postType/post:' . $post_id;
 
-		wp_set_presence( $room, 'client-post', array( 'screen' => 'post' ), self::$editor_id );
+		wp_set_presence( $room, 'client-post', array( 'screen' => 'post' ), array( 'user_id' => self::$editor_id ) );
 
 		$export = wp_presence_personal_data_exporter( 'editor@presence.test' );
 		$items  = $export['data'][0]['data'];
@@ -217,7 +217,7 @@ class WP_Test_Presence_Privacy extends WP_Presence_UnitTestCase {
 	public function test_export_falls_back_to_room_name_when_screen_not_in_state() {
 		$room = 'custom-room';
 
-		wp_set_presence( $room, 'client-custom', array(), self::$editor_id );
+		wp_set_presence( $room, 'client-custom', array(), array( 'user_id' => self::$editor_id ) );
 
 		$export = wp_presence_personal_data_exporter( 'editor@presence.test' );
 		$values = wp_list_pluck( $export['data'][0]['data'], 'value' );
@@ -271,7 +271,7 @@ class WP_Test_Presence_Privacy extends WP_Presence_UnitTestCase {
 	public function test_eraser_reports_retained_when_removal_fails() {
 		global $wpdb;
 
-		wp_set_presence( 'admin', 'client-fail', array( 'screen' => 'dashboard' ), self::$editor_id );
+		wp_set_presence( 'admin', 'client-fail', array( 'screen' => 'dashboard' ), array( 'user_id' => self::$editor_id ) );
 
 		$fail_query = static function ( $query ) use ( $wpdb ) {
 			if ( false !== stripos( $query, 'DELETE' ) && false !== strpos( $query, $wpdb->presence ) ) {
