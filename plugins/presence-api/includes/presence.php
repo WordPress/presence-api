@@ -121,7 +121,7 @@ function wp_get_presence( $room, $args = array() ) {
 function wp_presence_positional_args( $given, $index, $keys ) {
 	if ( count( $given ) <= $index + 1 ) {
 		$args = $given[ $index ] ?? array();
-		if ( ! ( null === $args || is_int( $args ) || ( is_string( $args ) && is_numeric( $args ) ) ) ) {
+		if ( ! ( null === $args || is_numeric( $args ) ) ) {
 			return null;
 		}
 	}

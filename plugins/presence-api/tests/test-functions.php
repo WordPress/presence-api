@@ -256,6 +256,19 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * A float window from before 0.17.0 is still a window, not a query string that parses to nothing.
+	 *
+	 * @covers ::wp_get_presence
+	 * @covers ::wp_presence_positional_args
+	 */
+	public function test_a_positional_float_window_still_bounds_the_read() {
+		wp_set_presence( 'admin/float', 'gse-1', array(), array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - 45 ) ) );
+
+		$this->assertCount( 1, wp_get_presence( 'admin/float', 60 ) );
+		$this->assertCount( 0, wp_get_presence( 'admin/float', 30.5 ), 'A row 45 seconds old is outside a 30.5-second window.' );
+	}
+
+	/**
 	 * @covers ::wp_set_presence
 	 */
 	public function test_set_presence_upserts() {
