@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.17.0](https://github.com/WordPress/presence-api/compare/v0.16.1...v0.17.0) (2026-10-08)
+
+
+### Features
+
+* let a network switch off the network admin screens ([#788](https://github.com/WordPress/presence-api/issues/788)) ([70d14aa](https://github.com/WordPress/presence-api/commit/70d14aaf489a4389473ccaa419f86dbfa09f3dd5))
+* let a site switch off the Active Posts dashboard widget ([#774](https://github.com/WordPress/presence-api/issues/774)) ([62ed7b6](https://github.com/WordPress/presence-api/commit/62ed7b646adf942169ab99d446b5f24933622eec))
+* let a site switch off the online filter and count on Users ([#786](https://github.com/WordPress/presence-api/issues/786)) ([a378d1f](https://github.com/WordPress/presence-api/commit/a378d1faa65daa3f08f090a57eef4894ffa90b32))
+* let a site switch off the stale-screen notice ([#787](https://github.com/WordPress/presence-api/issues/787)) ([312743a](https://github.com/WordPress/presence-api/commit/312743a5989fea1fa4c8a8ffd8f7caaebab04c87))
+* show who else is editing a synced pattern on its block ([#779](https://github.com/WordPress/presence-api/issues/779)) ([6a00d75](https://github.com/WordPress/presence-api/commit/6a00d75dcbdae0f1534c6180e67355403696b081))
+* take an $args array in the presence functions ([#789](https://github.com/WordPress/presence-api/issues/789)) ([39eb0a6](https://github.com/WordPress/presence-api/commit/39eb0a6671b4a30594de5e130e1ddecec17c12d4))
+
 ## [0.16.1](https://github.com/WordPress/presence-api/compare/v0.16.0...v0.16.1) (2026-10-08)
 
 

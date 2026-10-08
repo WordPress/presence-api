@@ -31,7 +31,7 @@
 			"pluginData": {
 				"resource": "git:directory",
 				"url": "https://github.com/WordPress/presence-api",
-				"ref": "v0.16.1",
+				"ref": "v0.17.0",
 				"path": "plugins/presence-debugger"
 			},
 			"options": {
@@ -43,7 +43,7 @@
 			"path": "/wordpress/wp-content/plugins/presence-api/demo-seeder.php",
 			"data": {
 				"resource": "url",
-				"url": "https://raw.githubusercontent.com/WordPress/presence-api/v0.16.1/tests/e2e/demo-seeder.php"
+				"url": "https://raw.githubusercontent.com/WordPress/presence-api/v0.17.0/tests/e2e/demo-seeder.php"
 			}
 		},
 		{
@@ -51,7 +51,7 @@
 			"path": "/wordpress/wp-content/mu-plugins/screen-stale-demo-helper.php",
 			"data": {
 				"resource": "url",
-				"url": "https://raw.githubusercontent.com/WordPress/presence-api/v0.16.1/tests/e2e/screen-stale-demo-helper.php"
+				"url": "https://raw.githubusercontent.com/WordPress/presence-api/v0.17.0/tests/e2e/screen-stale-demo-helper.php"
 			}
 		},
 		{
