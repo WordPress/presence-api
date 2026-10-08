@@ -32,12 +32,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * load time goes through wp_presence_feature_enabled(), which never needs the
  * labels.
  *
+ * A feature listed in wp_presence_get_network_features() as well has a row
+ * on the network page alone.
+ *
  * @access private
  *
  * @since 0.15.0
- *
- * A feature listed in wp_presence_get_network_features() as well has a row
- * on the network page alone.
  *
  * @return array<string, array{label: string, description: string}> Features keyed by feature.
  */
@@ -72,7 +72,7 @@ function wp_presence_get_features() {
  *
  * @access private
  *
- * @since 0.16.0
+ * @since 0.17.0
  *
  * @return string[] Feature keys.
  */
@@ -155,7 +155,7 @@ function wp_presence_feature_stored_choice( $stored, $feature ) {
  * @access private
  *
  * @since 0.15.0
- * @since 0.16.0 Added the `$network` parameter.
+ * @since 0.17.0 Added the `$network` parameter.
  *
  * @param mixed $value   The submitted value.
  * @param bool  $network Optional. Whether the network option is being saved. Default false.
