@@ -104,21 +104,6 @@ if ( is_multisite() ) {
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/plugin.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/settings.php';
 
-if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-	// Developer tooling is excluded from the distributed build (see .distignore),
-	// so guard the includes for installs that ship without these files.
-	if ( file_exists( WP_PRESENCE_PLUGIN_DIR . 'includes/debugger-admin-bar.php' ) ) {
-		require_once WP_PRESENCE_PLUGIN_DIR . 'includes/debugger-admin-bar.php';
-		add_action( 'admin_bar_menu', 'wp_presence_debugger_admin_bar_node', 79 );
-		add_action( 'admin_enqueue_scripts', 'wp_presence_debugger_admin_bar_assets' );
-		add_action( 'wp_enqueue_scripts', 'wp_presence_debugger_admin_bar_assets' );
-		add_filter( 'heartbeat_received', 'wp_presence_debugger_heartbeat_received', 13, 2 );
-	}
-	if ( file_exists( WP_PRESENCE_PLUGIN_DIR . 'includes/db-viewer.php' ) ) {
-		require_once WP_PRESENCE_PLUGIN_DIR . 'includes/db-viewer.php';
-	}
-}
-
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/cli/class-wp-presence-cli-command.php';
 	WP_CLI::add_command( 'presence', 'WP_Presence_CLI_Command' );

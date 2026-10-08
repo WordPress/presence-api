@@ -352,6 +352,56 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * @covers ::wp_presence_register_packages_scripts
+	 */
+	public function test_wp_presence_register_packages_scripts() {
+		$asset_file = WP_PRESENCE_PLUGIN_DIR . 'build/index.asset.php';
+		$build_dir  = dirname( $asset_file );
+		$fixture    = ! file_exists( $asset_file );
+		$new_dir    = ! is_dir( $build_dir );
+		if ( $fixture ) {
+			wp_mkdir_p( $build_dir );
+			file_put_contents( $asset_file, "<?php return array( 'dependencies' => array( 'react' ), 'version' => 'test' );" );
+		}
+
+		try {
+			$scripts = new WP_Scripts();
+			wp_presence_register_packages_scripts( $scripts );
+		} finally {
+			if ( $fixture ) {
+				unlink( $asset_file );
+			}
+			if ( $new_dir ) {
+				rmdir( $build_dir );
+			}
+		}
+
+		$this->assertArrayHasKey( 'wp-presence', $scripts->registered );
+		$this->assertContains( 'heartbeat', $scripts->registered['wp-presence']->deps );
+		$this->assertContains( 'wp-core-data', $scripts->registered['wp-presence']->deps );
+		$this->assertSame( 1, $scripts->get_data( 'wp-presence', 'group' ) );
+	}
+
+	/**
+	 * @covers ::wp_presence_register_packages_scripts
+	 */
+	public function test_wp_presence_register_packages_scripts_without_build() {
+		$asset_file = WP_PRESENCE_PLUGIN_DIR . 'build/index.asset.php';
+		$moved      = file_exists( $asset_file ) && rename( $asset_file, $asset_file . '.bak' );
+
+		try {
+			$scripts = new WP_Scripts();
+			wp_presence_register_packages_scripts( $scripts );
+		} finally {
+			if ( $moved ) {
+				rename( $asset_file . '.bak', $asset_file );
+			}
+		}
+
+		$this->assertArrayNotHasKey( 'wp-presence', $scripts->registered );
+	}
+
+	/**
 	 * @covers ::wp_presence_enqueue_heartbeat_ping
 	 * @covers ::wp_presence_get_heartbeat_idle_ticks
 	 * @covers ::wp_presence_get_heartbeat_idle_interval

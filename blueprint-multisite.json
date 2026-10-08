@@ -26,6 +26,16 @@
 			}
 		},
 		{
+			"step": "installPlugin",
+			"pluginData": {
+				"resource": "url",
+				"url": "https://raw.githubusercontent.com/WordPress/presence-api/preview-main/presence-debugger.zip"
+			},
+			"options": {
+				"activate": false
+			}
+		},
+		{
 			"step": "writeFile",
 			"path": "/wordpress/wp-content/plugins/presence-api/demo-seeder.php",
 			"data": {
@@ -44,6 +54,10 @@
 		{
 			"step": "wp-cli",
 			"command": "wp plugin activate presence-api --network"
+		},
+		{
+			"step": "wp-cli",
+			"command": "wp plugin activate presence-debugger --network"
 		},
 		{
 			"step": "wp-cli",

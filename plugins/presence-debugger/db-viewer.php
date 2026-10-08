@@ -31,6 +31,7 @@ add_action(
 
 		$rows = array();
 
+		// Not wp_presence_is_available(), so stored rows still show with recording off.
 		if ( wp_presence_has_table() ) {
 			$room = isset( $_GET['room'] ) ? sanitize_text_field( wp_unslash( $_GET['room'] ) ) : '';
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching

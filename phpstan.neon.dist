@@ -7,8 +7,10 @@ parameters:
 		- plugins/presence-api/includes/
 		- plugins/presence-api/uninstall.php
 		- plugins/presence-scenes/
+		- plugins/presence-debugger/
 	excludePaths:
 		- plugins/presence-scenes/tests/*
+		- plugins/presence-debugger/tests/*
 	scanFiles:
 		- vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
 		- vendor/wp-cli/wp-cli/php/utils.php

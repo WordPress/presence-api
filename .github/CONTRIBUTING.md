@@ -4,6 +4,7 @@
 
 ```bash
 npm install
+npm run build
 npx wp-env start
 ```
 
@@ -15,17 +16,38 @@ With `WP_DEBUG` on, which wp-env sets, administrators get a heart in the toolbar
 
 ## Running tests
 
+Before pushing, one command runs everything that works without wp-env, which is coding standards, static analysis, the JavaScript lint, the JavaScript unit tests, and the workflow script tests. It stops at the first failure.
+
 ```bash
 # PHP dependencies (PHPCS, PHPStan, PHPUnit, Polyfills)
 composer install
 
+npm run check
+```
+
+Most coding-standard errors it reports can be fixed in place:
+
+```bash
+composer phpcbf
+```
+
+The individual commands, for when you want just one of them:
+
+```bash
 # Coding standards
-./vendor/bin/phpcs --standard=phpcs.xml.dist
+composer phpcs
 
 # Static analysis
-./vendor/bin/phpstan analyse --configuration=phpstan.neon.dist --memory-limit=2G
+composer phpstan
 
-# Unit tests (requires wp-env running)
+# JavaScript lint and unit tests
+npm run lint:js
+npm run test:unit
+
+# Workflow script tests
+npm run test:scripts
+
+# PHP unit tests (requires wp-env running)
 npm test
 
 # Multisite tests (requires wp-env running)
@@ -52,9 +74,11 @@ Assigned issues left quiet for two weeks may be unassigned. Comment to pick one 
 
 ### Labels
 
-Every open issue carries one `[Type]`, at least one `[Area]`, and a milestone. `[Area] Infrastructure` covers CI and the toolchain.
+Every open issue carries one `[Type]`, at least one `[Area]`, and a milestone. `[Area] Infrastructure` covers CI and the toolchain. A bot comments on an issue still missing one a day after it opens.
 
 Color groups labels rather than identifying them. Labels on most rows stay in a highlighter tone, saturation is reserved for the few that want something from you, and anything a bot applies is gray.
+
+`Needs Reply` is the exception, since it asks something of a maintainer: `needs-reply.yml` adds it once someone outside CODEOWNERS has waited 48 hours for an answer and removes it when one arrives.
 
 <details>
 <summary>What each color marks</summary>
