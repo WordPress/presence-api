@@ -185,9 +185,6 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * @covers ::wp_set_presence
-	 */
-	/**
 	 * The `$args` array, its query string form and the positional form from before 0.17.0 write and read the same rows.
 	 *
 	 * @covers ::wp_set_presence
@@ -258,6 +255,9 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		}
 	}
 
+	/**
+	 * @covers ::wp_set_presence
+	 */
 	public function test_set_presence_upserts() {
 		wp_set_presence( 'test/room', 'client-1', array( 'v' => 1 ), self::$editor_id );
 		wp_set_presence( 'test/room', 'client-1', array( 'v' => 2 ), self::$editor_id );
