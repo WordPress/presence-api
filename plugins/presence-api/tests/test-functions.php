@@ -52,7 +52,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_write_row
 	 */
 	public function test_set_presence() {
-		$result = wp_set_presence( 'test/room', 'client-1', array( 'action' => 'typing' ), self::$editor_id );
+		$result = wp_set_presence( 'test/room', 'client-1', array( 'action' => 'typing' ), array( 'user_id' => self::$editor_id ) );
 
 		$this->assertTrue( $result );
 	}
@@ -64,7 +64,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_is_reserved_client_id
 	 */
 	public function test_get_presence_returns_entries() {
-		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'typing' ), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'typing' ), array( 'user_id' => self::$editor_id ) );
 
 		$entries = wp_get_presence( 'test/room' );
 
@@ -77,8 +77,8 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_get_presence
 	 */
 	public function test_get_presence_filters_by_room() {
-		wp_set_presence( 'room/a', 'client-1', array(), self::$editor_id );
-		wp_set_presence( 'room/b', 'client-2', array(), self::$editor_id );
+		wp_set_presence( 'room/a', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'room/b', 'client-2', array(), array( 'user_id' => self::$editor_id ) );
 
 		$entries = wp_get_presence( 'room/a' );
 
@@ -91,13 +91,19 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_room_rows
 	 */
 	public function test_get_presence_filters_by_client_prefix() {
-		wp_set_presence( 'postType/post:1', 'editor-' . self::$editor_id, array(), self::$editor_id );
-		wp_set_presence( 'postType/post:1', 'gse-a', array(), self::$editor_id );
-		wp_set_presence( 'postType/post:1', 'gse-b', array(), self::$editor_id );
+		wp_set_presence( 'postType/post:1', 'editor-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'postType/post:1', 'gse-a', array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'postType/post:1', 'gse-b', array(), array( 'user_id' => self::$editor_id ) );
 		wp_set_presence( 'postType/post:1', wp_presence_collaboration_state_client_id(), array( 'count' => 2 ) );
-		wp_set_presence( 'postType/post:2', 'gse-c', array(), self::$editor_id );
+		wp_set_presence( 'postType/post:2', 'gse-c', array(), array( 'user_id' => self::$editor_id ) );
 
-		$client_ids = wp_list_pluck( wp_get_presence( 'postType/post:1', WP_PRESENCE_DEFAULT_TTL, 'gse-' ), 'client_id' );
+		$client_ids = wp_list_pluck( wp_get_presence(
+			'postType/post:1',
+			array(
+				'timeout'       => WP_PRESENCE_DEFAULT_TTL,
+				'client_prefix' => 'gse-',
+			)
+		), 'client_id' );
 		sort( $client_ids );
 
 		$this->assertSame( array( 'gse-a', 'gse-b' ), $client_ids );
@@ -109,7 +115,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	public function test_get_presence_reads_the_table_once_per_request() {
 		global $wpdb;
 
-		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
 		wp_get_presence( 'test/room' );
 
 		$before = $wpdb->num_queries;
@@ -122,11 +128,11 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_room_rows
 	 */
 	public function test_get_presence_without_client_prefix_returns_every_client() {
-		wp_set_presence( 'postType/post:1', 'editor-' . self::$editor_id, array(), self::$editor_id );
-		wp_set_presence( 'postType/post:1', 'gse-a', array(), self::$editor_id );
+		wp_set_presence( 'postType/post:1', 'editor-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'postType/post:1', 'gse-a', array(), array( 'user_id' => self::$editor_id ) );
 		wp_set_presence( 'postType/post:1', wp_presence_collaboration_state_client_id(), array( 'count' => 2 ) );
 
-		$this->assertCount( 2, wp_get_presence( 'postType/post:1', WP_PRESENCE_DEFAULT_TTL, '' ) );
+		$this->assertCount( 2, wp_get_presence( 'postType/post:1', array( 'timeout' => WP_PRESENCE_DEFAULT_TTL ) ) );
 	}
 
 	/**
@@ -134,10 +140,16 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_room_rows
 	 */
 	public function test_get_presence_with_reserved_client_prefix_returns_nothing() {
-		wp_set_presence( 'postType/post:1', 'editor-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( 'postType/post:1', 'editor-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
 		wp_set_presence( 'postType/post:1', wp_presence_collaboration_state_client_id(), array( 'count' => 2 ) );
 
-		$this->assertSame( array(), wp_get_presence( 'postType/post:1', WP_PRESENCE_DEFAULT_TTL, WP_PRESENCE_RESERVED_PREFIX ) );
+		$this->assertSame( array(), wp_get_presence(
+			'postType/post:1',
+			array(
+				'timeout'       => WP_PRESENCE_DEFAULT_TTL,
+				'client_prefix' => WP_PRESENCE_RESERVED_PREFIX,
+			)
+		) );
 	}
 
 	/**
@@ -145,12 +157,24 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_room_rows
 	 */
 	public function test_get_presence_client_prefix_matches_like_wildcards_literally() {
-		wp_set_presence( 'test/room', 'a_b-1', array(), self::$editor_id );
-		wp_set_presence( 'test/room', 'axb-1', array(), self::$editor_id );
-		wp_set_presence( 'test/room', 'a%b-1', array(), self::$editor_id );
+		wp_set_presence( 'test/room', 'a_b-1', array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'test/room', 'axb-1', array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'test/room', 'a%b-1', array(), array( 'user_id' => self::$editor_id ) );
 
-		$underscore = wp_get_presence( 'test/room', WP_PRESENCE_DEFAULT_TTL, 'a_b-' );
-		$percent    = wp_get_presence( 'test/room', WP_PRESENCE_DEFAULT_TTL, 'a%' );
+		$underscore = wp_get_presence(
+			'test/room',
+			array(
+				'timeout'       => WP_PRESENCE_DEFAULT_TTL,
+				'client_prefix' => 'a_b-',
+			)
+		);
+		$percent    = wp_get_presence(
+			'test/room',
+			array(
+				'timeout'       => WP_PRESENCE_DEFAULT_TTL,
+				'client_prefix' => 'a%',
+			)
+		);
 
 		$this->assertSame( array( 'a_b-1' ), wp_list_pluck( $underscore, 'client_id' ) );
 		$this->assertSame( array( 'a%b-1' ), wp_list_pluck( $percent, 'client_id' ) );
@@ -163,8 +187,8 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	public function test_get_presence_filters_expired_entries() {
 		global $wpdb;
 
-		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
-		wp_set_presence( 'test/room', 'client-2', array(), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'test/room', 'client-2', array(), array( 'user_id' => self::$editor_id ) );
 
 		// Manually backdate one entry to simulate expiration.
 		$wpdb->update(
@@ -178,7 +202,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 			array( '%s' )
 		);
 
-		$entries = wp_get_presence( 'test/room', 60 );
+		$entries = wp_get_presence( 'test/room', array( 'timeout' => 60 ) );
 
 		$this->assertCount( 1, $entries, 'Only the current entry should survive the cutoff.' );
 		$this->assertSame( 'client-2', $entries[0]->client_id );
@@ -194,6 +218,11 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_positional_args
 	 */
 	public function test_args_query_string_and_positional_forms_match() {
+		$this->setExpectedDeprecated( 'wp_set_presence' );
+		$this->setExpectedDeprecated( 'wp_get_presence' );
+		$this->setExpectedDeprecated( 'wp_presence_exchange' );
+		$this->setExpectedDeprecated( 'wp_presence_leave' );
+
 		$user_id = self::factory()->user->create();
 		$past    = gmdate( 'Y-m-d H:i:s', time() - 10 );
 
@@ -262,6 +291,8 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_positional_args
 	 */
 	public function test_a_positional_float_window_still_bounds_the_read() {
+		$this->setExpectedDeprecated( 'wp_get_presence' );
+
 		wp_set_presence( 'admin/float', 'gse-1', array(), array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - 45 ) ) );
 
 		$this->assertCount( 1, wp_get_presence( 'admin/float', 60 ) );
@@ -286,8 +317,8 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_set_presence
 	 */
 	public function test_set_presence_upserts() {
-		wp_set_presence( 'test/room', 'client-1', array( 'v' => 1 ), self::$editor_id );
-		wp_set_presence( 'test/room', 'client-1', array( 'v' => 2 ), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array( 'v' => 1 ), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'test/room', 'client-1', array( 'v' => 2 ), array( 'user_id' => self::$editor_id ) );
 
 		$entries = wp_get_presence( 'test/room' );
 
@@ -303,7 +334,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 */
 	public function test_set_presence_defaults_date_gmt_to_now() {
 		$before = gmdate( 'Y-m-d H:i:s' );
-		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
 		$after = gmdate( 'Y-m-d H:i:s' );
 
 		$entries = wp_get_presence( 'test/room' );
@@ -322,7 +353,15 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	public function test_set_presence_accepts_an_explicit_past_timestamp() {
 		$past = gmdate( 'Y-m-d H:i:s', time() - 60 );
 
-		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id, $past );
+		wp_set_presence(
+			'test/room',
+			'client-1',
+			array(),
+			array(
+				'user_id'  => self::$editor_id,
+				'date_gmt' => $past,
+			)
+		);
 
 		$entries = wp_get_presence( 'test/room' );
 
@@ -339,7 +378,15 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		$future = gmdate( 'Y-m-d H:i:s', time() + HOUR_IN_SECONDS );
 
 		$before = gmdate( 'Y-m-d H:i:s' );
-		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id, $future );
+		wp_set_presence(
+			'test/room',
+			'client-1',
+			array(),
+			array(
+				'user_id'  => self::$editor_id,
+				'date_gmt' => $future,
+			)
+		);
 		$after = gmdate( 'Y-m-d H:i:s' );
 
 		$entries = wp_get_presence( 'test/room' );
@@ -356,7 +403,15 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_is_valid_date_gmt
 	 */
 	public function test_set_presence_rejects_a_malformed_date_gmt() {
-		$result = wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id, 'not-a-date' );
+		$result = wp_set_presence(
+			'test/room',
+			'client-1',
+			array(),
+			array(
+				'user_id'  => self::$editor_id,
+				'date_gmt' => 'not-a-date',
+			)
+		);
 
 		$this->assertFalse( $result );
 		$this->assertCount( 0, wp_get_presence( 'test/room' ) );
@@ -370,7 +425,15 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_is_valid_date_gmt
 	 */
 	public function test_set_presence_rejects_an_impossible_calendar_date() {
-		$result = wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id, '2026-02-30 00:00:00' );
+		$result = wp_set_presence(
+			'test/room',
+			'client-1',
+			array(),
+			array(
+				'user_id'  => self::$editor_id,
+				'date_gmt' => '2026-02-30 00:00:00',
+			)
+		);
 
 		$this->assertFalse( $result );
 		$this->assertCount( 0, wp_get_presence( 'test/room' ) );
@@ -380,8 +443,8 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_remove_presence
 	 */
 	public function test_remove_presence() {
-		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
-		wp_set_presence( 'test/room', 'client-2', array(), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'test/room', 'client-2', array(), array( 'user_id' => self::$editor_id ) );
 
 		wp_remove_presence( 'test/room', 'client-1' );
 
@@ -395,8 +458,8 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * Fills a post room with rows from every kind of writer that shares one.
 	 */
 	private function seed_shared_room() {
-		wp_set_presence( 'postType/post:1', 'editor-' . self::$editor_id, array(), self::$editor_id );
-		wp_set_presence( 'postType/post:1', 'gse-1', array( 'cursor' => 1 ), self::$editor_id );
+		wp_set_presence( 'postType/post:1', 'editor-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'postType/post:1', 'gse-1', array( 'cursor' => 1 ), array( 'user_id' => self::$editor_id ) );
 		wp_set_presence( 'postType/post:1', wp_presence_collaboration_state_client_id(), array( 'count' => 2 ) );
 	}
 
@@ -406,7 +469,16 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	public function test_exchange_writes_and_returns_only_the_prefix_asked_for() {
 		$this->seed_shared_room();
 
-		$entries = wp_presence_exchange( 'postType/post:1', 'gse-2', array( 'cursor' => 2 ), self::$editor_id, WP_PRESENCE_DEFAULT_TTL, 'gse-' );
+		$entries = wp_presence_exchange(
+			'postType/post:1',
+			'gse-2',
+			array( 'cursor' => 2 ),
+			array(
+				'user_id'       => self::$editor_id,
+				'timeout'       => WP_PRESENCE_DEFAULT_TTL,
+				'client_prefix' => 'gse-',
+			)
+		);
 
 		$client_ids = wp_list_pluck( $entries, 'client_id' );
 		sort( $client_ids );
@@ -422,7 +494,16 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 		$queries = $this->count_presence_queries(
 			function () {
-				wp_presence_exchange( 'postType/post:1', 'gse-1', array( 'cursor' => 3 ), self::$editor_id, WP_PRESENCE_DEFAULT_TTL, 'gse-' );
+				wp_presence_exchange(
+					'postType/post:1',
+					'gse-1',
+					array( 'cursor' => 3 ),
+					array(
+						'user_id'       => self::$editor_id,
+						'timeout'       => WP_PRESENCE_DEFAULT_TTL,
+						'client_prefix' => 'gse-',
+					)
+				);
 			}
 		);
 
@@ -434,9 +515,16 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 */
 	public function test_leave_removes_and_returns_only_the_prefix_asked_for() {
 		$this->seed_shared_room();
-		wp_set_presence( 'postType/post:1', 'gse-2', array(), self::$editor_id );
+		wp_set_presence( 'postType/post:1', 'gse-2', array(), array( 'user_id' => self::$editor_id ) );
 
-		$entries = wp_presence_leave( 'postType/post:1', 'gse-2', WP_PRESENCE_DEFAULT_TTL, 'gse-' );
+		$entries = wp_presence_leave(
+			'postType/post:1',
+			'gse-2',
+			array(
+				'timeout'       => WP_PRESENCE_DEFAULT_TTL,
+				'client_prefix' => 'gse-',
+			)
+		);
 
 		$this->assertSame( array( 'gse-1' ), wp_list_pluck( $entries, 'client_id' ) );
 	}
@@ -473,9 +561,9 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_remove_user_presence
 	 */
 	public function test_remove_user_presence_clears_all_rooms() {
-		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), self::$editor_id );
-		wp_set_presence( 'postType/post:1', 'lock-' . self::$editor_id, array(), self::$editor_id );
-		wp_set_presence( 'admin/online', 'user-' . self::$subscriber_id, array(), self::$subscriber_id );
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'postType/post:1', 'lock-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'admin/online', 'user-' . self::$subscriber_id, array(), array( 'user_id' => self::$subscriber_id ) );
 		wp_get_presence( 'admin/online' );
 
 		wp_remove_user_presence( self::$editor_id );
@@ -573,8 +661,8 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	public function test_cleanup_removes_expired_entries() {
 		global $wpdb;
 
-		wp_set_presence( 'test/room', 'old-client', array(), self::$editor_id );
-		wp_set_presence( 'test/room', 'new-client', array(), self::$editor_id );
+		wp_set_presence( 'test/room', 'old-client', array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'test/room', 'new-client', array(), array( 'user_id' => self::$editor_id ) );
 
 		// Backdate one entry past the cutoff the cleanup reads.
 		$wpdb->update(
@@ -590,7 +678,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 		wp_delete_expired_presence_data();
 
-		$entries = wp_get_presence( 'test/room', 300 );
+		$entries = wp_get_presence( 'test/room', array( 'timeout' => 300 ) );
 
 		$this->assertCount( 1, $entries );
 		$this->assertSame( 'new-client', $entries[0]->client_id );
@@ -607,7 +695,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 		// Seed five expired entries.
 		for ( $i = 1; $i <= 5; $i++ ) {
-			wp_set_presence( 'test/room', "old-{$i}", array(), self::$editor_id );
+			wp_set_presence( 'test/room', "old-{$i}", array(), array( 'user_id' => self::$editor_id ) );
 		}
 		$wpdb->query(
 			$wpdb->prepare(
@@ -650,8 +738,8 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	public function test_cleanup_leaves_fresh_entries_untouched() {
 		global $wpdb;
 
-		wp_set_presence( 'test/room', 'fresh-1', array(), self::$editor_id );
-		wp_set_presence( 'test/room', 'fresh-2', array(), self::$editor_id );
+		wp_set_presence( 'test/room', 'fresh-1', array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'test/room', 'fresh-2', array(), array( 'user_id' => self::$editor_id ) );
 
 		$one = static function () {
 			return 1;
@@ -672,8 +760,8 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_set_presence
 	 */
 	public function test_multiple_clients_in_room() {
-		wp_set_presence( 'test/room', 'client-1', array( 'user' => 'Alice' ), self::$editor_id );
-		wp_set_presence( 'test/room', 'client-2', array( 'user' => 'Bob' ), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array( 'user' => 'Alice' ), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'test/room', 'client-2', array( 'user' => 'Bob' ), array( 'user_id' => self::$editor_id ) );
 
 		$entries = wp_get_presence( 'test/room' );
 
@@ -684,9 +772,9 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_get_presence_by_room_prefix
 	 */
 	public function test_get_presence_by_room_prefix() {
-		wp_set_presence( 'postType/post:1', 'client-1', array(), self::$editor_id );
-		wp_set_presence( 'postType/post:2', 'client-2', array(), self::$editor_id );
-		wp_set_presence( 'admin/online', 'client-3', array(), self::$editor_id );
+		wp_set_presence( 'postType/post:1', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'postType/post:2', 'client-2', array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'admin/online', 'client-3', array(), array( 'user_id' => self::$editor_id ) );
 
 		$entries = wp_get_presence_by_room_prefix( 'postType/' );
 
@@ -702,7 +790,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_reserved_client_id_pattern
 	 */
 	public function test_get_presence_by_room_prefix_leaves_out_reserved_rows() {
-		wp_set_presence( 'postType/post:1', 'editor-1', array(), self::$editor_id );
+		wp_set_presence( 'postType/post:1', 'editor-1', array(), array( 'user_id' => self::$editor_id ) );
 		wp_set_presence( 'postType/post:1', wp_presence_collaboration_state_client_id(), array( 'count' => 2 ) );
 
 		$entries = wp_get_presence_by_room_prefix( 'postType/' );
@@ -715,7 +803,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_get_presence_by_room_prefix
 	 */
 	public function test_get_presence_by_room_prefix_empty() {
-		wp_set_presence( 'postType/post:1', 'client-1', array(), self::$editor_id );
+		wp_set_presence( 'postType/post:1', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
 
 		$entries = wp_get_presence_by_room_prefix( 'nonexistent/' );
 
@@ -728,8 +816,8 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	public function test_get_presence_by_room_prefix_filters_expired() {
 		global $wpdb;
 
-		wp_set_presence( 'postType/post:1', 'client-1', array(), self::$editor_id );
-		wp_set_presence( 'postType/post:2', 'client-2', array(), self::$editor_id );
+		wp_set_presence( 'postType/post:1', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'postType/post:2', 'client-2', array(), array( 'user_id' => self::$editor_id ) );
 
 		$wpdb->update(
 			$wpdb->presence,
@@ -754,11 +842,11 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	public function test_get_presence_summary() {
 		$editor2_id = self::factory()->user->create( array( 'role' => 'editor' ) );
 
-		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), self::$editor_id );
-		wp_set_presence( 'admin/online', 'user-' . $editor2_id, array(), $editor2_id );
-		wp_set_presence( 'postType/post:1', 'lock-' . self::$editor_id, array(), self::$editor_id );
-		wp_set_presence( 'postType/post:2', 'lock-' . $editor2_id, array(), $editor2_id );
-		wp_set_presence( 'postType/page:3', 'lock-extra', array(), self::$editor_id );
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'admin/online', 'user-' . $editor2_id, array(), array( 'user_id' => $editor2_id ) );
+		wp_set_presence( 'postType/post:1', 'lock-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'postType/post:2', 'lock-' . $editor2_id, array(), array( 'user_id' => $editor2_id ) );
+		wp_set_presence( 'postType/page:3', 'lock-extra', array(), array( 'user_id' => self::$editor_id ) );
 
 		$summary = wp_get_presence_summary();
 
@@ -795,9 +883,9 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	public function test_get_presence_summary_aggregates_in_sql() {
 		global $wpdb;
 
-		wp_set_presence( 'admin/online', 'client-1', array(), self::$editor_id );
+		wp_set_presence( 'admin/online', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
 		for ( $i = 2; $i <= 20; $i++ ) {
-			wp_set_presence( 'postType/post:1', 'client-' . $i, array(), self::$editor_id );
+			wp_set_presence( 'postType/post:1', 'client-' . $i, array(), array( 'user_id' => self::$editor_id ) );
 		}
 
 		$queries = array();
@@ -862,8 +950,8 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_get_active_rooms
 	 */
 	public function test_get_active_rooms() {
-		wp_set_presence( 'admin/online', 'client-1', array(), self::$editor_id );
-		wp_set_presence( 'postType/post:1', 'client-2', array(), self::$editor_id );
+		wp_set_presence( 'admin/online', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'postType/post:1', 'client-2', array(), array( 'user_id' => self::$editor_id ) );
 
 		$rooms = wp_get_active_rooms();
 
@@ -879,10 +967,10 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	public function test_get_active_rooms_orders_by_entry_count_and_deduplicates_users() {
 		$editor2_id = self::factory()->user->create( array( 'role' => 'editor' ) );
 
-		wp_set_presence( 'admin/online', 'client-1', array(), self::$editor_id );
-		wp_set_presence( 'postType/post:1', 'client-2', array(), self::$editor_id );
-		wp_set_presence( 'postType/post:1', 'client-3', array(), self::$editor_id );
-		wp_set_presence( 'postType/post:1', 'client-4', array(), $editor2_id );
+		wp_set_presence( 'admin/online', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'postType/post:1', 'client-2', array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'postType/post:1', 'client-3', array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'postType/post:1', 'client-4', array(), array( 'user_id' => $editor2_id ) );
 
 		$rooms = wp_get_active_rooms();
 
@@ -906,8 +994,8 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 */
 	public function test_get_active_rooms_omits_deleted_user() {
 		$temp_user_id = self::factory()->user->create( array( 'role' => 'editor' ) );
-		wp_set_presence( 'admin/online', 'client-temp', array(), $temp_user_id );
-		wp_set_presence( 'admin/online', 'client-live', array(), self::$editor_id );
+		wp_set_presence( 'admin/online', 'client-temp', array(), array( 'user_id' => $temp_user_id ) );
+		wp_set_presence( 'admin/online', 'client-live', array(), array( 'user_id' => self::$editor_id ) );
 
 		if ( is_multisite() ) {
 			require_once ABSPATH . 'wp-admin/includes/ms.php';
@@ -927,8 +1015,8 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_get_active_rooms
 	 */
 	public function test_get_active_rooms_hydrates_only_users_within_the_timeout() {
-		wp_set_presence( 'admin/online', 'client-idle', array(), self::$subscriber_id );
-		wp_set_presence( 'admin/online', 'client-live', array(), self::$editor_id );
+		wp_set_presence( 'admin/online', 'client-idle', array(), array( 'user_id' => self::$subscriber_id ) );
+		wp_set_presence( 'admin/online', 'client-live', array(), array( 'user_id' => self::$editor_id ) );
 		$this->backdate( 'admin/online', 'client-idle', 2 * MINUTE_IN_SECONDS );
 
 		$rooms = wp_get_active_rooms( MINUTE_IN_SECONDS );
@@ -943,8 +1031,8 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		$user_1 = self::factory()->user->create( array( 'role' => 'editor' ) );
 		$user_2 = self::factory()->user->create( array( 'role' => 'editor' ) );
 
-		wp_set_presence( 'admin/online', 'client-1', array(), $user_1 );
-		wp_set_presence( 'postType/post:1', 'client-2', array(), $user_2 );
+		wp_set_presence( 'admin/online', 'client-1', array(), array( 'user_id' => $user_1 ) );
+		wp_set_presence( 'postType/post:1', 'client-2', array(), array( 'user_id' => $user_2 ) );
 
 		// Get rooms without hydration.
 		$rooms = wp_get_active_rooms( WP_PRESENCE_DEFAULT_TTL, false );
@@ -965,7 +1053,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_get_active_rooms
 	 */
 	public function test_get_active_rooms_without_hydration() {
-		wp_set_presence( 'admin/online', 'client-1', array(), self::$editor_id );
+		wp_set_presence( 'admin/online', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
 
 		$rooms = wp_get_active_rooms( WP_PRESENCE_DEFAULT_TTL, false );
 
@@ -984,7 +1072,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_reserved_client_id_pattern
 	 */
 	public function test_get_active_rooms_does_not_count_a_reserved_row() {
-		wp_set_presence( 'postType/post:1', 'editor-1', array(), self::$editor_id );
+		wp_set_presence( 'postType/post:1', 'editor-1', array(), array( 'user_id' => self::$editor_id ) );
 		wp_set_presence( 'postType/post:1', wp_presence_collaboration_state_client_id(), array( 'count' => 2 ) );
 
 		$rooms = wp_get_active_rooms( WP_PRESENCE_DEFAULT_TTL, false );
@@ -1001,7 +1089,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 		add_filter( 'wp_presence_default_ttl', fn() => WP_PRESENCE_DEFAULT_TTL * 2 );
 
-		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
 
 		$row    = $wpdb->get_row( "SELECT date_gmt, expires_gmt FROM {$wpdb->presence} WHERE client_id = 'client-1'" );
 		$expiry = $row->expires_gmt;
@@ -1031,15 +1119,15 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_get_timeout
 	 */
 	public function test_an_explicit_timeout_ignores_the_ttl_filter() {
-		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
 		$this->backdate( 'test/room', 'client-1', 60 );
 
 		add_filter( 'wp_presence_default_ttl', fn() => 600 );
-		$this->assertCount( 0, wp_get_presence( 'test/room', 30 ), 'A wider site TTL should not widen a 30 second window.' );
+		$this->assertCount( 0, wp_get_presence( 'test/room', array( 'timeout' => 30 ) ), 'A wider site TTL should not widen a 30 second window.' );
 
 		remove_all_filters( 'wp_presence_default_ttl' );
 		add_filter( 'wp_presence_default_ttl', fn() => 10 );
-		$this->assertCount( 1, wp_get_presence( 'test/room', 120 ), 'A narrower site TTL should not narrow a 120 second window.' );
+		$this->assertCount( 1, wp_get_presence( 'test/room', array( 'timeout' => 120 ) ), 'A narrower site TTL should not narrow a 120 second window.' );
 
 		remove_all_filters( 'wp_presence_default_ttl' );
 	}
@@ -1063,7 +1151,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		);
 
 		// Verify the table still exists and is functional.
-		wp_set_presence( 'migration/test', 'client-1', array( 'screen' => 'dashboard' ), self::$editor_id );
+		wp_set_presence( 'migration/test', 'client-1', array( 'screen' => 'dashboard' ), array( 'user_id' => self::$editor_id ) );
 		$entries = wp_get_presence( 'migration/test' );
 		$this->assertCount( 1, $entries, 'Table should be functional after schema migration.' );
 
@@ -1093,7 +1181,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_set_presence
 	 */
 	public function test_set_presence_empty_room() {
-		$result = wp_set_presence( '', 'client-1', array(), self::$editor_id );
+		$result = wp_set_presence( '', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
 
 		// Empty string is a valid varchar value; it should succeed at the DB level.
 		$this->assertTrue( $result );
@@ -1107,7 +1195,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 */
 	public function test_set_presence_long_room_name() {
 		$long_room = str_repeat( 'x', 300 );
-		$result    = wp_set_presence( $long_room, 'client-1', array(), self::$editor_id );
+		$result    = wp_set_presence( $long_room, 'client-1', array(), array( 'user_id' => self::$editor_id ) );
 
 		// MySQL silently truncates to varchar(191); the insert succeeds.
 		$this->assertTrue( $result );
@@ -1123,7 +1211,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 			'count'  => 42,
 		);
 
-		wp_set_presence( 'test/complex', 'client-1', $data, self::$editor_id );
+		wp_set_presence( 'test/complex', 'client-1', $data, array( 'user_id' => self::$editor_id ) );
 		$entries = wp_get_presence( 'test/complex' );
 
 		$this->assertCount( 1, $entries );
@@ -1149,10 +1237,10 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 			}
 		);
 
-		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
 		$this->assertSame( 0, $fired, 'A write to another room must stay quiet.' );
 
-		wp_set_presence( wp_presence_admin_room(), 'client-1', array(), self::$editor_id );
+		wp_set_presence( wp_presence_admin_room(), 'client-1', array(), array( 'user_id' => self::$editor_id ) );
 		$this->assertSame( 1, $fired );
 	}
 
@@ -1165,8 +1253,8 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_admin_room_changed
 	 */
 	public function test_only_an_admin_room_removal_announces_a_change() {
-		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
-		wp_set_presence( wp_presence_admin_room(), 'client-1', array(), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( wp_presence_admin_room(), 'client-1', array(), array( 'user_id' => self::$editor_id ) );
 
 		$fired = 0;
 		add_action(
@@ -1333,7 +1421,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	public function test_switching_recording_off_writes_nothing() {
 		add_filter( 'wp_presence_recording_enabled', '__return_false' );
 
-		$result = wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
+		$result = wp_set_presence( 'test/room', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
 
 		$this->assertFalse( $result );
 		$this->assertSame( array(), wp_get_presence( 'test/room' ) );
@@ -1462,7 +1550,15 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 */
 	public function test_a_row_written_with_its_own_window_outlives_the_site_ttl() {
 		$this->assertTrue(
-			wp_set_presence( 'test/room', 'relay-1', array(), self::$editor_id, null, HOUR_IN_SECONDS )
+			wp_set_presence(
+				'test/room',
+				'relay-1',
+				array(),
+				array(
+					'user_id'    => self::$editor_id,
+					'expires_in' => HOUR_IN_SECONDS,
+				)
+			)
 		);
 
 		// Last heard from well over an ordinary TTL ago, and never re-stamped.
@@ -1492,7 +1588,15 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_remove_presence
 	 */
 	public function test_removal_is_immediate_whatever_the_window() {
-		wp_set_presence( 'test/room', 'relay-1', array(), self::$editor_id, null, HOUR_IN_SECONDS );
+		wp_set_presence(
+			'test/room',
+			'relay-1',
+			array(),
+			array(
+				'user_id'    => self::$editor_id,
+				'expires_in' => HOUR_IN_SECONDS,
+			)
+		);
 		wp_remove_presence( 'test/room', 'relay-1' );
 
 		$this->assertCount( 0, wp_get_presence( 'test/room' ) );
@@ -1507,7 +1611,15 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	public function test_a_row_expires_on_its_own_window_even_when_recently_stamped() {
 		global $wpdb;
 
-		wp_set_presence( 'test/room', 'relay-1', array(), self::$editor_id, null, HOUR_IN_SECONDS );
+		wp_set_presence(
+			'test/room',
+			'relay-1',
+			array(),
+			array(
+				'user_id'    => self::$editor_id,
+				'expires_in' => HOUR_IN_SECONDS,
+			)
+		);
 
 		// The expiry passes while the timestamp stays recent: the guarantee is
 		// the window, not how lately the writer was heard from.
@@ -1539,7 +1651,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	public function test_a_row_without_a_window_expires_on_the_site_ttl() {
 		add_filter( 'wp_presence_default_ttl', fn() => 300 );
 
-		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
 
 		$this->assertSame(
 			300,
@@ -1556,7 +1668,15 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	public function test_the_window_is_capped() {
 		add_filter( 'wp_presence_max_expires_in', fn() => MINUTE_IN_SECONDS );
 
-		wp_set_presence( 'test/room', 'relay-1', array(), self::$editor_id, null, WEEK_IN_SECONDS );
+		wp_set_presence(
+			'test/room',
+			'relay-1',
+			array(),
+			array(
+				'user_id'    => self::$editor_id,
+				'expires_in' => WEEK_IN_SECONDS,
+			)
+		);
 
 		global $wpdb;
 		$date_gmt = $wpdb->get_var( "SELECT date_gmt FROM {$wpdb->presence} WHERE client_id = 'relay-1'" );
@@ -1572,9 +1692,33 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_set_presence
 	 */
 	public function test_an_unusable_window_is_refused() {
-		$this->assertFalse( wp_set_presence( 'test/room', 'relay-1', array(), self::$editor_id, null, 0 ) );
-		$this->assertFalse( wp_set_presence( 'test/room', 'relay-1', array(), self::$editor_id, null, -5 ) );
-		$this->assertFalse( wp_set_presence( 'test/room', 'relay-1', array(), self::$editor_id, null, 'soon' ) );
+		$this->assertFalse( wp_set_presence(
+			'test/room',
+			'relay-1',
+			array(),
+			array(
+				'user_id'    => self::$editor_id,
+				'expires_in' => 0,
+			)
+		) );
+		$this->assertFalse( wp_set_presence(
+			'test/room',
+			'relay-1',
+			array(),
+			array(
+				'user_id'    => self::$editor_id,
+				'expires_in' => -5,
+			)
+		) );
+		$this->assertFalse( wp_set_presence(
+			'test/room',
+			'relay-1',
+			array(),
+			array(
+				'user_id'    => self::$editor_id,
+				'expires_in' => 'soon',
+			)
+		) );
 		$this->assertCount( 0, wp_get_presence( 'test/room' ) );
 	}
 
@@ -1584,16 +1728,24 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_refresh_cutoff
 	 */
 	public function test_an_explicit_window_is_never_swallowed_by_the_redundant_write_guard() {
-		wp_set_presence( 'test/room', 'relay-1', array( 'a' => 1 ), self::$editor_id );
+		wp_set_presence( 'test/room', 'relay-1', array( 'a' => 1 ), array( 'user_id' => self::$editor_id ) );
 
 		$before = $this->stored_expires_gmt( 'test/room', 'relay-1' );
 
 		// Same state, inside the refresh window: an ordinary write is skipped.
-		wp_set_presence( 'test/room', 'relay-1', array( 'a' => 1 ), self::$editor_id );
+		wp_set_presence( 'test/room', 'relay-1', array( 'a' => 1 ), array( 'user_id' => self::$editor_id ) );
 		$this->assertSame( $before, $this->stored_expires_gmt( 'test/room', 'relay-1' ) );
 
 		// The same state with a window is the caller asking for the extension.
-		wp_set_presence( 'test/room', 'relay-1', array( 'a' => 1 ), self::$editor_id, null, HOUR_IN_SECONDS );
+		wp_set_presence(
+			'test/room',
+			'relay-1',
+			array( 'a' => 1 ),
+			array(
+				'user_id'    => self::$editor_id,
+				'expires_in' => HOUR_IN_SECONDS,
+			)
+		);
 
 		$this->assertGreaterThan(
 			strtotime( $before . ' UTC' ),
@@ -1614,7 +1766,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	public function test_a_row_from_before_the_column_expires_and_is_collected() {
 		global $wpdb;
 
-		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
 		$wpdb->query( "UPDATE {$wpdb->presence} SET expires_gmt = '0000-00-00 00:00:00'" );
 
 		$this->assertCount( 0, wp_get_presence( 'test/room' ), 'It reads as expired.' );
@@ -1628,7 +1780,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		);
 
 		// And the client is present again as soon as it pings.
-		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
 		$this->assertCount( 1, wp_get_presence( 'test/room' ) );
 	}
 
@@ -1639,12 +1791,12 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_write_row
 	 */
 	public function test_a_write_past_the_refresh_cutoff_moves_the_expiry_with_it() {
-		wp_set_presence( 'test/room', 'client-1', array( 'a' => 1 ), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array( 'a' => 1 ), array( 'user_id' => self::$editor_id ) );
 		$this->backdate( 'test/room', 'client-1', 60 );
 
 		$before = $this->stored_expires_gmt( 'test/room', 'client-1' );
 
-		wp_set_presence( 'test/room', 'client-1', array( 'a' => 1 ), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array( 'a' => 1 ), array( 'user_id' => self::$editor_id ) );
 
 		$this->assertGreaterThan(
 			strtotime( $before . ' UTC' ),
@@ -1709,11 +1861,11 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_refresh_cutoff
 	 */
 	public function test_unchanged_state_within_the_refresh_window_skips_the_write() {
-		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), array( 'user_id' => self::$editor_id ) );
 		$this->backdate( 'test/room', 'client-1', 5 );
 
 		$before = $this->stored_date_gmt( 'test/room', 'client-1' );
-		$result = wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+		$result = wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), array( 'user_id' => self::$editor_id ) );
 
 		$this->assertTrue( $result, 'Presence is still recorded, so a skipped write reports success.' );
 		$this->assertSame(
@@ -1728,11 +1880,11 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_refresh_cutoff
 	 */
 	public function test_unchanged_state_past_the_refresh_window_writes() {
-		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), array( 'user_id' => self::$editor_id ) );
 		$this->backdate( 'test/room', 'client-1', WP_PRESENCE_DEFAULT_TTL - 5 );
 
 		$before = $this->stored_date_gmt( 'test/room', 'client-1' );
-		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), array( 'user_id' => self::$editor_id ) );
 
 		$this->assertNotSame(
 			$before,
@@ -1746,11 +1898,11 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_refresh_cutoff
 	 */
 	public function test_changed_state_writes_inside_the_refresh_window() {
-		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), array( 'user_id' => self::$editor_id ) );
 		$this->backdate( 'test/room', 'client-1', 5 );
 
 		$before = $this->stored_date_gmt( 'test/room', 'client-1' );
-		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'idle' ), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'idle' ), array( 'user_id' => self::$editor_id ) );
 
 		$this->assertNotSame(
 			$before,
@@ -1771,11 +1923,19 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_refresh_cutoff
 	 */
 	public function test_explicit_timestamp_bypasses_the_redundant_write_guard() {
-		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), array( 'user_id' => self::$editor_id ) );
 		$this->backdate( 'test/room', 'client-1', 5 );
 
 		$past = gmdate( 'Y-m-d H:i:s', time() - 60 );
-		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id, $past );
+		wp_set_presence(
+			'test/room',
+			'client-1',
+			array( 'action' => 'editing' ),
+			array(
+				'user_id'  => self::$editor_id,
+				'date_gmt' => $past,
+			)
+		);
 
 		$this->assertSame(
 			$past,
@@ -1795,7 +1955,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 		$room = wp_presence_admin_room();
 
-		wp_set_presence( $room, 'user-' . self::$editor_id, array( 'screen' => 'dashboard' ), self::$editor_id );
+		wp_set_presence( $room, 'user-' . self::$editor_id, array( 'screen' => 'dashboard' ), array( 'user_id' => self::$editor_id ) );
 		$this->backdate( $room, 'user-' . self::$editor_id, 5 );
 
 		// Under WP_MULTISITE=1 this class does not provision the summary table, so
@@ -1813,7 +1973,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 			}
 		);
 
-		wp_set_presence( $room, 'user-' . self::$editor_id, array( 'screen' => 'dashboard' ), self::$editor_id );
+		wp_set_presence( $room, 'user-' . self::$editor_id, array( 'screen' => 'dashboard' ), array( 'user_id' => self::$editor_id ) );
 
 		$this->assertSame( 0, $fired, 'Nobody arrived or left, so no surface needs to re-render.' );
 	}
@@ -1857,11 +2017,11 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 		$this->assertSame( 0, wp_presence_refresh_threshold(), 'A 60s TTL against a 120s gap cannot afford to skip anything.' );
 
-		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), array( 'user_id' => self::$editor_id ) );
 		$this->backdate( 'test/room', 'client-1', 1 );
 
 		$before = $this->stored_date_gmt( 'test/room', 'client-1' );
-		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), array( 'user_id' => self::$editor_id ) );
 
 		$this->assertNotSame( $before, $this->stored_date_gmt( 'test/room', 'client-1' ) );
 	}
@@ -1881,11 +2041,11 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 			}
 		);
 
-		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), array( 'user_id' => self::$editor_id ) );
 
 		$inserts = $this->count_presence_inserts(
 			function () {
-				wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+				wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), array( 'user_id' => self::$editor_id ) );
 			}
 		);
 
@@ -1924,14 +2084,14 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_write_row
 	 */
 	public function test_a_write_costs_one_query_whether_or_not_it_is_redundant() {
-		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), array( 'user_id' => self::$editor_id ) );
 		$this->backdate( 'test/room', 'client-1', 5 );
 
 		$before = $this->stored_date_gmt( 'test/room', 'client-1' );
 
 		$redundant = $this->count_presence_queries(
 			function () {
-				wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+				wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), array( 'user_id' => self::$editor_id ) );
 			}
 		);
 
@@ -1940,7 +2100,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 		$changed = $this->count_presence_queries(
 			function () {
-				wp_set_presence( 'test/room', 'client-1', array( 'action' => 'idle' ), self::$editor_id );
+				wp_set_presence( 'test/room', 'client-1', array( 'action' => 'idle' ), array( 'user_id' => self::$editor_id ) );
 			}
 		);
 
@@ -1954,7 +2114,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_write_row
 	 */
 	public function test_the_refresh_upsert_avoids_if() {
-		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), array( 'user_id' => self::$editor_id ) );
 
 		$upserts = array();
 		$capture = static function ( $query ) use ( &$upserts ) {
@@ -1966,7 +2126,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		};
 
 		add_filter( 'query', $capture );
-		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), array( 'user_id' => self::$editor_id ) );
 		remove_filter( 'query', $capture );
 
 		$this->assertCount( 1, $upserts );
@@ -2079,7 +2239,15 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		$agent_id = self::factory()->user->create( array( 'role' => 'editor' ) );
 		$this->mark_as_agent( $agent_id );
 
-		wp_set_presence( 'postType/post:42', 'agent-' . $agent_id, array(), $agent_id, null, 60 );
+		wp_set_presence(
+			'postType/post:42',
+			'agent-' . $agent_id,
+			array(),
+			array(
+				'user_id'    => $agent_id,
+				'expires_in' => 60,
+			)
+		);
 
 		$entries  = wp_presence_admin_room_entries();
 		$user_ids = wp_list_pluck( $entries, 'user_id' );
@@ -2103,7 +2271,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_admin_room_entries
 	 */
 	public function test_admin_room_entries_does_not_merge_a_non_agent_post_room_row() {
-		wp_set_presence( 'postType/post:42', 'editor-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( 'postType/post:42', 'editor-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
 
 		$entries  = wp_presence_admin_room_entries();
 		$user_ids = wp_list_pluck( $entries, 'user_id' );
@@ -2121,8 +2289,16 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		$agent_id = self::factory()->user->create( array( 'role' => 'editor' ) );
 		$this->mark_as_agent( $agent_id );
 
-		wp_set_presence( 'admin/online', 'user-' . $agent_id, array( 'screen' => 'dashboard' ), $agent_id );
-		wp_set_presence( 'postType/post:42', 'agent-' . $agent_id, array(), $agent_id, null, 60 );
+		wp_set_presence( 'admin/online', 'user-' . $agent_id, array( 'screen' => 'dashboard' ), array( 'user_id' => $agent_id ) );
+		wp_set_presence(
+			'postType/post:42',
+			'agent-' . $agent_id,
+			array(),
+			array(
+				'user_id'    => $agent_id,
+				'expires_in' => 60,
+			)
+		);
 
 		$entries  = wp_presence_admin_room_entries();
 		$user_ids = wp_list_pluck( $entries, 'user_id' );
@@ -2141,7 +2317,15 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		$agent_id = self::factory()->user->create( array( 'role' => 'editor' ) );
 		$this->mark_as_agent( $agent_id );
 
-		wp_set_presence( 'postType/post:42', 'agent-' . $agent_id, array(), $agent_id, null, 60 );
+		wp_set_presence(
+			'postType/post:42',
+			'agent-' . $agent_id,
+			array(),
+			array(
+				'user_id'    => $agent_id,
+				'expires_in' => 60,
+			)
+		);
 
 		$user_ids = wp_list_pluck( wp_presence_admin_room_entries(), 'user_id' );
 		$this->assertContains( (string) $agent_id, $user_ids, 'The agent shows up labelled while its 60-second window is still open.' );

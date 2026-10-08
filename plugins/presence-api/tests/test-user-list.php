@@ -30,7 +30,7 @@ class WP_Test_Presence_User_List extends WP_Presence_UnitTestCase {
 		wp_set_current_user( self::$editor_id );
 
 		$other_id = self::factory()->user->create( array( 'role' => 'editor' ) );
-		wp_set_presence( wp_presence_admin_room(), 'client-1', array(), $other_id );
+		wp_set_presence( wp_presence_admin_room(), 'client-1', array(), array( 'user_id' => $other_id ) );
 
 		$views = wp_presence_users_views( array() );
 
@@ -48,7 +48,7 @@ class WP_Test_Presence_User_List extends WP_Presence_UnitTestCase {
 
 	public function test_users_views_does_not_double_count_the_current_user() {
 		wp_set_current_user( self::$editor_id );
-		wp_set_presence( wp_presence_admin_room(), 'client-self', array(), self::$editor_id );
+		wp_set_presence( wp_presence_admin_room(), 'client-self', array(), array( 'user_id' => self::$editor_id ) );
 
 		$views = wp_presence_users_views( array() );
 
@@ -89,7 +89,7 @@ class WP_Test_Presence_User_List extends WP_Presence_UnitTestCase {
 		$this->go_to_online_users_screen();
 
 		$other_id = self::factory()->user->create( array( 'role' => 'editor' ) );
-		wp_set_presence( wp_presence_admin_room(), 'client-1', array(), $other_id );
+		wp_set_presence( wp_presence_admin_room(), 'client-1', array(), array( 'user_id' => $other_id ) );
 
 		$query = new WP_User_Query();
 		wp_presence_filter_online_users( $query );
@@ -169,7 +169,7 @@ class WP_Test_Presence_User_List extends WP_Presence_UnitTestCase {
 	}
 
 	public function test_the_online_view_gets_fresh_rows_each_heartbeat() {
-		wp_set_presence( wp_presence_admin_room(), 'client-1', array(), self::$editor_id );
+		wp_set_presence( wp_presence_admin_room(), 'client-1', array(), array( 'user_id' => self::$editor_id ) );
 
 		$rows = $this->tick_online_view()['presence-fragments']['users-list'];
 
@@ -184,7 +184,7 @@ class WP_Test_Presence_User_List extends WP_Presence_UnitTestCase {
 	 */
 	public function test_every_users_view_gets_a_fresh_online_count() {
 		wp_set_current_user( self::$editor_id );
-		wp_set_presence( wp_presence_admin_room(), 'client-1', array(), self::$editor_id );
+		wp_set_presence( wp_presence_admin_room(), 'client-1', array(), array( 'user_id' => self::$editor_id ) );
 		$ask = array( 'presence-fragments' => array( 'users-online-count' => true ) );
 
 		$this->assertSame( '(1)', wp_presence_users_online_count_heartbeat_received( array(), $ask, 'users' )['presence-fragments']['users-online-count'] );
@@ -204,7 +204,7 @@ class WP_Test_Presence_User_List extends WP_Presence_UnitTestCase {
 		set_current_screen( 'users' );
 
 		$other_id = self::factory()->user->create( array( 'role' => 'editor' ) );
-		wp_set_presence( wp_presence_admin_room(), 'client-1', array(), $other_id );
+		wp_set_presence( wp_presence_admin_room(), 'client-1', array(), array( 'user_id' => $other_id ) );
 
 		$url = wp_presence_online_users_url();
 		wp_parse_str( (string) wp_parse_url( $url, PHP_URL_QUERY ), $_GET );

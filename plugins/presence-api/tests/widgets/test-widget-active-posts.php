@@ -46,7 +46,7 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 		wp_set_current_user( self::$editor_id );
 
 		$room = wp_presence_post_room( self::$post_id );
-		wp_set_presence( $room, 'lock-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( $room, 'lock-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
 
 		$response = WP_Presence_Widget_Active_Posts::heartbeat_received(
 			array(),
@@ -75,7 +75,7 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 				'post_status' => $post_status,
 			)
 		);
-		wp_set_presence( wp_presence_post_room( $page_id ), 'lock-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( wp_presence_post_room( $page_id ), 'lock-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
 
 		$response = WP_Presence_Widget_Active_Posts::heartbeat_received(
 			array(),
@@ -116,7 +116,7 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 		wp_set_current_user( self::$editor_id );
 
 		$room = wp_presence_post_room( self::$post_id );
-		wp_set_presence( $room, 'lock-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( $room, 'lock-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
 
 		$posts = $this->active_posts();
 
@@ -132,7 +132,7 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 		wp_set_current_user( self::$editor_id );
 
 		$room = wp_presence_post_room( self::$post_id );
-		wp_set_presence( $room, 'lock-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( $room, 'lock-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
 
 		// Backdate the entry to exceed idle threshold.
 		$wpdb->update(
@@ -159,8 +159,8 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 		$room1 = wp_presence_post_room( self::$post_id );
 		$room2 = wp_presence_post_room( $post2_id );
 
-		wp_set_presence( $room1, 'lock-' . self::$editor_id, array(), self::$editor_id );
-		wp_set_presence( $room2, 'lock-' . self::$editor2_id, array(), self::$editor2_id );
+		wp_set_presence( $room1, 'lock-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( $room2, 'lock-' . self::$editor2_id, array(), array( 'user_id' => self::$editor2_id ) );
 
 		$posts = $this->active_posts();
 
@@ -173,7 +173,7 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 	public function test_excludes_non_post_rooms() {
 		wp_set_current_user( self::$editor_id );
 
-		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
 
 		$posts = $this->active_posts();
 
@@ -189,7 +189,7 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 	 */
 	public function test_heartbeat_excludes_posts_the_user_cannot_edit() {
 		$room = wp_presence_post_room( self::$post_id );
-		wp_set_presence( $room, 'lock-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( $room, 'lock-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
 
 		wp_set_current_user( self::$contributor_id );
 
@@ -211,7 +211,7 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 		);
 
 		$room = wp_presence_post_room( $draft_id );
-		wp_set_presence( $room, 'lock-' . self::$contributor_id, array(), self::$contributor_id );
+		wp_set_presence( $room, 'lock-' . self::$contributor_id, array(), array( 'user_id' => self::$contributor_id ) );
 
 		wp_set_current_user( self::$contributor_id );
 
@@ -234,8 +234,8 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 			)
 		);
 
-		wp_set_presence( wp_presence_post_room( self::$post_id ), 'lock-a', array(), self::$editor_id );
-		wp_set_presence( wp_presence_post_room( $draft_id ), 'lock-b', array(), self::$contributor_id );
+		wp_set_presence( wp_presence_post_room( self::$post_id ), 'lock-a', array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( wp_presence_post_room( $draft_id ), 'lock-b', array(), array( 'user_id' => self::$contributor_id ) );
 
 		wp_set_current_user( self::$contributor_id );
 
@@ -255,8 +255,8 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 		wp_set_current_user( self::$editor_id );
 
 		$room = wp_presence_post_room( self::$post_id );
-		wp_set_presence( $room, 'editor-' . self::$editor_id, array(), self::$editor_id );
-		wp_set_presence( $room, 'other-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( $room, 'editor-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( $room, 'other-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
 
 		$posts = $this->active_posts();
 
@@ -274,7 +274,7 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 
 		$room = wp_presence_post_room( self::$post_id );
 
-		wp_set_presence( $room, 'stale-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( $room, 'stale-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
 		$wpdb->update(
 			$wpdb->presence,
 			array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - 45 ) ),
@@ -283,7 +283,7 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 			array( '%s' )
 		);
 
-		wp_set_presence( $room, 'editor-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( $room, 'editor-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
 
 		$posts = $this->active_posts();
 
@@ -361,7 +361,7 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 		wp_set_current_user( self::$editor_id );
 
 		$room = wp_presence_post_room( self::$post_id );
-		wp_set_presence( $room, 'lock-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( $room, 'lock-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
 
 		ob_start();
 		WP_Presence_Widget_Active_Posts::render();
@@ -384,8 +384,8 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 		wp_set_current_user( self::$editor_id );
 
 		$room = wp_presence_post_room( self::$post_id );
-		wp_set_presence( $room, 'lock-' . self::$editor_id, array(), self::$editor_id );
-		wp_set_presence( $room, 'lock-' . self::$editor2_id, array(), self::$editor2_id );
+		wp_set_presence( $room, 'lock-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( $room, 'lock-' . self::$editor2_id, array(), array( 'user_id' => self::$editor2_id ) );
 
 		$wpdb->update(
 			$wpdb->presence,
@@ -410,8 +410,8 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 		wp_set_current_user( self::$editor_id );
 
 		$room = wp_presence_post_room( self::$post_id );
-		wp_set_presence( $room, 'editor-' . self::$editor2_id, array(), self::$editor2_id );
-		wp_set_presence( $room, 'editor-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( $room, 'editor-' . self::$editor2_id, array(), array( 'user_id' => self::$editor2_id ) );
+		wp_set_presence( $room, 'editor-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
 		wp_set_post_lock( self::$post_id );
 
 		$posts = $this->active_posts();
@@ -443,7 +443,15 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 		);
 
 		$room = wp_presence_post_room( self::$post_id );
-		wp_set_presence( $room, 'agent-' . $agent_id, array(), $agent_id, null, 60 );
+		wp_set_presence(
+			$room,
+			'agent-' . $agent_id,
+			array(),
+			array(
+				'user_id'    => $agent_id,
+				'expires_in' => 60,
+			)
+		);
 
 		wp_set_current_user( self::$editor_id );
 

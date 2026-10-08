@@ -69,13 +69,13 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 			'admin/online',
 			'user-' . self::$editor_id,
 			array( 'screen' => 'post' ),
-			self::$editor_id
+			array( 'user_id' => self::$editor_id )
 		);
 		wp_set_presence(
 			wp_presence_post_room( $post_id ),
 			'lock-' . self::$editor_id,
 			array(),
-			self::$editor_id
+			array( 'user_id' => self::$editor_id )
 		);
 	}
 
@@ -105,7 +105,7 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 			'admin/online',
 			'user-' . $user_id,
 			array_merge( array( 'screen' => $screen ), $data ),
-			$user_id
+			array( 'user_id' => $user_id )
 		);
 
 		return $user_id;
@@ -134,7 +134,7 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 	 */
 	public function test_the_node_stays_when_you_are_alone() {
 		wp_set_current_user( self::$editor_id );
-		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'dashboard' ), self::$editor_id );
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'dashboard' ), array( 'user_id' => self::$editor_id ) );
 
 		$nodes = $this->render_nodes();
 
@@ -330,8 +330,8 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 
 	public function test_someone_editing_a_template_in_the_site_editor_links_to_it() {
 		$template_id = self::factory()->post->create( array( 'post_type' => 'wp_template', 'post_name' => 'home', 'post_title' => 'Home' ) );
-		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'site-editor' ), self::$editor_id );
-		wp_set_presence( wp_presence_post_room( $template_id ), 'editor-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'site-editor' ), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( wp_presence_post_room( $template_id ), 'editor-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
 
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 		$place = $this->place_of( $this->render_nodes(), self::$editor_id );
@@ -434,12 +434,12 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 
 		$me = self::factory()->user->create( array( 'role' => 'editor' ) );
 		wp_set_current_user( $me );
-		wp_set_presence( 'admin/online', 'user-' . $me, array( 'screen' => 'post' ), $me );
-		wp_set_presence( wp_presence_post_room( $other_post ), 'lock-' . $me, array(), $me );
+		wp_set_presence( 'admin/online', 'user-' . $me, array( 'screen' => 'post' ), array( 'user_id' => $me ) );
+		wp_set_presence( wp_presence_post_room( $other_post ), 'lock-' . $me, array(), array( 'user_id' => $me ) );
 
 		$this->assertSame( 'presence-elsewhere', $this->render_nodes()[ 'presence-user-' . self::$editor_id ]->parent );
 
-		wp_set_presence( wp_presence_post_room( self::$post_id ), 'lock-' . $me, array(), $me );
+		wp_set_presence( wp_presence_post_room( self::$post_id ), 'lock-' . $me, array(), array( 'user_id' => $me ) );
 		wp_remove_presence( wp_presence_post_room( $other_post ), 'lock-' . $me );
 
 		$this->assertSame( 'presence-online', $this->render_nodes()[ 'presence-user-' . self::$editor_id ]->parent );
@@ -457,7 +457,7 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$on_term  = $this->put_user_on_screen( 'edit-category', array( 'object_id' => $term_id ) );
 
 		wp_set_current_user( self::$editor_id );
-		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'edit-category', 'object_id' => $term_id ), self::$editor_id );
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'edit-category', 'object_id' => $term_id ), array( 'user_id' => self::$editor_id ) );
 		$nodes = $this->render_nodes();
 
 		$this->assertSame( 'presence-online', $nodes[ 'presence-user-' . $on_term ]->parent );
@@ -470,7 +470,7 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$here  = $this->put_user_on_screen( 'front', array( 'post_id' => self::$post_id ) );
 
 		wp_set_current_user( self::$editor_id );
-		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'front', 'post_id' => self::$post_id ), self::$editor_id );
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'front', 'post_id' => self::$post_id ), array( 'user_id' => self::$editor_id ) );
 		$nodes = $this->render_nodes();
 
 		$this->assertSame( 'presence-online', $nodes[ 'presence-user-' . $here ]->parent );
@@ -497,7 +497,7 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$this->put_user_on_screen( 'edit' );
 
 		wp_set_current_user( self::$editor_id );
-		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'dashboard' ), self::$editor_id );
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'dashboard' ), array( 'user_id' => self::$editor_id ) );
 
 		$nodes = $this->render_nodes();
 
@@ -513,7 +513,7 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$this->put_user_on_screen( 'dashboard' );
 
 		wp_set_current_user( self::$editor_id );
-		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'dashboard' ), self::$editor_id );
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'dashboard' ), array( 'user_id' => self::$editor_id ) );
 		$this->age_entry( self::$editor_id, WP_PRESENCE_DEFAULT_TTL + 1 );
 
 		$nodes = $this->render_nodes();
@@ -560,9 +560,9 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$room    = 'postType/post:' . $post_id;
 
 		$with = $this->put_user_on_screen( 'post', array( 'post_id' => $post_id ) );
-		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'post', 'post_id' => $post_id ), self::$editor_id );
-		wp_set_presence( $room, 'editor-' . self::$editor_id, array(), self::$editor_id );
-		wp_set_presence( $room, 'editor-' . $with, array(), $with );
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'post', 'post_id' => $post_id ), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( $room, 'editor-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( $room, 'editor-' . $with, array(), array( 'user_id' => $with ) );
 
 		wp_set_current_user( self::$editor_id );
 		$nodes = $this->render_nodes();
@@ -631,8 +631,8 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 	public function test_an_entry_for_a_user_who_no_longer_exists_is_skipped() {
 		$this->view_admin_page( 'upload.php', 'upload' );
 
-		wp_set_presence( 'admin/online', 'user-999901', array( 'screen' => 'upload' ), 999901 );
-		wp_set_presence( 'admin/online', 'user-999902', array( 'screen' => 'plugins' ), 999902 );
+		wp_set_presence( 'admin/online', 'user-999901', array( 'screen' => 'upload' ), array( 'user_id' => 999901 ) );
+		wp_set_presence( 'admin/online', 'user-999902', array( 'screen' => 'plugins' ), array( 'user_id' => 999902 ) );
 		$real = get_userdata( $this->put_user_on_screen( 'upload' ) );
 
 		wp_set_current_user( self::$editor_id );
@@ -764,7 +764,15 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 			2
 		);
 
-		wp_set_presence( wp_presence_post_room( self::$post_id ), 'agent-' . $agent_id, array(), $agent_id, null, 60 );
+		wp_set_presence(
+			wp_presence_post_room( self::$post_id ),
+			'agent-' . $agent_id,
+			array(),
+			array(
+				'user_id'    => $agent_id,
+				'expires_in' => 60,
+			)
+		);
 
 		wp_set_current_user( self::$editor_id );
 		$this->let_current_user_list_users();

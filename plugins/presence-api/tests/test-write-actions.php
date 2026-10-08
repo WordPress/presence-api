@@ -58,7 +58,7 @@ class WP_Test_Presence_Write_Actions extends WP_Presence_UnitTestCase {
 	public function test_set_presence_fires_once_with_what_was_written() {
 		$listener = $this->listen( 'set_presence', 4 );
 
-		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), array( 'user_id' => self::$editor_id ) );
 
 		$this->assertSame( 1, $listener->get_call_count() );
 		$this->assertSame(
@@ -68,12 +68,12 @@ class WP_Test_Presence_Write_Actions extends WP_Presence_UnitTestCase {
 	}
 
 	public function test_set_presence_fires_when_the_state_changes() {
-		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), array( 'user_id' => self::$editor_id ) );
 		$this->backdate( 'test/room', 'client-1', 5 );
 
 		$listener = $this->listen( 'set_presence', 4 );
 
-		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'idle' ), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'idle' ), array( 'user_id' => self::$editor_id ) );
 
 		$this->assertSame( 1, $listener->get_call_count() );
 		$this->assertSame( array( 'action' => 'idle' ), $listener->get_args()[0][2] );
@@ -87,12 +87,12 @@ class WP_Test_Presence_Write_Actions extends WP_Presence_UnitTestCase {
 			$this->markTestSkipped( 'The SQLite driver reports an unchanged upsert as one affected row, where MySQL reports none.' );
 		}
 
-		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), array( 'user_id' => self::$editor_id ) );
 		$this->backdate( 'test/room', 'client-1', 5 );
 
 		$listener = $this->listen( 'set_presence', 4 );
 
-		$result = wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), self::$editor_id );
+		$result = wp_set_presence( 'test/room', 'client-1', array( 'action' => 'editing' ), array( 'user_id' => self::$editor_id ) );
 
 		$this->assertTrue( $result, 'A skipped write still reports success.' );
 		$this->assertSame( 0, $listener->get_call_count(), 'Nothing changed, so there is nothing to react to.' );
@@ -101,11 +101,27 @@ class WP_Test_Presence_Write_Actions extends WP_Presence_UnitTestCase {
 	public function test_set_presence_stays_quiet_when_the_write_is_rejected() {
 		$listener = $this->listen( 'set_presence', 4 );
 
-		$this->assertFalse( wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id, 'not a date' ) );
-		$this->assertFalse( wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id, null, 0 ) );
+		$this->assertFalse( wp_set_presence(
+			'test/room',
+			'client-1',
+			array(),
+			array(
+				'user_id'  => self::$editor_id,
+				'date_gmt' => 'not a date',
+			)
+		) );
+		$this->assertFalse( wp_set_presence(
+			'test/room',
+			'client-1',
+			array(),
+			array(
+				'user_id'    => self::$editor_id,
+				'expires_in' => 0,
+			)
+		) );
 
 		add_filter( 'wp_presence_recording_enabled', '__return_false' );
-		$this->assertFalse( wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id ) );
+		$this->assertFalse( wp_set_presence( 'test/room', 'client-1', array(), array( 'user_id' => self::$editor_id ) ) );
 
 		$this->assertSame( 0, $listener->get_call_count() );
 	}
@@ -122,7 +138,7 @@ class WP_Test_Presence_Write_Actions extends WP_Presence_UnitTestCase {
 
 		$lock = wp_presence_post_lock_client_id();
 
-		$this->assertTrue( wp_set_presence( 'postType/post:1', $lock, array(), self::$editor_id ) );
+		$this->assertTrue( wp_set_presence( 'postType/post:1', $lock, array(), array( 'user_id' => self::$editor_id ) ) );
 		wp_presence_store_collaboration_state( 'postType/post:1', 2, null );
 		$this->assertTrue( wp_remove_presence( 'postType/post:1', $lock ) );
 		wp_remove_presence( 'postType/post:1', wp_presence_collaboration_state_client_id() );
@@ -137,13 +153,13 @@ class WP_Test_Presence_Write_Actions extends WP_Presence_UnitTestCase {
 	public function test_exchange_fires_set_presence_once() {
 		$listener = $this->listen( 'set_presence', 4 );
 
-		wp_presence_exchange( 'postType/post:1', 'gse-1', array( 'cursor' => 1 ), self::$editor_id );
+		wp_presence_exchange( 'postType/post:1', 'gse-1', array( 'cursor' => 1 ), array( 'user_id' => self::$editor_id ) );
 
 		$this->assertSame( 1, $listener->get_call_count() );
 	}
 
 	public function test_removed_presence_fires_once_with_the_room_and_client() {
-		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
 
 		$listener = $this->listen( 'removed_presence', 2 );
 
@@ -164,7 +180,7 @@ class WP_Test_Presence_Write_Actions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_leave
 	 */
 	public function test_leave_fires_removed_presence_once() {
-		wp_set_presence( 'postType/post:1', 'gse-1', array(), self::$editor_id );
+		wp_set_presence( 'postType/post:1', 'gse-1', array(), array( 'user_id' => self::$editor_id ) );
 
 		$listener = $this->listen( 'removed_presence', 2 );
 
@@ -174,8 +190,8 @@ class WP_Test_Presence_Write_Actions extends WP_Presence_UnitTestCase {
 	}
 
 	public function test_removed_user_presence_fires_once_however_many_rooms() {
-		wp_set_presence( 'test/room', 'client-1', array(), self::$editor_id );
-		wp_set_presence( 'postType/post:1', 'client-1', array(), self::$editor_id );
+		wp_set_presence( 'test/room', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'postType/post:1', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
 
 		$listener = $this->listen( 'removed_user_presence', 1 );
 		$per_row  = $this->listen( 'removed_presence', 2 );

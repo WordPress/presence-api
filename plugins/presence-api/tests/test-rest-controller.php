@@ -31,7 +31,7 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 	 */
 	public function test_rest_create_prevents_client_id_spoofing() {
 		// Editor 1 sets presence.
-		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'dashboard' ), self::$editor_id );
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'dashboard' ), array( 'user_id' => self::$editor_id ) );
 
 		// Editor 2 tries to overwrite it via REST.
 		wp_set_current_user( self::$editor_2_id );
@@ -53,7 +53,7 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 	 */
 	public function test_rest_delete_checks_user_id_ownership() {
 		// Editor 1 sets presence.
-		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
 
 		// Editor 2 tries to delete it.
 		wp_set_current_user( self::$editor_2_id );
@@ -74,7 +74,7 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 	 */
 	public function test_rest_delete_allows_admin() {
 		// Editor sets presence.
-		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
 
 		// Admin deletes it.
 		wp_set_current_user( self::$admin_id );
@@ -97,7 +97,7 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 		$room    = 'postType/post:' . $post_id;
 
 		// Editor sets a lock entry.
-		wp_set_presence( $room, 'lock-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( $room, 'lock-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
 
 		// Same editor tries to delete it.
 		wp_set_current_user( self::$editor_id );
@@ -304,7 +304,7 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 	public function test_get_items_leaves_out_reserved_rows() {
 		wp_set_current_user( self::$editor_id );
 
-		wp_set_presence( 'admin/online', 'client-1', array(), self::$editor_id );
+		wp_set_presence( 'admin/online', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
 		wp_set_presence( 'admin/online', wp_presence_collaboration_state_client_id(), array( 'count' => 2 ) );
 
 		$request = new WP_REST_Request( 'GET', '/wp-presence/v1/presence' );
@@ -323,7 +323,7 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_get_entry_screen
 	 */
 	public function test_get_items_shows_other_users_screens_only_to_users_who_can_list_users() {
-		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'dashboard' ), self::$editor_id );
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'dashboard' ), array( 'user_id' => self::$editor_id ) );
 		wp_set_presence(
 			'admin/online',
 			'user-' . self::$editor_2_id,
@@ -332,7 +332,7 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 				'title'   => 'Hello world!',
 				'post_id' => 1,
 			),
-			self::$editor_2_id
+			array( 'user_id' => self::$editor_2_id )
 		);
 
 		$request = new WP_REST_Request( 'GET', '/wp-presence/v1/presence' );
@@ -378,7 +378,7 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 	 */
 	public function test_get_rooms_requires_edit_posts() {
 		wp_set_current_user( self::$editor_id );
-		wp_set_presence( 'admin/online', 'client-1', array(), self::$editor_id );
+		wp_set_presence( 'admin/online', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
 
 		$request  = new WP_REST_Request( 'GET', '/wp-presence/v1/presence/rooms' );
 		$response = rest_get_server()->dispatch( $request );
@@ -407,8 +407,8 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 		$room    = 'postType/post:' . $post_id;
 
 		wp_set_current_user( self::$editor_id );
-		wp_set_presence( 'admin/online', 'client-1', array(), self::$editor_id );
-		wp_set_presence( $room, 'client-2', array(), self::$editor_2_id );
+		wp_set_presence( 'admin/online', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( $room, 'client-2', array(), array( 'user_id' => self::$editor_2_id ) );
 
 		$request  = new WP_REST_Request( 'GET', '/wp-presence/v1/presence/rooms' );
 		$response = rest_get_server()->dispatch( $request );
@@ -461,8 +461,8 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 	public function test_get_items_returns_headers() {
 		wp_set_current_user( self::$editor_id );
 
-		wp_set_presence( 'admin/online', 'client-1', array(), self::$editor_id );
-		wp_set_presence( 'admin/online', 'client-2', array(), self::$editor_2_id );
+		wp_set_presence( 'admin/online', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'admin/online', 'client-2', array(), array( 'user_id' => self::$editor_2_id ) );
 
 		$request = new WP_REST_Request( 'GET', '/wp-presence/v1/presence' );
 		$request->set_param( 'room', 'admin/online' );
@@ -482,9 +482,9 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 		wp_set_current_user( self::$editor_id );
 
 		// Fill exactly to the limit (50), including one entry we'll try to refresh.
-		wp_set_presence( 'room/target', 'client-target', array(), self::$editor_id );
+		wp_set_presence( 'room/target', 'client-target', array(), array( 'user_id' => self::$editor_id ) );
 		for ( $i = 0; $i < 49; $i++ ) {
-			wp_set_presence( 'room/test-' . $i, 'client-' . $i, array(), self::$editor_id );
+			wp_set_presence( 'room/test-' . $i, 'client-' . $i, array(), array( 'user_id' => self::$editor_id ) );
 		}
 
 		// Now at exactly 50 entries — refreshing an existing (room, client_id) should succeed.
@@ -507,7 +507,7 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 
 		// Fill up to the limit (50).
 		for ( $i = 0; $i < 50; $i++ ) {
-			wp_set_presence( 'room/test-' . $i, 'client-' . $i, array(), self::$editor_id );
+			wp_set_presence( 'room/test-' . $i, 'client-' . $i, array(), array( 'user_id' => self::$editor_id ) );
 		}
 
 		$request = new WP_REST_Request( 'POST', '/wp-presence/v1/presence' );
@@ -601,7 +601,7 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 	public function test_get_items_includes_display_name_and_avatar_url() {
 		wp_set_current_user( self::$editor_id );
 
-		wp_set_presence( 'admin/online', 'client-1', array(), self::$editor_id );
+		wp_set_presence( 'admin/online', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
 
 		$request = new WP_REST_Request( 'GET', '/wp-presence/v1/presence' );
 		$request->set_param( 'room', 'admin/online' );
@@ -625,7 +625,7 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 
 		// Create a temporary user.
 		$temp_user_id = self::factory()->user->create( array( 'role' => 'editor' ) );
-		wp_set_presence( 'admin/online', 'client-temp', array(), $temp_user_id );
+		wp_set_presence( 'admin/online', 'client-temp', array(), array( 'user_id' => $temp_user_id ) );
 
 		// Delete the user. On multisite, wp_delete_user() only removes the user
 		// from the current site, leaving them on the network and still
@@ -639,7 +639,7 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 		}
 
 		// Deletion now clears this row; re-write it to test the fallback fields.
-		wp_set_presence( 'admin/online', 'client-temp', array(), $temp_user_id );
+		wp_set_presence( 'admin/online', 'client-temp', array(), array( 'user_id' => $temp_user_id ) );
 
 		$request = new WP_REST_Request( 'GET', '/wp-presence/v1/presence' );
 		$request->set_param( 'room', 'admin/online' );
@@ -679,10 +679,10 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 
 		// Set presence for Author 1 in that post room.
 		$room = 'postType/post:' . $post_id;
-		wp_set_presence( $room, 'client-author1', array(), $author_1 );
+		wp_set_presence( $room, 'client-author1', array(), array( 'user_id' => $author_1 ) );
 
 		// Also set presence in standard admin/online room for Author 2.
-		wp_set_presence( 'admin/online', 'client-author2', array(), $author_2 );
+		wp_set_presence( 'admin/online', 'client-author2', array(), array( 'user_id' => $author_2 ) );
 
 		// Query /presence/rooms as Author 2.
 		wp_set_current_user( $author_2 );
@@ -744,7 +744,7 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 	 */
 	public function test_delete_item_removes_the_entry_and_returns_expected_shape() {
 		wp_set_current_user( self::$editor_id );
-		wp_set_presence( 'admin/online', 'client-1', array(), self::$editor_id );
+		wp_set_presence( 'admin/online', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
 
 		$request = new WP_REST_Request( 'DELETE', '/wp-presence/v1/presence' );
 		$request->set_param( 'room', 'admin/online' );
@@ -844,7 +844,7 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 			$user_id             = self::factory()->user->create( array( 'role' => 'editor' ) );
 			$room                = 'postType/post:' . self::factory()->post->create();
 			$room_users[ $room ] = $user_id;
-			wp_set_presence( $room, 'client-' . $i, array(), $user_id );
+			wp_set_presence( $room, 'client-' . $i, array(), array( 'user_id' => $user_id ) );
 		}
 
 		// Page 1 follows the listing's own order, which is not creation order once post IDs differ in length.

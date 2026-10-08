@@ -590,7 +590,7 @@ function wp_presence_demo_seed_pattern_editor( $pattern_id = 0 ) {
 			'action' => 'editing',
 			'screen' => 'wp_block',
 		),
-		$user->ID
+		array( 'user_id' => $user->ID )
 	);
 
 	return array(

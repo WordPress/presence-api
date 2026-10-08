@@ -17,7 +17,7 @@ class WP_Test_Network_Admin_Bar extends WP_Presence_Network_UnitTestCase {
 		require_once ABSPATH . WPINC . '/class-wp-admin-bar.php';
 
 		$admin_id = $this->become_network_admin();
-		wp_set_presence( 'admin/online', 'user-' . $admin_id, array( 'screen' => 'users-network' ), $admin_id );
+		wp_set_presence( 'admin/online', 'user-' . $admin_id, array( 'screen' => 'users-network' ), array( 'user_id' => $admin_id ) );
 
 		$this->set_network_summary_row( get_current_blog_id(), array( $admin_id ) );
 		$this->set_network_summary_row( $this->create_blog(), self::factory()->user->create_many( 2 ) );
