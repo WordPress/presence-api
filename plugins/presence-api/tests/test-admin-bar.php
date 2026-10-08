@@ -611,6 +611,20 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * With the Users list switched off there is no Online view to open, so the node links nowhere.
+	 *
+	 * @covers ::wp_presence_admin_bar_node
+	 */
+	public function test_links_nowhere_with_the_users_list_switched_off() {
+		$this->put_user_on_screen( 'users', array( 'title' => 'Users' ) );
+		wp_set_current_user( self::$editor_id );
+		$this->let_current_user_list_users();
+		update_option( 'wp_presence_features', array( 'user-list' => 0 ) );
+
+		$this->assertEmpty( $this->render_nodes()['presence-online']->href );
+	}
+
+	/**
 	 * A presence row outlives the user record it points at when an account is
 	 * deleted mid-session, and every list here has to survive that.
 	 */

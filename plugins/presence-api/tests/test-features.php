@@ -46,6 +46,18 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	);
 
 	/**
+	 * The hooks the user-list switch decides, as registered in default-filters.php.
+	 *
+	 * @var array<int, array{0: string, 1: string, 2: int}>
+	 */
+	private static $user_list_hooks = array(
+		array( 'views_users', 'wp_presence_users_views', 10 ),
+		array( 'pre_get_users', 'wp_presence_filter_online_users', 10 ),
+		array( 'heartbeat_received', 'wp_presence_users_list_heartbeat_received', 13 ),
+		array( 'heartbeat_received', 'wp_presence_users_online_count_heartbeat_received', 13 ),
+	);
+
+	/**
 	 * The hooks the network-admin switch decides, as registered in ms-default-filters.php.
 	 *
 	 * @var array<int, array{0: string, 1: string|array, 2: int}>
@@ -114,6 +126,19 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 		}
 
 		update_option( 'wp_presence_features', array( 'post-list' => $enabled ? 1 : 0 ) );
+		include WP_PRESENCE_PLUGIN_DIR . 'includes/default-filters.php';
+	}
+
+	/**
+	 * Re-runs default-filters.php the way the plugin does at load, with the
+	 * user-list switch in the given position.
+	 */
+	private function register_hooks_with_user_list( $enabled ) {
+		foreach ( self::$user_list_hooks as $hook ) {
+			remove_filter( $hook[0], $hook[1], $hook[2] );
+		}
+
+		update_option( 'wp_presence_features', array( 'user-list' => $enabled ? 1 : 0 ) );
 		include WP_PRESENCE_PLUGIN_DIR . 'includes/default-filters.php';
 	}
 
@@ -255,6 +280,25 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Switching the users list off leaves the online filter and views unhooked.
+	 *
+	 * @covers ::wp_presence_feature_enabled
+	 */
+	public function test_switching_user_list_off_leaves_its_hooks_unregistered() {
+		$this->register_hooks_with_user_list( false );
+
+		foreach ( self::$user_list_hooks as $hook ) {
+			$this->assertFalse( has_filter( $hook[0], $hook[1] ), "{$hook[1]} should not be hooked to {$hook[0]}." );
+		}
+
+		$this->register_hooks_with_user_list( true );
+
+		foreach ( self::$user_list_hooks as $hook ) {
+			$this->assertSame( $hook[2], has_filter( $hook[0], $hook[1] ), "{$hook[1]} should be hooked to {$hook[0]} at {$hook[2]}." );
+		}
+	}
+
+	/**
 	 * With its hooks gone, the admin bar renders without the presence node.
 	 *
 	 * @covers ::wp_presence_feature_enabled
@@ -325,6 +369,7 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 				'post-locks' => 0,
 				'admin-bar'  => 0,
 				'post-list'  => 0,
+				'user-list'  => 0,
 			),
 			wp_presence_sanitize_features( array( 'not-a-feature' => '1' ) ),
 			'A feature that posted nothing is stored as off, and unknown keys are dropped.'
@@ -334,6 +379,7 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 				'post-locks' => 1,
 				'admin-bar'  => 0,
 				'post-list'  => 0,
+				'user-list'  => 0,
 			),
 			wp_presence_sanitize_features( array( 'post-locks' => '1' ) )
 		);
@@ -342,6 +388,7 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 				'post-locks' => 0,
 				'admin-bar'  => 0,
 				'post-list'  => 0,
+				'user-list'  => 0,
 			),
 			wp_presence_sanitize_features( 'garbage' )
 		);
@@ -375,9 +422,11 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 		$this->assertSame( 'Post locks', $wp_settings_fields['presence-api']['wp_presence_features']['wp_presence_features_post-locks']['title'] );
 		$this->assertSame( 'Admin bar', $wp_settings_fields['presence-api']['wp_presence_features']['wp_presence_features_admin-bar']['title'] );
 		$this->assertSame( 'Posts list', $wp_settings_fields['presence-api']['wp_presence_features']['wp_presence_features_post-list']['title'] );
+		$this->assertSame( 'Users list', $wp_settings_fields['presence-api']['wp_presence_features']['wp_presence_features_user-list']['title'] );
 		$this->assertArrayNotHasKey( 'wp_presence_features_post-locks', $wp_settings_fields['general']['default'] );
 		$this->assertArrayNotHasKey( 'wp_presence_features_admin-bar', $wp_settings_fields['general']['default'] );
 		$this->assertArrayNotHasKey( 'wp_presence_features_post-list', $wp_settings_fields['general']['default'] );
+		$this->assertArrayNotHasKey( 'wp_presence_features_user-list', $wp_settings_fields['general']['default'] );
 		$this->assertStringNotContainsString( 'wp_presence_features', $this->render( 'wp_presence_render_recording_field' ) );
 	}
 
@@ -486,12 +535,14 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 					'post-locks'    => 0,
 					'admin-bar'     => 0,
 					'post-list'     => 0,
+					'user-list'     => 0,
 					'network-admin' => 0,
 				),
 				array(
 					'post-locks'    => 1,
 					'admin-bar'     => 0,
 					'post-list'     => 0,
+					'user-list'     => 0,
 					'network-admin' => 0,
 				),
 			),
