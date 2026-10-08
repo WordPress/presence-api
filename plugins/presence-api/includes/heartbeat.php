@@ -219,7 +219,7 @@ function wp_presence_enqueue_heartbeat_ping() {
 			$admin_state['object_id'] = $page_context['object_id'];
 		}
 	}
-	wp_set_presence( wp_presence_admin_room(), 'user-' . $user_id, $admin_state, $user_id );
+	wp_set_presence( wp_presence_admin_room(), 'user-' . $user_id, $admin_state, array( 'user_id' => $user_id ) );
 
 	$initial_collaborator_count = 0;
 	if ( $editor_room ) {
@@ -229,7 +229,7 @@ function wp_presence_enqueue_heartbeat_ping() {
 			$editor_room,
 			'editor-' . $user_id,
 			wp_presence_editor_state( $screen_id, false ),
-			$user_id
+			array( 'user_id' => $user_id )
 		);
 
 		// Reads the room back, so a reload or late join into an already 2+
@@ -385,7 +385,7 @@ function wp_presence_admin_heartbeat_received( $response, $data, $screen_id ) { 
 		}
 	}
 
-	wp_set_presence( wp_presence_admin_room(), 'user-' . $user_id, $state, $user_id );
+	wp_set_presence( wp_presence_admin_room(), 'user-' . $user_id, $state, array( 'user_id' => $user_id ) );
 
 	return $response;
 }
