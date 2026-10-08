@@ -63,7 +63,7 @@ function wp_presence_bridge_post_lock( $response, $data, $screen_id ) {
 		$room,
 		'editor-' . $user_id,
 		wp_presence_editor_state( $screen_id, true ),
-		$user_id
+		array( 'user_id' => $user_id )
 	);
 
 	return $response;
@@ -208,7 +208,16 @@ function wp_presence_update_post_lock( $check, $post_id, $meta_key, $meta_value,
 	$date_gmt = gmdate( 'Y-m-d H:i:s', min( $time, time() ) );
 
 	// The reserved client ID is written with recording off, and wp_set_presence() rejects a window under a second.
-	return wp_set_presence( $room, wp_presence_post_lock_client_id(), array(), $user_id, $date_gmt, max( 1, $window ) );
+	return wp_set_presence(
+		$room,
+		wp_presence_post_lock_client_id(),
+		array(),
+		array(
+			'user_id'    => $user_id,
+			'date_gmt'   => $date_gmt,
+			'expires_in' => max( 1, $window ),
+		)
+	);
 }
 
 /**

@@ -400,7 +400,7 @@ function wp_presence_demo_refresh( $user_ids ) {
 			$state['post_status'] = $post_statuses[ array_rand( $post_statuses ) ];
 		}
 
-		wp_set_presence( 'admin/online', 'user-' . $uid, $state, $uid );
+		wp_set_presence( 'admin/online', 'user-' . $uid, $state, array( 'user_id' => $uid ) );
 
 		if ( 'post' === $screen ) {
 			$post_id = $real_posts[ wp_presence_demo_pick( array_slice( WP_PRESENCE_DEMO_POST_WEIGHTS, 0, count( $real_posts ) ) ) ];
@@ -418,7 +418,7 @@ function wp_presence_demo_refresh( $user_ids ) {
 					'action' => 'editing',
 					'screen' => $screen,
 				),
-				$uid
+				array( 'user_id' => $uid )
 			);
 		}
 
@@ -487,8 +487,8 @@ function wp_presence_demo_seed_locks() {
 			if ( 0 === $i ) {
 				update_post_meta( $post_id, '_edit_lock', time() . ':' . $user->ID );
 			}
-			wp_set_presence( 'admin/online', 'user-' . $user->ID, array( 'screen' => 'post' ), $user->ID );
-			wp_set_presence( wp_presence_post_room( $post_id ), 'editor-' . $user->ID, wp_presence_editor_state( 'post', 0 === $i ), $user->ID );
+			wp_set_presence( 'admin/online', 'user-' . $user->ID, array( 'screen' => 'post' ), array( 'user_id' => $user->ID ) );
+			wp_set_presence( wp_presence_post_room( $post_id ), 'editor-' . $user->ID, wp_presence_editor_state( 'post', 0 === $i ), array( 'user_id' => $user->ID ) );
 		}
 	}
 }
@@ -533,10 +533,12 @@ function wp_presence_demo_seed_collaborators( $post_id = 0, $count = 2 ) {
 					'enteredAt'   => strtotime( $user->user_registered . ' UTC' ) * 1000,
 				),
 			),
-			$user->ID,
-			gmdate( 'Y-m-d H:i:s' )
+			array(
+				'user_id'  => $user->ID,
+				'date_gmt' => gmdate( 'Y-m-d H:i:s' ),
+			)
 		);
-		wp_set_presence( 'admin/online', 'user-' . $user->ID, array( 'screen' => 'post' ), $user->ID );
+		wp_set_presence( 'admin/online', 'user-' . $user->ID, array( 'screen' => 'post' ), array( 'user_id' => $user->ID ) );
 	}
 
 	return $post_id;

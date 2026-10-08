@@ -185,6 +185,104 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * The `$args` array, its query string form and the positional form from before 0.17.0 write and read the same rows.
+	 *
+	 * @covers ::wp_set_presence
+	 * @covers ::wp_get_presence
+	 * @covers ::wp_presence_exchange
+	 * @covers ::wp_presence_leave
+	 * @covers ::wp_presence_positional_args
+	 */
+	public function test_args_query_string_and_positional_forms_match() {
+		$user_id = self::factory()->user->create();
+		$past    = gmdate( 'Y-m-d H:i:s', time() - 10 );
+
+		wp_set_presence(
+			'admin/args',
+			'gse-1',
+			array( 'a' => 1 ),
+			array(
+				'user_id'  => $user_id,
+				'date_gmt' => $past,
+			)
+		);
+		wp_set_presence( 'admin/positional', 'gse-1', array( 'a' => 1 ), $user_id, $past );
+		wp_set_presence( 'admin/positional', 'editor-1', array(), $user_id );
+		$fired = array();
+		add_action(
+			'set_presence',
+			static function ( $room, $client_id, $state, $id ) use ( &$fired ) {
+				$fired[] = $id;
+			},
+			10,
+			4
+		);
+		wp_set_presence( 'admin/args', 'editor-1', array(), "user_id={$user_id}" );
+		$this->assertSame( array( $user_id ), $fired, 'A query string still hands the action an integer user ID.' );
+
+		foreach ( array( 'admin/args', 'admin/positional' ) as $room ) {
+			$rows = wp_get_presence( $room, array( 'client_prefix' => 'gse-' ) );
+			$this->assertCount( 1, $rows, $room );
+			$this->assertSame( $user_id, (int) $rows[0]->user_id, $room );
+			$this->assertSame( $past, $rows[0]->date_gmt, $room );
+			$this->assertCount( 2, wp_get_presence( $room ), $room );
+		}
+
+		$this->assertEquals( wp_get_presence( 'admin/args', 'client_prefix=gse-' ), wp_get_presence( 'admin/args', null, 'gse-' ) );
+		$this->assertEquals( wp_get_presence( 'admin/args', array( 'timeout' => 60 ) ), wp_get_presence( 'admin/args', 60 ) );
+
+		$this->assertCount(
+			1,
+			wp_presence_exchange(
+				'admin/args',
+				'gse-2',
+				array(),
+				array(
+					'user_id'       => $user_id,
+					'client_prefix' => 'editor-',
+				)
+			)
+		);
+		$this->assertCount( 1, wp_presence_exchange( 'admin/positional', 'gse-2', array(), $user_id, null, 'editor-' ) );
+		foreach (
+			array(
+				wp_presence_leave( 'admin/args', 'editor-1', array( 'client_prefix' => 'gse-' ) ),
+				wp_presence_leave( 'admin/positional', 'editor-1', null, 'gse-' ),
+			) as $left
+		) {
+			$this->assertContains( 'gse-2', wp_list_pluck( $left, 'client_id' ) );
+			$this->assertNotContains( 'editor-1', wp_list_pluck( $left, 'client_id' ) );
+		}
+	}
+
+	/**
+	 * A float window from before 0.17.0 is still a window, not a query string that parses to nothing.
+	 *
+	 * @covers ::wp_get_presence
+	 * @covers ::wp_presence_positional_args
+	 */
+	public function test_a_positional_float_window_still_bounds_the_read() {
+		wp_set_presence( 'admin/float', 'gse-1', array(), array( 'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - 45 ) ) );
+
+		$this->assertCount( 1, wp_get_presence( 'admin/float', 60 ) );
+		$this->assertCount( 0, wp_get_presence( 'admin/float', 30.5 ), 'A row 45 seconds old is outside a 30.5-second window.' );
+	}
+
+	/**
+	 * A stray argument after `$args` cannot turn the array into a user ID and write the row as someone else.
+	 *
+	 * @covers ::wp_presence_exchange
+	 * @covers ::wp_presence_positional_args
+	 */
+	public function test_an_argument_after_args_leaves_the_args_alone() {
+		$user_id = self::factory()->user->create();
+
+		wp_presence_exchange( 'admin/half', 'gse-1', array(), array( 'user_id' => $user_id ), 30 );
+
+		$this->assertSame( $user_id, (int) wp_get_presence( 'admin/half' )[0]->user_id );
+	}
+
+	/**
 	 * @covers ::wp_set_presence
 	 */
 	public function test_set_presence_upserts() {
