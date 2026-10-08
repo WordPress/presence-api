@@ -63,6 +63,10 @@ function wp_presence_get_features() {
 			'label'       => __( 'Dashboard widget', 'presence-api' ),
 			'description' => __( 'Show the posts people have open right now in an Active Posts widget on the Dashboard.', 'presence-api' ),
 		),
+		'stale-screen'     => array(
+			'label'       => __( 'Stale-screen notice', 'presence-api' ),
+			'description' => __( 'Show a notice when someone else saves changes to what you have open.', 'presence-api' ),
+		),
 		'synced-patterns'  => array(
 			'label'       => __( 'Synced patterns', 'presence-api' ),
 			'description' => __( 'Show a notice on a synced pattern in the block editor while someone else is editing the pattern itself.', 'presence-api' ),
