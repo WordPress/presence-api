@@ -45,6 +45,47 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 		array( 'heartbeat_received', 'wp_presence_editors_column_heartbeat_received', 13 ),
 	);
 
+	/**
+	 * The hooks the user-list switch decides, as registered in default-filters.php.
+	 *
+	 * @var array<int, array{0: string, 1: string, 2: int}>
+	 */
+	private static $user_list_hooks = array(
+		array( 'views_users', 'wp_presence_users_views', 10 ),
+		array( 'pre_get_users', 'wp_presence_filter_online_users', 10 ),
+		array( 'heartbeat_received', 'wp_presence_users_list_heartbeat_received', 13 ),
+		array( 'heartbeat_received', 'wp_presence_users_online_count_heartbeat_received', 13 ),
+	);
+
+	/**
+	 * The hooks the dashboard-widget switch decides, as registered in default-filters.php.
+	 *
+	 * @var array<int, array{0: string, 1: string|array{0: string, 1: string}, 2: int}>
+	 */
+	private static $dashboard_widget_hooks = array(
+		array( 'wp_dashboard_setup', array( 'WP_Presence_Widget_Active_Posts', 'register' ), 10 ),
+		array( 'heartbeat_received', array( 'WP_Presence_Widget_Active_Posts', 'heartbeat_received' ), 10 ),
+		array( 'get_user_option_meta-box-order_dashboard', 'wp_presence_default_widget_order', 10 ),
+	);
+
+	/**
+	 * The hooks the network-admin switch decides, as registered in ms-default-filters.php.
+	 *
+	 * @var array<int, array{0: string, 1: string|array, 2: int}>
+	 */
+	private static $network_admin_hooks = array(
+		array( 'wpmu_blogs_columns', 'wp_presence_register_network_sites_column', 10 ),
+		array( 'manage_sites_custom_column', 'wp_presence_render_network_sites_column', 10 ),
+		array( 'admin_enqueue_scripts', 'wp_presence_enqueue_network_sites_assets', 10 ),
+		array( 'network_admin_notices', 'wp_presence_network_aggregation_notice', 10 ),
+		array( 'views_users-network', 'wp_presence_network_users_views', 10 ),
+		array( 'users_list_table_query_args', 'wp_presence_filter_network_online_users', 10 ),
+		array( 'wpmu_users_columns', 'wp_presence_register_network_users_column', 10 ),
+		array( 'manage_users-network_custom_column', 'wp_presence_render_network_users_column', 10 ),
+		array( 'wp_network_dashboard_setup', array( 'WP_Presence_Network_Widget_Whos_Online', 'register' ), 10 ),
+		array( 'heartbeat_received', array( 'WP_Presence_Network_Widget_Whos_Online', 'heartbeat_received' ), 10 ),
+	);
+
 	public function tear_down() {
 		unset( $_POST['wp_presence_network_features'], $_REQUEST['_wpnonce'], $_GET['updated'], $GLOBALS['title'] );
 		set_current_screen( 'front' );
@@ -97,6 +138,44 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 
 		update_option( 'wp_presence_features', array( 'post-list' => $enabled ? 1 : 0 ) );
 		include WP_PRESENCE_PLUGIN_DIR . 'includes/default-filters.php';
+	}
+
+	/**
+	 * Re-runs default-filters.php the way the plugin does at load, with the
+	 * user-list switch in the given position.
+	 */
+	private function register_hooks_with_user_list( $enabled ) {
+		foreach ( self::$user_list_hooks as $hook ) {
+			remove_filter( $hook[0], $hook[1], $hook[2] );
+		}
+
+		update_option( 'wp_presence_features', array( 'user-list' => $enabled ? 1 : 0 ) );
+		include WP_PRESENCE_PLUGIN_DIR . 'includes/default-filters.php';
+	}
+
+	/**
+	 * Re-runs default-filters.php the way the plugin does at load, with the
+	 * dashboard-widget switch in the given position.
+	 */
+	private function register_hooks_with_dashboard_widget( $enabled ) {
+		foreach ( self::$dashboard_widget_hooks as $hook ) {
+			remove_filter( $hook[0], $hook[1], $hook[2] );
+		}
+
+		update_option( 'wp_presence_features', array( 'dashboard-widget' => $enabled ? 1 : 0 ) );
+		include WP_PRESENCE_PLUGIN_DIR . 'includes/default-filters.php';
+	}
+
+	/**
+	 * Re-runs ms-default-filters.php with the network-admin switch in the given position.
+	 */
+	private function register_hooks_with_network_admin( $enabled ) {
+		foreach ( self::$network_admin_hooks as $hook ) {
+			remove_filter( $hook[0], $hook[1], $hook[2] );
+		}
+
+		update_site_option( 'wp_presence_network_features', array( 'network-admin' => $enabled ? 1 : 0 ) );
+		include WP_PRESENCE_PLUGIN_DIR . 'includes/ms-default-filters.php';
 	}
 
 	/**
@@ -225,6 +304,46 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Switching the dashboard widget off leaves the Active Posts widget and its default placement unhooked.
+	 *
+	 * @covers ::wp_presence_feature_enabled
+	 */
+	public function test_switching_the_dashboard_widget_off_leaves_its_hooks_unregistered() {
+		$this->register_hooks_with_dashboard_widget( false );
+
+		foreach ( self::$dashboard_widget_hooks as $hook ) {
+			$name = is_array( $hook[1] ) ? implode( '::', $hook[1] ) : $hook[1];
+			$this->assertFalse( has_filter( $hook[0], $hook[1] ), "{$name} should not be hooked to {$hook[0]}." );
+		}
+
+		$this->register_hooks_with_dashboard_widget( true );
+
+		foreach ( self::$dashboard_widget_hooks as $hook ) {
+			$name = is_array( $hook[1] ) ? implode( '::', $hook[1] ) : $hook[1];
+			$this->assertSame( $hook[2], has_filter( $hook[0], $hook[1] ), "{$name} should be hooked to {$hook[0]} at {$hook[2]}." );
+		}
+	}
+
+	/**
+	 * Switching the users list off leaves the online filter and views unhooked.
+	 *
+	 * @covers ::wp_presence_feature_enabled
+	 */
+	public function test_switching_user_list_off_leaves_its_hooks_unregistered() {
+		$this->register_hooks_with_user_list( false );
+
+		foreach ( self::$user_list_hooks as $hook ) {
+			$this->assertFalse( has_filter( $hook[0], $hook[1] ), "{$hook[1]} should not be hooked to {$hook[0]}." );
+		}
+
+		$this->register_hooks_with_user_list( true );
+
+		foreach ( self::$user_list_hooks as $hook ) {
+			$this->assertSame( $hook[2], has_filter( $hook[0], $hook[1] ), "{$hook[1]} should be hooked to {$hook[0]} at {$hook[2]}." );
+		}
+	}
+
+	/**
 	 * With its hooks gone, the admin bar renders without the presence node.
 	 *
 	 * @covers ::wp_presence_feature_enabled
@@ -295,6 +414,8 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 				'post-locks' => 0,
 				'admin-bar'  => 0,
 				'post-list'  => 0,
+				'user-list'  => 0,
+				'dashboard-widget' => 0,
 			),
 			wp_presence_sanitize_features( array( 'not-a-feature' => '1' ) ),
 			'A feature that posted nothing is stored as off, and unknown keys are dropped.'
@@ -304,6 +425,8 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 				'post-locks' => 1,
 				'admin-bar'  => 0,
 				'post-list'  => 0,
+				'user-list'  => 0,
+				'dashboard-widget' => 0,
 			),
 			wp_presence_sanitize_features( array( 'post-locks' => '1' ) )
 		);
@@ -312,6 +435,8 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 				'post-locks' => 0,
 				'admin-bar'  => 0,
 				'post-list'  => 0,
+				'user-list'  => 0,
+				'dashboard-widget' => 0,
 			),
 			wp_presence_sanitize_features( 'garbage' )
 		);
@@ -345,9 +470,13 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 		$this->assertSame( 'Post locks', $wp_settings_fields['presence-api']['wp_presence_features']['wp_presence_features_post-locks']['title'] );
 		$this->assertSame( 'Admin bar', $wp_settings_fields['presence-api']['wp_presence_features']['wp_presence_features_admin-bar']['title'] );
 		$this->assertSame( 'Posts list', $wp_settings_fields['presence-api']['wp_presence_features']['wp_presence_features_post-list']['title'] );
+		$this->assertSame( 'Users list', $wp_settings_fields['presence-api']['wp_presence_features']['wp_presence_features_user-list']['title'] );
+		$this->assertSame( 'Dashboard widget', $wp_settings_fields['presence-api']['wp_presence_features']['wp_presence_features_dashboard-widget']['title'] );
 		$this->assertArrayNotHasKey( 'wp_presence_features_post-locks', $wp_settings_fields['general']['default'] );
 		$this->assertArrayNotHasKey( 'wp_presence_features_admin-bar', $wp_settings_fields['general']['default'] );
 		$this->assertArrayNotHasKey( 'wp_presence_features_post-list', $wp_settings_fields['general']['default'] );
+		$this->assertArrayNotHasKey( 'wp_presence_features_user-list', $wp_settings_fields['general']['default'] );
+		$this->assertArrayNotHasKey( 'wp_presence_features_dashboard-widget', $wp_settings_fields['general']['default'] );
 		$this->assertStringNotContainsString( 'wp_presence_features', $this->render( 'wp_presence_render_recording_field' ) );
 	}
 
@@ -453,17 +582,24 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 		$this->assertSame(
 			array(
 				array(
-					'post-locks' => 0,
-					'admin-bar'  => 0,
-					'post-list'  => 0,
+					'post-locks'    => 0,
+					'admin-bar'     => 0,
+					'post-list'     => 0,
+					'user-list'     => 0,
+					'dashboard-widget' => 0,
+					'network-admin' => 0,
 				),
 				array(
-					'post-locks' => 1,
-					'admin-bar'  => 0,
-					'post-list'  => 0,
+					'post-locks'    => 1,
+					'admin-bar'     => 0,
+					'post-list'     => 0,
+					'user-list'     => 0,
+					'dashboard-widget' => 0,
+					'network-admin' => 0,
 				),
 			),
-			$saved
+			$saved,
+			'A network-only feature that posted nothing is stored as off, like any other.'
 		);
 	}
 
@@ -558,6 +694,79 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 			$this->fail( 'The save should have been refused.' );
 		} catch ( WPDieException $refused ) {
 			$this->assertFalse( get_site_option( 'wp_presence_network_features' ), 'Nothing was stored.' );
+		}
+	}
+
+	/**
+	 * A site's choice would decide network screens by whichever site the request started on.
+	 *
+	 * @group ms-required
+	 *
+	 * @covers ::wp_presence_feature_enabled
+	 */
+	public function test_a_network_only_feature_follows_the_network_alone() {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		update_option( 'wp_presence_features', array( 'network-admin' => 0 ) );
+
+		$this->assertTrue( wp_presence_feature_enabled( 'network-admin' ), 'A site switching it off does nothing.' );
+
+		update_site_option( 'wp_presence_network_features', array( 'network-admin' => 0 ) );
+
+		$this->assertFalse( wp_presence_feature_enabled( 'network-admin' ) );
+	}
+
+	/**
+	 * @covers ::wp_presence_sanitize_features
+	 */
+	public function test_only_the_network_stores_a_network_only_feature() {
+		$this->assertArrayNotHasKey( 'network-admin', wp_presence_sanitize_features( array( 'network-admin' => '1' ) ) );
+		$this->assertSame( 1, wp_presence_sanitize_features( array( 'network-admin' => '1' ), true )['network-admin'] );
+	}
+
+	/**
+	 * @group ms-required
+	 *
+	 * @covers ::wp_presence_register_feature_settings
+	 */
+	public function test_a_network_only_feature_has_a_row_on_the_network_page_alone() {
+		global $wp_settings_fields;
+
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		wp_presence_register_feature_settings();
+
+		$this->assertArrayHasKey( 'wp_presence_network_features_network-admin', $wp_settings_fields['presence-api-network']['wp_presence_features'] );
+		$this->assertArrayNotHasKey( 'wp_presence_features_network-admin', $wp_settings_fields['presence-api']['wp_presence_features'] );
+		$this->assertArrayHasKey( 'wp_presence_features_post-locks', $wp_settings_fields['presence-api']['wp_presence_features'], 'Per-site features keep their row.' );
+	}
+
+	/**
+	 * @group ms-required
+	 *
+	 * @covers ::wp_presence_feature_enabled
+	 */
+	public function test_switching_the_network_admin_screens_off_leaves_their_hooks_unregistered() {
+		if ( ! is_multisite() ) {
+			$this->markTestSkipped( 'Requires multisite.' );
+		}
+
+		$this->register_hooks_with_network_admin( false );
+
+		foreach ( self::$network_admin_hooks as $hook ) {
+			$this->assertFalse( has_filter( $hook[0], $hook[1] ), 'A network admin screen hook should not be registered.' );
+		}
+
+		$this->assertSame( 10, has_action( 'wp_presence_admin_room_changed', 'wp_presence_push_network_summary' ), 'The summary keeps being built for REST and WP-CLI.' );
+
+		$this->register_hooks_with_network_admin( true );
+
+		foreach ( self::$network_admin_hooks as $hook ) {
+			$this->assertSame( $hook[2], has_filter( $hook[0], $hook[1] ), 'A network admin screen hook should be registered.' );
 		}
 	}
 }

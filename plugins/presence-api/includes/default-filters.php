@@ -66,10 +66,13 @@ if ( wp_presence_feature_enabled( 'admin-bar' ) ) {
 // Outside the switch: presence-ping.js needs the token on every admin page, faces or not.
 add_filter( 'wp_refresh_nonces', 'wp_presence_refresh_screen_token', 10, 3 );
 
-add_filter( 'views_users', 'wp_presence_users_views' );
-add_action( 'pre_get_users', 'wp_presence_filter_online_users' );
-add_filter( 'heartbeat_received', 'wp_presence_users_list_heartbeat_received', 13, 3 );
-add_filter( 'heartbeat_received', 'wp_presence_users_online_count_heartbeat_received', 13, 3 );
+// Plugin only: the check comes off when core merges the piece.
+if ( wp_presence_feature_enabled( 'user-list' ) ) {
+	add_filter( 'views_users', 'wp_presence_users_views' );
+	add_action( 'pre_get_users', 'wp_presence_filter_online_users' );
+	add_filter( 'heartbeat_received', 'wp_presence_users_list_heartbeat_received', 13, 3 );
+	add_filter( 'heartbeat_received', 'wp_presence_users_online_count_heartbeat_received', 13, 3 );
+}
 
 // Plugin only: the check comes off when core merges the piece.
 if ( wp_presence_feature_enabled( 'post-list' ) ) {
@@ -77,5 +80,10 @@ if ( wp_presence_feature_enabled( 'post-list' ) ) {
 	add_filter( 'heartbeat_received', 'wp_presence_editors_column_heartbeat_received', 13, 2 );
 }
 
-add_action( 'wp_dashboard_setup', array( 'WP_Presence_Widget_Active_Posts', 'register' ) );
-add_filter( 'heartbeat_received', array( 'WP_Presence_Widget_Active_Posts', 'heartbeat_received' ), 10, 3 );
+// Plugin only: the check comes off when core merges the piece.
+if ( wp_presence_feature_enabled( 'dashboard-widget' ) ) {
+	add_action( 'wp_dashboard_setup', array( 'WP_Presence_Widget_Active_Posts', 'register' ) );
+	add_filter( 'heartbeat_received', array( 'WP_Presence_Widget_Active_Posts', 'heartbeat_received' ), 10, 3 );
+	// Puts Active Posts first for anyone without a saved Dashboard layout.
+	add_filter( 'get_user_option_meta-box-order_dashboard', 'wp_presence_default_widget_order' );
+}

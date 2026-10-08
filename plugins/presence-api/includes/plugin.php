@@ -147,7 +147,7 @@ function wp_presence_deactivate( $network_wide = false ) {
 /**
  * Adds action links to the plugin list table.
  *
- * The online users link points at the Users list filtered to the users who are
+ * The online users link, there while the Users list feature is on, points at the Users list filtered to the users who are
  * currently online. The plugin has no settings screen of its own, so the
  * settings link points at Settings > General, where the recording switch lives.
  *
@@ -157,21 +157,24 @@ function wp_presence_deactivate( $network_wide = false ) {
  * @return string[] Action links with the plugin's own links prepended.
  */
 function wp_presence_plugin_action_links( $links ) {
-	$online_users_link = sprintf(
-		'<a href="%1$s">%2$s</a>',
-		esc_url( wp_presence_online_users_url() ),
-		esc_html__( 'View Online Users', 'presence-api' )
-	);
+	$our_links = array();
 
-	$settings_link = sprintf(
+	// The Online view this link opens is gone with the Users list switched off.
+	if ( wp_presence_feature_enabled( 'user-list' ) ) {
+		$our_links[] = sprintf(
+			'<a href="%1$s">%2$s</a>',
+			esc_url( wp_presence_online_users_url() ),
+			esc_html__( 'View Online Users', 'presence-api' )
+		);
+	}
+
+	$our_links[] = sprintf(
 		'<a href="%1$s">%2$s</a>',
 		esc_url( admin_url( 'options-general.php' ) ),
 		esc_html__( 'Settings', 'presence-api' )
 	);
 
-	array_unshift( $links, $online_users_link, $settings_link );
-
-	return $links;
+	return array_merge( $our_links, $links );
 }
 
 /**
