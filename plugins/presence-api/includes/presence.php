@@ -613,7 +613,7 @@ function wp_set_presence( $room, $client_id, $state, $args = array() ) {
 		'expires_in' => null,
 	);
 	$parsed_args = wp_parse_args( $args, $defaults );
-	$user_id     = $parsed_args['user_id'];
+	$user_id     = (int) $parsed_args['user_id'];
 	$date_gmt    = $parsed_args['date_gmt'];
 	$expires_in  = $parsed_args['expires_in'];
 

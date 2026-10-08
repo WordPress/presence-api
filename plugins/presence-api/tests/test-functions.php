@@ -211,7 +211,17 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		);
 		wp_set_presence( 'admin/positional', 'gse-1', array( 'a' => 1 ), $user_id, $past );
 		wp_set_presence( 'admin/positional', 'editor-1', array(), $user_id );
+		$fired = array();
+		add_action(
+			'set_presence',
+			static function ( $room, $client_id, $state, $id ) use ( &$fired ) {
+				$fired[] = $id;
+			},
+			10,
+			4
+		);
 		wp_set_presence( 'admin/args', 'editor-1', array(), "user_id={$user_id}" );
+		$this->assertSame( array( $user_id ), $fired, 'A query string still hands the action an integer user ID.' );
 
 		foreach ( array( 'admin/args', 'admin/positional' ) as $room ) {
 			$rows = wp_get_presence( $room, array( 'client_prefix' => 'gse-' ) );
