@@ -86,6 +86,39 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 		array( 'heartbeat_received', array( 'WP_Presence_Network_Widget_Whos_Online', 'heartbeat_received' ), 10 ),
 	);
 
+	/**
+	 * The hooks the stale-screen switch decides, as registered in default-filters.php.
+	 *
+	 * @var array<int, array{0: string, 1: string, 2: int}>
+	 */
+	private static $stale_screen_hooks = array(
+		array( 'heartbeat_received', 'wp_presence_screen_heartbeat_received', 12 ),
+		array( 'admin_enqueue_scripts', 'wp_presence_enqueue_stale_screen_banner', 10 ),
+		array( 'added_option', 'wp_presence_on_updated_option', 10 ),
+		array( 'updated_option', 'wp_presence_on_updated_option', 10 ),
+		array( 'update_option_wp_page_for_privacy_policy', 'wp_presence_on_privacy_policy_page_updated', 10 ),
+		array( 'post_updated', 'wp_presence_on_post_updated', 10 ),
+		array( 'profile_update', 'wp_presence_on_profile_update', 10 ),
+		array( 'edited_term', 'wp_presence_on_edited_term', 10 ),
+		array( 'edit_comment', 'wp_presence_on_edit_comment', 10 ),
+	);
+
+	/**
+	 * The hooks the stale-screen switch decides, as registered in ms-default-filters.php.
+	 *
+	 * @var array<int, array{0: string, 1: string, 2: int}>
+	 */
+	private static $ms_stale_screen_hooks = array(
+		array( 'update_wpmu_options', 'wp_presence_on_update_network_options', 10 ),
+		array( 'wp_update_site', 'wp_presence_on_update_site', 10 ),
+		array( 'wpmu_update_blog_options', 'wp_presence_on_update_site_options', 10 ),
+		array( 'add_option_allowedthemes', 'wp_presence_on_site_allowed_themes_updated', 10 ),
+		array( 'update_option_allowedthemes', 'wp_presence_on_site_allowed_themes_updated', 10 ),
+		array( 'add_user_to_blog', 'wp_presence_on_site_users_changed', 10 ),
+		array( 'remove_user_from_blog', 'wp_presence_on_site_users_changed', 10 ),
+		array( 'set_user_role', 'wp_presence_on_site_users_changed', 10 ),
+	);
+
 	public function tear_down() {
 		unset( $_POST['wp_presence_network_features'], $_REQUEST['_wpnonce'], $_GET['updated'], $GLOBALS['title'] );
 		set_current_screen( 'front' );
@@ -197,6 +230,30 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 
 		update_site_option( 'wp_presence_network_features', array( 'network-admin' => $enabled ? 1 : 0 ) );
 		include WP_PRESENCE_PLUGIN_DIR . 'includes/ms-default-filters.php';
+	}
+
+	/**
+	 * Re-runs default-filters.php (and ms-default-filters.php on multisite) the
+	 * way the plugin does at load, with the stale-screen switch in the given
+	 * position.
+	 */
+	private function register_hooks_with_stale_screen( $enabled ) {
+		foreach ( self::$stale_screen_hooks as $hook ) {
+			remove_filter( $hook[0], $hook[1], $hook[2] );
+		}
+
+		if ( is_multisite() ) {
+			foreach ( self::$ms_stale_screen_hooks as $hook ) {
+				remove_filter( $hook[0], $hook[1], $hook[2] );
+			}
+		}
+
+		update_option( 'wp_presence_features', array( 'stale-screen' => $enabled ? 1 : 0 ) );
+		include WP_PRESENCE_PLUGIN_DIR . 'includes/default-filters.php';
+
+		if ( is_multisite() ) {
+			include WP_PRESENCE_PLUGIN_DIR . 'includes/ms-default-filters.php';
+		}
 	}
 
 	/**
@@ -346,6 +403,21 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Switching the synced pattern notice off leaves it unhooked from the block editor.
+	 *
+	 * @covers ::wp_presence_feature_enabled
+	 */
+	public function test_switching_the_synced_pattern_notice_off_leaves_it_unhooked() {
+		foreach ( array( false, true ) as $enabled ) {
+			remove_action( 'enqueue_block_editor_assets', 'wp_presence_enqueue_synced_pattern_notice' );
+			update_option( 'wp_presence_features', array( 'synced-patterns' => $enabled ? 1 : 0 ) );
+			include WP_PRESENCE_PLUGIN_DIR . 'includes/default-filters.php';
+
+			$this->assertSame( $enabled ? 10 : false, has_action( 'enqueue_block_editor_assets', 'wp_presence_enqueue_synced_pattern_notice' ) );
+		}
+	}
+
+	/**
 	 * Switching the users list off leaves the online filter and views unhooked.
 	 *
 	 * @covers ::wp_presence_feature_enabled
@@ -361,6 +433,57 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 
 		foreach ( self::$user_list_hooks as $hook ) {
 			$this->assertSame( $hook[2], has_filter( $hook[0], $hook[1] ), "{$hook[1]} should be hooked to {$hook[0]} at {$hook[2]}." );
+		}
+	}
+
+	/**
+	 * Switching the stale-screen notice off leaves its hooks unhooked.
+	 *
+	 * @covers ::wp_presence_feature_enabled
+	 */
+	public function test_switching_stale_screen_off_leaves_its_hooks_unregistered() {
+		$this->register_hooks_with_stale_screen( false );
+
+		foreach ( self::$stale_screen_hooks as $hook ) {
+			$this->assertFalse( has_filter( $hook[0], $hook[1] ), "{$hook[1]} should not be hooked to {$hook[0]}." );
+		}
+
+		if ( is_multisite() ) {
+			foreach ( self::$ms_stale_screen_hooks as $hook ) {
+				$this->assertFalse( has_filter( $hook[0], $hook[1] ), "{$hook[1]} should not be hooked to {$hook[0]} on multisite." );
+			}
+		}
+
+		$this->register_hooks_with_stale_screen( true );
+
+		foreach ( self::$stale_screen_hooks as $hook ) {
+			$this->assertSame( $hook[2], has_filter( $hook[0], $hook[1] ), "{$hook[1]} should be hooked to {$hook[0]} at {$hook[2]}." );
+		}
+
+		if ( is_multisite() ) {
+			foreach ( self::$ms_stale_screen_hooks as $hook ) {
+				$this->assertSame( $hook[2], has_filter( $hook[0], $hook[1] ), "{$hook[1]} should be hooked to {$hook[0]} at {$hook[2]} on multisite." );
+			}
+		}
+	}
+
+	/**
+	 * With its hooks gone, a covered screen loads no stale-screen script.
+	 *
+	 * @covers ::wp_presence_feature_enabled
+	 */
+	public function test_the_stale_screen_switched_off_loads_no_script() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		set_current_screen( 'options-general' );
+
+		foreach ( array( false, true ) as $enabled ) {
+			$this->register_hooks_with_stale_screen( $enabled );
+			wp_deregister_script( 'wp-presence-stale-screen' );
+			wp_scripts()->queue = array();
+
+			do_action( 'admin_enqueue_scripts', 'options-general.php' );
+
+			$this->assertSame( $enabled, wp_script_is( 'wp-presence-stale-screen', 'enqueued' ) );
 		}
 	}
 
