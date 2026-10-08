@@ -956,13 +956,7 @@ function wp_presence_exchange( $room, $client_id, $state, $args = array() ) {
 
 	wp_set_presence( $room, $client_id, $state, array( 'user_id' => $parsed_args['user_id'] ) );
 
-	return wp_get_presence(
-		$room,
-		array(
-			'timeout'       => $parsed_args['timeout'],
-			'client_prefix' => $parsed_args['client_prefix'],
-		)
-	);
+	return wp_get_presence( $room, $parsed_args );
 }
 
 /**
