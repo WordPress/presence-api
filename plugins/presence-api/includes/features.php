@@ -63,6 +63,10 @@ function wp_presence_get_features() {
 			'label'       => __( 'Dashboard widget', 'presence-api' ),
 			'description' => __( 'Show the posts people have open right now in an Active Posts widget on the Dashboard.', 'presence-api' ),
 		),
+		'stale-screen'     => array(
+			'label'       => __( 'Stale-screen notice', 'presence-api' ),
+			'description' => __( 'Show a notice when someone else saves changes to what you have open.', 'presence-api' ),
+		),
 		'network-admin'    => array(
 			'label'       => __( 'Network Admin screens', 'presence-api' ),
 			'description' => __( 'Show who is online on Network Admin: a column on Sites, a view and column on Users, and the Who\'s Online dashboard widget.', 'presence-api' ),
