@@ -84,4 +84,6 @@ if ( wp_presence_feature_enabled( 'post-list' ) ) {
 if ( wp_presence_feature_enabled( 'dashboard-widget' ) ) {
 	add_action( 'wp_dashboard_setup', array( 'WP_Presence_Widget_Active_Posts', 'register' ) );
 	add_filter( 'heartbeat_received', array( 'WP_Presence_Widget_Active_Posts', 'heartbeat_received' ), 10, 3 );
+	// Puts Active Posts first for anyone without a saved Dashboard layout.
+	add_filter( 'get_user_option_meta-box-order_dashboard', 'wp_presence_default_widget_order' );
 }

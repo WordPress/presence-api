@@ -65,6 +65,7 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	private static $dashboard_widget_hooks = array(
 		array( 'wp_dashboard_setup', array( 'WP_Presence_Widget_Active_Posts', 'register' ), 10 ),
 		array( 'heartbeat_received', array( 'WP_Presence_Widget_Active_Posts', 'heartbeat_received' ), 10 ),
+		array( 'get_user_option_meta-box-order_dashboard', 'wp_presence_default_widget_order', 10 ),
 	);
 
 	/**
@@ -303,7 +304,7 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * Switching the dashboard widget off leaves the Active Posts widget unhooked.
+	 * Switching the dashboard widget off leaves the Active Posts widget and its default placement unhooked.
 	 *
 	 * @covers ::wp_presence_feature_enabled
 	 */
