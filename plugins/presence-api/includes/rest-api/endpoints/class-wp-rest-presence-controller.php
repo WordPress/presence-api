@@ -553,7 +553,7 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 			}
 		}
 
-		$result = wp_set_presence( $room, $client_id, $data, $current_user_id );
+		$result = wp_set_presence( $room, $client_id, $data, array( 'user_id' => $current_user_id ) );
 
 		if ( ! $result ) {
 			return new WP_Error(
