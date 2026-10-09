@@ -10,7 +10,7 @@
 class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 
 	/**
-	 * The hooks the post-locks switch decides, as registered in default-filters.php.
+	 * The hooks the post-locks switch decides, as its register callback adds them.
 	 *
 	 * @var array<int, array{0: string, 1: string, 2: int}>
 	 */
@@ -24,7 +24,7 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	);
 
 	/**
-	 * The hooks the admin-bar switch decides, as registered in default-filters.php.
+	 * The hooks the admin-bar switch decides, as its register callback adds them.
 	 *
 	 * @var array<int, array{0: string, 1: string, 2: int}>
 	 */
@@ -36,7 +36,7 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	);
 
 	/**
-	 * The hooks the post-list switch decides, as registered in default-filters.php.
+	 * The hooks the post-list switch decides, as its register callback adds them.
 	 *
 	 * @var array<int, array{0: string, 1: string, 2: int}>
 	 */
@@ -46,7 +46,7 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	);
 
 	/**
-	 * The hooks the user-list switch decides, as registered in default-filters.php.
+	 * The hooks the user-list switch decides, as its register callback adds them.
 	 *
 	 * @var array<int, array{0: string, 1: string, 2: int}>
 	 */
@@ -58,7 +58,7 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	);
 
 	/**
-	 * The hooks the dashboard-widget switch decides, as registered in default-filters.php.
+	 * The hooks the dashboard-widget switch decides, as its register callback adds them.
 	 *
 	 * @var array<int, array{0: string, 1: string|array{0: string, 1: string}, 2: int}>
 	 */
@@ -69,7 +69,7 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	);
 
 	/**
-	 * The hooks the network-admin switch decides, as registered in ms-default-filters.php.
+	 * The hooks the network-admin switch decides, as its register callback adds them.
 	 *
 	 * @var array<int, array{0: string, 1: string|array, 2: int}>
 	 */
@@ -87,7 +87,7 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	);
 
 	/**
-	 * The hooks the stale-screen switch decides, as registered in default-filters.php.
+	 * The hooks the stale-screen switch decides, as its register callback adds them.
 	 *
 	 * @var array<int, array{0: string, 1: string, 2: int}>
 	 */
@@ -104,7 +104,7 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	);
 
 	/**
-	 * The hooks the stale-screen switch decides, as registered in ms-default-filters.php.
+	 * The hooks the stale-screen switch decides, as its register callback adds them.
 	 *
 	 * @var array<int, array{0: string, 1: string, 2: int}>
 	 */
@@ -154,11 +154,11 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * Re-runs default-filters.php the way the plugin does at load, with the
+	 * Re-runs the feature loader the way the plugin does at load, with the
 	 * post-locks switch in the given position.
 	 *
-	 * The file is plain add_filter() calls, so running it again re-registers
-	 * every other hook in place rather than doubling it.
+	 * Adding a hook that is already there changes nothing, so running it again
+	 * leaves every other feature's hooks in place rather than doubling them.
 	 */
 	private function register_hooks_with_post_locks( $enabled ) {
 		foreach ( self::$post_lock_hooks as $hook ) {
@@ -166,11 +166,11 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 		}
 
 		update_option( 'wp_presence_features', array( 'post-locks' => $enabled ? 1 : 0 ) );
-		include WP_PRESENCE_PLUGIN_DIR . 'includes/default-filters.php';
+		wp_presence_register_feature_hooks();
 	}
 
 	/**
-	 * Re-runs default-filters.php with the admin-bar switch in the given position.
+	 * Re-runs the feature loader the way the plugin does at load, with the admin-bar switch in the given position.
 	 */
 	private function register_hooks_with_admin_bar( $enabled ) {
 		foreach ( self::$admin_bar_hooks as $hook ) {
@@ -178,11 +178,11 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 		}
 
 		update_option( 'wp_presence_features', array( 'admin-bar' => $enabled ? 1 : 0 ) );
-		include WP_PRESENCE_PLUGIN_DIR . 'includes/default-filters.php';
+		wp_presence_register_feature_hooks();
 	}
 
 	/**
-	 * Re-runs default-filters.php the way the plugin does at load, with the
+	 * Re-runs the feature loader the way the plugin does at load, with the
 	 * post-list switch in the given position.
 	 */
 	private function register_hooks_with_post_list( $enabled ) {
@@ -191,11 +191,11 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 		}
 
 		update_option( 'wp_presence_features', array( 'post-list' => $enabled ? 1 : 0 ) );
-		include WP_PRESENCE_PLUGIN_DIR . 'includes/default-filters.php';
+		wp_presence_register_feature_hooks();
 	}
 
 	/**
-	 * Re-runs default-filters.php the way the plugin does at load, with the
+	 * Re-runs the feature loader the way the plugin does at load, with the
 	 * user-list switch in the given position.
 	 */
 	private function register_hooks_with_user_list( $enabled ) {
@@ -204,11 +204,11 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 		}
 
 		update_option( 'wp_presence_features', array( 'user-list' => $enabled ? 1 : 0 ) );
-		include WP_PRESENCE_PLUGIN_DIR . 'includes/default-filters.php';
+		wp_presence_register_feature_hooks();
 	}
 
 	/**
-	 * Re-runs default-filters.php the way the plugin does at load, with the
+	 * Re-runs the feature loader the way the plugin does at load, with the
 	 * dashboard-widget switch in the given position.
 	 */
 	private function register_hooks_with_dashboard_widget( $enabled ) {
@@ -217,11 +217,11 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 		}
 
 		update_option( 'wp_presence_features', array( 'dashboard-widget' => $enabled ? 1 : 0 ) );
-		include WP_PRESENCE_PLUGIN_DIR . 'includes/default-filters.php';
+		wp_presence_register_feature_hooks();
 	}
 
 	/**
-	 * Re-runs ms-default-filters.php with the network-admin switch in the given position.
+	 * Re-runs the feature loader the way the plugin does at load, with the network-admin switch in the given position.
 	 */
 	private function register_hooks_with_network_admin( $enabled ) {
 		foreach ( self::$network_admin_hooks as $hook ) {
@@ -229,12 +229,11 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 		}
 
 		update_site_option( 'wp_presence_network_features', array( 'network-admin' => $enabled ? 1 : 0 ) );
-		include WP_PRESENCE_PLUGIN_DIR . 'includes/ms-default-filters.php';
+		wp_presence_register_feature_hooks();
 	}
 
 	/**
-	 * Re-runs default-filters.php (and ms-default-filters.php on multisite) the
-	 * way the plugin does at load, with the stale-screen switch in the given
+	 * Re-runs the feature loader the way the plugin does at load, with the stale-screen switch in the given
 	 * position.
 	 */
 	private function register_hooks_with_stale_screen( $enabled ) {
@@ -249,11 +248,7 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 		}
 
 		update_option( 'wp_presence_features', array( 'stale-screen' => $enabled ? 1 : 0 ) );
-		include WP_PRESENCE_PLUGIN_DIR . 'includes/default-filters.php';
-
-		if ( is_multisite() ) {
-			include WP_PRESENCE_PLUGIN_DIR . 'includes/ms-default-filters.php';
-		}
+		wp_presence_register_feature_hooks();
 	}
 
 	/**
@@ -411,7 +406,7 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 		foreach ( array( false, true ) as $enabled ) {
 			remove_action( 'enqueue_block_editor_assets', 'wp_presence_enqueue_synced_pattern_notice' );
 			update_option( 'wp_presence_features', array( 'synced-patterns' => $enabled ? 1 : 0 ) );
-			include WP_PRESENCE_PLUGIN_DIR . 'includes/default-filters.php';
+			wp_presence_register_feature_hooks();
 
 			$this->assertSame( $enabled ? 10 : false, has_action( 'enqueue_block_editor_assets', 'wp_presence_enqueue_synced_pattern_notice' ) );
 		}
