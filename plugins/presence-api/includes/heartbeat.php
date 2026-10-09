@@ -341,7 +341,8 @@ function wp_presence_admin_heartbeat_received( $response, $data, $screen_id ) { 
 	}
 
 	$user_id = get_current_user_id();
-	$screen  = isset( $data['presence-ping']['screen'] ) ? sanitize_text_field( $data['presence-ping']['screen'] ) : '';
+	// The ping is client-supplied and shown to other users, so cap it as the REST route caps its data.
+	$screen = isset( $data['presence-ping']['screen'] ) ? substr( sanitize_text_field( $data['presence-ping']['screen'] ), 0, WP_PRESENCE_MAX_KEY_LENGTH ) : '';
 
 	// Enrich post-editing screens with the post status.
 	$post_status = '';
@@ -367,7 +368,7 @@ function wp_presence_admin_heartbeat_received( $response, $data, $screen_id ) { 
 	}
 
 	if ( ! empty( $data['presence-ping']['title'] ) ) {
-		$state['title'] = sanitize_text_field( $data['presence-ping']['title'] );
+		$state['title'] = wp_html_excerpt( sanitize_text_field( $data['presence-ping']['title'] ), 200 );
 	}
 
 	$object_id = wp_presence_screen_object_id( $screen, $data['presence-ping']['object_id'] ?? 0 );
