@@ -167,6 +167,19 @@ function wp_presence_reserved_client_id_pattern() {
 }
 
 /**
+ * Returns the reserved client_id holding a room's version counter.
+ *
+ * @access private
+ *
+ * @since 0.18.0
+ *
+ * @return string The reserved client_id.
+ */
+function wp_presence_version_client_id() {
+	return WP_PRESENCE_RESERVED_PREFIX . 'version';
+}
+
+/**
  * Drops the reserved rows from a set of rows.
  *
  * @access private
@@ -650,9 +663,16 @@ function wp_set_presence( $room, $client_id, $state, $args = array() ) {
 	 */
 	$refresh_cutoff = null === $date_gmt && null === $expires_in ? wp_presence_refresh_cutoff( $room ) : '';
 
-	$written = wp_presence_write_row( $room, $client_id, $user_id, $data_json, $now, $expires_gmt, $refresh_cutoff );
+	$written = wp_presence_write_row( $room, $client_id, $user_id, $data_json, $now, $expires_gmt, $refresh_cutoff, $seen );
 
 	if ( $written > 0 && ! wp_presence_is_reserved_client_id( $client_id ) ) {
+		if ( $seen ) {
+			wp_presence_bump_room_version( $room );
+		}
+
+		// Even a refresh moves the room's earliest expiry.
+		wp_presence_forget_room_next_expiry( $room );
+
 		/**
 		 * Fires after a client's presence row is written to a room.
 		 *
@@ -804,6 +824,7 @@ function wp_presence_max_expires_in() {
  * @since 0.7.0 Added the `$expires_gmt` and `$refresh_cutoff` parameters.
  * @since 0.11.0 No longer checks whether recording is on, so post locks can bypass it.
  * @since 0.15.0 Returns the number of rows affected instead of true.
+ * @since 0.18.0 Added the `$seen` parameter.
  *
  * @global wpdb $wpdb WordPress database abstraction object.
  *
@@ -816,10 +837,14 @@ function wp_presence_max_expires_in() {
  *                                    Default the site TTL from `$date_gmt`.
  * @param string      $refresh_cutoff Optional. As returned by wp_presence_refresh_cutoff().
  *                                    Default empty, which always stamps $date_gmt.
+ * @param bool|null   $seen           Optional. Set to whether a peer would see the write: a new
+ *                                    row, one replacing an expired row, or a change of data or
+ *                                    user, as opposed to a timestamp refresh. On SQLite every
+ *                                    write counts. Passed by reference.
  * @return int|false The number of rows affected, 0 when an unchanged row was left
  *                   alone, or false on failure.
  */
-function wp_presence_write_row( $room, $client_id, $user_id, $data_json, $date_gmt, $expires_gmt = null, $refresh_cutoff = '' ) {
+function wp_presence_write_row( $room, $client_id, $user_id, $data_json, $date_gmt, $expires_gmt = null, $refresh_cutoff = '', &$seen = null ) {
 	global $wpdb;
 
 	if ( ! wp_presence_has_table() ) {
@@ -832,6 +857,21 @@ function wp_presence_write_row( $room, $client_id, $user_id, $data_json, $date_g
 
 	$date_clause = 'date_gmt = VALUES(date_gmt), expires_gmt = VALUES(expires_gmt)';
 	$args        = array( $room, $client_id, $user_id, $data_json, $date_gmt, $expires_gmt );
+	$now         = gmdate( 'Y-m-d H:i:s' );
+	$on_sqlite   = is_a( $wpdb, 'WP_SQLite_DB' );
+
+	/*
+	 * An update affects two rows whether it changed what peers see or only
+	 * refreshed the timestamp, so the first assignment, which leaves id alone
+	 * and runs while the row still holds its old values, records which in
+	 * LAST_INSERT_ID(): 1 for a change, 2 for a refresh. The SQLite
+	 * integration is left out and counts every write as seen.
+	 */
+	$signal = '';
+	if ( ! $on_sqlite ) {
+		$signal = 'id = id + 0 * LAST_INSERT_ID( CASE WHEN data <> VALUES(data) OR user_id <> VALUES(user_id) OR expires_gmt <= %s THEN 1 ELSE 2 END ), ';
+		$args[] = $now;
+	}
 
 	if ( '' !== $refresh_cutoff ) {
 		// MySQL assigns left to right, so expires_gmt is tested first, while
@@ -848,7 +888,7 @@ function wp_presence_write_row( $room, $client_id, $user_id, $data_json, $date_g
 		// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 		$wpdb->prepare(
 			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			"INSERT INTO {$wpdb->presence} (room, client_id, user_id, data, date_gmt, expires_gmt) VALUES (%s, %s, %d, %s, %s, %s) ON DUPLICATE KEY UPDATE user_id = VALUES(user_id), {$date_clause}, data = VALUES(data)",
+			"INSERT INTO {$wpdb->presence} (room, client_id, user_id, data, date_gmt, expires_gmt) VALUES (%s, %s, %d, %s, %s, %s) ON DUPLICATE KEY UPDATE {$signal}user_id = VALUES(user_id), {$date_clause}, data = VALUES(data)",
 			...$args
 		)
 	);
@@ -856,6 +896,9 @@ function wp_presence_write_row( $room, $client_id, $user_id, $data_json, $date_g
 	if ( false === $result ) {
 		wp_presence_forget_missing_table();
 	}
+
+	// Read before anything else can run a query and replace insert_id.
+	$seen = $result > 0 && ( $on_sqlite || 1 === $result || 1 === (int) $wpdb->insert_id );
 
 	if ( $result > 0 ) {
 		wp_cache_set_last_changed( 'presence' );
@@ -903,6 +946,9 @@ function wp_remove_presence( $room, $client_id ) {
 		}
 
 		if ( ! wp_presence_is_reserved_client_id( $client_id ) ) {
+			wp_presence_bump_room_version( $room );
+			wp_presence_forget_room_next_expiry( $room );
+
 			/**
 			 * Fires after a client's presence row is removed from a room.
 			 *
@@ -991,10 +1037,224 @@ function wp_presence_leave( $room, $client_id, $args = array() ) {
 }
 
 /**
+ * Returns the version counters for one or more rooms.
+ *
+ * One counter per room, for a reader waiting on changes without reading every
+ * row. It moves when what peers see changes: a client arriving (over its own
+ * expired row too), changing its state or user, or being removed. A write that
+ * only refreshes a timestamp leaves it alone, and so does a row expiring, which
+ * wp_get_presence_room_next_expiry() says when to look for.
+ *
+ * @since 0.18.0
+ *
+ * @global wpdb $wpdb WordPress database abstraction object.
+ *
+ * @param array|string $rooms Array of room identifiers, or a single room.
+ * @return array Associative array of room => version counter, null when the room has never been written.
+ */
+function wp_get_presence_room_versions( $rooms ) {
+	global $wpdb;
+
+	$rooms    = array_values( array_filter( array_unique( (array) $rooms ) ) );
+	$versions = array_fill_keys( $rooms, null );
+
+	if ( empty( $rooms ) || ! wp_presence_has_table() ) {
+		return $versions;
+	}
+
+	if ( wp_using_ext_object_cache() ) {
+		$keys = array();
+		foreach ( $rooms as $room ) {
+			$keys[ $room ] = 'version:' . $room;
+		}
+
+		$found = wp_cache_get_multiple( array_values( $keys ), 'presence_room_versions' );
+		foreach ( $keys as $room => $key ) {
+			if ( isset( $found[ $key ] ) && false !== $found[ $key ] ) {
+				$versions[ $room ] = (string) $found[ $key ];
+			}
+		}
+
+		return $versions;
+	}
+
+	$version_client_id = wp_presence_version_client_id();
+	$placeholders      = implode( ', ', array_fill( 0, count( $rooms ), '%s' ) );
+
+	// $placeholders holds only %s tokens generated above, so the interpolation is safe.
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+	$rows = $wpdb->get_results(
+		// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+		$wpdb->prepare(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			"SELECT room, data FROM {$wpdb->presence} WHERE client_id = %s AND room IN ( {$placeholders} )",
+			array_merge( array( $version_client_id ), $rooms )
+		)
+	);
+
+	foreach ( (array) $rows as $row ) {
+		$versions[ $row->room ] = (string) (int) $row->data;
+	}
+
+	return $versions;
+}
+
+/**
+ * Bumps the version counter for a room.
+ *
+ * Increments the counter in the 'presence_room_versions' cache group when an
+ * external object cache is in use, or otherwise in the data of the reserved
+ * '_version' row, where removing or exporting a user's rows never matches it.
+ *
+ * @access private
+ *
+ * @since 0.18.0
+ *
+ * @global wpdb $wpdb WordPress database abstraction object.
+ *
+ * @param string $room The room identifier.
+ */
+function wp_presence_bump_room_version( $room ) {
+	global $wpdb;
+
+	if ( ! is_string( $room ) || '' === $room || ! wp_presence_has_table() ) {
+		return;
+	}
+
+	if ( wp_using_ext_object_cache() ) {
+		$key = 'version:' . $room;
+		wp_cache_add( $key, 0, 'presence_room_versions' );
+		wp_cache_incr( $key, 1, 'presence_room_versions' );
+		return;
+	}
+
+	$current = gmdate( 'Y-m-d H:i:s' );
+
+	// Outlives every row in the room, so cleanup removes it only once the room is empty.
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+	$wpdb->query(
+		$wpdb->prepare(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			"INSERT INTO {$wpdb->presence} (room, client_id, user_id, data, date_gmt, expires_gmt) VALUES (%s, %s, 0, '1', %s, %s) ON DUPLICATE KEY UPDATE data = data + 1, date_gmt = VALUES(date_gmt), expires_gmt = VALUES(expires_gmt)",
+			$room,
+			wp_presence_version_client_id(),
+			$current,
+			wp_presence_expiry_for( $current, wp_presence_max_expires_in() )
+		)
+	);
+}
+
+/**
+ * Returns when the earliest live row in each room expires.
+ *
+ * A row that expires moves no version, so a reader holding versions reads the
+ * room again once this time passes. Reserved rows are left out, since no peer
+ * sees them. With an external object cache the answer is kept until it passes
+ * or the room is written, so a quiet room costs no query.
+ *
+ * @since 0.18.0
+ *
+ * @global wpdb $wpdb WordPress database abstraction object.
+ *
+ * @param array|string $rooms Array of room identifiers, or a single room.
+ * @return array Associative array of room => GMT time as 'Y-m-d H:i:s', null when the room has no live row.
+ */
+function wp_get_presence_room_next_expiry( $rooms ) {
+	global $wpdb;
+
+	$rooms  = array_values( array_filter( array_unique( (array) $rooms ) ) );
+	$expiry = array_fill_keys( $rooms, null );
+
+	if ( empty( $rooms ) || ! wp_presence_has_table() ) {
+		return $expiry;
+	}
+
+	$now     = gmdate( 'Y-m-d H:i:s' );
+	$missing = $rooms;
+
+	if ( wp_using_ext_object_cache() ) {
+		$found   = wp_cache_get_multiple( array_map( 'wp_presence_room_next_expiry_key', $rooms ), 'presence_room_versions' );
+		$missing = array();
+
+		foreach ( $rooms as $room ) {
+			$cached = $found[ wp_presence_room_next_expiry_key( $room ) ] ?? false;
+
+			// '' stands for a room with no live row, which only a write can change.
+			if ( false !== $cached && ( '' === $cached || $cached > $now ) ) {
+				$expiry[ $room ] = '' === $cached ? null : $cached;
+			} else {
+				$missing[] = $room;
+			}
+		}
+
+		if ( ! $missing ) {
+			return $expiry;
+		}
+	}
+
+	$placeholders = implode( ', ', array_fill( 0, count( $missing ), '%s' ) );
+
+	// The room_expires index serves the range on expires_gmt within each room.
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+	$rows = $wpdb->get_results(
+		// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+		$wpdb->prepare(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			"SELECT room, MIN(expires_gmt) AS next_expiry FROM {$wpdb->presence} WHERE room IN ( {$placeholders} ) AND expires_gmt > %s AND client_id NOT LIKE %s GROUP BY room",
+			array_merge( $missing, array( $now, wp_presence_reserved_client_id_pattern() ) )
+		)
+	);
+
+	foreach ( (array) $rows as $row ) {
+		$expiry[ $row->room ] = $row->next_expiry;
+	}
+
+	if ( wp_using_ext_object_cache() ) {
+		$store = array();
+		foreach ( $missing as $room ) {
+			$store[ wp_presence_room_next_expiry_key( $room ) ] = $expiry[ $room ] ?? '';
+		}
+		wp_cache_set_multiple( $store, 'presence_room_versions' );
+	}
+
+	return $expiry;
+}
+
+/**
+ * Returns the cache key holding a room's next expiry.
+ *
+ * @access private
+ *
+ * @since 0.18.0
+ *
+ * @param string $room The room identifier.
+ * @return string The cache key.
+ */
+function wp_presence_room_next_expiry_key( $room ) {
+	return 'next_expiry:' . $room;
+}
+
+/**
+ * Drops a room's cached next expiry after a write or removal could have moved it.
+ *
+ * @access private
+ *
+ * @since 0.18.0
+ *
+ * @param string $room The room identifier.
+ */
+function wp_presence_forget_room_next_expiry( $room ) {
+	if ( wp_using_ext_object_cache() ) {
+		wp_cache_delete( wp_presence_room_next_expiry_key( $room ), 'presence_room_versions' );
+	}
+}
+
+/**
  * Removes all presence entries for a given user across all rooms.
  *
  * @since 0.1.1
  * @since 0.15.0 Fires the `removed_user_presence` action.
+ * @since 0.18.0 Bumps the version of every room it removes a row from.
  *
  * @param int $user_id The user ID.
  * @return bool True on success, false on failure.
@@ -1005,6 +1265,16 @@ function wp_remove_user_presence( $user_id ) {
 	if ( ! wp_presence_has_table() ) {
 		return false;
 	}
+
+	// Read before the delete, which leaves nothing to say which rooms lost a row.
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+	$rooms = $wpdb->get_col(
+		$wpdb->prepare(
+			"SELECT DISTINCT room FROM {$wpdb->presence} WHERE user_id = %d AND client_id NOT LIKE %s",
+			$user_id,
+			wp_presence_reserved_client_id_pattern()
+		)
+	);
 
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	$result = $wpdb->delete(
@@ -1017,6 +1287,11 @@ function wp_remove_user_presence( $user_id ) {
 	if ( $result > 0 ) {
 		wp_cache_set_last_changed( 'presence' );
 		wp_presence_admin_room_changed();
+
+		foreach ( $rooms as $room ) {
+			wp_presence_bump_room_version( $room );
+			wp_presence_forget_room_next_expiry( $room );
+		}
 
 		/**
 		 * Fires after all of a user's presence rows are removed, across every room.

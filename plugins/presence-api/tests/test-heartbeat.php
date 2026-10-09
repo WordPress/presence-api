@@ -544,7 +544,8 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 
 		$queries = $this->editor_tick_queries( $post_id, true );
 
-		$this->assertCount( 2, $queries, 'The room read and the write.' );
+		// Without a persistent object cache, a new state also moves the room's version row.
+		$this->assertCount( wp_using_ext_object_cache() ? 2 : 3, $queries, 'The room read, the write and the version.' );
 		$this->assertTrue( wp_get_presence( wp_presence_post_room( $post_id ) )[0]->data['locked'] );
 	}
 

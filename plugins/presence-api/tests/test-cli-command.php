@@ -211,7 +211,8 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 
 		$this->assertSame( 'table', $rendered['format'], 'table is the documented default.' );
 		$this->assertSame( array( 'room', 'client_id', 'user_id', 'data', 'date_gmt' ), $rendered['fields'] );
-		$this->assertCount( 2, $rendered['items'], 'Only the requested room should be listed.' );
+		$expected_items = 2 + ( wp_using_ext_object_cache() ? 0 : 1 );
+		$this->assertCount( $expected_items, $rendered['items'], 'Only the requested room should be listed.' );
 
 		$by_client = array_column( $rendered['items'], null, 'client_id' );
 
@@ -309,14 +310,15 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 			)
 		);
 
-		$this->assertSame( 3, $this->presence_row_count(), 'Guard: the fixture should be in place.' );
+		$expected_count = 3 + ( wp_using_ext_object_cache() ? 0 : 2 );
+		$this->assertSame( $expected_count, $this->presence_row_count(), 'Guard: the fixture should be in place.' );
 		wp_get_presence( 'admin/online' );
 
 		$this->command->cleanup( array(), array( 'yes' => true ) );
 
 		$this->assertSame( 0, $this->presence_row_count() );
 		$this->assertSame( array(), wp_get_presence( 'admin/online' ), 'The next read should not reuse rows from before the cleanup.' );
-		$this->assertSame( array( '3 entries deleted.' ), WP_CLI::messages( 'success' ) );
+		$this->assertSame( array( sprintf( '%d entries deleted.', $expected_count ) ), WP_CLI::messages( 'success' ) );
 	}
 
 	/**
@@ -368,7 +370,8 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 			'confirm'
 		);
 
-		$this->assertSame( 1, $this->presence_row_count(), 'Declining the prompt should leave the table untouched.' );
+		$expected = 1 + ( wp_using_ext_object_cache() ? 0 : 1 );
+		$this->assertSame( $expected, $this->presence_row_count(), 'Declining the prompt should leave the table untouched.' );
 	}
 
 	/**
