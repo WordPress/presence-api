@@ -116,10 +116,16 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		global $wpdb;
 
 		wp_set_presence( 'test/room', 'client-1', array(), array( 'user_id' => self::$editor_id ) );
-		wp_get_presence( 'test/room' );
 
-		$before = $wpdb->num_queries;
-		wp_get_presence( 'test/room' );
+		// The cache key carries the current second, so a pair of reads either side of a tick is repeated rather than counted.
+		do {
+			$second = time();
+			wp_get_presence( 'test/room' );
+
+			$before = $wpdb->num_queries;
+			wp_get_presence( 'test/room' );
+		} while ( time() !== $second );
+
 		$this->assertSame( $before, $wpdb->num_queries );
 	}
 
