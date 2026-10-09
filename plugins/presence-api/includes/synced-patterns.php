@@ -33,3 +33,14 @@ function wp_presence_enqueue_synced_pattern_notice() {
 	);
 	wp_set_script_translations( 'wp-presence-synced-patterns', 'presence-api' );
 }
+
+/**
+ * Adds the hook for the notice on synced patterns.
+ *
+ * @access private
+ *
+ * @since 0.18.0
+ */
+function wp_presence_register_synced_pattern_hooks() {
+	add_action( 'enqueue_block_editor_assets', 'wp_presence_enqueue_synced_pattern_notice' );
+}

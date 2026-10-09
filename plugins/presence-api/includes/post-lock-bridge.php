@@ -335,3 +335,19 @@ function wp_presence_prime_heartbeat_locks( $response, $data ) {
 
 	return $response;
 }
+
+/**
+ * Adds the hooks that keep post locks in the presence table.
+ *
+ * @access private
+ *
+ * @since 0.18.0
+ */
+function wp_presence_register_post_lock_hooks() {
+	add_filter( 'heartbeat_received', 'wp_presence_prime_heartbeat_locks', 5, 2 );
+	add_filter( 'heartbeat_received', 'wp_presence_bridge_post_lock', 11, 3 );
+	add_filter( 'get_post_metadata', 'wp_presence_get_post_lock', 10, 4 );
+	add_filter( 'the_posts', 'wp_presence_prime_post_list_locks', 10, 2 );
+	add_filter( 'update_post_metadata', 'wp_presence_update_post_lock', 10, 5 );
+	add_filter( 'delete_post_metadata', 'wp_presence_delete_post_lock', 10, 5 );
+}

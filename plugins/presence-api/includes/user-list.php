@@ -178,3 +178,17 @@ function wp_presence_users_online_count_heartbeat_received( $response, $data, $s
 
 	return $response;
 }
+
+/**
+ * Adds the hooks for the Online view and count on the Users list.
+ *
+ * @access private
+ *
+ * @since 0.18.0
+ */
+function wp_presence_register_user_list_hooks() {
+	add_filter( 'views_users', 'wp_presence_users_views' );
+	add_action( 'pre_get_users', 'wp_presence_filter_online_users' );
+	add_filter( 'heartbeat_received', 'wp_presence_users_list_heartbeat_received', 13, 3 );
+	add_filter( 'heartbeat_received', 'wp_presence_users_online_count_heartbeat_received', 13, 3 );
+}

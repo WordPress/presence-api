@@ -232,3 +232,15 @@ function wp_presence_editors_column_css( $hook_suffix ) {
 	wp_enqueue_style( 'presence-post-list' );
 	wp_add_inline_style( 'presence-post-list', $css );
 }
+
+/**
+ * Adds the hooks for the Editors column on post lists.
+ *
+ * @access private
+ *
+ * @since 0.18.0
+ */
+function wp_presence_register_post_list_hooks() {
+	add_action( 'admin_init', 'wp_presence_register_post_list_columns' );
+	add_filter( 'heartbeat_received', 'wp_presence_editors_column_heartbeat_received', 13, 2 );
+}
