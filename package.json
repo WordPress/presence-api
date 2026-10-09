@@ -9,6 +9,7 @@
 		"env:stop": "wp-env stop",
 		"env:stop:multisite": "cd tests/e2e/multisite && wp-env stop",
 		"env:cli": "wp-env run cli wp",
+		"lint:css": "wp-scripts lint-style \"plugins/presence-api/assets/css/**/*.css\"",
 		"lint:js": "wp-scripts lint-js",
 		"test": "wp-env run tests-cli --env-cwd='presence-api' -- ./vendor/bin/phpunit --testdox",
 		"test:multisite": "wp-env run tests-cli --env-cwd='presence-api' -- env WP_MULTISITE=1 ./vendor/bin/phpunit --testdox",

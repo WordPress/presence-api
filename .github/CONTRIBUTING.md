@@ -16,7 +16,7 @@ With `WP_DEBUG` on, which wp-env sets, administrators get a heart in the toolbar
 
 ## Running tests
 
-Before pushing, one command runs everything that works without wp-env, which is coding standards, static analysis, the JavaScript lint, the JavaScript unit tests, and the workflow script tests. It stops at the first failure.
+Before pushing, one command runs everything that works without wp-env, which is coding standards, static analysis, the CSS and JavaScript lint, the JavaScript unit tests, and the workflow script tests. It stops at the first failure.
 
 ```bash
 # PHP dependencies (PHPCS, PHPStan, PHPUnit, Polyfills)
@@ -40,7 +40,8 @@ composer phpcs
 # Static analysis
 composer phpstan
 
-# JavaScript lint and unit tests
+# CSS and JavaScript lint, and JavaScript unit tests
+npm run lint:css
 npm run lint:js
 npm run test:unit
 
