@@ -895,4 +895,141 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 		$this->assertArrayHasKey( '/wp-presence/v1/presence', $routes );
 		$this->assertSame( is_multisite(), isset( $routes['/wp-presence/v1/presence/network'] ) );
 	}
+
+	/**
+	 * A client_id wider than the column is refused before the reserved-namespace check runs.
+	 *
+	 * @covers WP_REST_Presence_Controller::validate_client_id_param
+	 */
+	public function test_rest_create_rejects_a_client_id_wider_than_the_column() {
+		wp_set_current_user( self::$editor_id );
+
+		$request = new WP_REST_Request( 'POST', '/wp-presence/v1/presence' );
+		$request->set_param( 'room', 'room/wide' );
+		$request->set_param( 'client_id', str_repeat( 'b', WP_PRESENCE_MAX_KEY_LENGTH + 1 ) );
+
+		$response = rest_get_server()->dispatch( $request );
+
+		$this->assertSame( 400, $response->get_status() );
+		$this->assertSame( 'rest_invalid_param', $response->get_data()['code'] );
+		$this->assertCount( 0, wp_get_presence( 'room/wide' ) );
+	}
+
+	/**
+	 * A screen key with characters outside the key alphabet is refused even within the length limit.
+	 *
+	 * @covers WP_REST_Presence_Controller::register_routes
+	 */
+	public function test_rest_screen_key_rejects_characters_outside_the_key_alphabet() {
+		wp_set_current_user( self::$admin_id );
+
+		$request = new WP_REST_Request( 'POST', '/wp-presence/v1/presence/screen-revisions/stale' );
+		$request->set_param( 'screen_key', 'Options General!' );
+
+		$response = rest_get_server()->dispatch( $request );
+
+		$this->assertSame( 400, $response->get_status() );
+		$this->assertSame( 'rest_invalid_param', $response->get_data()['code'] );
+	}
+
+	/**
+	 * A payload that is not an object is stored as an empty state rather than refused.
+	 *
+	 * @covers WP_REST_Presence_Controller::sanitize_data_param
+	 */
+	public function test_sanitize_data_turns_a_non_array_into_an_empty_state() {
+		$controller = new WP_REST_Presence_Controller();
+
+		$this->assertSame( array(), $controller->sanitize_data_param( 'screen' ) );
+		$this->assertSame( array(), $controller->sanitize_data_param( null ) );
+	}
+
+	/**
+	 * An empty room answers with an empty list and zero totals, not an error.
+	 *
+	 * @covers WP_REST_Presence_Controller::get_items
+	 */
+	public function test_get_items_returns_an_empty_list_for_an_empty_room() {
+		wp_set_current_user( self::$editor_id );
+
+		$request = new WP_REST_Request( 'GET', '/wp-presence/v1/presence' );
+		$request->set_param( 'room', 'room/empty' );
+
+		$response = rest_get_server()->dispatch( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( array(), $response->get_data() );
+		$this->assertSame( 0, $response->get_headers()['X-WP-Total'] );
+	}
+
+	/**
+	 * When the write itself fails, the client is told so with a 500 instead of a success it would trust.
+	 *
+	 * @covers WP_REST_Presence_Controller::create_item
+	 */
+	public function test_rest_create_reports_a_failed_write() {
+		global $wpdb;
+
+		wp_set_current_user( self::$editor_id );
+
+		$fail_insert = static function ( $query ) use ( $wpdb ) {
+			if ( 0 === stripos( ltrim( $query ), 'INSERT' ) && false !== strpos( $query, $wpdb->presence ) ) {
+				return 'INVALID SQL SYNTAX';
+			}
+			return $query;
+		};
+
+		$request = new WP_REST_Request( 'POST', '/wp-presence/v1/presence' );
+		$request->set_param( 'room', 'room/fail' );
+		$request->set_param( 'client_id', 'client-fail' );
+
+		$controller = new WP_REST_Presence_Controller();
+
+		add_filter( 'query', $fail_insert );
+		$suppress = $wpdb->suppress_errors();
+
+		try {
+			$response = $controller->create_item( $request );
+		} finally {
+			remove_filter( 'query', $fail_insert );
+			$wpdb->suppress_errors( $suppress );
+		}
+
+		$this->assertInstanceOf( 'WP_Error', $response );
+		$this->assertSame( 'rest_presence_failed', $response->get_error_code() );
+		$this->assertSame( 500, $response->get_error_data()['status'] );
+	}
+
+	/**
+	 * Deleting an entry that is not there is a no-op, so any user who can reach the room may ask.
+	 *
+	 * @covers WP_REST_Presence_Controller::delete_item_permissions_check
+	 */
+	public function test_deleting_a_missing_entry_is_permitted() {
+		wp_set_current_user( self::$editor_id );
+
+		$request = new WP_REST_Request( 'DELETE', '/wp-presence/v1/presence' );
+		$request->set_param( 'room', 'admin/online' );
+		$request->set_param( 'client_id', 'client-never-written' );
+
+		$controller = new WP_REST_Presence_Controller();
+
+		$this->assertTrue( $controller->delete_item_permissions_check( $request ) );
+	}
+
+	/**
+	 * A user who can reach the screen may mark it stale for everyone else on it.
+	 *
+	 * @covers WP_REST_Presence_Controller::bump_screen_revision_permissions_check
+	 */
+	public function test_bump_screen_revision_is_permitted_for_a_screen_the_user_can_reach() {
+		wp_set_current_user( self::$admin_id );
+
+		$request = new WP_REST_Request( 'POST', '/wp-presence/v1/presence/screen-revisions/stale' );
+		$request->set_param( 'screen_key', 'options/general' );
+
+		$controller = new WP_REST_Presence_Controller();
+
+		$this->assertTrue( $controller->bump_screen_revision_permissions_check( $request ) );
+	}
 }
