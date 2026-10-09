@@ -90,6 +90,7 @@ require_once WP_PRESENCE_PLUGIN_DIR . 'includes/synced-patterns.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/widgets/class-wp-presence-widget-active-posts.php';
 // Plugin only, ahead of the hooks: decides which switchable pieces they register.
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/features.php';
+wp_presence_register_features();
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/default-filters.php';
 
 if ( is_multisite() ) {
@@ -100,6 +101,9 @@ if ( is_multisite() ) {
 	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/widgets/class-wp-presence-network-widget-whos-online.php';
 	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/ms-default-filters.php';
 }
+
+// Plugin only: after every file, so each feature's hooks can live with the rest of it.
+wp_presence_register_feature_hooks();
 
 // Plugin only.
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/plugin.php';
