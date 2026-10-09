@@ -146,13 +146,17 @@ $entries = wp_get_presence_by_room_prefix( $prefix, $timeout = null );
 // wp_presence_max_expires_in (default one hour); under one second returns
 // false. Defaults to the site TTL.
 // Passing either one always writes, even when the row is unchanged.
-wp_set_presence( $room, $client_id, $state, array( 'user_id' => 0, 'date_gmt' => null, 'expires_in' => null ) );
+// 'wp_error' => true returns a WP_Error instead of false, coded
+// presence_recording_disabled, presence_missing_table, presence_invalid_date_gmt,
+// presence_invalid_expires_in or presence_write_failed.
+wp_set_presence( $room, $client_id, $state, array( 'user_id' => 0, 'date_gmt' => null, 'expires_in' => null, 'wp_error' => false ) );
 
 // Remove a single client from a room.
 wp_remove_presence( $room, $client_id );
 
 // Write or remove a client, then read the room back, in one call.
-$entries = wp_presence_exchange( $room, $client_id, $state, array( 'user_id' => 0, 'timeout' => null, 'client_prefix' => '' ) );
+// With 'wp_error' => true, a refused write returns its WP_Error instead of the room.
+$entries = wp_presence_exchange( $room, $client_id, $state, array( 'user_id' => 0, 'timeout' => null, 'client_prefix' => '', 'wp_error' => false ) );
 $entries = wp_presence_leave( $room, $client_id, array( 'timeout' => null, 'client_prefix' => '' ) );
 
 // Remove all presence entries for a user across all rooms.
