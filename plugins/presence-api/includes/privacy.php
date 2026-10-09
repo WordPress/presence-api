@@ -83,7 +83,7 @@ function wp_presence_get_rows_for_user( $user_id ) {
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	return $wpdb->get_results(
 		$wpdb->prepare(
-			"SELECT room, data, date_gmt FROM {$wpdb->presence} WHERE user_id = %d ORDER BY date_gmt DESC",
+			"SELECT room, session_hash, data, date_gmt FROM {$wpdb->presence} WHERE user_id = %d ORDER BY date_gmt DESC",
 			$user_id
 		)
 	);
@@ -150,6 +150,13 @@ function wp_presence_personal_data_exporter( $email_address ) {
 			$data[] = array(
 				'name'  => __( 'Post being edited', 'presence-api' ),
 				'value' => get_the_title( $parsed['post_id'] ),
+			);
+		}
+
+		if ( '' !== (string) $row->session_hash ) {
+			$data[] = array(
+				'name'  => __( 'Browser', 'presence-api' ),
+				'value' => $row->session_hash,
 			);
 		}
 

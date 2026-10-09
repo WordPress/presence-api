@@ -387,7 +387,7 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT room, client_id, user_id, data, date_gmt FROM {$wpdb->presence} WHERE room = %s AND expires_gmt > %s AND client_id NOT LIKE %s ORDER BY date_gmt DESC LIMIT %d OFFSET %d",
+				"SELECT room, client_id, user_id, session_hash, data, date_gmt FROM {$wpdb->presence} WHERE room = %s AND expires_gmt > %s AND client_id NOT LIKE %s ORDER BY date_gmt DESC LIMIT %d OFFSET %d",
 				$room,
 				$cutoff,
 				wp_presence_reserved_client_id_pattern(),
@@ -564,11 +564,12 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 		}
 
 		$entry = (object) array(
-			'room'      => $room,
-			'client_id' => $client_id,
-			'user_id'   => $current_user_id,
-			'data'      => $data,
-			'date_gmt'  => gmdate( 'Y-m-d H:i:s' ),
+			'room'         => $room,
+			'client_id'    => $client_id,
+			'user_id'      => $current_user_id,
+			'session_hash' => wp_presence_session_hash( $room ),
+			'data'         => $data,
+			'date_gmt'     => gmdate( 'Y-m-d H:i:s' ),
 		);
 
 		return rest_ensure_response( $this->prepare_item_for_response( $entry, $request )->get_data() );
@@ -761,6 +762,10 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 			$data['user_id'] = (int) $item->user_id;
 		}
 
+		if ( rest_is_field_included( 'session_hash', $fields ) ) {
+			$data['session_hash'] = isset( $item->session_hash ) ? (string) $item->session_hash : '';
+		}
+
 		$user = get_userdata( $item->user_id );
 
 		if ( rest_is_field_included( 'display_name', $fields ) ) {
@@ -873,6 +878,12 @@ class WP_REST_Presence_Controller extends WP_REST_Controller {
 				'user_id'      => array(
 					'description' => __( 'The WordPress user ID associated with this presence entry.', 'presence-api' ),
 					'type'        => 'integer',
+					'context'     => array( 'view', 'edit' ),
+					'readonly'    => true,
+				),
+				'session_hash' => array(
+					'description' => __( 'Which browser the entry was written from, the same for every tab of one login and different per room; empty when written without a login session.', 'presence-api' ),
+					'type'        => 'string',
 					'context'     => array( 'view', 'edit' ),
 					'readonly'    => true,
 				),
