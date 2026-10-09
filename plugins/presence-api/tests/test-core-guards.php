@@ -5,8 +5,6 @@
  * @package Presence_API
  *
  * @group presence
- *
- * @coversNothing
  */
 class WP_Test_Presence_Core_Guards extends WP_Presence_UnitTestCase {
 
@@ -28,6 +26,7 @@ class WP_Test_Presence_Core_Guards extends WP_Presence_UnitTestCase {
 	 * Redeclaring a name core already loaded is a fatal, so a function added
 	 * without its guard breaks the plugin on the first release that adopts it.
 	 *
+	 * @coversNothing
 	 * @dataProvider data_api_files
 	 *
 	 * @param string $file Path relative to the plugin directory.
@@ -75,6 +74,39 @@ class WP_Test_Presence_Core_Guards extends WP_Presence_UnitTestCase {
 
 		$this->assertSame( array(), $unguarded, 'Declared without a guard.' );
 		$this->assertSame( array(), $mismatch, 'Guarded by a check naming something else.' );
+	}
+
+	/**
+	 * Core's copy is loaded first, so loading the plugin's file after the class
+	 * exists is exactly what a site running both does. No @covers, since the
+	 * guard runs outside any function or class a tag could name.
+	 *
+	 * @dataProvider data_api_classes
+	 *
+	 * @param string $file  Path relative to the plugin directory.
+	 * @param string $class Class the file declares.
+	 */
+	public function test_loading_a_class_file_again_declares_nothing( $file, $class ) {
+		if ( ! class_exists( $class, false ) ) {
+			$this->markTestSkipped( "{$class} is not loaded in this environment." );
+		}
+
+		include WP_PRESENCE_PLUGIN_DIR . $file;
+
+		$this->assertTrue( class_exists( $class, false ) );
+	}
+
+	/**
+	 * Class files the plugin loads, with the class each declares.
+	 *
+	 * @return array[]
+	 */
+	public static function data_api_classes() {
+		return array(
+			'rest controller'    => array( 'includes/rest-api/endpoints/class-wp-rest-presence-controller.php', 'WP_REST_Presence_Controller' ),
+			'network controller' => array( 'includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php', 'WP_REST_Presence_Network_Controller' ),
+			'cli command'        => array( 'includes/cli/class-wp-presence-cli-command.php', 'WP_Presence_CLI_Command' ),
+		);
 	}
 
 	/**
