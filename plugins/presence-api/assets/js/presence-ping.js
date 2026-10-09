@@ -442,6 +442,8 @@
 	// bfcache restore: DOMContentLoaded won't fire.
 	window.addEventListener( 'pageshow', function ( event ) {
 		if ( event.persisted ) {
+			// The tick below writes the row again, so the next pagehide has one to remove.
+			hasLeft = false;
 			tickNow();
 		}
 	} );
