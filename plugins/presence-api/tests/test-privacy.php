@@ -140,6 +140,117 @@ class WP_Test_Presence_Privacy extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Calling the privacy policy registration function registers content successfully.
+	 *
+	 * @covers ::wp_presence_add_privacy_policy_content
+	 * @covers ::wp_presence_get_privacy_policy_content
+	 */
+	public function test_add_privacy_policy_content() {
+		global $wp_current_filter;
+
+		// Core registers nothing unless is_admin() and admin_init is running.
+		set_current_screen( 'options-privacy' );
+		$wp_current_filter[] = 'admin_init';
+
+		try {
+			wp_presence_add_privacy_policy_content();
+		} finally {
+			array_pop( $wp_current_filter );
+			set_current_screen( 'front' );
+		}
+
+		$registered = wp_list_pluck( WP_Privacy_Policy_Content::get_suggested_policy_text(), 'policy_text', 'plugin_name' );
+
+		$this->assertArrayHasKey( 'Presence API', $registered );
+		$this->assertStringContainsString( 'wp_presence_recording_enabled', $registered['Presence API'] );
+	}
+
+	/**
+	 * An address without an account has no recorded presence by definition.
+	 *
+	 * @covers ::wp_presence_personal_data_exporter
+	 */
+	public function test_exporter_returns_early_when_user_does_not_exist() {
+		$export = wp_presence_personal_data_exporter( 'nonexistent@presence.test' );
+
+		$this->assertSame(
+			array(
+				'data' => array(),
+				'done' => true,
+			),
+			$export
+		);
+	}
+
+	/**
+	 * When a user was in a post room, the export names the post being edited and its title.
+	 *
+	 * @covers ::wp_presence_personal_data_exporter
+	 * @covers ::wp_presence_parse_room
+	 */
+	public function test_export_includes_post_title_when_editing_post() {
+		$post_id = self::factory()->post->create(
+			array(
+				'post_title' => 'Sample Post for Privacy',
+			)
+		);
+		$room    = 'postType/post:' . $post_id;
+
+		wp_set_presence( $room, 'client-post', array( 'screen' => 'post' ), array( 'user_id' => self::$editor_id ) );
+
+		$export = wp_presence_personal_data_exporter( 'editor@presence.test' );
+		$items  = $export['data'][0]['data'];
+
+		$names  = wp_list_pluck( $items, 'name' );
+		$values = wp_list_pluck( $items, 'value' );
+
+		$this->assertContains( 'Post being edited', $names );
+		$this->assertContains( 'Sample Post for Privacy', $values );
+		$this->assertContains( 'post', $values );
+	}
+
+	/**
+	 * When a state payload omits the screen name, the export falls back to the room identifier.
+	 *
+	 * @covers ::wp_presence_personal_data_exporter
+	 */
+	public function test_export_falls_back_to_room_name_when_screen_not_in_state() {
+		$room = 'custom-room';
+
+		wp_set_presence( $room, 'client-custom', array(), array( 'user_id' => self::$editor_id ) );
+
+		$export = wp_presence_personal_data_exporter( 'editor@presence.test' );
+		$values = wp_list_pluck( $export['data'][0]['data'], 'value' );
+
+		$this->assertContains( 'custom-room', $values );
+	}
+
+	/**
+	 * When the presence table has not been provisioned, reading rows returns an empty array.
+	 *
+	 * @covers ::wp_presence_get_rows_for_user
+	 */
+	public function test_get_rows_for_user_returns_empty_when_table_is_missing() {
+		add_filter( 'option_wp_presence_db_version', '__return_zero' );
+
+		$this->assertSame( array(), wp_presence_get_rows_for_user( self::$editor_id ) );
+	}
+
+	/**
+	 * An address without an account reports nothing removed and nothing retained.
+	 *
+	 * @covers ::wp_presence_personal_data_eraser
+	 */
+	public function test_eraser_returns_early_when_user_does_not_exist() {
+		$response = wp_presence_personal_data_eraser( 'nonexistent@presence.test' );
+
+		$this->assertFalse( $response['items_removed'] );
+		$this->assertFalse( $response['items_retained'] );
+		$this->assertSame( array(), $response['messages'] );
+		$this->assertTrue( $response['done'] );
+	}
+
+	/**
 	 * Reporting a removal that never happened tells a data subject their data
 	 * was deleted on a site that never held any.
 	 *
@@ -150,5 +261,37 @@ class WP_Test_Presence_Privacy extends WP_Presence_UnitTestCase {
 
 		$this->assertFalse( $response['items_removed'] );
 		$this->assertFalse( $response['items_retained'] );
+	}
+
+	/**
+	 * When the database deletion query fails, the eraser reports retained items with an explanatory message.
+	 *
+	 * @covers ::wp_presence_personal_data_eraser
+	 */
+	public function test_eraser_reports_retained_when_removal_fails() {
+		global $wpdb;
+
+		wp_set_presence( 'admin', 'client-fail', array( 'screen' => 'dashboard' ), array( 'user_id' => self::$editor_id ) );
+
+		$fail_query = static function ( $query ) use ( $wpdb ) {
+			if ( false !== stripos( $query, 'DELETE' ) && false !== strpos( $query, $wpdb->presence ) ) {
+				return 'INVALID SQL SYNTAX';
+			}
+			return $query;
+		};
+
+		add_filter( 'query', $fail_query );
+		$suppress = $wpdb->suppress_errors();
+
+		try {
+			$response = wp_presence_personal_data_eraser( 'editor@presence.test' );
+		} finally {
+			remove_filter( 'query', $fail_query );
+			$wpdb->suppress_errors( $suppress );
+		}
+
+		$this->assertFalse( $response['items_removed'] );
+		$this->assertTrue( $response['items_retained'] );
+		$this->assertContains( 'Presence could not be deleted.', $response['messages'] );
 	}
 }
