@@ -170,6 +170,9 @@ $expiry   = wp_get_presence_room_next_expiry( $rooms ); // array( $room => 'Y-m-
 // Remove all presence entries for a user across all rooms.
 wp_remove_user_presence( $user_id );
 
+// Which browser this request comes from, as seen from one room; see session_hash below.
+$session_hash = wp_presence_session_hash( $room );
+
 // Check whether a user can access a room (edit_post for a post's room, otherwise any post type).
 wp_can_access_presence_room( $room, $user_id = 0 );
 
@@ -220,6 +223,7 @@ Each entry object returned by `wp_get_presence()` or `wp_get_presence_by_room_pr
 | `room`      | `string` | The room the entry belongs to.                                                                                              |
 | `client_id` | `string` | A `varchar` column, opaque, and not guaranteed numeric even when it looks like one. See [Client IDs](#client-ids).         |
 | `user_id`   | `string` | `"0"` for an entry with no signed-in user. Every column comes back as a string, so cast before a strict comparison. |
+| `session_hash` | `string` | The same for every tab of one login, so two values for one user mean two browsers. It is keyed per room and never the session token itself. Empty for a row written without the user's own login session, such as WP-CLI, cron or an application password. |
 | `data`      | `array`  | Decoded from the stored JSON; an empty array if that JSON failed to decode.                                                 |
 | `date_gmt`  | `string` | A MySQL `datetime` string in UTC (e.g. `2024-01-01 12:00:00`), not a Unix timestamp. Convert with `strtotime( $entry->date_gmt . ' UTC' )`. See below for how far behind a live client it can sit. |
 
