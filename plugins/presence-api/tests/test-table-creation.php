@@ -165,7 +165,7 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 		wp_presence_provision_site();
 		$this->assertTrue( $this->presence_table_exists(), 'Reactivation should rebuild the missing table.' );
 
-		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
 
 		$this->assertCount( 1, wp_get_presence( 'admin/online' ), 'Presence should work again after the rebuild.' );
 	}
@@ -183,7 +183,7 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 		$wpdb->presence = $wpdb->prefix . 'presence_missing';
 
 		$suppress = $wpdb->suppress_errors();
-		$this->assertFalse( wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), self::$editor_id ) );
+		$this->assertFalse( wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) ) );
 		$wpdb->suppress_errors( $suppress );
 
 		$this->assertFalse( wp_presence_has_table(), 'The failed write should stop the site claiming a table.' );
@@ -465,7 +465,7 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 
 		$this->assertFalse( wp_presence_has_table() );
 
-		$this->assertFalse( wp_set_presence( 'admin/online', 'user-1', array(), self::$editor_id ) );
+		$this->assertFalse( wp_set_presence( 'admin/online', 'user-1', array(), array( 'user_id' => self::$editor_id ) ) );
 		$this->assertFalse( wp_remove_presence( 'admin/online', 'user-1' ) );
 		$this->assertFalse( wp_remove_user_presence( self::$editor_id ) );
 		$this->assertSame( array(), wp_get_presence( 'admin/online' ) );

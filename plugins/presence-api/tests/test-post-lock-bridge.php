@@ -39,7 +39,7 @@ class WP_Test_Presence_Post_Lock_Bridge extends WP_Presence_UnitTestCase {
 			'post'
 		);
 
-		$entries = wp_get_presence( wp_presence_post_room( $post_id ), 300 );
+		$entries = wp_get_presence( wp_presence_post_room( $post_id ), array( 'timeout' => 300 ) );
 		$this->assertCount( 0, $entries, 'Subscriber should not create a presence entry for a post they cannot edit.' );
 	}
 

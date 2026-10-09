@@ -90,7 +90,7 @@ function wp_presence_read_floor( $timeout ) {
  * @return array Array of presence entry objects.
  */
 function wp_get_presence( $room, $args = array() ) {
-	$positional = wp_presence_positional_args( func_get_args(), 1, array( 'timeout', 'client_prefix' ) );
+	$positional = wp_presence_positional_args( __FUNCTION__, func_get_args(), 1, array( 'timeout', 'client_prefix' ) );
 	if ( null !== $positional ) {
 		$args = $positional;
 	}
@@ -114,18 +114,26 @@ function wp_get_presence( $room, $args = array() ) {
  *
  * @since 0.17.0
  *
- * @param array    $given The arguments the function received.
- * @param int      $index Where `$args` sits among them.
- * @param string[] $keys  The `$args` keys the old positions map to, in order.
+ * @param string   $function_name The function that was called, for the deprecation notice.
+ * @param array    $given         The arguments the function received.
+ * @param int      $index         Where `$args` sits among them.
+ * @param string[] $keys          The `$args` keys the old positions map to, in order.
  * @return array|null The arguments as `$args`, or null for a call that already passes `$args`.
  */
-function wp_presence_positional_args( $given, $index, $keys ) {
+function wp_presence_positional_args( $function_name, $given, $index, $keys ) {
 	// Not ??, which would read an explicit null, the old form's default, as missing.
 	$args = array_key_exists( $index, $given ) ? $given[ $index ] : array();
 
 	if ( ! ( null === $args || is_numeric( $args ) ) ) {
 		return null;
 	}
+
+	_deprecated_argument(
+		esc_html( $function_name ),
+		'0.18.0',
+		/* translators: %s: The `$args` keys, such as user_id, date_gmt, expires_in. */
+		esc_html( sprintf( __( 'Pass the optional arguments in an $args array: %s.', 'presence-api' ), implode( ', ', $keys ) ) )
+	);
 
 	$values = array_slice( $given, $index, count( $keys ) );
 
@@ -604,7 +612,7 @@ function wp_presence_is_valid_date_gmt( $date_gmt ) {
  *              `date_gmt` or an unusable `expires_in`).
  */
 function wp_set_presence( $room, $client_id, $state, $args = array() ) {
-	$positional = wp_presence_positional_args( func_get_args(), 3, array( 'user_id', 'date_gmt', 'expires_in' ) );
+	$positional = wp_presence_positional_args( __FUNCTION__, func_get_args(), 3, array( 'user_id', 'date_gmt', 'expires_in' ) );
 	if ( null !== $positional ) {
 		$args = $positional;
 	}
@@ -944,7 +952,7 @@ function wp_remove_presence( $room, $client_id ) {
  * @return array Array of presence entry objects, as returned by wp_get_presence().
  */
 function wp_presence_exchange( $room, $client_id, $state, $args = array() ) {
-	$positional = wp_presence_positional_args( func_get_args(), 3, array( 'user_id', 'timeout', 'client_prefix' ) );
+	$positional = wp_presence_positional_args( __FUNCTION__, func_get_args(), 3, array( 'user_id', 'timeout', 'client_prefix' ) );
 	if ( null !== $positional ) {
 		$args = $positional;
 	}
@@ -980,7 +988,7 @@ function wp_presence_exchange( $room, $client_id, $state, $args = array() ) {
  * @return array Array of presence entry objects, as returned by wp_get_presence().
  */
 function wp_presence_leave( $room, $client_id, $args = array() ) {
-	$positional = wp_presence_positional_args( func_get_args(), 2, array( 'timeout', 'client_prefix' ) );
+	$positional = wp_presence_positional_args( __FUNCTION__, func_get_args(), 2, array( 'timeout', 'client_prefix' ) );
 	if ( null !== $positional ) {
 		$args = $positional;
 	}

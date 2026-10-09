@@ -44,9 +44,9 @@ class WP_Test_Presence_Lifecycle extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_on_logout
 	 */
 	public function test_logout_clears_all_rooms() {
-		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), self::$editor_id );
-		wp_set_presence( 'postType/post:1', 'lock-' . self::$editor_id, array(), self::$editor_id );
-		wp_set_presence( 'admin/online', 'user-' . self::$subscriber_id, array(), self::$subscriber_id );
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'postType/post:1', 'lock-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'admin/online', 'user-' . self::$subscriber_id, array(), array( 'user_id' => self::$subscriber_id ) );
 
 		wp_presence_on_logout( self::$editor_id );
 
@@ -59,7 +59,7 @@ class WP_Test_Presence_Lifecycle extends WP_Presence_UnitTestCase {
 	 */
 	public function test_logout_skips_subscriber() {
 		// Manually insert a presence entry for the subscriber (bypassing cap check).
-		wp_set_presence( 'admin/online', 'user-' . self::$subscriber_id, array(), self::$subscriber_id );
+		wp_set_presence( 'admin/online', 'user-' . self::$subscriber_id, array(), array( 'user_id' => self::$subscriber_id ) );
 
 		wp_presence_on_logout( self::$subscriber_id );
 
@@ -72,9 +72,9 @@ class WP_Test_Presence_Lifecycle extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_on_logout
 	 */
 	public function test_logout_clears_presence_without_current_user() {
-		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), self::$editor_id );
-		wp_set_presence( 'postType/post:1', 'lock-' . self::$editor_id, array(), self::$editor_id );
-		wp_set_presence( 'admin/online', 'user-' . self::$subscriber_id, array(), self::$subscriber_id );
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'postType/post:1', 'lock-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'admin/online', 'user-' . self::$subscriber_id, array(), array( 'user_id' => self::$subscriber_id ) );
 
 		// Simulate real wp_logout timing.
 		// Auth cookie has been cleared, so get_current_user_id() would return 0.
@@ -92,9 +92,9 @@ class WP_Test_Presence_Lifecycle extends WP_Presence_UnitTestCase {
 	public function test_deleted_user_clears_presence() {
 		$temp_user_id = self::factory()->user->create( array( 'role' => 'editor' ) );
 
-		wp_set_presence( 'admin/online', 'user-' . $temp_user_id, array(), $temp_user_id );
-		wp_set_presence( 'postType/post:1', 'lock-' . $temp_user_id, array(), $temp_user_id );
-		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), self::$editor_id );
+		wp_set_presence( 'admin/online', 'user-' . $temp_user_id, array(), array( 'user_id' => $temp_user_id ) );
+		wp_set_presence( 'postType/post:1', 'lock-' . $temp_user_id, array(), array( 'user_id' => $temp_user_id ) );
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
 
 		wp_delete_user( $temp_user_id );
 
@@ -114,7 +114,7 @@ class WP_Test_Presence_Lifecycle extends WP_Presence_UnitTestCase {
 
 		$temp_user_id = self::factory()->user->create( array( 'role' => 'editor' ) );
 
-		wp_set_presence( 'admin/online', 'user-' . $temp_user_id, array(), $temp_user_id );
+		wp_set_presence( 'admin/online', 'user-' . $temp_user_id, array(), array( 'user_id' => $temp_user_id ) );
 
 		remove_user_from_blog( $temp_user_id, get_current_blog_id() );
 

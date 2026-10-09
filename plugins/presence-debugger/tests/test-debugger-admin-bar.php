@@ -32,9 +32,9 @@ class WP_Test_Presence_Debugger_Admin_Bar extends WP_Presence_UnitTestCase {
 		$other = self::factory()->user->create( array( 'role' => 'editor' ) );
 		wp_set_current_user( $admin );
 
-		wp_set_presence( 'postType/post:1', 'editor-1', array(), $admin );
-		wp_set_presence( 'postType/post:1', 'gse-42', array(), $other );
-		wp_set_presence( 'postType/post:2', 'gse-43', array(), $other );
+		wp_set_presence( 'postType/post:1', 'editor-1', array(), array( 'user_id' => $admin ) );
+		wp_set_presence( 'postType/post:1', 'gse-42', array(), array( 'user_id' => $other ) );
+		wp_set_presence( 'postType/post:2', 'gse-43', array(), array( 'user_id' => $other ) );
 
 		$response = wp_presence_debugger_heartbeat_received( array(), array( 'presence-fragments' => array( 'debugger' => true ) ) );
 		$markup   = $response['presence-fragments']['debugger'];
@@ -52,7 +52,7 @@ class WP_Test_Presence_Debugger_Admin_Bar extends WP_Presence_UnitTestCase {
 		wp_set_current_user( $admin );
 		$room = 'postType/post:1';
 
-		wp_set_presence( $room, 'editor-1', array(), $admin );
+		wp_set_presence( $room, 'editor-1', array(), array( 'user_id' => $admin ) );
 		wp_set_presence(
 			$room,
 			'gse-42',
@@ -60,7 +60,7 @@ class WP_Test_Presence_Debugger_Admin_Bar extends WP_Presence_UnitTestCase {
 				'screen' => 'post',
 				'cursor' => 7,
 			),
-			$other
+			array( 'user_id' => $other )
 		);
 
 		$this->assertStringContainsString( '{&quot;screen&quot;:&quot;post&quot;,&quot;cursor&quot;:7}', wp_presence_debugger_admin_bar_markup() );
@@ -81,9 +81,33 @@ class WP_Test_Presence_Debugger_Admin_Bar extends WP_Presence_UnitTestCase {
 		$room = 'postType/post:1';
 
 		// Freshest first is the reverse of the order expected.
-		wp_set_presence( $room, 'editor-me', array(), $admin, gmdate( 'Y-m-d H:i:s', time() - 30 ) );
-		wp_set_presence( $room, 'editor-ana', array(), self::factory()->user->create( array( 'display_name' => 'Ana' ) ), gmdate( 'Y-m-d H:i:s', time() - 20 ) );
-		wp_set_presence( $room, 'editor-bea', array(), self::factory()->user->create( array( 'display_name' => 'Bea' ) ), gmdate( 'Y-m-d H:i:s', time() - 10 ) );
+		wp_set_presence(
+			$room,
+			'editor-me',
+			array(),
+			array(
+				'user_id'  => $admin,
+				'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - 30 ),
+			)
+		);
+		wp_set_presence(
+			$room,
+			'editor-ana',
+			array(),
+			array(
+				'user_id'  => self::factory()->user->create( array( 'display_name' => 'Ana' ) ),
+				'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - 20 ),
+			)
+		);
+		wp_set_presence(
+			$room,
+			'editor-bea',
+			array(),
+			array(
+				'user_id'  => self::factory()->user->create( array( 'display_name' => 'Bea' ) ),
+				'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - 10 ),
+			)
+		);
 
 		$markup = wp_presence_debugger_admin_bar_markup();
 
@@ -99,9 +123,9 @@ class WP_Test_Presence_Debugger_Admin_Bar extends WP_Presence_UnitTestCase {
 		wp_set_current_user( $admin );
 		$room = 'postType/post:999';
 
-		wp_set_presence( $room, 'client-0', array(), $admin );
+		wp_set_presence( $room, 'client-0', array(), array( 'user_id' => $admin ) );
 		foreach ( self::factory()->user->create_many( 25 ) as $i => $user_id ) {
-			wp_set_presence( $room, 'client-' . ( $i + 1 ), array(), $user_id );
+			wp_set_presence( $room, 'client-' . ( $i + 1 ), array(), array( 'user_id' => $user_id ) );
 		}
 
 		$this->assertStringContainsString( 'wp-admin-bar-presence-debug-room-0-25', wp_presence_debugger_admin_bar_markup() );

@@ -109,8 +109,8 @@ class WP_Test_Presence_Privacy extends WP_Presence_UnitTestCase {
 	public function test_the_export_reports_every_stored_row_including_expired_ones() {
 		global $wpdb;
 
-		wp_set_presence( 'admin', 'client-1', array( 'screen' => 'dashboard' ), self::$editor_id );
-		wp_set_presence( 'admin', 'client-2', array( 'screen' => 'edit-post' ), self::$editor_id );
+		wp_set_presence( 'admin', 'client-1', array( 'screen' => 'dashboard' ), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'admin', 'client-2', array( 'screen' => 'edit-post' ), array( 'user_id' => self::$editor_id ) );
 
 		$wpdb->update(
 			$wpdb->presence,
@@ -131,7 +131,7 @@ class WP_Test_Presence_Privacy extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_personal_data_eraser
 	 */
 	public function test_the_eraser_clears_the_users_rows() {
-		wp_set_presence( 'admin', 'client-1', array( 'screen' => 'dashboard' ), self::$editor_id );
+		wp_set_presence( 'admin', 'client-1', array( 'screen' => 'dashboard' ), array( 'user_id' => self::$editor_id ) );
 
 		$response = wp_presence_personal_data_eraser( 'editor@presence.test' );
 

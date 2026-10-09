@@ -435,7 +435,7 @@ class WP_Test_Network_Summary_Push extends WP_Presence_Network_UnitTestCase {
 			)
 		);
 
-		wp_set_presence( wp_presence_admin_room(), $client_id, array( 'screen' => 'dashboard' ), self::$editor_id );
+		wp_set_presence( wp_presence_admin_room(), $client_id, array( 'screen' => 'dashboard' ), array( 'user_id' => self::$editor_id ) );
 
 		$after = $wpdb->get_var(
 			$wpdb->prepare(

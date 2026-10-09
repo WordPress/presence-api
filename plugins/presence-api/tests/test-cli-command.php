@@ -200,9 +200,9 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 	 * @covers WP_Presence_CLI_Command::list_
 	 */
 	public function test_list_renders_the_entries_in_a_room() {
-		wp_set_presence( 'admin/online', 'cli-1', array( 'action' => 'editing' ), self::$user_id );
-		wp_set_presence( 'admin/online', 'cli-2', array(), 0 );
-		wp_set_presence( 'postType/post:42', 'other', array(), 0 );
+		wp_set_presence( 'admin/online', 'cli-1', array( 'action' => 'editing' ), array( 'user_id' => self::$user_id ) );
+		wp_set_presence( 'admin/online', 'cli-2', array() );
+		wp_set_presence( 'postType/post:42', 'other', array() );
 
 		$this->command->list_( array( 'admin/online' ), array() );
 
@@ -226,7 +226,7 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 	 * @covers WP_Presence_CLI_Command::list_
 	 */
 	public function test_list_passes_the_requested_format_through() {
-		wp_set_presence( 'admin/online', 'cli-1', array(), 0 );
+		wp_set_presence( 'admin/online', 'cli-1', array() );
 
 		$this->command->list_( array( 'admin/online' ), array( 'format' => 'json' ) );
 
@@ -237,9 +237,9 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 	 * @covers WP_Presence_CLI_Command::summary
 	 */
 	public function test_summary_reports_totals_and_prefixes() {
-		wp_set_presence( 'admin/online', 'cli-1', array(), self::$user_id );
-		wp_set_presence( 'admin/dashboard', 'cli-2', array(), self::$user_id );
-		wp_set_presence( 'postType/post:42', 'cli-3', array(), 0 );
+		wp_set_presence( 'admin/online', 'cli-1', array(), array( 'user_id' => self::$user_id ) );
+		wp_set_presence( 'admin/dashboard', 'cli-2', array(), array( 'user_id' => self::$user_id ) );
+		wp_set_presence( 'postType/post:42', 'cli-3', array() );
 
 		$this->command->summary( array(), array() );
 
@@ -278,7 +278,7 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 	 * @covers WP_Presence_CLI_Command::summary
 	 */
 	public function test_summary_prints_json_in_one_document() {
-		wp_set_presence( 'admin/online', 'cli-1', array(), self::$user_id );
+		wp_set_presence( 'admin/online', 'cli-1', array(), array( 'user_id' => self::$user_id ) );
 
 		$this->command->summary( array(), array( 'format' => 'json' ) );
 
@@ -295,8 +295,8 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 	public function test_cleanup_deletes_every_entry_regardless_of_age() {
 		global $wpdb;
 
-		wp_set_presence( 'admin/online', 'cli-1', array(), self::$user_id );
-		wp_set_presence( 'postType/post:42', 'cli-2', array(), 0 );
+		wp_set_presence( 'admin/online', 'cli-1', array(), array( 'user_id' => self::$user_id ) );
+		wp_set_presence( 'postType/post:42', 'cli-2', array() );
 
 		$wpdb->insert(
 			$wpdb->presence,
@@ -344,7 +344,7 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 	 * @covers WP_Presence_CLI_Command::cleanup
 	 */
 	public function test_cleanup_prompts_without_the_yes_flag() {
-		wp_set_presence( 'admin/online', 'cli-1', array(), self::$user_id );
+		wp_set_presence( 'admin/online', 'cli-1', array(), array( 'user_id' => self::$user_id ) );
 
 		$this->command->cleanup( array(), array() );
 
@@ -356,7 +356,7 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 	 * @covers WP_Presence_CLI_Command::cleanup
 	 */
 	public function test_cleanup_leaves_the_table_untouched_when_the_prompt_is_declined() {
-		wp_set_presence( 'admin/online', 'cli-1', array(), self::$user_id );
+		wp_set_presence( 'admin/online', 'cli-1', array(), array( 'user_id' => self::$user_id ) );
 
 		WP_CLI::$confirm_declines = true;
 

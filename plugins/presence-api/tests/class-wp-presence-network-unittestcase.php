@@ -118,7 +118,7 @@ abstract class WP_Presence_Network_UnitTestCase extends WP_Presence_UnitTestCase
 	 */
 	protected function set_presence_on_site( $blog_id, $user_id ) {
 		switch_to_blog( $blog_id );
-		wp_set_presence( 'admin/online', 'user-' . $user_id, array( 'screen' => 'dashboard' ), $user_id );
+		wp_set_presence( 'admin/online', 'user-' . $user_id, array( 'screen' => 'dashboard' ), array( 'user_id' => $user_id ) );
 		restore_current_blog();
 	}
 

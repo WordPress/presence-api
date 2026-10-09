@@ -125,15 +125,23 @@ class WP_Test_Presence_Post_List extends WP_Presence_UnitTestCase {
 			2
 		);
 
-		wp_set_presence( wp_presence_post_room( $post_one ), 'lock-1', array(), self::$editor_id );
-		wp_set_presence( wp_presence_post_room( $post_many ), 'lock-1', array(), self::$editor_id );
-		wp_set_presence( wp_presence_post_room( $post_many ), 'lock-2', array(), $editor_2_id );
-		wp_set_presence( wp_presence_post_room( $post_one ), 'agent-' . $agent_id, array(), $agent_id, null, 60 );
-		wp_set_presence( wp_presence_post_room( $post_deleted ), 'lock-3', array(), $deleted_id );
+		wp_set_presence( wp_presence_post_room( $post_one ), 'lock-1', array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( wp_presence_post_room( $post_many ), 'lock-1', array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( wp_presence_post_room( $post_many ), 'lock-2', array(), array( 'user_id' => $editor_2_id ) );
+		wp_set_presence(
+			wp_presence_post_room( $post_one ),
+			'agent-' . $agent_id,
+			array(),
+			array(
+				'user_id'    => $agent_id,
+				'expires_in' => 60,
+			)
+		);
+		wp_set_presence( wp_presence_post_room( $post_deleted ), 'lock-3', array(), array( 'user_id' => $deleted_id ) );
 
 		// Matches the postType/ prefix query but not the room format, so it is
 		// skipped while the map is built rather than mapped to a post.
-		wp_set_presence( 'postType/malformed', 'lock-4', array(), self::$editor_id );
+		wp_set_presence( 'postType/malformed', 'lock-4', array(), array( 'user_id' => self::$editor_id ) );
 
 		if ( is_multisite() ) {
 			require_once ABSPATH . 'wp-admin/includes/ms.php';
@@ -143,7 +151,7 @@ class WP_Test_Presence_Post_List extends WP_Presence_UnitTestCase {
 		}
 
 		// Deletion now clears this row; re-write it to test the fallback rendering.
-		wp_set_presence( wp_presence_post_room( $post_deleted ), 'lock-3', array(), $deleted_id );
+		wp_set_presence( wp_presence_post_room( $post_deleted ), 'lock-3', array(), array( 'user_id' => $deleted_id ) );
 
 		$this->assertSame( '', $this->render_column( $post_none ) );
 
@@ -184,9 +192,9 @@ class WP_Test_Presence_Post_List extends WP_Presence_UnitTestCase {
 					'display_name' => $name,
 				)
 			);
-			wp_set_presence( wp_presence_post_room( $five ), 'editor-' . $user_id, array(), $user_id );
+			wp_set_presence( wp_presence_post_room( $five ), 'editor-' . $user_id, array(), array( 'user_id' => $user_id ) );
 			if ( $index < 4 ) {
-				wp_set_presence( wp_presence_post_room( $four ), 'editor-' . $user_id, array(), $user_id );
+				wp_set_presence( wp_presence_post_room( $four ), 'editor-' . $user_id, array(), array( 'user_id' => $user_id ) );
 			}
 		}
 
@@ -220,7 +228,7 @@ class WP_Test_Presence_Post_List extends WP_Presence_UnitTestCase {
 		register_post_type( 'no_presence', array( 'show_ui' => true, 'supports' => array( 'title' ) ) );
 		$other = self::factory()->post->create( array( 'post_type' => 'no_presence' ) );
 
-		wp_set_presence( wp_presence_post_room( $page ), 'editor-1', array(), self::$editor_id );
+		wp_set_presence( wp_presence_post_room( $page ), 'editor-1', array(), array( 'user_id' => self::$editor_id ) );
 
 		$response = wp_presence_editors_column_heartbeat_received(
 			array(),
