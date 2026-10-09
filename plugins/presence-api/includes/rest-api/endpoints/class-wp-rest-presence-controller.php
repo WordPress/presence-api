@@ -9,924 +9,926 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-/**
- * Core class used to manage presence via the REST API.
- *
- * @since 0.1.1
- *
- * @see WP_REST_Controller
- */
-class WP_REST_Presence_Controller extends WP_REST_Controller {
-
+if ( ! class_exists( 'WP_REST_Presence_Controller' ) ) {
 	/**
-	 * Maximum allowed size in bytes for the data payload.
-	 *
-	 * @var int
-	 */
-	const MAX_DATA_SIZE = 10240;
-
-	/**
-	 * Maximum nesting depth for the data payload.
-	 *
-	 * @var int
-	 */
-	const MAX_DATA_DEPTH = 3;
-
-	/**
-	 * Maximum number of presence entries a single user may hold.
-	 *
-	 * @var int
-	 */
-	const MAX_ENTRIES_PER_USER = 50;
-
-	/**
-	 * Constructor.
-	 *
-	 * @since 0.1.1
-	 */
-	public function __construct() {
-		$this->namespace = 'wp-presence/v1';
-		$this->rest_base = 'presence';
-	}
-
-	/**
-	 * Registers the routes for presence.
+	 * Core class used to manage presence via the REST API.
 	 *
 	 * @since 0.1.1
 	 *
-	 * @see register_rest_route()
+	 * @see WP_REST_Controller
 	 */
-	public function register_routes() {
-		register_rest_route(
-			$this->namespace,
-			'/' . $this->rest_base,
-			array(
-				array(
-					'methods'             => WP_REST_Server::READABLE,
-					'callback'            => array( $this, 'get_items' ),
-					'permission_callback' => array( $this, 'get_items_permissions_check' ),
-					'args'                => array(
-						'room'     => array(
-							'required'          => true,
-							'type'              => 'string',
-							'minLength'         => 1,
-							'maxLength'         => WP_PRESENCE_MAX_KEY_LENGTH,
-							'validate_callback' => 'rest_validate_request_arg',
-							'sanitize_callback' => 'sanitize_text_field',
-						),
-						'per_page' => array(
-							'type'              => 'integer',
-							'default'           => 100,
-							'minimum'           => 1,
-							'maximum'           => 100,
-							'validate_callback' => 'rest_validate_request_arg',
-							'sanitize_callback' => 'absint',
-						),
-						'page'     => array(
-							'type'              => 'integer',
-							'default'           => 1,
-							'minimum'           => 1,
-							'validate_callback' => 'rest_validate_request_arg',
-							'sanitize_callback' => 'absint',
-						),
-					),
-				),
-				array(
-					'methods'             => WP_REST_Server::CREATABLE,
-					'callback'            => array( $this, 'create_item' ),
-					'permission_callback' => array( $this, 'create_item_permissions_check' ),
-					'args'                => array(
-						'room'      => array(
-							'required'          => true,
-							'type'              => 'string',
-							'minLength'         => 1,
-							'maxLength'         => WP_PRESENCE_MAX_KEY_LENGTH,
-							'validate_callback' => 'rest_validate_request_arg',
-							'sanitize_callback' => 'sanitize_text_field',
-						),
-						'client_id' => array(
-							'required'          => true,
-							'type'              => 'string',
-							'minLength'         => 1,
-							'maxLength'         => WP_PRESENCE_MAX_KEY_LENGTH,
-							'validate_callback' => array( $this, 'validate_client_id_param' ),
-							'sanitize_callback' => 'sanitize_text_field',
-						),
-						'data'      => array(
-							'type'              => 'object',
-							'default'           => array(),
-							'validate_callback' => array( $this, 'validate_data_param' ),
-							'sanitize_callback' => array( $this, 'sanitize_data_param' ),
-						),
-					),
-				),
-				array(
-					'methods'             => WP_REST_Server::DELETABLE,
-					'callback'            => array( $this, 'delete_item' ),
-					'permission_callback' => array( $this, 'delete_item_permissions_check' ),
-					'args'                => array(
-						'room'      => array(
-							'required'          => true,
-							'type'              => 'string',
-							'minLength'         => 1,
-							'maxLength'         => WP_PRESENCE_MAX_KEY_LENGTH,
-							'validate_callback' => 'rest_validate_request_arg',
-							'sanitize_callback' => 'sanitize_text_field',
-						),
-						'client_id' => array(
-							'required'          => true,
-							'type'              => 'string',
-							'minLength'         => 1,
-							'maxLength'         => WP_PRESENCE_MAX_KEY_LENGTH,
-							'validate_callback' => array( $this, 'validate_client_id_param' ),
-							'sanitize_callback' => 'sanitize_text_field',
-						),
-					),
-				),
-				'schema' => array( $this, 'get_public_item_schema' ),
-			)
-		);
+	class WP_REST_Presence_Controller extends WP_REST_Controller {
 
-		register_rest_route(
-			$this->namespace,
-			'/' . $this->rest_base . '/rooms',
-			array(
-				array(
-					'methods'             => WP_REST_Server::READABLE,
-					'callback'            => array( $this, 'get_rooms' ),
-					'permission_callback' => array( $this, 'get_rooms_permissions_check' ),
-					'args'                => array(
-						'per_page' => array(
-							'type'              => 'integer',
-							'default'           => 50,
-							'minimum'           => 1,
-							'maximum'           => 100,
-							'validate_callback' => 'rest_validate_request_arg',
-							'sanitize_callback' => 'absint',
-						),
-						'page'     => array(
-							'type'              => 'integer',
-							'default'           => 1,
-							'minimum'           => 1,
-							'validate_callback' => 'rest_validate_request_arg',
-							'sanitize_callback' => 'absint',
-						),
-					),
-				),
-			)
-		);
+		/**
+		 * Maximum allowed size in bytes for the data payload.
+		 *
+		 * @var int
+		 */
+		const MAX_DATA_SIZE = 10240;
 
-		register_rest_route(
-			$this->namespace,
-			'/' . $this->rest_base . '/screen-revisions/stale',
-			array(
-				array(
-					'methods'             => WP_REST_Server::CREATABLE,
-					'callback'            => array( $this, 'bump_screen_revision' ),
-					'permission_callback' => array( $this, 'bump_screen_revision_permissions_check' ),
-					'args'                => array(
-						'screen_key' => array(
-							'required'          => true,
-							'type'              => 'string',
-							'maxLength'         => WP_PRESENCE_SCREEN_KEY_LIMIT,
-							'sanitize_callback' => 'sanitize_text_field',
-							// A custom validate_callback replaces the default one, so run
-							// the schema check first or maxLength above is never applied.
-							'validate_callback' => static function ( $value, $request, $param ) {
-								$valid = rest_validate_request_arg( $value, $request, $param );
-								if ( is_wp_error( $valid ) ) {
-									return $valid;
-								}
+		/**
+		 * Maximum nesting depth for the data payload.
+		 *
+		 * @var int
+		 */
+		const MAX_DATA_DEPTH = 3;
 
-								return (bool) preg_match( '#^[a-z0-9/_-]+$#', $value );
-							},
-						),
-					),
-				),
-			)
-		);
-	}
+		/**
+		 * Maximum number of presence entries a single user may hold.
+		 *
+		 * @var int
+		 */
+		const MAX_ENTRIES_PER_USER = 50;
 
-	/**
-	 * Validates a client_id parameter, rejecting the reserved namespace.
-	 *
-	 * @since 0.6.0
-	 *
-	 * @param mixed           $value   The client_id parameter value.
-	 * @param WP_REST_Request $request Full details about the request.
-	 * @param string          $param   The parameter name.
-	 * @return true|WP_Error True if valid, WP_Error otherwise.
-	 */
-	public function validate_client_id_param( $value, $request, $param ) {
-		$valid = rest_validate_request_arg( $value, $request, $param );
-
-		if ( is_wp_error( $valid ) ) {
-			return $valid;
+		/**
+		 * Constructor.
+		 *
+		 * @since 0.1.1
+		 */
+		public function __construct() {
+			$this->namespace = 'wp-presence/v1';
+			$this->rest_base = 'presence';
 		}
 
-		// Core validates before it sanitizes, so the raw value is not what gets
-		// stored: `<b>_collab</b>` and ` _collab` both reach the table as
-		// `_collab`. Check the string the route's sanitizer will actually write.
-		if ( wp_presence_is_reserved_client_id( sanitize_text_field( $value ) ) ) {
-			return new WP_Error(
-				'rest_presence_reserved_client_id',
-				/* translators: %s: The reserved client_id prefix. */
-				sprintf( __( 'Client IDs beginning with %s are reserved.', 'presence-api' ), WP_PRESENCE_RESERVED_PREFIX ),
-				array( 'status' => 400 )
+		/**
+		 * Registers the routes for presence.
+		 *
+		 * @since 0.1.1
+		 *
+		 * @see register_rest_route()
+		 */
+		public function register_routes() {
+			register_rest_route(
+				$this->namespace,
+				'/' . $this->rest_base,
+				array(
+					array(
+						'methods'             => WP_REST_Server::READABLE,
+						'callback'            => array( $this, 'get_items' ),
+						'permission_callback' => array( $this, 'get_items_permissions_check' ),
+						'args'                => array(
+							'room'     => array(
+								'required'          => true,
+								'type'              => 'string',
+								'minLength'         => 1,
+								'maxLength'         => WP_PRESENCE_MAX_KEY_LENGTH,
+								'validate_callback' => 'rest_validate_request_arg',
+								'sanitize_callback' => 'sanitize_text_field',
+							),
+							'per_page' => array(
+								'type'              => 'integer',
+								'default'           => 100,
+								'minimum'           => 1,
+								'maximum'           => 100,
+								'validate_callback' => 'rest_validate_request_arg',
+								'sanitize_callback' => 'absint',
+							),
+							'page'     => array(
+								'type'              => 'integer',
+								'default'           => 1,
+								'minimum'           => 1,
+								'validate_callback' => 'rest_validate_request_arg',
+								'sanitize_callback' => 'absint',
+							),
+						),
+					),
+					array(
+						'methods'             => WP_REST_Server::CREATABLE,
+						'callback'            => array( $this, 'create_item' ),
+						'permission_callback' => array( $this, 'create_item_permissions_check' ),
+						'args'                => array(
+							'room'      => array(
+								'required'          => true,
+								'type'              => 'string',
+								'minLength'         => 1,
+								'maxLength'         => WP_PRESENCE_MAX_KEY_LENGTH,
+								'validate_callback' => 'rest_validate_request_arg',
+								'sanitize_callback' => 'sanitize_text_field',
+							),
+							'client_id' => array(
+								'required'          => true,
+								'type'              => 'string',
+								'minLength'         => 1,
+								'maxLength'         => WP_PRESENCE_MAX_KEY_LENGTH,
+								'validate_callback' => array( $this, 'validate_client_id_param' ),
+								'sanitize_callback' => 'sanitize_text_field',
+							),
+							'data'      => array(
+								'type'              => 'object',
+								'default'           => array(),
+								'validate_callback' => array( $this, 'validate_data_param' ),
+								'sanitize_callback' => array( $this, 'sanitize_data_param' ),
+							),
+						),
+					),
+					array(
+						'methods'             => WP_REST_Server::DELETABLE,
+						'callback'            => array( $this, 'delete_item' ),
+						'permission_callback' => array( $this, 'delete_item_permissions_check' ),
+						'args'                => array(
+							'room'      => array(
+								'required'          => true,
+								'type'              => 'string',
+								'minLength'         => 1,
+								'maxLength'         => WP_PRESENCE_MAX_KEY_LENGTH,
+								'validate_callback' => 'rest_validate_request_arg',
+								'sanitize_callback' => 'sanitize_text_field',
+							),
+							'client_id' => array(
+								'required'          => true,
+								'type'              => 'string',
+								'minLength'         => 1,
+								'maxLength'         => WP_PRESENCE_MAX_KEY_LENGTH,
+								'validate_callback' => array( $this, 'validate_client_id_param' ),
+								'sanitize_callback' => 'sanitize_text_field',
+							),
+						),
+					),
+					'schema' => array( $this, 'get_public_item_schema' ),
+				)
+			);
+
+			register_rest_route(
+				$this->namespace,
+				'/' . $this->rest_base . '/rooms',
+				array(
+					array(
+						'methods'             => WP_REST_Server::READABLE,
+						'callback'            => array( $this, 'get_rooms' ),
+						'permission_callback' => array( $this, 'get_rooms_permissions_check' ),
+						'args'                => array(
+							'per_page' => array(
+								'type'              => 'integer',
+								'default'           => 50,
+								'minimum'           => 1,
+								'maximum'           => 100,
+								'validate_callback' => 'rest_validate_request_arg',
+								'sanitize_callback' => 'absint',
+							),
+							'page'     => array(
+								'type'              => 'integer',
+								'default'           => 1,
+								'minimum'           => 1,
+								'validate_callback' => 'rest_validate_request_arg',
+								'sanitize_callback' => 'absint',
+							),
+						),
+					),
+				)
+			);
+
+			register_rest_route(
+				$this->namespace,
+				'/' . $this->rest_base . '/screen-revisions/stale',
+				array(
+					array(
+						'methods'             => WP_REST_Server::CREATABLE,
+						'callback'            => array( $this, 'bump_screen_revision' ),
+						'permission_callback' => array( $this, 'bump_screen_revision_permissions_check' ),
+						'args'                => array(
+							'screen_key' => array(
+								'required'          => true,
+								'type'              => 'string',
+								'maxLength'         => WP_PRESENCE_SCREEN_KEY_LIMIT,
+								'sanitize_callback' => 'sanitize_text_field',
+								// A custom validate_callback replaces the default one, so run
+								// the schema check first or maxLength above is never applied.
+								'validate_callback' => static function ( $value, $request, $param ) {
+									$valid = rest_validate_request_arg( $value, $request, $param );
+									if ( is_wp_error( $valid ) ) {
+										return $valid;
+									}
+
+									return (bool) preg_match( '#^[a-z0-9/_-]+$#', $value );
+								},
+							),
+						),
+					),
+				)
 			);
 		}
 
-		return true;
-	}
+		/**
+		 * Validates a client_id parameter, rejecting the reserved namespace.
+		 *
+		 * @since 0.6.0
+		 *
+		 * @param mixed           $value   The client_id parameter value.
+		 * @param WP_REST_Request $request Full details about the request.
+		 * @param string          $param   The parameter name.
+		 * @return true|WP_Error True if valid, WP_Error otherwise.
+		 */
+		public function validate_client_id_param( $value, $request, $param ) {
+			$valid = rest_validate_request_arg( $value, $request, $param );
 
-	/**
-	 * Validates the data parameter size and type.
-	 *
-	 * @since 0.1.1
-	 *
-	 * @param mixed           $value   The data parameter value.
-	 * @param WP_REST_Request $request Full details about the request.
-	 * @param string          $param   The parameter name.
-	 * @return true|WP_Error True if valid, WP_Error otherwise.
-	 */
-	public function validate_data_param( $value, $request, $param ) {
-		if ( ! is_array( $value ) && ! is_object( $value ) ) {
-			return new WP_Error(
-				'rest_invalid_type',
-				/* translators: %s: Parameter name. */
-				sprintf( __( '%s must be an object.', 'presence-api' ), $param ),
-				array( 'status' => 400 )
-			);
-		}
-
-		$encoded = wp_json_encode( $value );
-
-		if ( strlen( $encoded ) > self::MAX_DATA_SIZE ) {
-			return new WP_Error(
-				'rest_presence_data_too_large',
-				__( 'Presence data payload exceeds the maximum allowed size.', 'presence-api' ),
-				array( 'status' => 400 )
-			);
-		}
-
-		return true;
-	}
-
-	/**
-	 * Sanitizes the data parameter structure recursively.
-	 *
-	 * Enforces a type allowlist (strings, integers, floats, booleans,
-	 * and nested arrays) and a depth limit of MAX_DATA_DEPTH levels.
-	 * String values are passed through untouched; output-time encoding
-	 * (e.g. wp_json_encode, esc_html) is responsible for escaping.
-	 *
-	 * @since 0.1.1
-	 *
-	 * @param mixed $value The data parameter value.
-	 * @return array Sanitized data array.
-	 */
-	public function sanitize_data_param( $value ) {
-		if ( ! is_array( $value ) ) {
-			return array();
-		}
-
-		return self::sanitize_data_recursive( $value, 0 );
-	}
-
-	/**
-	 * Recursively enforces the type allowlist and depth limit on data values.
-	 *
-	 * Keys are sanitized via sanitize_text_field(). Scalar values
-	 * (strings, integers, floats, booleans) are preserved as-is;
-	 * unsupported types are silently dropped.
-	 *
-	 * @since 0.1.1
-	 *
-	 * @param array $data  The data to process.
-	 * @param int   $depth Current nesting depth.
-	 * @return array Processed data.
-	 */
-	private static function sanitize_data_recursive( $data, $depth ) {
-		if ( $depth >= self::MAX_DATA_DEPTH ) {
-			return array();
-		}
-
-		$sanitized = array();
-
-		foreach ( $data as $key => $value ) {
-			$key = sanitize_text_field( (string) $key );
-
-			if ( is_array( $value ) ) {
-				$sanitized[ $key ] = self::sanitize_data_recursive( $value, $depth + 1 );
-			} elseif ( is_string( $value ) ) {
-				$sanitized[ $key ] = $value;
-			} elseif ( is_int( $value ) || is_float( $value ) || is_bool( $value ) ) {
-				$sanitized[ $key ] = $value;
+			if ( is_wp_error( $valid ) ) {
+				return $valid;
 			}
+
+			// Core validates before it sanitizes, so the raw value is not what gets
+			// stored: `<b>_collab</b>` and ` _collab` both reach the table as
+			// `_collab`. Check the string the route's sanitizer will actually write.
+			if ( wp_presence_is_reserved_client_id( sanitize_text_field( $value ) ) ) {
+				return new WP_Error(
+					'rest_presence_reserved_client_id',
+					/* translators: %s: The reserved client_id prefix. */
+					sprintf( __( 'Client IDs beginning with %s are reserved.', 'presence-api' ), WP_PRESENCE_RESERVED_PREFIX ),
+					array( 'status' => 400 )
+				);
+			}
+
+			return true;
 		}
 
-		return $sanitized;
-	}
+		/**
+		 * Validates the data parameter size and type.
+		 *
+		 * @since 0.1.1
+		 *
+		 * @param mixed           $value   The data parameter value.
+		 * @param WP_REST_Request $request Full details about the request.
+		 * @param string          $param   The parameter name.
+		 * @return true|WP_Error True if valid, WP_Error otherwise.
+		 */
+		public function validate_data_param( $value, $request, $param ) {
+			if ( ! is_array( $value ) && ! is_object( $value ) ) {
+				return new WP_Error(
+					'rest_invalid_type',
+					/* translators: %s: Parameter name. */
+					sprintf( __( '%s must be an object.', 'presence-api' ), $param ),
+					array( 'status' => 400 )
+				);
+			}
 
-	/**
-	 * Checks if the current user has permission to read presence.
-	 *
-	 * @since 0.1.1
-	 *
-	 * @param WP_REST_Request $request Full details about the request.
-	 * @return true|WP_Error True if the request has access, WP_Error otherwise.
-	 */
-	public function get_items_permissions_check( $request ) {
-		$room = $request->get_param( 'room' );
+			$encoded = wp_json_encode( $value );
 
-		if ( ! wp_can_access_presence_room( $room ) ) {
-			return new WP_Error(
-				'rest_forbidden',
-				__( 'Sorry, you are not allowed to view presence in this room.', 'presence-api' ),
-				array( 'status' => rest_authorization_required_code() )
-			);
+			if ( strlen( $encoded ) > self::MAX_DATA_SIZE ) {
+				return new WP_Error(
+					'rest_presence_data_too_large',
+					__( 'Presence data payload exceeds the maximum allowed size.', 'presence-api' ),
+					array( 'status' => 400 )
+				);
+			}
+
+			return true;
 		}
 
-		return true;
-	}
+		/**
+		 * Sanitizes the data parameter structure recursively.
+		 *
+		 * Enforces a type allowlist (strings, integers, floats, booleans,
+		 * and nested arrays) and a depth limit of MAX_DATA_DEPTH levels.
+		 * String values are passed through untouched; output-time encoding
+		 * (e.g. wp_json_encode, esc_html) is responsible for escaping.
+		 *
+		 * @since 0.1.1
+		 *
+		 * @param mixed $value The data parameter value.
+		 * @return array Sanitized data array.
+		 */
+		public function sanitize_data_param( $value ) {
+			if ( ! is_array( $value ) ) {
+				return array();
+			}
 
-	/**
-	 * Retrieves presence entries for a room.
-	 *
-	 * @since 0.1.1
-	 *
-	 * @param WP_REST_Request $request Full details about the request.
-	 * @return WP_REST_Response Response object.
-	 */
-	public function get_items( $request ) {
-		global $wpdb;
-
-		if ( ! wp_presence_has_table() ) {
-			return $this->empty_collection_response();
+			return self::sanitize_data_recursive( $value, 0 );
 		}
 
-		$room     = $request->get_param( 'room' );
-		$per_page = $request->get_param( 'per_page' );
-		$page     = $request->get_param( 'page' );
-		$offset   = ( $page - 1 ) * $per_page;
+		/**
+		 * Recursively enforces the type allowlist and depth limit on data values.
+		 *
+		 * Keys are sanitized via sanitize_text_field(). Scalar values
+		 * (strings, integers, floats, booleans) are preserved as-is;
+		 * unsupported types are silently dropped.
+		 *
+		 * @since 0.1.1
+		 *
+		 * @param array $data  The data to process.
+		 * @param int   $depth Current nesting depth.
+		 * @return array Processed data.
+		 */
+		private static function sanitize_data_recursive( $data, $depth ) {
+			if ( $depth >= self::MAX_DATA_DEPTH ) {
+				return array();
+			}
 
-		$cutoff = gmdate( 'Y-m-d H:i:s' );
+			$sanitized = array();
 
-		// Get total count for pagination headers.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$total = (int) $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$wpdb->presence} WHERE room = %s AND expires_gmt > %s AND client_id NOT LIKE %s",
-				$room,
-				$cutoff,
-				wp_presence_reserved_client_id_pattern()
-			)
-		);
+			foreach ( $data as $key => $value ) {
+				$key = sanitize_text_field( (string) $key );
 
-		// Fetch only the requested page.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$results = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT room, client_id, user_id, data, date_gmt FROM {$wpdb->presence} WHERE room = %s AND expires_gmt > %s AND client_id NOT LIKE %s ORDER BY date_gmt DESC LIMIT %d OFFSET %d",
-				$room,
-				$cutoff,
-				wp_presence_reserved_client_id_pattern(),
-				$per_page,
-				$offset
-			)
-		);
+				if ( is_array( $value ) ) {
+					$sanitized[ $key ] = self::sanitize_data_recursive( $value, $depth + 1 );
+				} elseif ( is_string( $value ) ) {
+					$sanitized[ $key ] = $value;
+				} elseif ( is_int( $value ) || is_float( $value ) || is_bool( $value ) ) {
+					$sanitized[ $key ] = $value;
+				}
+			}
 
-		if ( ! $results ) {
-			$results = array();
+			return $sanitized;
 		}
 
-		cache_users( wp_list_pluck( $results, 'user_id' ) );
+		/**
+		 * Checks if the current user has permission to read presence.
+		 *
+		 * @since 0.1.1
+		 *
+		 * @param WP_REST_Request $request Full details about the request.
+		 * @return true|WP_Error True if the request has access, WP_Error otherwise.
+		 */
+		public function get_items_permissions_check( $request ) {
+			$room = $request->get_param( 'room' );
 
-		foreach ( $results as $row ) {
-			$decoded   = json_decode( $row->data, true );
-			$row->data = is_array( $decoded ) ? $decoded : array();
+			if ( ! wp_can_access_presence_room( $room ) ) {
+				return new WP_Error(
+					'rest_forbidden',
+					__( 'Sorry, you are not allowed to view presence in this room.', 'presence-api' ),
+					array( 'status' => rest_authorization_required_code() )
+				);
+			}
+
+			return true;
 		}
 
-		$data = array();
-		foreach ( $results as $entry ) {
-			$data[] = $this->prepare_item_for_response( $entry, $request )->get_data();
-		}
+		/**
+		 * Retrieves presence entries for a room.
+		 *
+		 * @since 0.1.1
+		 *
+		 * @param WP_REST_Request $request Full details about the request.
+		 * @return WP_REST_Response Response object.
+		 */
+		public function get_items( $request ) {
+			global $wpdb;
 
-		$response = rest_ensure_response( $data );
+			if ( ! wp_presence_has_table() ) {
+				return $this->empty_collection_response();
+			}
 
-		$response->header( 'X-WP-Total', $total );
-		$response->header( 'X-WP-TotalPages', (int) ceil( $total / $per_page ) );
-		$response->header( 'Cache-Control', 'no-store' );
+			$room     = $request->get_param( 'room' );
+			$per_page = $request->get_param( 'per_page' );
+			$page     = $request->get_param( 'page' );
+			$offset   = ( $page - 1 ) * $per_page;
 
-		return $response;
-	}
+			$cutoff = gmdate( 'Y-m-d H:i:s' );
 
-	/**
-	 * Builds the response used when this site has no presence storage yet.
-	 *
-	 * @since 0.1.17
-	 *
-	 * @return WP_REST_Response Empty collection with pagination headers.
-	 */
-	private function empty_collection_response() {
-		$response = rest_ensure_response( array() );
-
-		$response->header( 'X-WP-Total', 0 );
-		$response->header( 'X-WP-TotalPages', 0 );
-		$response->header( 'Cache-Control', 'no-store' );
-
-		return $response;
-	}
-
-	/**
-	 * Checks if the current user has permission to create a presence entry.
-	 *
-	 * @since 0.1.1
-	 *
-	 * @param WP_REST_Request $request Full details about the request.
-	 * @return true|WP_Error True if the request has access, WP_Error otherwise.
-	 */
-	public function create_item_permissions_check( $request ) {
-		$room = $request->get_param( 'room' );
-
-		if ( ! wp_can_access_presence_room( $room ) ) {
-			return new WP_Error(
-				'rest_forbidden',
-				__( 'Sorry, you are not allowed to set presence in this room.', 'presence-api' ),
-				array( 'status' => rest_authorization_required_code() )
-			);
-		}
-
-		return true;
-	}
-
-	/**
-	 * Creates or updates a presence entry.
-	 *
-	 * Validates that the client_id is not already claimed by a different user
-	 * in the same room to prevent impersonation.
-	 *
-	 * @since 0.1.1
-	 *
-	 * @param WP_REST_Request $request Full details about the request.
-	 * @return WP_REST_Response|WP_Error Response object on success, WP_Error on failure.
-	 */
-	public function create_item( $request ) {
-		global $wpdb;
-
-		// 501 rather than the 503 below: recording is switched off, not pending a table.
-		if ( ! wp_presence_recording_enabled() ) {
-			return new WP_Error(
-				'rest_presence_recording_disabled',
-				__( 'Presence is not recorded on this site.', 'presence-api' ),
-				array( 'status' => 501 )
-			);
-		}
-
-		if ( ! wp_presence_has_table() ) {
-			return new WP_Error(
-				'rest_presence_unavailable',
-				__( 'Presence is not available on this site yet.', 'presence-api' ),
-				array( 'status' => 503 )
-			);
-		}
-
-		$room      = $request->get_param( 'room' );
-		$client_id = $request->get_param( 'client_id' );
-		$data      = $request->get_param( 'data' );
-
-		if ( ! is_array( $data ) ) {
-			$data = array();
-		}
-
-		$current_user_id = get_current_user_id();
-		$cutoff          = gmdate( 'Y-m-d H:i:s' );
-
-		// Prevent overwriting another user's presence entry, and determine whether
-		// this request is an update to an existing active entry or a new insertion.
-		// Expired rows (expires_gmt <= now) are treated as absent: reactivating one
-		// counts against the cap the same as creating a brand-new entry.
-		//
-		// A narrow race window exists between the SELECT and INSERT below.
-		// This is acceptable because:
-		// 1. The UNIQUE KEY on (room, client_id) prevents duplicate rows.
-		// 2. Heartbeat re-establishes correct ownership within seconds.
-		// 3. Worst case: two users briefly share an entry until the next ping.
-		// 4. Data is ephemeral (150s default TTL) — stale entries self-correct.
-		// Table-level locking is not warranted for ephemeral data.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$existing_user_id = $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT user_id FROM {$wpdb->presence} WHERE room = %s AND client_id = %s AND expires_gmt > %s",
-				$room,
-				$client_id,
-				$cutoff
-			)
-		);
-
-		if ( null !== $existing_user_id && (int) $existing_user_id !== $current_user_id ) {
-			return new WP_Error(
-				'rest_presence_client_id_conflict',
-				__( 'This client_id is already in use by another user.', 'presence-api' ),
-				array( 'status' => 409 )
-			);
-		}
-
-		// Enforce per-user entry limit only for new entries. Refreshing an existing
-		// active entry owned by this user must always succeed regardless of the cap.
-		if ( null === $existing_user_id ) {
+			// Get total count for pagination headers.
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			$user_entry_count = $wpdb->get_var(
+			$total = (int) $wpdb->get_var(
 				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$wpdb->presence} WHERE user_id = %d AND expires_gmt > %s",
-					$current_user_id,
+					"SELECT COUNT(*) FROM {$wpdb->presence} WHERE room = %s AND expires_gmt > %s AND client_id NOT LIKE %s",
+					$room,
+					$cutoff,
+					wp_presence_reserved_client_id_pattern()
+				)
+			);
+
+			// Fetch only the requested page.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$results = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT room, client_id, user_id, data, date_gmt FROM {$wpdb->presence} WHERE room = %s AND expires_gmt > %s AND client_id NOT LIKE %s ORDER BY date_gmt DESC LIMIT %d OFFSET %d",
+					$room,
+					$cutoff,
+					wp_presence_reserved_client_id_pattern(),
+					$per_page,
+					$offset
+				)
+			);
+
+			if ( ! $results ) {
+				$results = array();
+			}
+
+			cache_users( wp_list_pluck( $results, 'user_id' ) );
+
+			foreach ( $results as $row ) {
+				$decoded   = json_decode( $row->data, true );
+				$row->data = is_array( $decoded ) ? $decoded : array();
+			}
+
+			$data = array();
+			foreach ( $results as $entry ) {
+				$data[] = $this->prepare_item_for_response( $entry, $request )->get_data();
+			}
+
+			$response = rest_ensure_response( $data );
+
+			$response->header( 'X-WP-Total', $total );
+			$response->header( 'X-WP-TotalPages', (int) ceil( $total / $per_page ) );
+			$response->header( 'Cache-Control', 'no-store' );
+
+			return $response;
+		}
+
+		/**
+		 * Builds the response used when this site has no presence storage yet.
+		 *
+		 * @since 0.1.17
+		 *
+		 * @return WP_REST_Response Empty collection with pagination headers.
+		 */
+		private function empty_collection_response() {
+			$response = rest_ensure_response( array() );
+
+			$response->header( 'X-WP-Total', 0 );
+			$response->header( 'X-WP-TotalPages', 0 );
+			$response->header( 'Cache-Control', 'no-store' );
+
+			return $response;
+		}
+
+		/**
+		 * Checks if the current user has permission to create a presence entry.
+		 *
+		 * @since 0.1.1
+		 *
+		 * @param WP_REST_Request $request Full details about the request.
+		 * @return true|WP_Error True if the request has access, WP_Error otherwise.
+		 */
+		public function create_item_permissions_check( $request ) {
+			$room = $request->get_param( 'room' );
+
+			if ( ! wp_can_access_presence_room( $room ) ) {
+				return new WP_Error(
+					'rest_forbidden',
+					__( 'Sorry, you are not allowed to set presence in this room.', 'presence-api' ),
+					array( 'status' => rest_authorization_required_code() )
+				);
+			}
+
+			return true;
+		}
+
+		/**
+		 * Creates or updates a presence entry.
+		 *
+		 * Validates that the client_id is not already claimed by a different user
+		 * in the same room to prevent impersonation.
+		 *
+		 * @since 0.1.1
+		 *
+		 * @param WP_REST_Request $request Full details about the request.
+		 * @return WP_REST_Response|WP_Error Response object on success, WP_Error on failure.
+		 */
+		public function create_item( $request ) {
+			global $wpdb;
+
+			// 501 rather than the 503 below: recording is switched off, not pending a table.
+			if ( ! wp_presence_recording_enabled() ) {
+				return new WP_Error(
+					'rest_presence_recording_disabled',
+					__( 'Presence is not recorded on this site.', 'presence-api' ),
+					array( 'status' => 501 )
+				);
+			}
+
+			if ( ! wp_presence_has_table() ) {
+				return new WP_Error(
+					'rest_presence_unavailable',
+					__( 'Presence is not available on this site yet.', 'presence-api' ),
+					array( 'status' => 503 )
+				);
+			}
+
+			$room      = $request->get_param( 'room' );
+			$client_id = $request->get_param( 'client_id' );
+			$data      = $request->get_param( 'data' );
+
+			if ( ! is_array( $data ) ) {
+				$data = array();
+			}
+
+			$current_user_id = get_current_user_id();
+			$cutoff          = gmdate( 'Y-m-d H:i:s' );
+
+			// Prevent overwriting another user's presence entry, and determine whether
+			// this request is an update to an existing active entry or a new insertion.
+			// Expired rows (expires_gmt <= now) are treated as absent: reactivating one
+			// counts against the cap the same as creating a brand-new entry.
+			//
+			// A narrow race window exists between the SELECT and INSERT below.
+			// This is acceptable because:
+			// 1. The UNIQUE KEY on (room, client_id) prevents duplicate rows.
+			// 2. Heartbeat re-establishes correct ownership within seconds.
+			// 3. Worst case: two users briefly share an entry until the next ping.
+			// 4. Data is ephemeral (150s default TTL) — stale entries self-correct.
+			// Table-level locking is not warranted for ephemeral data.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$existing_user_id = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT user_id FROM {$wpdb->presence} WHERE room = %s AND client_id = %s AND expires_gmt > %s",
+					$room,
+					$client_id,
 					$cutoff
 				)
 			);
 
-			if ( (int) $user_entry_count >= self::MAX_ENTRIES_PER_USER ) {
+			if ( null !== $existing_user_id && (int) $existing_user_id !== $current_user_id ) {
 				return new WP_Error(
-					'rest_presence_limit_exceeded',
-					__( 'You have reached the maximum number of presence entries.', 'presence-api' ),
-					array( 'status' => 429 )
+					'rest_presence_client_id_conflict',
+					__( 'This client_id is already in use by another user.', 'presence-api' ),
+					array( 'status' => 409 )
 				);
 			}
-		}
 
-		$result = wp_set_presence( $room, $client_id, $data, array( 'user_id' => $current_user_id ) );
+			// Enforce per-user entry limit only for new entries. Refreshing an existing
+			// active entry owned by this user must always succeed regardless of the cap.
+			if ( null === $existing_user_id ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+				$user_entry_count = $wpdb->get_var(
+					$wpdb->prepare(
+						"SELECT COUNT(*) FROM {$wpdb->presence} WHERE user_id = %d AND expires_gmt > %s",
+						$current_user_id,
+						$cutoff
+					)
+				);
 
-		if ( ! $result ) {
-			return new WP_Error(
-				'rest_presence_failed',
-				__( 'Could not set presence.', 'presence-api' ),
-				array( 'status' => 500 )
-			);
-		}
-
-		$entry = (object) array(
-			'room'      => $room,
-			'client_id' => $client_id,
-			'user_id'   => $current_user_id,
-			'data'      => $data,
-			'date_gmt'  => gmdate( 'Y-m-d H:i:s' ),
-		);
-
-		return rest_ensure_response( $this->prepare_item_for_response( $entry, $request )->get_data() );
-	}
-
-	/**
-	 * Checks if the current user has permission to delete a presence entry.
-	 *
-	 * Users may only delete their own presence entries unless they have
-	 * the 'manage_options' capability. Ownership is determined by the
-	 * user_id column in the database, not by the client_id format.
-	 *
-	 * @since 0.1.1
-	 *
-	 * @param WP_REST_Request $request Full details about the request.
-	 * @return true|WP_Error True if the request has access, WP_Error otherwise.
-	 */
-	public function delete_item_permissions_check( $request ) {
-		global $wpdb;
-
-		$room      = $request->get_param( 'room' );
-		$client_id = $request->get_param( 'client_id' );
-
-		if ( ! wp_can_access_presence_room( $room ) ) {
-			return new WP_Error(
-				'rest_forbidden',
-				__( 'Sorry, you are not allowed to remove presence in this room.', 'presence-api' ),
-				array( 'status' => rest_authorization_required_code() )
-			);
-		}
-
-		// Admins can delete any entry.
-		if ( current_user_can( 'manage_options' ) ) {
-			return true;
-		}
-
-		// No storage means no entry to own, so the delete is a no-op.
-		if ( ! wp_presence_has_table() ) {
-			return true;
-		}
-
-		// Look up the entry's owner.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$entry_user_id = $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT user_id FROM {$wpdb->presence} WHERE room = %s AND client_id = %s",
-				$room,
-				$client_id
-			)
-		);
-
-		// Entry doesn't exist — allow the delete (it's a no-op).
-		if ( null === $entry_user_id ) {
-			return true;
-		}
-
-		if ( get_current_user_id() !== (int) $entry_user_id ) {
-			return new WP_Error(
-				'rest_forbidden',
-				__( 'Sorry, you are not allowed to remove another user\'s presence.', 'presence-api' ),
-				array( 'status' => rest_authorization_required_code() )
-			);
-		}
-
-		return true;
-	}
-
-	/**
-	 * Deletes a presence entry.
-	 *
-	 * @since 0.1.1
-	 *
-	 * @param WP_REST_Request $request Full details about the request.
-	 * @return WP_REST_Response Response object.
-	 */
-	public function delete_item( $request ) {
-		$room      = $request->get_param( 'room' );
-		$client_id = $request->get_param( 'client_id' );
-
-		wp_remove_presence( $room, $client_id );
-
-		return rest_ensure_response(
-			array(
-				'deleted' => true,
-				'room'    => $room,
-			)
-		);
-	}
-
-	/**
-	 * Checks if the current user has permission to list rooms.
-	 *
-	 * @since 0.1.1
-	 *
-	 * @param WP_REST_Request $request Full details about the request.
-	 * @return true|WP_Error True if the request has access, WP_Error otherwise.
-	 */
-	public function get_rooms_permissions_check( $request ) {
-		if ( ! wp_can_access_presence_room( wp_presence_admin_room() ) ) {
-			return new WP_Error(
-				'rest_forbidden',
-				__( 'Sorry, you are not allowed to view presence rooms.', 'presence-api' ),
-				array( 'status' => rest_authorization_required_code() )
-			);
-		}
-
-		return true;
-	}
-
-	/**
-	 * Retrieves all active rooms with user counts and members.
-	 *
-	 * @since 0.1.1
-	 *
-	 * @param WP_REST_Request $request Full details about the request.
-	 * @return WP_REST_Response Response object.
-	 */
-	public function get_rooms( $request ) {
-		$per_page = $request->get_param( 'per_page' );
-		$page     = $request->get_param( 'page' );
-
-		// Fetch rooms without hydrating users yet.
-		$rooms           = wp_get_active_rooms( null, false );
-		$current_user_id = get_current_user_id();
-
-		// Prime post caches to avoid N+1 queries during the wp_can_access_presence_room
-		// filtering loop. The capability check reads neither the term nor the meta
-		// cache, so priming those is two queries spent on nothing.
-		$post_ids = array();
-		foreach ( $rooms as $room ) {
-			$parsed = wp_presence_parse_room( $room['room'] );
-			if ( $parsed ) {
-				$post_ids[] = $parsed['post_id'];
-			}
-		}
-		if ( ! empty( $post_ids ) ) {
-			_prime_post_caches( $post_ids, false, false );
-		}
-
-		$rooms = array_values(
-			array_filter(
-				$rooms,
-				function ( $room ) use ( $current_user_id ) {
-					return wp_can_access_presence_room( $room['room'], $current_user_id );
+				if ( (int) $user_entry_count >= self::MAX_ENTRIES_PER_USER ) {
+					return new WP_Error(
+						'rest_presence_limit_exceeded',
+						__( 'You have reached the maximum number of presence entries.', 'presence-api' ),
+						array( 'status' => 429 )
+					);
 				}
-			)
-		);
-
-		$total = count( $rooms );
-
-		// Paginate before hydrating users, so we only pay for the requested page.
-		$paged_rooms = array_slice( $rooms, ( $page - 1 ) * $per_page, $per_page );
-
-		// Hydrate users only for the paginated subset.
-		$paged_rooms = wp_presence_hydrate_room_users( $paged_rooms );
-
-		$response = rest_ensure_response( $paged_rooms );
-
-		$response->header( 'X-WP-Total', $total );
-		$response->header( 'X-WP-TotalPages', (int) ceil( $total / $per_page ) );
-		$response->header( 'Cache-Control', 'no-store' );
-
-		return $response;
-	}
-
-	/**
-	 * Prepares a presence entry for the REST response.
-	 *
-	 * @since 0.1.1
-	 *
-	 * @param object          $item    Presence entry object.
-	 * @param WP_REST_Request $request Full details about the request.
-	 * @return WP_REST_Response Response object.
-	 */
-	public function prepare_item_for_response( $item, $request ) {
-		$schema = $this->get_item_schema();
-		$fields = $this->get_fields_for_response( $request );
-
-		$data = array();
-
-		if ( rest_is_field_included( 'room', $fields ) ) {
-			$data['room'] = $item->room;
-		}
-
-		if ( rest_is_field_included( 'client_id', $fields ) ) {
-			$data['client_id'] = $item->client_id;
-		}
-
-		if ( rest_is_field_included( 'user_id', $fields ) ) {
-			$data['user_id'] = (int) $item->user_id;
-		}
-
-		$user = get_userdata( $item->user_id );
-
-		if ( rest_is_field_included( 'display_name', $fields ) ) {
-			$data['display_name'] = $user ? $user->display_name : '';
-		}
-
-		if ( rest_is_field_included( 'avatar_url', $fields ) ) {
-			$data['avatar_url'] = $user ? get_avatar_url( $item->user_id, array( 'size' => 48 ) ) : '';
-		}
-
-		if ( rest_is_field_included( 'data', $fields ) ) {
-			$data['data'] = $item->data;
-
-			if ( wp_presence_admin_room() === $item->room && ! current_user_can( 'view_presence_location', (int) $item->user_id ) ) {
-				$data['data'] = array();
 			}
+
+			$result = wp_set_presence( $room, $client_id, $data, array( 'user_id' => $current_user_id ) );
+
+			if ( ! $result ) {
+				return new WP_Error(
+					'rest_presence_failed',
+					__( 'Could not set presence.', 'presence-api' ),
+					array( 'status' => 500 )
+				);
+			}
+
+			$entry = (object) array(
+				'room'      => $room,
+				'client_id' => $client_id,
+				'user_id'   => $current_user_id,
+				'data'      => $data,
+				'date_gmt'  => gmdate( 'Y-m-d H:i:s' ),
+			);
+
+			return rest_ensure_response( $this->prepare_item_for_response( $entry, $request )->get_data() );
 		}
 
-		if ( rest_is_field_included( 'date_gmt', $fields ) ) {
-			$data['date_gmt'] = $item->date_gmt;
+		/**
+		 * Checks if the current user has permission to delete a presence entry.
+		 *
+		 * Users may only delete their own presence entries unless they have
+		 * the 'manage_options' capability. Ownership is determined by the
+		 * user_id column in the database, not by the client_id format.
+		 *
+		 * @since 0.1.1
+		 *
+		 * @param WP_REST_Request $request Full details about the request.
+		 * @return true|WP_Error True if the request has access, WP_Error otherwise.
+		 */
+		public function delete_item_permissions_check( $request ) {
+			global $wpdb;
+
+			$room      = $request->get_param( 'room' );
+			$client_id = $request->get_param( 'client_id' );
+
+			if ( ! wp_can_access_presence_room( $room ) ) {
+				return new WP_Error(
+					'rest_forbidden',
+					__( 'Sorry, you are not allowed to remove presence in this room.', 'presence-api' ),
+					array( 'status' => rest_authorization_required_code() )
+				);
+			}
+
+			// Admins can delete any entry.
+			if ( current_user_can( 'manage_options' ) ) {
+				return true;
+			}
+
+			// No storage means no entry to own, so the delete is a no-op.
+			if ( ! wp_presence_has_table() ) {
+				return true;
+			}
+
+			// Look up the entry's owner.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$entry_user_id = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT user_id FROM {$wpdb->presence} WHERE room = %s AND client_id = %s",
+					$room,
+					$client_id
+				)
+			);
+
+			// Entry doesn't exist — allow the delete (it's a no-op).
+			if ( null === $entry_user_id ) {
+				return true;
+			}
+
+			if ( get_current_user_id() !== (int) $entry_user_id ) {
+				return new WP_Error(
+					'rest_forbidden',
+					__( 'Sorry, you are not allowed to remove another user\'s presence.', 'presence-api' ),
+					array( 'status' => rest_authorization_required_code() )
+				);
+			}
+
+			return true;
 		}
 
-		$context = ! empty( $request['context'] ) ? $request['context'] : 'view';
-		$data    = $this->add_additional_fields_to_object( $data, $request );
-		$data    = $this->filter_response_by_context( $data, $context );
+		/**
+		 * Deletes a presence entry.
+		 *
+		 * @since 0.1.1
+		 *
+		 * @param WP_REST_Request $request Full details about the request.
+		 * @return WP_REST_Response Response object.
+		 */
+		public function delete_item( $request ) {
+			$room      = $request->get_param( 'room' );
+			$client_id = $request->get_param( 'client_id' );
 
-		return rest_ensure_response( $data );
-	}
+			wp_remove_presence( $room, $client_id );
 
-	/**
-	 * Checks if the current user has permission to bump the given screen revision.
-	 *
-	 * @since 0.1.7
-	 *
-	 * @param WP_REST_Request $request Full details about the request.
-	 * @return true|WP_Error True if the request has access, WP_Error otherwise.
-	 */
-	public function bump_screen_revision_permissions_check( $request ) {
-		$screen_key = $request->get_param( 'screen_key' );
-		$key        = wp_presence_normalize_screen_key( $screen_key );
-
-		if ( ! wp_presence_current_user_can_access_screen( $key ) ) {
-			return new WP_Error(
-				'rest_forbidden',
-				__( 'Sorry, you are not allowed to update this screen revision.', 'presence-api' ),
-				array( 'status' => rest_authorization_required_code() )
+			return rest_ensure_response(
+				array(
+					'deleted' => true,
+					'room'    => $room,
+				)
 			);
 		}
 
-		return true;
-	}
+		/**
+		 * Checks if the current user has permission to list rooms.
+		 *
+		 * @since 0.1.1
+		 *
+		 * @param WP_REST_Request $request Full details about the request.
+		 * @return true|WP_Error True if the request has access, WP_Error otherwise.
+		 */
+		public function get_rooms_permissions_check( $request ) {
+			if ( ! wp_can_access_presence_room( wp_presence_admin_room() ) ) {
+				return new WP_Error(
+					'rest_forbidden',
+					__( 'Sorry, you are not allowed to view presence rooms.', 'presence-api' ),
+					array( 'status' => rest_authorization_required_code() )
+				);
+			}
 
-	/**
-	 * Bumps a screen revision.
-	 *
-	 * @since 0.1.7
-	 *
-	 * @param WP_REST_Request $request Full details about the request.
-	 * @return WP_REST_Response|WP_Error Response object on success, WP_Error on failure.
-	 */
-	public function bump_screen_revision( $request ) {
-		$screen_key = $request->get_param( 'screen_key' );
-		$revision   = wp_presence_bump_screen_revision( $screen_key );
+			return true;
+		}
 
-		if ( false === $revision ) {
-			return new WP_Error(
-				'rest_invalid_screen_key',
-				__( 'Invalid or empty screen key provided.', 'presence-api' ),
-				array( 'status' => 400 )
+		/**
+		 * Retrieves all active rooms with user counts and members.
+		 *
+		 * @since 0.1.1
+		 *
+		 * @param WP_REST_Request $request Full details about the request.
+		 * @return WP_REST_Response Response object.
+		 */
+		public function get_rooms( $request ) {
+			$per_page = $request->get_param( 'per_page' );
+			$page     = $request->get_param( 'page' );
+
+			// Fetch rooms without hydrating users yet.
+			$rooms           = wp_get_active_rooms( null, false );
+			$current_user_id = get_current_user_id();
+
+			// Prime post caches to avoid N+1 queries during the wp_can_access_presence_room
+			// filtering loop. The capability check reads neither the term nor the meta
+			// cache, so priming those is two queries spent on nothing.
+			$post_ids = array();
+			foreach ( $rooms as $room ) {
+				$parsed = wp_presence_parse_room( $room['room'] );
+				if ( $parsed ) {
+					$post_ids[] = $parsed['post_id'];
+				}
+			}
+			if ( ! empty( $post_ids ) ) {
+				_prime_post_caches( $post_ids, false, false );
+			}
+
+			$rooms = array_values(
+				array_filter(
+					$rooms,
+					function ( $room ) use ( $current_user_id ) {
+						return wp_can_access_presence_room( $room['room'], $current_user_id );
+					}
+				)
+			);
+
+			$total = count( $rooms );
+
+			// Paginate before hydrating users, so we only pay for the requested page.
+			$paged_rooms = array_slice( $rooms, ( $page - 1 ) * $per_page, $per_page );
+
+			// Hydrate users only for the paginated subset.
+			$paged_rooms = wp_presence_hydrate_room_users( $paged_rooms );
+
+			$response = rest_ensure_response( $paged_rooms );
+
+			$response->header( 'X-WP-Total', $total );
+			$response->header( 'X-WP-TotalPages', (int) ceil( $total / $per_page ) );
+			$response->header( 'Cache-Control', 'no-store' );
+
+			return $response;
+		}
+
+		/**
+		 * Prepares a presence entry for the REST response.
+		 *
+		 * @since 0.1.1
+		 *
+		 * @param object          $item    Presence entry object.
+		 * @param WP_REST_Request $request Full details about the request.
+		 * @return WP_REST_Response Response object.
+		 */
+		public function prepare_item_for_response( $item, $request ) {
+			$schema = $this->get_item_schema();
+			$fields = $this->get_fields_for_response( $request );
+
+			$data = array();
+
+			if ( rest_is_field_included( 'room', $fields ) ) {
+				$data['room'] = $item->room;
+			}
+
+			if ( rest_is_field_included( 'client_id', $fields ) ) {
+				$data['client_id'] = $item->client_id;
+			}
+
+			if ( rest_is_field_included( 'user_id', $fields ) ) {
+				$data['user_id'] = (int) $item->user_id;
+			}
+
+			$user = get_userdata( $item->user_id );
+
+			if ( rest_is_field_included( 'display_name', $fields ) ) {
+				$data['display_name'] = $user ? $user->display_name : '';
+			}
+
+			if ( rest_is_field_included( 'avatar_url', $fields ) ) {
+				$data['avatar_url'] = $user ? get_avatar_url( $item->user_id, array( 'size' => 48 ) ) : '';
+			}
+
+			if ( rest_is_field_included( 'data', $fields ) ) {
+				$data['data'] = $item->data;
+
+				if ( wp_presence_admin_room() === $item->room && ! current_user_can( 'view_presence_location', (int) $item->user_id ) ) {
+					$data['data'] = array();
+				}
+			}
+
+			if ( rest_is_field_included( 'date_gmt', $fields ) ) {
+				$data['date_gmt'] = $item->date_gmt;
+			}
+
+			$context = ! empty( $request['context'] ) ? $request['context'] : 'view';
+			$data    = $this->add_additional_fields_to_object( $data, $request );
+			$data    = $this->filter_response_by_context( $data, $context );
+
+			return rest_ensure_response( $data );
+		}
+
+		/**
+		 * Checks if the current user has permission to bump the given screen revision.
+		 *
+		 * @since 0.1.7
+		 *
+		 * @param WP_REST_Request $request Full details about the request.
+		 * @return true|WP_Error True if the request has access, WP_Error otherwise.
+		 */
+		public function bump_screen_revision_permissions_check( $request ) {
+			$screen_key = $request->get_param( 'screen_key' );
+			$key        = wp_presence_normalize_screen_key( $screen_key );
+
+			if ( ! wp_presence_current_user_can_access_screen( $key ) ) {
+				return new WP_Error(
+					'rest_forbidden',
+					__( 'Sorry, you are not allowed to update this screen revision.', 'presence-api' ),
+					array( 'status' => rest_authorization_required_code() )
+				);
+			}
+
+			return true;
+		}
+
+		/**
+		 * Bumps a screen revision.
+		 *
+		 * @since 0.1.7
+		 *
+		 * @param WP_REST_Request $request Full details about the request.
+		 * @return WP_REST_Response|WP_Error Response object on success, WP_Error on failure.
+		 */
+		public function bump_screen_revision( $request ) {
+			$screen_key = $request->get_param( 'screen_key' );
+			$revision   = wp_presence_bump_screen_revision( $screen_key );
+
+			if ( false === $revision ) {
+				return new WP_Error(
+					'rest_invalid_screen_key',
+					__( 'Invalid or empty screen key provided.', 'presence-api' ),
+					array( 'status' => 400 )
+				);
+			}
+
+			return rest_ensure_response(
+				array(
+					'screen_key' => wp_presence_normalize_screen_key( $screen_key ),
+					'rev'        => $revision,
+				)
 			);
 		}
 
-		return rest_ensure_response(
-			array(
-				'screen_key' => wp_presence_normalize_screen_key( $screen_key ),
-				'rev'        => $revision,
-			)
-		);
-	}
+		/**
+		 * Retrieves the presence entry schema, conforming to JSON Schema.
+		 *
+		 * @since 0.1.1
+		 *
+		 * @return array Item schema data.
+		 */
+		public function get_item_schema() {
+			if ( $this->schema ) {
+				return $this->add_additional_fields_schema( $this->schema );
+			}
 
-	/**
-	 * Retrieves the presence entry schema, conforming to JSON Schema.
-	 *
-	 * @since 0.1.1
-	 *
-	 * @return array Item schema data.
-	 */
-	public function get_item_schema() {
-		if ( $this->schema ) {
-			return $this->add_additional_fields_schema( $this->schema );
-		}
-
-		$this->schema = array(
-			'$schema'    => 'http://json-schema.org/draft-04/schema#',
-			'title'      => 'presence',
-			'type'       => 'object',
-			'properties' => array(
-				'room'         => array(
-					'description' => __( 'The presence room identifier.', 'presence-api' ),
-					'type'        => 'string',
-					'context'     => array( 'view', 'edit' ),
-					'readonly'    => false,
-				),
-				'client_id'    => array(
-					'description' => __( 'The client identifier within the room.', 'presence-api' ),
-					'type'        => 'string',
-					'context'     => array( 'view', 'edit' ),
-					'readonly'    => false,
-				),
-				'user_id'      => array(
-					'description' => __( 'The WordPress user ID associated with this presence entry.', 'presence-api' ),
-					'type'        => 'integer',
-					'context'     => array( 'view', 'edit' ),
-					'readonly'    => true,
-				),
-				'display_name' => array(
-					'description' => __( 'The display name of the user.', 'presence-api' ),
-					'type'        => 'string',
-					'context'     => array( 'view' ),
-					'readonly'    => true,
-				),
-				'avatar_url'   => array(
-					'description' => __( 'The avatar URL of the user.', 'presence-api' ),
-					'type'        => 'string',
-					'format'      => 'uri',
-					'context'     => array( 'view' ),
-					'readonly'    => true,
-				),
-				'data'         => array(
-					'description'          => __( 'Presence state data. The plugin writes the keys listed below from Heartbeat; other plugins may store additional keys. In the admin/online room, it is empty unless the current user can view that user\'s location.', 'presence-api' ),
-					'type'                 => 'object',
-					'context'              => array( 'view', 'edit' ),
-					'additionalProperties' => true,
-					'properties'           => array(
-						'screen'      => array(
-							'description' => __( 'Current WordPress screen ID (for example dashboard or post).', 'presence-api' ),
-							'type'        => 'string',
-							'context'     => array( 'view', 'edit' ),
-						),
-						'post_id'     => array(
-							'description' => __( 'Related post ID when the user is on a post or a front-end permalink.', 'presence-api' ),
-							'type'        => 'integer',
-							'context'     => array( 'view', 'edit' ),
-						),
-						'post_status' => array(
-							'description' => __( 'Status of the related post when it is known (draft, publish, and so on).', 'presence-api' ),
-							'type'        => 'string',
-							'context'     => array( 'view', 'edit' ),
-						),
-						'title'       => array(
-							'description' => __( 'Document title carried for a front-end URL so it can appear in the admin bar.', 'presence-api' ),
-							'type'        => 'string',
-							'context'     => array( 'view', 'edit' ),
+			$this->schema = array(
+				'$schema'    => 'http://json-schema.org/draft-04/schema#',
+				'title'      => 'presence',
+				'type'       => 'object',
+				'properties' => array(
+					'room'         => array(
+						'description' => __( 'The presence room identifier.', 'presence-api' ),
+						'type'        => 'string',
+						'context'     => array( 'view', 'edit' ),
+						'readonly'    => false,
+					),
+					'client_id'    => array(
+						'description' => __( 'The client identifier within the room.', 'presence-api' ),
+						'type'        => 'string',
+						'context'     => array( 'view', 'edit' ),
+						'readonly'    => false,
+					),
+					'user_id'      => array(
+						'description' => __( 'The WordPress user ID associated with this presence entry.', 'presence-api' ),
+						'type'        => 'integer',
+						'context'     => array( 'view', 'edit' ),
+						'readonly'    => true,
+					),
+					'display_name' => array(
+						'description' => __( 'The display name of the user.', 'presence-api' ),
+						'type'        => 'string',
+						'context'     => array( 'view' ),
+						'readonly'    => true,
+					),
+					'avatar_url'   => array(
+						'description' => __( 'The avatar URL of the user.', 'presence-api' ),
+						'type'        => 'string',
+						'format'      => 'uri',
+						'context'     => array( 'view' ),
+						'readonly'    => true,
+					),
+					'data'         => array(
+						'description'          => __( 'Presence state data. The plugin writes the keys listed below from Heartbeat; other plugins may store additional keys. In the admin/online room, it is empty unless the current user can view that user\'s location.', 'presence-api' ),
+						'type'                 => 'object',
+						'context'              => array( 'view', 'edit' ),
+						'additionalProperties' => true,
+						'properties'           => array(
+							'screen'      => array(
+								'description' => __( 'Current WordPress screen ID (for example dashboard or post).', 'presence-api' ),
+								'type'        => 'string',
+								'context'     => array( 'view', 'edit' ),
+							),
+							'post_id'     => array(
+								'description' => __( 'Related post ID when the user is on a post or a front-end permalink.', 'presence-api' ),
+								'type'        => 'integer',
+								'context'     => array( 'view', 'edit' ),
+							),
+							'post_status' => array(
+								'description' => __( 'Status of the related post when it is known (draft, publish, and so on).', 'presence-api' ),
+								'type'        => 'string',
+								'context'     => array( 'view', 'edit' ),
+							),
+							'title'       => array(
+								'description' => __( 'Document title carried for a front-end URL so it can appear in the admin bar.', 'presence-api' ),
+								'type'        => 'string',
+								'context'     => array( 'view', 'edit' ),
+							),
 						),
 					),
+					'date_gmt'     => array(
+						'description' => __( 'The date the presence was last updated, in GMT.', 'presence-api' ),
+						'type'        => 'string',
+						'format'      => 'date-time',
+						'context'     => array( 'view' ),
+						'readonly'    => true,
+					),
 				),
-				'date_gmt'     => array(
-					'description' => __( 'The date the presence was last updated, in GMT.', 'presence-api' ),
-					'type'        => 'string',
-					'format'      => 'date-time',
-					'context'     => array( 'view' ),
-					'readonly'    => true,
-				),
-			),
-		);
+			);
 
-		return $this->add_additional_fields_schema( $this->schema );
+			return $this->add_additional_fields_schema( $this->schema );
+		}
 	}
 }

@@ -23,1645 +23,1739 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-/**
- * Whether the current site has a presence table to query.
- *
- * Sites are provisioned at activation and at site creation, but a site on a
- * large network, or one added while the plugin was not network active, can
- * serve requests before either has happened. Presence is not essential to
- * rendering a page, so those requests return nothing instead of raising a
- * database error.
- *
- * The option is set by wp_maybe_create_presence_table() and is autoloaded, so
- * this costs nothing beyond a cache lookup. Any value counts, including one
- * from an older schema: the table is there, and the admin upgrade path will
- * bring it current.
- *
- * @access private
- *
- * @since 0.1.17
- * @return bool Whether presence storage is available on this site.
- */
-function wp_presence_has_table() {
-	return (bool) get_option( 'wp_presence_db_version' );
-}
-
-/**
- * Returns the date_gmt floor a read applies on top of a row's own expiry.
- *
- * A caller that named no window has no opinion about staleness, so the row's
- * expiry is the only bound and this floor matches every stored row.
- *
- * @access private
- *
- * @since 0.7.0
- *
- * @param int|null $timeout The caller's window in seconds, or null for none.
- * @return string A floor in `Y-m-d H:i:s`, UTC.
- */
-function wp_presence_read_floor( $timeout ) {
-	if ( null === $timeout ) {
-		return '1000-01-01 00:00:00';
-	}
-
-	return gmdate( 'Y-m-d H:i:s', time() - wp_presence_get_timeout( $timeout ) );
-}
-
-/**
- * Gets all present clients in a room, filtered by TTL.
- *
- * Reserved rows are left out whatever the prefix, so `_` returns nothing.
- *
- * A `$timeout` given here is the window used, on every site. Omit it to take
- * the site's own TTL, which is what `wp_presence_default_ttl` filters.
- *
- * @since 0.1.1
- * @since 0.7.0 Added the `$client_prefix` parameter.
- * @since 0.7.0 An explicit `$timeout` is no longer overridden by `wp_presence_default_ttl`.
- * @since 0.17.0 Takes `$args` in place of the `$timeout` and `$client_prefix` parameters.
- *
- * @param string       $room The room identifier.
- * @param array|string $args {
- *     Optional. Array or string of arguments for reading the room.
- *
- *     @type int|null $timeout       Timeout in seconds. Default null, the site's filtered TTL.
- *     @type string   $client_prefix Only return clients whose client_id starts with this. Default empty.
- * }
- * @return array Array of presence entry objects.
- */
-function wp_get_presence( $room, $args = array() ) {
-	$positional = wp_presence_positional_args( __FUNCTION__, func_get_args(), 1, array( 'timeout', 'client_prefix' ) );
-	if ( null !== $positional ) {
-		$args = $positional;
-	}
-
-	$defaults    = array(
-		'timeout'       => null,
-		'client_prefix' => '',
-	);
-	$parsed_args = wp_parse_args( $args, $defaults );
-
-	return wp_presence_client_rows( wp_presence_room_rows( $room, $parsed_args['timeout'], $parsed_args['client_prefix'] ) );
-}
-
-/**
- * Maps a call made with the positional parameters from before 0.17.0 onto `$args`.
- *
- * Those calls passed a number or null where `$args` now goes, so an array or a
- * query string there is `$args`, whatever follows it.
- *
- * @access private
- *
- * @since 0.17.0
- *
- * @param string   $function_name The function that was called, for the deprecation notice.
- * @param array    $given         The arguments the function received.
- * @param int      $index         Where `$args` sits among them.
- * @param string[] $keys          The `$args` keys the old positions map to, in order.
- * @return array|null The arguments as `$args`, or null for a call that already passes `$args`.
- */
-function wp_presence_positional_args( $function_name, $given, $index, $keys ) {
-	// Not ??, which would read an explicit null, the old form's default, as missing.
-	$args = array_key_exists( $index, $given ) ? $given[ $index ] : array();
-
-	if ( ! ( null === $args || is_numeric( $args ) ) ) {
-		return null;
-	}
-
-	_deprecated_argument(
-		esc_html( $function_name ),
-		'0.18.0',
-		/* translators: %s: The `$args` keys, such as user_id, date_gmt, expires_in. */
-		esc_html( sprintf( __( 'Pass the optional arguments in an $args array: %s.', 'presence-api' ), implode( ', ', $keys ) ) )
-	);
-
-	$values = array_slice( $given, $index, count( $keys ) );
-
-	return array_combine( array_slice( $keys, 0, count( $values ) ), $values );
-}
-
-/**
- * Whether a client_id is the plugin's own bookkeeping rather than a client.
- *
- * @access private
- *
- * @since 0.6.0
- *
- * @param string $client_id The client identifier.
- * @return bool Whether the id is reserved.
- */
-function wp_presence_is_reserved_client_id( $client_id ) {
-	return str_starts_with( (string) $client_id, WP_PRESENCE_RESERVED_PREFIX );
-}
-
-/**
- * Returns the LIKE pattern matching every reserved client_id.
- *
- * For the queries that read rows by room in SQL rather than through
- * wp_get_presence(), which filters them out in PHP.
- *
- * @access private
- *
- * @since 0.6.0
- *
- * @global wpdb $wpdb WordPress database abstraction object.
- *
- * @return string An escaped LIKE pattern.
- */
-function wp_presence_reserved_client_id_pattern() {
-	global $wpdb;
-
-	return $wpdb->esc_like( WP_PRESENCE_RESERVED_PREFIX ) . '%';
-}
-
-/**
- * Returns the reserved client_id holding a room's version counter.
- *
- * @access private
- *
- * @since 0.18.0
- *
- * @return string The reserved client_id.
- */
-function wp_presence_version_client_id() {
-	return WP_PRESENCE_RESERVED_PREFIX . 'version';
-}
-
-/**
- * Drops the reserved rows from a set of rows.
- *
- * @access private
- *
- * @since 0.6.0
- *
- * @param array $rows Rows as returned by wp_presence_room_rows().
- * @return array The rows that belong to clients.
- */
-function wp_presence_client_rows( $rows ) {
-	return array_values(
-		array_filter(
-			$rows,
-			static function ( $row ) {
-				return ! wp_presence_is_reserved_client_id( $row->client_id );
-			}
-		)
-	);
-}
-
-/**
- * Gets every live row in a room, the reserved rows included.
- *
- * One query serves both the participants and the plugin's own state for the
- * room, so reading that state costs nothing on top of the read the caller
- * was already making.
- *
- * @access private
- *
- * @since 0.6.0
- * @since 0.7.0 Added the `$client_prefix` parameter.
- *
- * @global wpdb $wpdb WordPress database abstraction object.
- *
- * @param string $room          The room identifier.
- * @param int    $timeout       Optional. Timeout in seconds. Default null, the site's filtered TTL.
- * @param string $client_prefix Optional. Only return rows whose client_id starts with this.
- *                              Default empty.
- * @return array Array of presence row objects.
- */
-function wp_presence_room_rows( $room, $timeout = null, $client_prefix = '' ) {
-	global $wpdb;
-
-	if ( ! wp_presence_has_table() ) {
-		return array();
-	}
-
-	$cutoff = gmdate( 'Y-m-d H:i:s' );
-	$stale  = wp_presence_read_floor( $timeout );
-
-	$client_clause = '';
-	$args          = array( $room, $cutoff, $stale );
-
-	if ( '' !== (string) $client_prefix ) {
-		$client_clause = ' AND client_id LIKE %s';
-		// Escaped, since LIKE reads `_` and `%` as wildcards.
-		$args[] = $wpdb->esc_like( (string) $client_prefix ) . '%';
-	}
-
-	return wp_presence_cached_rows(
-		"room:{$room}:{$client_prefix}",
-		// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
-		$wpdb->prepare(
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			"SELECT room, client_id, user_id, data, date_gmt FROM {$wpdb->presence} WHERE room = %s AND expires_gmt > %s AND date_gmt > %s{$client_clause} ORDER BY date_gmt DESC",
-			...$args
-		)
-	);
-}
-
-/**
- * Runs a presence read, reusing its rows for the rest of the request until the table changes.
- *
- * Salted with the SQL, which holds the current second, so a cached read lapses as rows expire
- * while each read keeps one entry however long the process runs.
- *
- * @access private
- *
- * @since 0.12.2
- *
- * @global wpdb $wpdb WordPress database abstraction object.
- *
- * @param string $read  Names the read, without the times in its SQL.
- * @param string $query Prepared SQL selecting presence rows.
- * @return array Array of presence row objects, with `data` decoded.
- */
-function wp_presence_cached_rows( $read, $query ) {
-	global $wpdb;
-
-	$key     = md5( $read );
-	$salt    = array( wp_cache_get_last_changed( 'presence' ), md5( $query ) );
-	$results = wp_cache_get_salted( $key, 'presence', $salt );
-
-	if ( false === $results ) {
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.NotPrepared
-		$results = $wpdb->get_results( $query );
-		$results = $results ? $results : array();
-
-		foreach ( $results as $row ) {
-			$decoded   = json_decode( $row->data, true );
-			$row->data = is_array( $decoded ) ? $decoded : array();
-		}
-
-		wp_cache_set_salted( $key, $results, 'presence', $salt );
-	}
-
-	return $results;
-}
-
-/**
- * Returns the user IDs present in a set of entries, the current user included.
- *
- * The current user's own row is absent on screens that never ping and once it
- * ages past the TTL, so it is added by identity rather than by adding one,
- * which would double-count whenever the row is there.
- *
- * @access private
- *
- * @since 0.3.0
- *
- * @param array $entries Presence entries, as returned by wp_get_presence().
- * @return int[] Unique user IDs.
- */
-function wp_presence_online_user_ids( $entries ) {
-	return array_values( wp_parse_id_list( wp_list_pluck( wp_presence_with_current_user( $entries ), 'user_id' ) ) );
-}
-
-/**
- * Adds an entry for the current user to a set of entries when their row is absent.
- *
- * @access private
- *
- * @since 0.3.0
- *
- * @param array $entries Presence entries, as returned by wp_get_presence().
- * @return array Entries with the current user included.
- */
-function wp_presence_with_current_user( $entries ) {
-	$current_id = get_current_user_id();
-
-	if ( ! $current_id ) {
-		return $entries;
-	}
-
-	foreach ( $entries as $entry ) {
-		if ( (int) $entry->user_id === $current_id ) {
-			return $entries;
-		}
-	}
-
-	$entries[] = (object) array(
-		'user_id'  => $current_id,
-		'date_gmt' => current_time( 'mysql', true ),
-		'data'     => array(),
-	);
-
-	return $entries;
-}
-
-/**
- * Whether presence is recorded on this site.
- *
- * The controller-level switch, checked at the single write path. Nothing new is
- * stored while this is false and every surface empties within one
- * WP_PRESENCE_DEFAULT_TTL as the rows already there expire, so there is no
- * separate teardown to run.
- *
- * Recording is on by default. Presence is a negative signal, and the post lock
- * bridge is where its absence stops two people overwriting each other, so the
- * default is the safe one; a site that would rather not process it at all
- * switches it off here and says so in its privacy policy.
- *
- * The stored options are passed as the filters' defaults, so a filter always
- * has the last word over whatever the checkbox says.
- *
- * Aggregating those rows into the network-wide view is a separate switch. See
- * wp_presence_network_aggregation_enabled().
- *
- * @since 0.3.0
- *
- * @return bool Whether presence is recorded.
- */
-function wp_presence_recording_enabled() {
+if ( ! function_exists( 'wp_presence_has_table' ) ) {
 	/**
-	 * Filters whether presence is recorded on this site.
+	 * Whether the current site has a presence table to query.
 	 *
-	 * @since 0.3.0
+	 * Sites are provisioned at activation and at site creation, but a site on a
+	 * large network, or one added while the plugin was not network active, can
+	 * serve requests before either has happened. Presence is not essential to
+	 * rendering a page, so those requests return nothing instead of raising a
+	 * database error.
 	 *
-	 * @param bool $enabled Whether to record presence. Default is the
-	 *                      wp_presence_recording option, true on a new install.
+	 * The option is set by wp_maybe_create_presence_table() and is autoloaded, so
+	 * this costs nothing beyond a cache lookup. Any value counts, including one
+	 * from an older schema: the table is there, and the admin upgrade path will
+	 * bring it current.
+	 *
+	 * @access private
+	 *
+	 * @since 0.1.17
+	 * @return bool Whether presence storage is available on this site.
 	 */
-	$enabled = (bool) apply_filters( 'wp_presence_recording_enabled', (bool) get_option( 'wp_presence_recording', true ) );
-
-	if ( ! $enabled || ! is_multisite() ) {
-		return $enabled;
+	function wp_presence_has_table() {
+		return (bool) get_option( 'wp_presence_db_version' );
 	}
+}
 
+if ( ! function_exists( 'wp_presence_read_floor' ) ) {
 	/**
-	 * Filters whether presence is recorded anywhere on this network.
+	 * Returns the date_gmt floor a read applies on top of a row's own expiry.
 	 *
-	 * Consulted only once the site-level filter has allowed recording, so
-	 * either switch turning off wins and neither can turn the other back on.
+	 * A caller that named no window has no opinion about staleness, so the row's
+	 * expiry is the only bound and this floor matches every stored row.
 	 *
-	 * @since 0.3.0
-	 *
-	 * @param bool $enabled Whether to record presence. Default is the
-	 *                      wp_presence_network_recording site option, true on a
-	 *                      new install.
-	 */
-	return (bool) apply_filters( 'wp_presence_network_recording_enabled', (bool) get_site_option( 'wp_presence_network_recording', true ) );
-}
-
-/**
- * Whether presence can be read and written on this site.
- *
- * The check an integrator makes before relying on presence. On a site with
- * no table, or with recording switched off, wp_set_presence() returns false
- * and wp_get_presence() returns an empty array, which reads as an empty room
- * rather than an unavailable backend. Guard with function_exists() first to
- * cover the plugin not being loaded.
- *
- * @since 0.6.0
- *
- * @return bool Whether the table exists and presence is recorded.
- */
-function wp_presence_is_available() {
-	return wp_presence_has_table() && wp_presence_recording_enabled();
-}
-
-/**
- * Returns how long until the client is expected to send its next Heartbeat.
- *
- * @access private
- *
- * @since 0.4.0
- *
- * @return int Seconds.
- */
-function wp_presence_next_tick_gap() {
-	// Core's scheduleNextTick() overrides the interval to 120s whenever the
-	// window is blurred, and never reflects that back into the interval it
-	// reports in the same request, so the reported value understates the real
-	// gap on an unfocused tab. That is the worst case, and the assumption to
-	// make whenever the request does not say otherwise.
-	$blurred = 120;
-
-	// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled by WordPress in wp_ajax_heartbeat() before any of this runs.
-	if ( ! isset( $_POST['interval'], $_POST['has_focus'] ) || 'true' !== $_POST['has_focus'] ) {
-		return $blurred;
-	}
-
-	// phpcs:ignore WordPress.Security.NonceVerification.Missing -- As above.
-	$interval = absint( $_POST['interval'] );
-
-	return $interval > 0 ? $interval : $blurred;
-}
-
-/**
- * Returns how stale a presence row is allowed to get while its client is still
- * pinging.
- *
- * A row's date_gmt is the only evidence a reader has that its client is still
- * there, so a write skipped to save a query is indistinguishable from a client
- * that left. This bounds how long that ambiguity lasts.
- *
- * @access private
- *
- * @since 0.6.0
- *
- * @return int Age in seconds.
- */
-function wp_presence_max_staleness() {
-	return 30;
-}
-
-/**
- * Returns the age past which a presence row means its client has gone quiet.
- *
- * A row this old cannot be explained by a skipped write followed by the widest
- * gap a pinging client leaves, so the client really has stopped. Anything
- * reading date_gmt to tell active from idle has to use this rather than a
- * figure of its own, or a client that is merely economising on writes reads as
- * one that walked away.
- *
- * @access private
- *
- * @since 0.6.0
- *
- * @return int Age in seconds.
- */
-function wp_presence_idle_threshold() {
-	return wp_presence_max_staleness() + wp_presence_get_heartbeat_idle_interval();
-}
-
-/**
- * Returns the age at which an unchanged presence row still has to be rewritten.
- *
- * Skipping a write leaves the row's existing date_gmt in place, so it is only
- * safe while the row will still be inside wp_get_presence()'s cutoff when the
- * next tick arrives. Deriving this from wp_presence_get_timeout() rather than
- * WP_PRESENCE_DEFAULT_TTL matters: a site filtering the TTL below the tick
- * interval would otherwise make its users blink offline.
- *
- * Staying inside the cutoff is not enough on its own, since a row can sit
- * unwritten well inside the TTL and still read as long gone, so
- * wp_presence_max_staleness() caps it as well.
- *
- * @access private
- *
- * @since 0.4.0
- *
- * @return int Age in seconds. 0 means never skip.
- */
-function wp_presence_refresh_threshold() {
-	$timeout = wp_presence_get_timeout();
-
-	return max( 0, min( $timeout - wp_presence_ttl_margin() - wp_presence_next_tick_gap(), wp_presence_max_staleness() ) );
-}
-
-/**
- * Returns the slice of the TTL kept in reserve rather than spent on waiting.
- *
- * Both sides of the plugin push their timing as close to the TTL as they dare,
- * the server when it skips a write and the client when it widens its interval.
- * Either one landing late drops a present user out of the room, so they hold
- * back by the same amount, and presence-ping.js is passed this figure.
- *
- * @access private
- *
- * @since 0.6.0
- *
- * @return int Seconds.
- */
-function wp_presence_ttl_margin() {
-	return 15;
-}
-
-/**
- * Returns the date_gmt below which an unchanged row still has to be refreshed.
- *
- * @access private
- *
- * @since 0.7.0
- *
- * @param string $room The room identifier.
- * @return string A 'Y-m-d H:i:s' GMT timestamp, or an empty string when the
- *                write must land whatever the stored row holds.
- */
-function wp_presence_refresh_cutoff( $room ) {
-	$threshold = wp_presence_refresh_threshold();
-
-	if ( $threshold <= 0 ) {
-		return '';
-	}
-
-	// The network summary push hangs off wp_presence_admin_room_changed, so an
-	// admin-room write that is skipped also skips the push. Loaded on multisite
-	// only, hence the guard.
-	if ( wp_presence_admin_room() === $room
-		&& function_exists( 'wp_presence_network_summary_push_is_due' )
-		&& wp_presence_network_summary_push_is_due()
-	) {
-		return '';
-	}
-
-	return gmdate( 'Y-m-d H:i:s', time() - $threshold );
-}
-
-/**
- * Whether a string is a real calendar date in 'Y-m-d H:i:s' format.
- *
- * Same approach as wp_resolve_post_date(): a preg_match on the literal shape
- * plus wp_checkdate() to catch a well-formed but impossible date (2026-02-30).
- *
- * @access private
- *
- * @since 0.5.0
- *
- * @param string $date_gmt The timestamp to validate.
- * @return bool Whether the timestamp is well-formed and real.
- */
-function wp_presence_is_valid_date_gmt( $date_gmt ) {
-	if ( ! is_string( $date_gmt )
-		|| ! preg_match( '/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/', $date_gmt, $matches )
-	) {
-		return false;
-	}
-
-	list( , $year, $month, $day, $hour, $minute, $second ) = $matches;
-
-	if ( (int) $hour > 23 || (int) $minute > 59 || (int) $second > 59 ) {
-		return false;
-	}
-
-	return wp_checkdate( (int) $month, (int) $day, (int) $year, $date_gmt );
-}
-
-/**
- * Upserts a client's presence state in a room.
- *
- * Uses INSERT ... ON DUPLICATE KEY UPDATE for atomic upserts
- * via the UNIQUE KEY (room, client_id).
- *
- * Nothing is written while recording is off, unless the client ID is
- * reserved: a reserved row is the plugin's own bookkeeping, such as a post
- * lock, which a site keeps whether or not it records who is where.
- *
- * @since 0.1.1
- * @since 0.5.0 Added the $date_gmt parameter.
- * @since 0.7.0 Added the $expires_in parameter.
- * @since 0.15.0 A reserved client ID is written with recording off.
- * @since 0.15.0 Fires the `set_presence` action.
- * @since 0.17.0 Takes `$args` in place of the `$user_id`, `$date_gmt` and `$expires_in` parameters.
- * @since 0.18.0 Added the `wp_error` argument.
- *
- * @param string       $room      The room identifier.
- * @param string       $client_id The client identifier.
- * @param array        $state     The presence state data.
- * @param array|string $args {
- *     Optional. Array or string of arguments for writing the row.
- *
- *     @type int         $user_id    The user ID. Default 0.
- *     @type string|null $date_gmt   The GMT timestamp to stamp the row with, as 'Y-m-d H:i:s'
- *                                   (the shape `wp_get_presence()` returns as `date_gmt`), for a
- *                                   caller relaying awareness on behalf of other clients so their
- *                                   timestamps survive. A future value is clamped to now so a row
- *                                   cannot be pinned past the TTL, and an invalid date rejects
- *                                   the write. Default null (now).
- *     @type int|null    $expires_in Seconds from `date_gmt` that the row counts as present, for a
- *                                   caller that removes its clients' rows itself, so the window is
- *                                   the backstop for a departure that never arrived. Capped by the
- *                                   `wp_presence_max_expires_in` filter, and a value below one
- *                                   second rejects the write. Default null (the site TTL).
- *     @type bool        $wp_error   Whether to return a WP_Error rather than false when the write
- *                                   is refused or fails. Default false.
- * }
- * @return bool|WP_Error True on success. On failure, false, or with `wp_error` a WP_Error coded
- *                       `presence_recording_disabled`, `presence_missing_table`,
- *                       `presence_invalid_date_gmt`, `presence_invalid_expires_in` or
- *                       `presence_write_failed`.
- */
-function wp_set_presence( $room, $client_id, $state, $args = array() ) {
-	$positional = wp_presence_positional_args( __FUNCTION__, func_get_args(), 3, array( 'user_id', 'date_gmt', 'expires_in' ) );
-	if ( null !== $positional ) {
-		$args = $positional;
-	}
-
-	$defaults    = array(
-		'user_id'    => 0,
-		'date_gmt'   => null,
-		'expires_in' => null,
-		'wp_error'   => false,
-	);
-	$parsed_args = wp_parse_args( $args, $defaults );
-	$user_id     = (int) $parsed_args['user_id'];
-	$date_gmt    = $parsed_args['date_gmt'];
-	$expires_in  = $parsed_args['expires_in'];
-	$wp_error    = (bool) $parsed_args['wp_error'];
-
-	// A reserved row is bookkeeping rather than a participant, so recording does not decide it.
-	if ( ! wp_presence_is_reserved_client_id( $client_id ) && ! wp_presence_recording_enabled() ) {
-		return $wp_error ? new WP_Error( 'presence_recording_disabled', __( 'Presence is not recorded on this site.', 'presence-api' ) ) : false;
-	}
-
-	if ( ! wp_presence_has_table() ) {
-		return $wp_error ? new WP_Error( 'presence_missing_table', __( 'Presence is not available on this site yet.', 'presence-api' ) ) : false;
-	}
-
-	if ( null !== $date_gmt && ! wp_presence_is_valid_date_gmt( $date_gmt ) ) {
-		return $wp_error ? new WP_Error( 'presence_invalid_date_gmt', __( 'The date_gmt argument is not a valid date.', 'presence-api' ) ) : false;
-	}
-
-	if ( null !== $expires_in && ( ! is_numeric( $expires_in ) || (int) $expires_in < 1 ) ) {
-		return $wp_error ? new WP_Error( 'presence_invalid_expires_in', __( 'The expires_in argument must be at least one second.', 'presence-api' ) ) : false;
-	}
-
-	$data_json = wp_json_encode( $state );
-	$current   = gmdate( 'Y-m-d H:i:s' );
-	$now       = null === $date_gmt ? $current : min( $date_gmt, $current );
-
-	$expires_gmt = wp_presence_expiry_for( $now, $expires_in );
-
-	/*
-	 * An explicit timestamp is how a relay backdates a collaborator who has
-	 * since left; skipping it here would leave them looking present. An
-	 * explicit expiry is the same kind of deliberate write, and skipping one
-	 * would drop the extension the caller asked for.
-	 */
-	$refresh_cutoff = null === $date_gmt && null === $expires_in ? wp_presence_refresh_cutoff( $room ) : '';
-
-	$written = wp_presence_write_row( $room, $client_id, $user_id, $data_json, $now, $expires_gmt, $refresh_cutoff, $seen );
-
-	if ( $written > 0 && ! wp_presence_is_reserved_client_id( $client_id ) ) {
-		if ( $seen ) {
-			wp_presence_bump_room_version( $room );
-		}
-
-		// Even a refresh moves the room's earliest expiry.
-		wp_presence_forget_room_next_expiry( $room );
-
-		/**
-		 * Fires after a client's presence row is written to a room.
-		 *
-		 * Does not fire for a write skipped because the row was unchanged and
-		 * recently stamped, or for a reserved row. The skip holds on MySQL;
-		 * SQLite counts an unchanged write as a change, so it fires there.
-		 *
-		 * @since 0.15.0
-		 *
-		 * @param string $room      The room identifier.
-		 * @param string $client_id The client identifier.
-		 * @param array  $state     The presence state data.
-		 * @param int    $user_id   The user ID, 0 when the row has no user.
-		 */
-		do_action( 'set_presence', $room, $client_id, $state, $user_id );
-	}
-
-	if ( false === $written ) {
-		return $wp_error ? new WP_Error( 'presence_write_failed', __( 'Presence could not be written.', 'presence-api' ) ) : false;
-	}
-
-	return true;
-}
-
-/**
- * Upserts a client's presence state into a room the caller has already read.
- *
- * For a caller that needs the room's rows anyway. The client's own row is
- * among them, so the rule the upsert applies in SQL (same data, stamped after
- * the refresh cutoff) can be applied here instead, and an unchanged tick costs
- * no write at all.
- *
- * @access private
- *
- * @since 0.9.0
- *
- * @param array  $rows      Rows for `$room`, as returned by wp_presence_room_rows()
- *                          with no client prefix.
- * @param string $room      The room identifier.
- * @param string $client_id The client identifier.
- * @param array  $state     The presence state data.
- * @param int    $user_id   Optional. The user ID. Default 0.
- * @return array The rows, with the client's own row as it now stands.
- */
-function wp_presence_set_presence_in_rows( $rows, $room, $client_id, $state, $user_id = 0 ) {
-	$own = null;
-
-	foreach ( $rows as $index => $row ) {
-		if ( $client_id === $row->client_id ) {
-			$own = $index;
-			break;
-		}
-	}
-
-	$cutoff = wp_presence_refresh_cutoff( $room );
-
-	if ( null !== $own
-		&& '' !== $cutoff
-		&& $rows[ $own ]->date_gmt >= $cutoff
-		&& wp_json_encode( $rows[ $own ]->data ) === wp_json_encode( $state )
-	) {
-		return $rows;
-	}
-
-	if ( ! wp_set_presence( $room, $client_id, $state, array( 'user_id' => $user_id ) ) ) {
-		return $rows;
-	}
-
-	if ( null !== $own ) {
-		unset( $rows[ $own ] );
-	}
-
-	// Newest first, the order wp_presence_room_rows() returns.
-	array_unshift(
-		$rows,
-		(object) array(
-			'room'      => $room,
-			'client_id' => $client_id,
-			'user_id'   => (string) $user_id,
-			'data'      => $state,
-			'date_gmt'  => gmdate( 'Y-m-d H:i:s' ),
-		)
-	);
-
-	return array_values( $rows );
-}
-
-/**
- * The expiry stamped on a row, from the window its writer asked for.
- *
- * A writer that knows when its clients leave, such as one relaying a socket's
- * lifetime, asks for a long window and removes the row itself; the expiry is
- * then the backstop for a departure that never arrives rather than the signal
- * a reader waits on. Without a window the site TTL applies, which is what
- * every heartbeat-backed writer wants.
- *
- * Measured from the row's own timestamp, so a backdated row expires on the
- * writer's clock rather than this one.
- *
- * @access private
- *
- * @since 0.7.0
- *
- * @param string   $date_gmt   The row's timestamp, `Y-m-d H:i:s` in UTC.
- * @param int|null $expires_in Optional. Seconds the row stays present. Default the site TTL.
- * @return string The expiry, `Y-m-d H:i:s` in UTC.
- */
-function wp_presence_expiry_for( $date_gmt, $expires_in = null ) {
-	if ( null === $expires_in ) {
-		$expires_in = wp_presence_get_timeout();
-	}
-
-	$expires_in = min( max( 1, (int) $expires_in ), wp_presence_max_expires_in() );
-
-	return gmdate( 'Y-m-d H:i:s', strtotime( $date_gmt . ' UTC' ) + $expires_in );
-}
-
-/**
- * The longest window any row may carry, in seconds.
- *
- * The ceiling on the same hole the `$date_gmt` clamp closes from the other
- * end: without it a caller could keep a row indefinitely, which is what the
- * TTL exists to prevent. It is also the most a row can outlive its last
- * activity, so the privacy policy text and the personal data export report
- * this figure rather than the TTL.
- *
- * @access private
- *
- * @since 0.7.0
- *
- * @return int Seconds, at least 1.
- */
-function wp_presence_max_expires_in() {
-	/**
-	 * Filters the longest window a writer may ask for through `$expires_in`.
+	 * @access private
 	 *
 	 * @since 0.7.0
 	 *
-	 * @param int $max Seconds. Default HOUR_IN_SECONDS.
+	 * @param int|null $timeout The caller's window in seconds, or null for none.
+	 * @return string A floor in `Y-m-d H:i:s`, UTC.
 	 */
-	return max( 1, (int) apply_filters( 'wp_presence_max_expires_in', HOUR_IN_SECONDS ) );
-}
-
-/**
- * Upserts a presence row.
- *
- * Given a refresh cutoff, an unchanged row newer than it keeps its date_gmt, so
- * no row is affected and the admin-room signal stays quiet.
- *
- * @access private
- *
- * @since 0.6.0
- * @since 0.7.0 Added the `$expires_gmt` and `$refresh_cutoff` parameters.
- * @since 0.11.0 No longer checks whether recording is on, so post locks can bypass it.
- * @since 0.15.0 Returns the number of rows affected instead of true.
- * @since 0.18.0 Added the `$seen` parameter.
- *
- * @global wpdb $wpdb WordPress database abstraction object.
- *
- * @param string      $room           The room identifier.
- * @param string      $client_id      The client identifier.
- * @param int         $user_id        The user ID.
- * @param string      $data_json      The presence state, JSON encoded.
- * @param string      $date_gmt       The GMT timestamp to stamp the row with.
- * @param string|null $expires_gmt    Optional. When the row stops counting as present.
- *                                    Default the site TTL from `$date_gmt`.
- * @param string      $refresh_cutoff Optional. As returned by wp_presence_refresh_cutoff().
- *                                    Default empty, which always stamps $date_gmt.
- * @param bool|null   $seen           Optional. Set to whether a peer would see the write: a new
- *                                    row, one replacing an expired row, or a change of data or
- *                                    user, as opposed to a timestamp refresh. On SQLite every
- *                                    write counts. Passed by reference.
- * @return int|false The number of rows affected, 0 when an unchanged row was left
- *                   alone, or false on failure.
- */
-function wp_presence_write_row( $room, $client_id, $user_id, $data_json, $date_gmt, $expires_gmt = null, $refresh_cutoff = '', &$seen = null ) {
-	global $wpdb;
-
-	if ( ! wp_presence_has_table() ) {
-		return false;
-	}
-
-	if ( null === $expires_gmt ) {
-		$expires_gmt = wp_presence_expiry_for( $date_gmt );
-	}
-
-	$date_clause = 'date_gmt = VALUES(date_gmt), expires_gmt = VALUES(expires_gmt)';
-	$args        = array( $room, $client_id, $user_id, $data_json, $date_gmt, $expires_gmt );
-	$now         = gmdate( 'Y-m-d H:i:s' );
-	$on_sqlite   = is_a( $wpdb, 'WP_SQLite_DB' );
-
-	/*
-	 * An update affects two rows whether it changed what peers see or only
-	 * refreshed the timestamp, so the first assignment, which leaves id alone
-	 * and runs while the row still holds its old values, records which in
-	 * LAST_INSERT_ID(): 1 for a change, 2 for a refresh. The SQLite
-	 * integration is left out and counts every write as seen.
-	 */
-	$signal = '';
-	if ( ! $on_sqlite ) {
-		$signal = 'id = id + 0 * LAST_INSERT_ID( CASE WHEN data <> VALUES(data) OR user_id <> VALUES(user_id) OR expires_gmt <= %s THEN 1 ELSE 2 END ), ';
-		$args[] = $now;
-	}
-
-	if ( '' !== $refresh_cutoff ) {
-		// MySQL assigns left to right, so expires_gmt is tested first, while
-		// date_gmt and data still hold the values the test is asking about.
-		// CASE rather than IF(), which the SQLite integration evaluates as always false.
-		$taken       = 'data <> VALUES(data) OR date_gmt < %s';
-		$date_clause = "expires_gmt = CASE WHEN {$taken} THEN VALUES(expires_gmt) ELSE expires_gmt END, date_gmt = CASE WHEN {$taken} THEN VALUES(date_gmt) ELSE date_gmt END";
-		$args[]      = $refresh_cutoff;
-		$args[]      = $refresh_cutoff;
-	}
-
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-	$result = $wpdb->query(
-		// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
-		$wpdb->prepare(
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			"INSERT INTO {$wpdb->presence} (room, client_id, user_id, data, date_gmt, expires_gmt) VALUES (%s, %s, %d, %s, %s, %s) ON DUPLICATE KEY UPDATE {$signal}user_id = VALUES(user_id), {$date_clause}, data = VALUES(data)",
-			...$args
-		)
-	);
-
-	if ( false === $result ) {
-		wp_presence_forget_missing_table();
-	}
-
-	// Read before anything else can run a query and replace insert_id.
-	$seen = $result > 0 && ( $on_sqlite || 1 === $result || 1 === (int) $wpdb->insert_id );
-
-	if ( $result > 0 ) {
-		wp_cache_set_last_changed( 'presence' );
-
-		if ( wp_presence_admin_room() === $room ) {
-			wp_presence_admin_room_changed();
-		}
-	}
-
-	return false === $result ? false : (int) $result;
-}
-
-/**
- * Removes a client from a room.
- *
- * @since 0.1.1
- * @since 0.15.0 Fires the `removed_presence` action.
- *
- * @param string $room      The room identifier.
- * @param string $client_id The client identifier.
- * @return bool True on success, false on failure.
- */
-function wp_remove_presence( $room, $client_id ) {
-	global $wpdb;
-
-	if ( ! wp_presence_has_table() ) {
-		return false;
-	}
-
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-	$result = $wpdb->delete(
-		$wpdb->presence,
-		array(
-			'room'      => $room,
-			'client_id' => $client_id,
-		),
-		array( '%s', '%s' )
-	);
-
-	if ( $result > 0 ) {
-		wp_cache_set_last_changed( 'presence' );
-
-		if ( wp_presence_admin_room() === $room ) {
-			wp_presence_admin_room_changed();
+	function wp_presence_read_floor( $timeout ) {
+		if ( null === $timeout ) {
+			return '1000-01-01 00:00:00';
 		}
 
-		if ( ! wp_presence_is_reserved_client_id( $client_id ) ) {
-			wp_presence_bump_room_version( $room );
+		return gmdate( 'Y-m-d H:i:s', time() - wp_presence_get_timeout( $timeout ) );
+	}
+}
+
+if ( ! function_exists( 'wp_get_presence' ) ) {
+	/**
+	 * Gets all present clients in a room, filtered by TTL.
+	 *
+	 * Reserved rows are left out whatever the prefix, so `_` returns nothing.
+	 *
+	 * A `$timeout` given here is the window used, on every site. Omit it to take
+	 * the site's own TTL, which is what `wp_presence_default_ttl` filters.
+	 *
+	 * @since 0.1.1
+	 * @since 0.7.0 Added the `$client_prefix` parameter.
+	 * @since 0.7.0 An explicit `$timeout` is no longer overridden by `wp_presence_default_ttl`.
+	 * @since 0.17.0 Takes `$args` in place of the `$timeout` and `$client_prefix` parameters.
+	 *
+	 * @param string       $room The room identifier.
+	 * @param array|string $args {
+	 *     Optional. Array or string of arguments for reading the room.
+	 *
+	 *     @type int|null $timeout       Timeout in seconds. Default null, the site's filtered TTL.
+	 *     @type string   $client_prefix Only return clients whose client_id starts with this. Default empty.
+	 * }
+	 * @return array Array of presence entry objects.
+	 */
+	function wp_get_presence( $room, $args = array() ) {
+		$positional = wp_presence_positional_args( __FUNCTION__, func_get_args(), 1, array( 'timeout', 'client_prefix' ) );
+		if ( null !== $positional ) {
+			$args = $positional;
+		}
+
+		$defaults    = array(
+			'timeout'       => null,
+			'client_prefix' => '',
+		);
+		$parsed_args = wp_parse_args( $args, $defaults );
+
+		return wp_presence_client_rows( wp_presence_room_rows( $room, $parsed_args['timeout'], $parsed_args['client_prefix'] ) );
+	}
+}
+
+if ( ! function_exists( 'wp_presence_positional_args' ) ) {
+	/**
+	 * Maps a call made with the positional parameters from before 0.17.0 onto `$args`.
+	 *
+	 * Those calls passed a number or null where `$args` now goes, so an array or a
+	 * query string there is `$args`, whatever follows it.
+	 *
+	 * @access private
+	 *
+	 * @since 0.17.0
+	 *
+	 * @param string   $function_name The function that was called, for the deprecation notice.
+	 * @param array    $given         The arguments the function received.
+	 * @param int      $index         Where `$args` sits among them.
+	 * @param string[] $keys          The `$args` keys the old positions map to, in order.
+	 * @return array|null The arguments as `$args`, or null for a call that already passes `$args`.
+	 */
+	function wp_presence_positional_args( $function_name, $given, $index, $keys ) {
+		// Not ??, which would read an explicit null, the old form's default, as missing.
+		$args = array_key_exists( $index, $given ) ? $given[ $index ] : array();
+
+		if ( ! ( null === $args || is_numeric( $args ) ) ) {
+			return null;
+		}
+
+		_deprecated_argument(
+			esc_html( $function_name ),
+			'0.18.0',
+			/* translators: %s: The `$args` keys, such as user_id, date_gmt, expires_in. */
+			esc_html( sprintf( __( 'Pass the optional arguments in an $args array: %s.', 'presence-api' ), implode( ', ', $keys ) ) )
+		);
+
+		$values = array_slice( $given, $index, count( $keys ) );
+
+		return array_combine( array_slice( $keys, 0, count( $values ) ), $values );
+	}
+}
+
+if ( ! function_exists( 'wp_presence_is_reserved_client_id' ) ) {
+	/**
+	 * Whether a client_id is the plugin's own bookkeeping rather than a client.
+	 *
+	 * @access private
+	 *
+	 * @since 0.6.0
+	 *
+	 * @param string $client_id The client identifier.
+	 * @return bool Whether the id is reserved.
+	 */
+	function wp_presence_is_reserved_client_id( $client_id ) {
+		return str_starts_with( (string) $client_id, WP_PRESENCE_RESERVED_PREFIX );
+	}
+}
+
+if ( ! function_exists( 'wp_presence_reserved_client_id_pattern' ) ) {
+	/**
+	 * Returns the LIKE pattern matching every reserved client_id.
+	 *
+	 * For the queries that read rows by room in SQL rather than through
+	 * wp_get_presence(), which filters them out in PHP.
+	 *
+	 * @access private
+	 *
+	 * @since 0.6.0
+	 *
+	 * @global wpdb $wpdb WordPress database abstraction object.
+	 *
+	 * @return string An escaped LIKE pattern.
+	 */
+	function wp_presence_reserved_client_id_pattern() {
+		global $wpdb;
+
+		return $wpdb->esc_like( WP_PRESENCE_RESERVED_PREFIX ) . '%';
+	}
+}
+
+if ( ! function_exists( 'wp_presence_version_client_id' ) ) {
+	/**
+	 * Returns the reserved client_id holding a room's version counter.
+	 *
+	 * @access private
+	 *
+	 * @since 0.18.0
+	 *
+	 * @return string The reserved client_id.
+	 */
+	function wp_presence_version_client_id() {
+		return WP_PRESENCE_RESERVED_PREFIX . 'version';
+	}
+}
+
+if ( ! function_exists( 'wp_presence_client_rows' ) ) {
+	/**
+	 * Drops the reserved rows from a set of rows.
+	 *
+	 * @access private
+	 *
+	 * @since 0.6.0
+	 *
+	 * @param array $rows Rows as returned by wp_presence_room_rows().
+	 * @return array The rows that belong to clients.
+	 */
+	function wp_presence_client_rows( $rows ) {
+		return array_values(
+			array_filter(
+				$rows,
+				static function ( $row ) {
+					return ! wp_presence_is_reserved_client_id( $row->client_id );
+				}
+			)
+		);
+	}
+}
+
+if ( ! function_exists( 'wp_presence_room_rows' ) ) {
+	/**
+	 * Gets every live row in a room, the reserved rows included.
+	 *
+	 * One query serves both the participants and the plugin's own state for the
+	 * room, so reading that state costs nothing on top of the read the caller
+	 * was already making.
+	 *
+	 * @access private
+	 *
+	 * @since 0.6.0
+	 * @since 0.7.0 Added the `$client_prefix` parameter.
+	 *
+	 * @global wpdb $wpdb WordPress database abstraction object.
+	 *
+	 * @param string $room          The room identifier.
+	 * @param int    $timeout       Optional. Timeout in seconds. Default null, the site's filtered TTL.
+	 * @param string $client_prefix Optional. Only return rows whose client_id starts with this.
+	 *                              Default empty.
+	 * @return array Array of presence row objects.
+	 */
+	function wp_presence_room_rows( $room, $timeout = null, $client_prefix = '' ) {
+		global $wpdb;
+
+		if ( ! wp_presence_has_table() ) {
+			return array();
+		}
+
+		$cutoff = gmdate( 'Y-m-d H:i:s' );
+		$stale  = wp_presence_read_floor( $timeout );
+
+		$client_clause = '';
+		$args          = array( $room, $cutoff, $stale );
+
+		if ( '' !== (string) $client_prefix ) {
+			$client_clause = ' AND client_id LIKE %s';
+			// Escaped, since LIKE reads `_` and `%` as wildcards.
+			$args[] = $wpdb->esc_like( (string) $client_prefix ) . '%';
+		}
+
+		return wp_presence_cached_rows(
+			"room:{$room}:{$client_prefix}",
+			// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+			$wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"SELECT room, client_id, user_id, data, date_gmt FROM {$wpdb->presence} WHERE room = %s AND expires_gmt > %s AND date_gmt > %s{$client_clause} ORDER BY date_gmt DESC",
+				...$args
+			)
+		);
+	}
+}
+
+if ( ! function_exists( 'wp_presence_cached_rows' ) ) {
+	/**
+	 * Runs a presence read, reusing its rows for the rest of the request until the table changes.
+	 *
+	 * Salted with the SQL, which holds the current second, so a cached read lapses as rows expire
+	 * while each read keeps one entry however long the process runs.
+	 *
+	 * @access private
+	 *
+	 * @since 0.12.2
+	 *
+	 * @global wpdb $wpdb WordPress database abstraction object.
+	 *
+	 * @param string $read  Names the read, without the times in its SQL.
+	 * @param string $query Prepared SQL selecting presence rows.
+	 * @return array Array of presence row objects, with `data` decoded.
+	 */
+	function wp_presence_cached_rows( $read, $query ) {
+		global $wpdb;
+
+		$key     = md5( $read );
+		$salt    = array( wp_cache_get_last_changed( 'presence' ), md5( $query ) );
+		$results = wp_cache_get_salted( $key, 'presence', $salt );
+
+		if ( false === $results ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.NotPrepared
+			$results = $wpdb->get_results( $query );
+			$results = $results ? $results : array();
+
+			foreach ( $results as $row ) {
+				$decoded   = json_decode( $row->data, true );
+				$row->data = is_array( $decoded ) ? $decoded : array();
+			}
+
+			wp_cache_set_salted( $key, $results, 'presence', $salt );
+		}
+
+		return $results;
+	}
+}
+
+if ( ! function_exists( 'wp_presence_online_user_ids' ) ) {
+	/**
+	 * Returns the user IDs present in a set of entries, the current user included.
+	 *
+	 * The current user's own row is absent on screens that never ping and once it
+	 * ages past the TTL, so it is added by identity rather than by adding one,
+	 * which would double-count whenever the row is there.
+	 *
+	 * @access private
+	 *
+	 * @since 0.3.0
+	 *
+	 * @param array $entries Presence entries, as returned by wp_get_presence().
+	 * @return int[] Unique user IDs.
+	 */
+	function wp_presence_online_user_ids( $entries ) {
+		return array_values( wp_parse_id_list( wp_list_pluck( wp_presence_with_current_user( $entries ), 'user_id' ) ) );
+	}
+}
+
+if ( ! function_exists( 'wp_presence_with_current_user' ) ) {
+	/**
+	 * Adds an entry for the current user to a set of entries when their row is absent.
+	 *
+	 * @access private
+	 *
+	 * @since 0.3.0
+	 *
+	 * @param array $entries Presence entries, as returned by wp_get_presence().
+	 * @return array Entries with the current user included.
+	 */
+	function wp_presence_with_current_user( $entries ) {
+		$current_id = get_current_user_id();
+
+		if ( ! $current_id ) {
+			return $entries;
+		}
+
+		foreach ( $entries as $entry ) {
+			if ( (int) $entry->user_id === $current_id ) {
+				return $entries;
+			}
+		}
+
+		$entries[] = (object) array(
+			'user_id'  => $current_id,
+			'date_gmt' => current_time( 'mysql', true ),
+			'data'     => array(),
+		);
+
+		return $entries;
+	}
+}
+
+if ( ! function_exists( 'wp_presence_recording_enabled' ) ) {
+	/**
+	 * Whether presence is recorded on this site.
+	 *
+	 * The controller-level switch, checked at the single write path. Nothing new is
+	 * stored while this is false and every surface empties within one
+	 * WP_PRESENCE_DEFAULT_TTL as the rows already there expire, so there is no
+	 * separate teardown to run.
+	 *
+	 * Recording is on by default. Presence is a negative signal, and the post lock
+	 * bridge is where its absence stops two people overwriting each other, so the
+	 * default is the safe one; a site that would rather not process it at all
+	 * switches it off here and says so in its privacy policy.
+	 *
+	 * The stored options are passed as the filters' defaults, so a filter always
+	 * has the last word over whatever the checkbox says.
+	 *
+	 * Aggregating those rows into the network-wide view is a separate switch. See
+	 * wp_presence_network_aggregation_enabled().
+	 *
+	 * @since 0.3.0
+	 *
+	 * @return bool Whether presence is recorded.
+	 */
+	function wp_presence_recording_enabled() {
+		/**
+		 * Filters whether presence is recorded on this site.
+		 *
+		 * @since 0.3.0
+		 *
+		 * @param bool $enabled Whether to record presence. Default is the
+		 *                      wp_presence_recording option, true on a new install.
+		 */
+		$enabled = (bool) apply_filters( 'wp_presence_recording_enabled', (bool) get_option( 'wp_presence_recording', true ) );
+
+		if ( ! $enabled || ! is_multisite() ) {
+			return $enabled;
+		}
+
+		/**
+		 * Filters whether presence is recorded anywhere on this network.
+		 *
+		 * Consulted only once the site-level filter has allowed recording, so
+		 * either switch turning off wins and neither can turn the other back on.
+		 *
+		 * @since 0.3.0
+		 *
+		 * @param bool $enabled Whether to record presence. Default is the
+		 *                      wp_presence_network_recording site option, true on a
+		 *                      new install.
+		 */
+		return (bool) apply_filters( 'wp_presence_network_recording_enabled', (bool) get_site_option( 'wp_presence_network_recording', true ) );
+	}
+}
+
+if ( ! function_exists( 'wp_presence_is_available' ) ) {
+	/**
+	 * Whether presence can be read and written on this site.
+	 *
+	 * The check an integrator makes before relying on presence. On a site with
+	 * no table, or with recording switched off, wp_set_presence() returns false
+	 * and wp_get_presence() returns an empty array, which reads as an empty room
+	 * rather than an unavailable backend. Guard with function_exists() first to
+	 * cover the plugin not being loaded.
+	 *
+	 * @since 0.6.0
+	 *
+	 * @return bool Whether the table exists and presence is recorded.
+	 */
+	function wp_presence_is_available() {
+		return wp_presence_has_table() && wp_presence_recording_enabled();
+	}
+}
+
+if ( ! function_exists( 'wp_presence_next_tick_gap' ) ) {
+	/**
+	 * Returns how long until the client is expected to send its next Heartbeat.
+	 *
+	 * @access private
+	 *
+	 * @since 0.4.0
+	 *
+	 * @return int Seconds.
+	 */
+	function wp_presence_next_tick_gap() {
+		// Core's scheduleNextTick() overrides the interval to 120s whenever the
+		// window is blurred, and never reflects that back into the interval it
+		// reports in the same request, so the reported value understates the real
+		// gap on an unfocused tab. That is the worst case, and the assumption to
+		// make whenever the request does not say otherwise.
+		$blurred = 120;
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification is handled by WordPress in wp_ajax_heartbeat() before any of this runs.
+		if ( ! isset( $_POST['interval'], $_POST['has_focus'] ) || 'true' !== $_POST['has_focus'] ) {
+			return $blurred;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- As above.
+		$interval = absint( $_POST['interval'] );
+
+		return $interval > 0 ? $interval : $blurred;
+	}
+}
+
+if ( ! function_exists( 'wp_presence_max_staleness' ) ) {
+	/**
+	 * Returns how stale a presence row is allowed to get while its client is still
+	 * pinging.
+	 *
+	 * A row's date_gmt is the only evidence a reader has that its client is still
+	 * there, so a write skipped to save a query is indistinguishable from a client
+	 * that left. This bounds how long that ambiguity lasts.
+	 *
+	 * @access private
+	 *
+	 * @since 0.6.0
+	 *
+	 * @return int Age in seconds.
+	 */
+	function wp_presence_max_staleness() {
+		return 30;
+	}
+}
+
+if ( ! function_exists( 'wp_presence_idle_threshold' ) ) {
+	/**
+	 * Returns the age past which a presence row means its client has gone quiet.
+	 *
+	 * A row this old cannot be explained by a skipped write followed by the widest
+	 * gap a pinging client leaves, so the client really has stopped. Anything
+	 * reading date_gmt to tell active from idle has to use this rather than a
+	 * figure of its own, or a client that is merely economising on writes reads as
+	 * one that walked away.
+	 *
+	 * @access private
+	 *
+	 * @since 0.6.0
+	 *
+	 * @return int Age in seconds.
+	 */
+	function wp_presence_idle_threshold() {
+		return wp_presence_max_staleness() + wp_presence_get_heartbeat_idle_interval();
+	}
+}
+
+if ( ! function_exists( 'wp_presence_refresh_threshold' ) ) {
+	/**
+	 * Returns the age at which an unchanged presence row still has to be rewritten.
+	 *
+	 * Skipping a write leaves the row's existing date_gmt in place, so it is only
+	 * safe while the row will still be inside wp_get_presence()'s cutoff when the
+	 * next tick arrives. Deriving this from wp_presence_get_timeout() rather than
+	 * WP_PRESENCE_DEFAULT_TTL matters: a site filtering the TTL below the tick
+	 * interval would otherwise make its users blink offline.
+	 *
+	 * Staying inside the cutoff is not enough on its own, since a row can sit
+	 * unwritten well inside the TTL and still read as long gone, so
+	 * wp_presence_max_staleness() caps it as well.
+	 *
+	 * @access private
+	 *
+	 * @since 0.4.0
+	 *
+	 * @return int Age in seconds. 0 means never skip.
+	 */
+	function wp_presence_refresh_threshold() {
+		$timeout = wp_presence_get_timeout();
+
+		return max( 0, min( $timeout - wp_presence_ttl_margin() - wp_presence_next_tick_gap(), wp_presence_max_staleness() ) );
+	}
+}
+
+if ( ! function_exists( 'wp_presence_ttl_margin' ) ) {
+	/**
+	 * Returns the slice of the TTL kept in reserve rather than spent on waiting.
+	 *
+	 * Both sides of the plugin push their timing as close to the TTL as they dare,
+	 * the server when it skips a write and the client when it widens its interval.
+	 * Either one landing late drops a present user out of the room, so they hold
+	 * back by the same amount, and presence-ping.js is passed this figure.
+	 *
+	 * @access private
+	 *
+	 * @since 0.6.0
+	 *
+	 * @return int Seconds.
+	 */
+	function wp_presence_ttl_margin() {
+		return 15;
+	}
+}
+
+if ( ! function_exists( 'wp_presence_refresh_cutoff' ) ) {
+	/**
+	 * Returns the date_gmt below which an unchanged row still has to be refreshed.
+	 *
+	 * @access private
+	 *
+	 * @since 0.7.0
+	 *
+	 * @param string $room The room identifier.
+	 * @return string A 'Y-m-d H:i:s' GMT timestamp, or an empty string when the
+	 *                write must land whatever the stored row holds.
+	 */
+	function wp_presence_refresh_cutoff( $room ) {
+		$threshold = wp_presence_refresh_threshold();
+
+		if ( $threshold <= 0 ) {
+			return '';
+		}
+
+		// The network summary push hangs off wp_presence_admin_room_changed, so an
+		// admin-room write that is skipped also skips the push. Loaded on multisite
+		// only, hence the guard.
+		if ( wp_presence_admin_room() === $room
+			&& function_exists( 'wp_presence_network_summary_push_is_due' )
+			&& wp_presence_network_summary_push_is_due()
+		) {
+			return '';
+		}
+
+		return gmdate( 'Y-m-d H:i:s', time() - $threshold );
+	}
+}
+
+if ( ! function_exists( 'wp_presence_is_valid_date_gmt' ) ) {
+	/**
+	 * Whether a string is a real calendar date in 'Y-m-d H:i:s' format.
+	 *
+	 * Same approach as wp_resolve_post_date(): a preg_match on the literal shape
+	 * plus wp_checkdate() to catch a well-formed but impossible date (2026-02-30).
+	 *
+	 * @access private
+	 *
+	 * @since 0.5.0
+	 *
+	 * @param string $date_gmt The timestamp to validate.
+	 * @return bool Whether the timestamp is well-formed and real.
+	 */
+	function wp_presence_is_valid_date_gmt( $date_gmt ) {
+		if ( ! is_string( $date_gmt )
+			|| ! preg_match( '/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/', $date_gmt, $matches )
+		) {
+			return false;
+		}
+
+		list( , $year, $month, $day, $hour, $minute, $second ) = $matches;
+
+		if ( (int) $hour > 23 || (int) $minute > 59 || (int) $second > 59 ) {
+			return false;
+		}
+
+		return wp_checkdate( (int) $month, (int) $day, (int) $year, $date_gmt );
+	}
+}
+
+if ( ! function_exists( 'wp_set_presence' ) ) {
+	/**
+	 * Upserts a client's presence state in a room.
+	 *
+	 * Uses INSERT ... ON DUPLICATE KEY UPDATE for atomic upserts
+	 * via the UNIQUE KEY (room, client_id).
+	 *
+	 * Nothing is written while recording is off, unless the client ID is
+	 * reserved: a reserved row is the plugin's own bookkeeping, such as a post
+	 * lock, which a site keeps whether or not it records who is where.
+	 *
+	 * @since 0.1.1
+	 * @since 0.5.0 Added the $date_gmt parameter.
+	 * @since 0.7.0 Added the $expires_in parameter.
+	 * @since 0.15.0 A reserved client ID is written with recording off.
+	 * @since 0.15.0 Fires the `set_presence` action.
+	 * @since 0.17.0 Takes `$args` in place of the `$user_id`, `$date_gmt` and `$expires_in` parameters.
+	 * @since 0.18.0 Added the `wp_error` argument.
+	 *
+	 * @param string       $room      The room identifier.
+	 * @param string       $client_id The client identifier.
+	 * @param array        $state     The presence state data.
+	 * @param array|string $args {
+	 *     Optional. Array or string of arguments for writing the row.
+	 *
+	 *     @type int         $user_id    The user ID. Default 0.
+	 *     @type string|null $date_gmt   The GMT timestamp to stamp the row with, as 'Y-m-d H:i:s'
+	 *                                   (the shape `wp_get_presence()` returns as `date_gmt`), for a
+	 *                                   caller relaying awareness on behalf of other clients so their
+	 *                                   timestamps survive. A future value is clamped to now so a row
+	 *                                   cannot be pinned past the TTL, and an invalid date rejects
+	 *                                   the write. Default null (now).
+	 *     @type int|null    $expires_in Seconds from `date_gmt` that the row counts as present, for a
+	 *                                   caller that removes its clients' rows itself, so the window is
+	 *                                   the backstop for a departure that never arrived. Capped by the
+	 *                                   `wp_presence_max_expires_in` filter, and a value below one
+	 *                                   second rejects the write. Default null (the site TTL).
+	 *     @type bool        $wp_error   Whether to return a WP_Error rather than false when the write
+	 *                                   is refused or fails. Default false.
+	 * }
+	 * @return bool|WP_Error True on success. On failure, false, or with `wp_error` a WP_Error coded
+	 *                       `presence_recording_disabled`, `presence_missing_table`,
+	 *                       `presence_invalid_date_gmt`, `presence_invalid_expires_in` or
+	 *                       `presence_write_failed`.
+	 */
+	function wp_set_presence( $room, $client_id, $state, $args = array() ) {
+		$positional = wp_presence_positional_args( __FUNCTION__, func_get_args(), 3, array( 'user_id', 'date_gmt', 'expires_in' ) );
+		if ( null !== $positional ) {
+			$args = $positional;
+		}
+
+		$defaults    = array(
+			'user_id'    => 0,
+			'date_gmt'   => null,
+			'expires_in' => null,
+			'wp_error'   => false,
+		);
+		$parsed_args = wp_parse_args( $args, $defaults );
+		$user_id     = (int) $parsed_args['user_id'];
+		$date_gmt    = $parsed_args['date_gmt'];
+		$expires_in  = $parsed_args['expires_in'];
+		$wp_error    = (bool) $parsed_args['wp_error'];
+
+		// A reserved row is bookkeeping rather than a participant, so recording does not decide it.
+		if ( ! wp_presence_is_reserved_client_id( $client_id ) && ! wp_presence_recording_enabled() ) {
+			return $wp_error ? new WP_Error( 'presence_recording_disabled', __( 'Presence is not recorded on this site.', 'presence-api' ) ) : false;
+		}
+
+		if ( ! wp_presence_has_table() ) {
+			return $wp_error ? new WP_Error( 'presence_missing_table', __( 'Presence is not available on this site yet.', 'presence-api' ) ) : false;
+		}
+
+		if ( null !== $date_gmt && ! wp_presence_is_valid_date_gmt( $date_gmt ) ) {
+			return $wp_error ? new WP_Error( 'presence_invalid_date_gmt', __( 'The date_gmt argument is not a valid date.', 'presence-api' ) ) : false;
+		}
+
+		if ( null !== $expires_in && ( ! is_numeric( $expires_in ) || (int) $expires_in < 1 ) ) {
+			return $wp_error ? new WP_Error( 'presence_invalid_expires_in', __( 'The expires_in argument must be at least one second.', 'presence-api' ) ) : false;
+		}
+
+		$data_json = wp_json_encode( $state );
+		$current   = gmdate( 'Y-m-d H:i:s' );
+		$now       = null === $date_gmt ? $current : min( $date_gmt, $current );
+
+		$expires_gmt = wp_presence_expiry_for( $now, $expires_in );
+
+		/*
+		 * An explicit timestamp is how a relay backdates a collaborator who has
+		 * since left; skipping it here would leave them looking present. An
+		 * explicit expiry is the same kind of deliberate write, and skipping one
+		 * would drop the extension the caller asked for.
+		 */
+		$refresh_cutoff = null === $date_gmt && null === $expires_in ? wp_presence_refresh_cutoff( $room ) : '';
+
+		$written = wp_presence_write_row( $room, $client_id, $user_id, $data_json, $now, $expires_gmt, $refresh_cutoff, $seen );
+
+		if ( $written > 0 && ! wp_presence_is_reserved_client_id( $client_id ) ) {
+			if ( $seen ) {
+				wp_presence_bump_room_version( $room );
+			}
+
+			// Even a refresh moves the room's earliest expiry.
 			wp_presence_forget_room_next_expiry( $room );
 
 			/**
-			 * Fires after a client's presence row is removed from a room.
+			 * Fires after a client's presence row is written to a room.
 			 *
-			 * Does not fire when there was no row to remove, for a reserved
-			 * row, or for a row that expires and is cleaned up later.
+			 * Does not fire for a write skipped because the row was unchanged and
+			 * recently stamped, or for a reserved row. The skip holds on MySQL;
+			 * SQLite counts an unchanged write as a change, so it fires there.
 			 *
 			 * @since 0.15.0
 			 *
 			 * @param string $room      The room identifier.
 			 * @param string $client_id The client identifier.
+			 * @param array  $state     The presence state data.
+			 * @param int    $user_id   The user ID, 0 when the row has no user.
 			 */
-			do_action( 'removed_presence', $room, $client_id );
-		}
-	}
-
-	return false !== $result;
-}
-
-/**
- * Upserts a client's presence state and returns the room as it stands afterwards.
- *
- * For a caller that reads the room back after every write, such as an
- * awareness backend. The read is scoped to `$client_prefix`, so it returns the
- * caller's own rows without the ones other clients keep in the same room.
- *
- * @since 0.8.0
- * @since 0.17.0 Takes `$args` in place of the `$user_id`, `$timeout` and `$client_prefix` parameters.
- * @since 0.18.0 Added the `wp_error` argument.
- *
- * @param string       $room      The room identifier.
- * @param string       $client_id The client identifier.
- * @param array        $state     The presence state data.
- * @param array|string $args {
- *     Optional. Array or string of arguments for writing the row and reading the room.
- *
- *     @type int      $user_id       The user ID. Default 0.
- *     @type int|null $timeout       Timeout in seconds. Default null, the site's filtered TTL.
- *     @type string   $client_prefix Only return clients whose client_id starts with this. Default empty.
- *     @type bool     $wp_error      Whether to return the write's WP_Error instead of reading the room
- *                                   when the write is refused or fails. Default false.
- * }
- * @return array|WP_Error Array of presence entry objects, as returned by wp_get_presence(), or
- *                        with `wp_error` the WP_Error from wp_set_presence().
- */
-function wp_presence_exchange( $room, $client_id, $state, $args = array() ) {
-	$positional = wp_presence_positional_args( __FUNCTION__, func_get_args(), 3, array( 'user_id', 'timeout', 'client_prefix' ) );
-	if ( null !== $positional ) {
-		$args = $positional;
-	}
-
-	$defaults    = array(
-		'user_id'       => 0,
-		'timeout'       => null,
-		'client_prefix' => '',
-		'wp_error'      => false,
-	);
-	$parsed_args = wp_parse_args( $args, $defaults );
-
-	$written = wp_set_presence(
-		$room,
-		$client_id,
-		$state,
-		array(
-			'user_id'  => $parsed_args['user_id'],
-			'wp_error' => $parsed_args['wp_error'],
-		)
-	);
-
-	if ( is_wp_error( $written ) ) {
-		return $written;
-	}
-
-	return wp_get_presence( $room, $parsed_args );
-}
-
-/**
- * Removes a client from a room and returns the room as it stands afterwards.
- *
- * The removal counterpart to wp_presence_exchange().
- *
- * @since 0.8.0
- * @since 0.17.0 Takes `$args` in place of the `$timeout` and `$client_prefix` parameters.
- *
- * @param string       $room      The room identifier.
- * @param string       $client_id The client identifier.
- * @param array|string $args {
- *     Optional. Array or string of arguments for reading the room, as wp_get_presence() takes them.
- *
- *     @type int|null $timeout       Timeout in seconds. Default null, the site's filtered TTL.
- *     @type string   $client_prefix Only return clients whose client_id starts with this. Default empty.
- * }
- * @return array Array of presence entry objects, as returned by wp_get_presence().
- */
-function wp_presence_leave( $room, $client_id, $args = array() ) {
-	$positional = wp_presence_positional_args( __FUNCTION__, func_get_args(), 2, array( 'timeout', 'client_prefix' ) );
-	if ( null !== $positional ) {
-		$args = $positional;
-	}
-
-	wp_remove_presence( $room, $client_id );
-
-	return wp_get_presence( $room, $args );
-}
-
-/**
- * Returns the version counters for one or more rooms.
- *
- * One counter per room, for a reader waiting on changes without reading every
- * row. It moves when what peers see changes: a client arriving (over its own
- * expired row too), changing its state or user, or being removed. A write that
- * only refreshes a timestamp leaves it alone, and so does a row expiring, which
- * wp_get_presence_room_next_expiry() says when to look for.
- *
- * @since 0.18.0
- *
- * @global wpdb $wpdb WordPress database abstraction object.
- *
- * @param array|string $rooms Array of room identifiers, or a single room.
- * @return array Associative array of room => version counter, null when the room has never been written.
- */
-function wp_get_presence_room_versions( $rooms ) {
-	global $wpdb;
-
-	$rooms    = array_values( array_filter( array_unique( (array) $rooms ) ) );
-	$versions = array_fill_keys( $rooms, null );
-
-	if ( empty( $rooms ) || ! wp_presence_has_table() ) {
-		return $versions;
-	}
-
-	if ( wp_using_ext_object_cache() ) {
-		$keys = array();
-		foreach ( $rooms as $room ) {
-			$keys[ $room ] = 'version:' . $room;
+			do_action( 'set_presence', $room, $client_id, $state, $user_id );
 		}
 
-		$found = wp_cache_get_multiple( array_values( $keys ), 'presence_room_versions' );
-		foreach ( $keys as $room => $key ) {
-			if ( isset( $found[ $key ] ) && false !== $found[ $key ] ) {
-				$versions[ $room ] = (string) $found[ $key ];
-			}
+		if ( false === $written ) {
+			return $wp_error ? new WP_Error( 'presence_write_failed', __( 'Presence could not be written.', 'presence-api' ) ) : false;
 		}
 
-		return $versions;
-	}
-
-	$version_client_id = wp_presence_version_client_id();
-	$placeholders      = implode( ', ', array_fill( 0, count( $rooms ), '%s' ) );
-
-	// $placeholders holds only %s tokens generated above, so the interpolation is safe.
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
-	$rows = $wpdb->get_results(
-		// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
-		$wpdb->prepare(
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			"SELECT room, data FROM {$wpdb->presence} WHERE client_id = %s AND room IN ( {$placeholders} )",
-			array_merge( array( $version_client_id ), $rooms )
-		)
-	);
-
-	foreach ( (array) $rows as $row ) {
-		$versions[ $row->room ] = (string) (int) $row->data;
-	}
-
-	return $versions;
-}
-
-/**
- * Bumps the version counter for a room.
- *
- * Increments the counter in the 'presence_room_versions' cache group when an
- * external object cache is in use, or otherwise in the data of the reserved
- * '_version' row, where removing or exporting a user's rows never matches it.
- *
- * @access private
- *
- * @since 0.18.0
- *
- * @global wpdb $wpdb WordPress database abstraction object.
- *
- * @param string $room The room identifier.
- */
-function wp_presence_bump_room_version( $room ) {
-	global $wpdb;
-
-	if ( ! is_string( $room ) || '' === $room || ! wp_presence_has_table() ) {
-		return;
-	}
-
-	if ( wp_using_ext_object_cache() ) {
-		$key = 'version:' . $room;
-		wp_cache_add( $key, 0, 'presence_room_versions' );
-		wp_cache_incr( $key, 1, 'presence_room_versions' );
-		return;
-	}
-
-	$current = gmdate( 'Y-m-d H:i:s' );
-
-	// Outlives every row in the room, so cleanup removes it only once the room is empty.
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-	$wpdb->query(
-		$wpdb->prepare(
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			"INSERT INTO {$wpdb->presence} (room, client_id, user_id, data, date_gmt, expires_gmt) VALUES (%s, %s, 0, '1', %s, %s) ON DUPLICATE KEY UPDATE data = data + 1, date_gmt = VALUES(date_gmt), expires_gmt = VALUES(expires_gmt)",
-			$room,
-			wp_presence_version_client_id(),
-			$current,
-			wp_presence_expiry_for( $current, wp_presence_max_expires_in() )
-		)
-	);
-}
-
-/**
- * Returns when the earliest live row in each room expires.
- *
- * A row that expires moves no version, so a reader holding versions reads the
- * room again once this time passes. Reserved rows are left out, since no peer
- * sees them. With an external object cache the answer is kept until it passes
- * or the room is written, so a quiet room costs no query.
- *
- * @since 0.18.0
- *
- * @global wpdb $wpdb WordPress database abstraction object.
- *
- * @param array|string $rooms Array of room identifiers, or a single room.
- * @return array Associative array of room => GMT time as 'Y-m-d H:i:s', null when the room has no live row.
- */
-function wp_get_presence_room_next_expiry( $rooms ) {
-	global $wpdb;
-
-	$rooms  = array_values( array_filter( array_unique( (array) $rooms ) ) );
-	$expiry = array_fill_keys( $rooms, null );
-
-	if ( empty( $rooms ) || ! wp_presence_has_table() ) {
-		return $expiry;
-	}
-
-	$now     = gmdate( 'Y-m-d H:i:s' );
-	$missing = $rooms;
-
-	if ( wp_using_ext_object_cache() ) {
-		$found   = wp_cache_get_multiple( array_map( 'wp_presence_room_next_expiry_key', $rooms ), 'presence_room_versions' );
-		$missing = array();
-
-		foreach ( $rooms as $room ) {
-			$cached = $found[ wp_presence_room_next_expiry_key( $room ) ] ?? false;
-
-			// '' stands for a room with no live row, which only a write can change.
-			if ( false !== $cached && ( '' === $cached || $cached > $now ) ) {
-				$expiry[ $room ] = '' === $cached ? null : $cached;
-			} else {
-				$missing[] = $room;
-			}
-		}
-
-		if ( ! $missing ) {
-			return $expiry;
-		}
-	}
-
-	$placeholders = implode( ', ', array_fill( 0, count( $missing ), '%s' ) );
-
-	// The room_expires index serves the range on expires_gmt within each room.
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-	$rows = $wpdb->get_results(
-		// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
-		$wpdb->prepare(
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			"SELECT room, MIN(expires_gmt) AS next_expiry FROM {$wpdb->presence} WHERE room IN ( {$placeholders} ) AND expires_gmt > %s AND client_id NOT LIKE %s GROUP BY room",
-			array_merge( $missing, array( $now, wp_presence_reserved_client_id_pattern() ) )
-		)
-	);
-
-	foreach ( (array) $rows as $row ) {
-		$expiry[ $row->room ] = $row->next_expiry;
-	}
-
-	if ( wp_using_ext_object_cache() ) {
-		$store = array();
-		foreach ( $missing as $room ) {
-			$store[ wp_presence_room_next_expiry_key( $room ) ] = $expiry[ $room ] ?? '';
-		}
-		wp_cache_set_multiple( $store, 'presence_room_versions' );
-	}
-
-	return $expiry;
-}
-
-/**
- * Returns the cache key holding a room's next expiry.
- *
- * @access private
- *
- * @since 0.18.0
- *
- * @param string $room The room identifier.
- * @return string The cache key.
- */
-function wp_presence_room_next_expiry_key( $room ) {
-	return 'next_expiry:' . $room;
-}
-
-/**
- * Drops a room's cached next expiry after a write or removal could have moved it.
- *
- * @access private
- *
- * @since 0.18.0
- *
- * @param string $room The room identifier.
- */
-function wp_presence_forget_room_next_expiry( $room ) {
-	if ( wp_using_ext_object_cache() ) {
-		wp_cache_delete( wp_presence_room_next_expiry_key( $room ), 'presence_room_versions' );
+		return true;
 	}
 }
 
-/**
- * Removes all presence entries for a given user across all rooms.
- *
- * @since 0.1.1
- * @since 0.15.0 Fires the `removed_user_presence` action.
- * @since 0.18.0 Bumps the version of every room it removes a row from.
- *
- * @param int $user_id The user ID.
- * @return bool True on success, false on failure.
- */
-function wp_remove_user_presence( $user_id ) {
-	global $wpdb;
-
-	if ( ! wp_presence_has_table() ) {
-		return false;
-	}
-
-	// Read before the delete, which leaves nothing to say which rooms lost a row.
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-	$rooms = $wpdb->get_col(
-		$wpdb->prepare(
-			"SELECT DISTINCT room FROM {$wpdb->presence} WHERE user_id = %d AND client_id NOT LIKE %s",
-			$user_id,
-			wp_presence_reserved_client_id_pattern()
-		)
-	);
-
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-	$result = $wpdb->delete(
-		$wpdb->presence,
-		array( 'user_id' => $user_id ),
-		array( '%d' )
-	);
-
-	// Deletes across every room, so the admin room is always among them.
-	if ( $result > 0 ) {
-		wp_cache_set_last_changed( 'presence' );
-		wp_presence_admin_room_changed();
-
-		foreach ( $rooms as $room ) {
-			wp_presence_bump_room_version( $room );
-			wp_presence_forget_room_next_expiry( $room );
-		}
-
-		/**
-		 * Fires after all of a user's presence rows are removed, across every room.
-		 *
-		 * Does not fire when the user had no rows.
-		 *
-		 * @since 0.15.0
-		 *
-		 * @param int $user_id The user ID.
-		 */
-		do_action( 'removed_user_presence', $user_id );
-	}
-
-	return false !== $result;
-}
-
-/**
- * Signals that a write may have changed who's online on this site.
- *
- * Called from every path that writes the admin room: the heartbeat tick, the
- * server-side write on page render, login, logout, and the REST set/delete
- * behind the pagehide handler.
- *
- * @access private
- *
- * @since 0.2.0
- */
-function wp_presence_admin_room_changed() {
+if ( ! function_exists( 'wp_presence_set_presence_in_rows' ) ) {
 	/**
-	 * Fires after a write that may have changed who's online on this site.
+	 * Upserts a client's presence state into a room the caller has already read.
 	 *
-	 * Fires when an admin-room write changes at least one row.
+	 * For a caller that needs the room's rows anyway. The client's own row is
+	 * among them, so the rule the upsert applies in SQL (same data, stamped after
+	 * the refresh cutoff) can be applied here instead, and an unchanged tick costs
+	 * no write at all.
 	 *
-	 * @since 0.2.0
-	 */
-	do_action( 'wp_presence_admin_room_changed' );
-}
-
-/**
- * Parses a post room identifier.
- *
- * Room format: `postType/{post_type}:{post_id}`, the inverse of wp_presence_post_room().
- *
- * @since 0.1.11
- * @since 0.16.0 No longer private.
- *
- * @param string $room The room identifier.
- * @return array|false An array containing 'post_type' and 'post_id' on success, false otherwise.
- */
-function wp_presence_parse_room( $room ) {
-	if ( preg_match( '#^postType/([^:]+):(\d+)$#', $room, $matches ) ) {
-		return array(
-			'post_type' => $matches[1],
-			'post_id'   => (int) $matches[2],
-		);
-	}
-
-	return false;
-}
-
-/**
- * Maps the capability to see which screen a user is on.
- *
- * Anyone may see their own; others need `list_users`, since where people are is user-directory information.
- *
- * @since 0.9.0
- *
- * @param string[] $caps    Primitive capabilities the user must have.
- * @param string   $cap     Capability being checked.
- * @param int      $user_id The user ID being checked.
- * @param array    $args    The user whose location is being viewed, at index 0.
- * @return string[] Primitive capabilities the user must have.
- */
-function wp_presence_map_meta_cap( $caps, $cap, $user_id, $args ) {
-	if ( 'view_presence_location' !== $cap ) {
-		return $caps;
-	}
-
-	if ( $user_id && isset( $args[0] ) && (int) $args[0] === (int) $user_id ) {
-		return array();
-	}
-
-	return array( 'list_users' );
-}
-
-/**
- * Returns the screen an entry's user is on, if the current user may see it.
- *
- * @since 0.9.0
- *
- * @param object $entry Presence entry from wp_get_presence().
- * @return string The screen ID, or an empty string.
- */
-function wp_presence_get_entry_screen( $entry ) {
-	if ( ! isset( $entry->data['screen'] ) || ! current_user_can( 'view_presence_location', $entry->user_id ) ) {
-		return '';
-	}
-
-	return (string) $entry->data['screen'];
-}
-
-/**
- * Checks if a user can access a presence room.
- *
- * @since 0.1.1
- *
- * @param string $room    The room identifier.
- * @param int    $user_id Optional. The user ID. Default 0 (current user).
- * @return bool True if the user can access the room, false otherwise.
- */
-function wp_can_access_presence_room( $room, $user_id = 0 ) {
-	if ( ! $user_id ) {
-		$user_id = get_current_user_id();
-	}
-
-	if ( ! $user_id ) {
-		return false;
-	}
-
-	$parsed = wp_presence_parse_room( $room );
-	if ( $parsed ) {
-		return get_post_type( $parsed['post_id'] ) === $parsed['post_type'] && user_can( $user_id, 'edit_post', $parsed['post_id'] );
-	}
-
-	// Any post type shown in the admin will do, so a role that edits only pages or a custom post type is included.
-	foreach ( get_post_types( array( 'show_ui' => true ), 'objects' ) as $post_type ) {
-		if ( user_can( $user_id, $post_type->cap->edit_posts ) ) {
-			return true;
-		}
-	}
-
-	return false;
-}
-
-/**
- * Returns the presence room identifier for a given post.
- *
- * Room format: `postType/{post_type}:{post_id}`
- *
- * @since 0.1.1
- *
- * @param int|WP_Post $post The post ID or post object.
- * @return string|false The room identifier, or false if the post doesn't exist
- *                      or its post type does not support presence.
- */
-function wp_presence_post_room( $post ) {
-	$post = get_post( $post );
-
-	if ( ! $post ) {
-		return false;
-	}
-
-	if ( ! post_type_supports( $post->post_type, 'presence' ) ) {
-		return false;
-	}
-
-	return 'postType/' . $post->post_type . ':' . $post->ID;
-}
-
-/**
- * Returns the presence room identifier for the admin "who's online" list.
- *
- * @since 0.1.14
- *
- * @return string The room identifier.
- */
-function wp_presence_admin_room() {
-	return 'admin/online';
-}
-
-/**
- * Returns the color the block editor gives a user in a post room.
- *
- * @since 0.9.0
- *
- * @param int $user_id User ID.
- * @return string A `#RRGGBB` hex color from Gutenberg's collaborator palette.
- */
-function wp_presence_get_user_color( $user_id ) {
-	$palette = array( '#6F42C1', '#D94145', '#FBBF24', '#FF35EE', '#879F11', '#0F766E', '#00CFFF' );
-
-	return $palette[ absint( $user_id ) % count( $palette ) ];
-}
-
-/**
- * Whether a presence row's user is an AI agent rather than a person.
- *
- * A row already carries `user_id`, so telling an agent from a person is a
- * lookup rather than a schema change. Nothing here decides who counts as an
- * agent: that question belongs to whichever plugin marks the `WP_User`, most
- * likely the Agent Users work from the WordPress AI team
- * (https://github.com/WordPress/ai/pull/961), reached here through
- * `wpai_is_agent_user()` when it is loaded. No default, so a site with no
- * such plugin never labels anyone as an agent.
- *
- * @since 0.9.0
- *
- * @param int $user_id The user ID.
- * @return bool Whether the user is an agent.
- */
-function wp_presence_is_agent_user( $user_id ) {
-	/**
-	 * Filters whether a user is an AI agent, for labelling its presence rows.
-	 *
-	 * Every column a presence row's `user_id` might have come from — the
-	 * database, JSON, this function's own callers — reads back as a string,
-	 * so it is cast to an int before it ever reaches a filter, and a filter
-	 * can compare against a plain int without tripping over the difference.
+	 * @access private
 	 *
 	 * @since 0.9.0
 	 *
-	 * @param bool $is_agent Whether the user is an agent. Default false.
-	 * @param int  $user_id  The user ID.
+	 * @param array  $rows      Rows for `$room`, as returned by wp_presence_room_rows()
+	 *                          with no client prefix.
+	 * @param string $room      The room identifier.
+	 * @param string $client_id The client identifier.
+	 * @param array  $state     The presence state data.
+	 * @param int    $user_id   Optional. The user ID. Default 0.
+	 * @return array The rows, with the client's own row as it now stands.
 	 */
-	return (bool) apply_filters( 'wp_presence_is_agent_user', false, (int) $user_id );
+	function wp_presence_set_presence_in_rows( $rows, $room, $client_id, $state, $user_id = 0 ) {
+		$own = null;
+
+		foreach ( $rows as $index => $row ) {
+			if ( $client_id === $row->client_id ) {
+				$own = $index;
+				break;
+			}
+		}
+
+		$cutoff = wp_presence_refresh_cutoff( $room );
+
+		if ( null !== $own
+			&& '' !== $cutoff
+			&& $rows[ $own ]->date_gmt >= $cutoff
+			&& wp_json_encode( $rows[ $own ]->data ) === wp_json_encode( $state )
+		) {
+			return $rows;
+		}
+
+		if ( ! wp_set_presence( $room, $client_id, $state, array( 'user_id' => $user_id ) ) ) {
+			return $rows;
+		}
+
+		if ( null !== $own ) {
+			unset( $rows[ $own ] );
+		}
+
+		// Newest first, the order wp_presence_room_rows() returns.
+		array_unshift(
+			$rows,
+			(object) array(
+				'room'      => $room,
+				'client_id' => $client_id,
+				'user_id'   => (string) $user_id,
+				'data'      => $state,
+				'date_gmt'  => gmdate( 'Y-m-d H:i:s' ),
+			)
+		);
+
+		return array_values( $rows );
+	}
 }
 
-/**
- * Bridges wp_presence_is_agent_user() to the Agent Users plugin, when loaded.
- *
- * A separate function, rather than an inline closure, so it shows up by name
- * in a debugger or a `has_filter()` check.
- *
- * @access private
- *
- * @since 0.9.0
- *
- * @param bool $is_agent Whether the user is already known to be an agent.
- * @param int  $user_id  The user ID.
- * @return bool Whether the user is an agent.
- */
-function wp_presence_is_agent_user_via_wpai( $is_agent, $user_id ) {
-	return function_exists( 'wpai_is_agent_user' ) ? wpai_is_agent_user( $user_id ) : $is_agent;
+if ( ! function_exists( 'wp_presence_expiry_for' ) ) {
+	/**
+	 * The expiry stamped on a row, from the window its writer asked for.
+	 *
+	 * A writer that knows when its clients leave, such as one relaying a socket's
+	 * lifetime, asks for a long window and removes the row itself; the expiry is
+	 * then the backstop for a departure that never arrives rather than the signal
+	 * a reader waits on. Without a window the site TTL applies, which is what
+	 * every heartbeat-backed writer wants.
+	 *
+	 * Measured from the row's own timestamp, so a backdated row expires on the
+	 * writer's clock rather than this one.
+	 *
+	 * @access private
+	 *
+	 * @since 0.7.0
+	 *
+	 * @param string   $date_gmt   The row's timestamp, `Y-m-d H:i:s` in UTC.
+	 * @param int|null $expires_in Optional. Seconds the row stays present. Default the site TTL.
+	 * @return string The expiry, `Y-m-d H:i:s` in UTC.
+	 */
+	function wp_presence_expiry_for( $date_gmt, $expires_in = null ) {
+		if ( null === $expires_in ) {
+			$expires_in = wp_presence_get_timeout();
+		}
+
+		$expires_in = min( max( 1, (int) $expires_in ), wp_presence_max_expires_in() );
+
+		return gmdate( 'Y-m-d H:i:s', strtotime( $date_gmt . ' UTC' ) + $expires_in );
+	}
+}
+
+if ( ! function_exists( 'wp_presence_max_expires_in' ) ) {
+	/**
+	 * The longest window any row may carry, in seconds.
+	 *
+	 * The ceiling on the same hole the `$date_gmt` clamp closes from the other
+	 * end: without it a caller could keep a row indefinitely, which is what the
+	 * TTL exists to prevent. It is also the most a row can outlive its last
+	 * activity, so the privacy policy text and the personal data export report
+	 * this figure rather than the TTL.
+	 *
+	 * @access private
+	 *
+	 * @since 0.7.0
+	 *
+	 * @return int Seconds, at least 1.
+	 */
+	function wp_presence_max_expires_in() {
+		/**
+		 * Filters the longest window a writer may ask for through `$expires_in`.
+		 *
+		 * @since 0.7.0
+		 *
+		 * @param int $max Seconds. Default HOUR_IN_SECONDS.
+		 */
+		return max( 1, (int) apply_filters( 'wp_presence_max_expires_in', HOUR_IN_SECONDS ) );
+	}
+}
+
+if ( ! function_exists( 'wp_presence_write_row' ) ) {
+	/**
+	 * Upserts a presence row.
+	 *
+	 * Given a refresh cutoff, an unchanged row newer than it keeps its date_gmt, so
+	 * no row is affected and the admin-room signal stays quiet.
+	 *
+	 * @access private
+	 *
+	 * @since 0.6.0
+	 * @since 0.7.0 Added the `$expires_gmt` and `$refresh_cutoff` parameters.
+	 * @since 0.11.0 No longer checks whether recording is on, so post locks can bypass it.
+	 * @since 0.15.0 Returns the number of rows affected instead of true.
+	 * @since 0.18.0 Added the `$seen` parameter.
+	 *
+	 * @global wpdb $wpdb WordPress database abstraction object.
+	 *
+	 * @param string      $room           The room identifier.
+	 * @param string      $client_id      The client identifier.
+	 * @param int         $user_id        The user ID.
+	 * @param string      $data_json      The presence state, JSON encoded.
+	 * @param string      $date_gmt       The GMT timestamp to stamp the row with.
+	 * @param string|null $expires_gmt    Optional. When the row stops counting as present.
+	 *                                    Default the site TTL from `$date_gmt`.
+	 * @param string      $refresh_cutoff Optional. As returned by wp_presence_refresh_cutoff().
+	 *                                    Default empty, which always stamps $date_gmt.
+	 * @param bool|null   $seen           Optional. Set to whether a peer would see the write: a new
+	 *                                    row, one replacing an expired row, or a change of data or
+	 *                                    user, as opposed to a timestamp refresh. On SQLite every
+	 *                                    write counts. Passed by reference.
+	 * @return int|false The number of rows affected, 0 when an unchanged row was left
+	 *                   alone, or false on failure.
+	 */
+	function wp_presence_write_row( $room, $client_id, $user_id, $data_json, $date_gmt, $expires_gmt = null, $refresh_cutoff = '', &$seen = null ) {
+		global $wpdb;
+
+		if ( ! wp_presence_has_table() ) {
+			return false;
+		}
+
+		if ( null === $expires_gmt ) {
+			$expires_gmt = wp_presence_expiry_for( $date_gmt );
+		}
+
+		$date_clause = 'date_gmt = VALUES(date_gmt), expires_gmt = VALUES(expires_gmt)';
+		$args        = array( $room, $client_id, $user_id, $data_json, $date_gmt, $expires_gmt );
+		$now         = gmdate( 'Y-m-d H:i:s' );
+		$on_sqlite   = is_a( $wpdb, 'WP_SQLite_DB' );
+
+		/*
+		 * An update affects two rows whether it changed what peers see or only
+		 * refreshed the timestamp, so the first assignment, which leaves id alone
+		 * and runs while the row still holds its old values, records which in
+		 * LAST_INSERT_ID(): 1 for a change, 2 for a refresh. The SQLite
+		 * integration is left out and counts every write as seen.
+		 */
+		$signal = '';
+		if ( ! $on_sqlite ) {
+			$signal = 'id = id + 0 * LAST_INSERT_ID( CASE WHEN data <> VALUES(data) OR user_id <> VALUES(user_id) OR expires_gmt <= %s THEN 1 ELSE 2 END ), ';
+			$args[] = $now;
+		}
+
+		if ( '' !== $refresh_cutoff ) {
+			// MySQL assigns left to right, so expires_gmt is tested first, while
+			// date_gmt and data still hold the values the test is asking about.
+			// CASE rather than IF(), which the SQLite integration evaluates as always false.
+			$taken       = 'data <> VALUES(data) OR date_gmt < %s';
+			$date_clause = "expires_gmt = CASE WHEN {$taken} THEN VALUES(expires_gmt) ELSE expires_gmt END, date_gmt = CASE WHEN {$taken} THEN VALUES(date_gmt) ELSE date_gmt END";
+			$args[]      = $refresh_cutoff;
+			$args[]      = $refresh_cutoff;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$result = $wpdb->query(
+			// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+			$wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"INSERT INTO {$wpdb->presence} (room, client_id, user_id, data, date_gmt, expires_gmt) VALUES (%s, %s, %d, %s, %s, %s) ON DUPLICATE KEY UPDATE {$signal}user_id = VALUES(user_id), {$date_clause}, data = VALUES(data)",
+				...$args
+			)
+		);
+
+		if ( false === $result ) {
+			wp_presence_forget_missing_table();
+		}
+
+		// Read before anything else can run a query and replace insert_id.
+		$seen = $result > 0 && ( $on_sqlite || 1 === $result || 1 === (int) $wpdb->insert_id );
+
+		if ( $result > 0 ) {
+			wp_cache_set_last_changed( 'presence' );
+
+			if ( wp_presence_admin_room() === $room ) {
+				wp_presence_admin_room_changed();
+			}
+		}
+
+		return false === $result ? false : (int) $result;
+	}
+}
+
+if ( ! function_exists( 'wp_remove_presence' ) ) {
+	/**
+	 * Removes a client from a room.
+	 *
+	 * @since 0.1.1
+	 * @since 0.15.0 Fires the `removed_presence` action.
+	 *
+	 * @param string $room      The room identifier.
+	 * @param string $client_id The client identifier.
+	 * @return bool True on success, false on failure.
+	 */
+	function wp_remove_presence( $room, $client_id ) {
+		global $wpdb;
+
+		if ( ! wp_presence_has_table() ) {
+			return false;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$result = $wpdb->delete(
+			$wpdb->presence,
+			array(
+				'room'      => $room,
+				'client_id' => $client_id,
+			),
+			array( '%s', '%s' )
+		);
+
+		if ( $result > 0 ) {
+			wp_cache_set_last_changed( 'presence' );
+
+			if ( wp_presence_admin_room() === $room ) {
+				wp_presence_admin_room_changed();
+			}
+
+			if ( ! wp_presence_is_reserved_client_id( $client_id ) ) {
+				wp_presence_bump_room_version( $room );
+				wp_presence_forget_room_next_expiry( $room );
+
+				/**
+				 * Fires after a client's presence row is removed from a room.
+				 *
+				 * Does not fire when there was no row to remove, for a reserved
+				 * row, or for a row that expires and is cleaned up later.
+				 *
+				 * @since 0.15.0
+				 *
+				 * @param string $room      The room identifier.
+				 * @param string $client_id The client identifier.
+				 */
+				do_action( 'removed_presence', $room, $client_id );
+			}
+		}
+
+		return false !== $result;
+	}
+}
+
+if ( ! function_exists( 'wp_presence_exchange' ) ) {
+	/**
+	 * Upserts a client's presence state and returns the room as it stands afterwards.
+	 *
+	 * For a caller that reads the room back after every write, such as an
+	 * awareness backend. The read is scoped to `$client_prefix`, so it returns the
+	 * caller's own rows without the ones other clients keep in the same room.
+	 *
+	 * @since 0.8.0
+	 * @since 0.17.0 Takes `$args` in place of the `$user_id`, `$timeout` and `$client_prefix` parameters.
+	 * @since 0.18.0 Added the `wp_error` argument.
+	 *
+	 * @param string       $room      The room identifier.
+	 * @param string       $client_id The client identifier.
+	 * @param array        $state     The presence state data.
+	 * @param array|string $args {
+	 *     Optional. Array or string of arguments for writing the row and reading the room.
+	 *
+	 *     @type int      $user_id       The user ID. Default 0.
+	 *     @type int|null $timeout       Timeout in seconds. Default null, the site's filtered TTL.
+	 *     @type string   $client_prefix Only return clients whose client_id starts with this. Default empty.
+	 *     @type bool     $wp_error      Whether to return the write's WP_Error instead of reading the room
+	 *                                   when the write is refused or fails. Default false.
+	 * }
+	 * @return array|WP_Error Array of presence entry objects, as returned by wp_get_presence(), or
+	 *                        with `wp_error` the WP_Error from wp_set_presence().
+	 */
+	function wp_presence_exchange( $room, $client_id, $state, $args = array() ) {
+		$positional = wp_presence_positional_args( __FUNCTION__, func_get_args(), 3, array( 'user_id', 'timeout', 'client_prefix' ) );
+		if ( null !== $positional ) {
+			$args = $positional;
+		}
+
+		$defaults    = array(
+			'user_id'       => 0,
+			'timeout'       => null,
+			'client_prefix' => '',
+			'wp_error'      => false,
+		);
+		$parsed_args = wp_parse_args( $args, $defaults );
+
+		$written = wp_set_presence(
+			$room,
+			$client_id,
+			$state,
+			array(
+				'user_id'  => $parsed_args['user_id'],
+				'wp_error' => $parsed_args['wp_error'],
+			)
+		);
+
+		if ( is_wp_error( $written ) ) {
+			return $written;
+		}
+
+		return wp_get_presence( $room, $parsed_args );
+	}
+}
+
+if ( ! function_exists( 'wp_presence_leave' ) ) {
+	/**
+	 * Removes a client from a room and returns the room as it stands afterwards.
+	 *
+	 * The removal counterpart to wp_presence_exchange().
+	 *
+	 * @since 0.8.0
+	 * @since 0.17.0 Takes `$args` in place of the `$timeout` and `$client_prefix` parameters.
+	 *
+	 * @param string       $room      The room identifier.
+	 * @param string       $client_id The client identifier.
+	 * @param array|string $args {
+	 *     Optional. Array or string of arguments for reading the room, as wp_get_presence() takes them.
+	 *
+	 *     @type int|null $timeout       Timeout in seconds. Default null, the site's filtered TTL.
+	 *     @type string   $client_prefix Only return clients whose client_id starts with this. Default empty.
+	 * }
+	 * @return array Array of presence entry objects, as returned by wp_get_presence().
+	 */
+	function wp_presence_leave( $room, $client_id, $args = array() ) {
+		$positional = wp_presence_positional_args( __FUNCTION__, func_get_args(), 2, array( 'timeout', 'client_prefix' ) );
+		if ( null !== $positional ) {
+			$args = $positional;
+		}
+
+		wp_remove_presence( $room, $client_id );
+
+		return wp_get_presence( $room, $args );
+	}
+}
+
+if ( ! function_exists( 'wp_get_presence_room_versions' ) ) {
+	/**
+	 * Returns the version counters for one or more rooms.
+	 *
+	 * One counter per room, for a reader waiting on changes without reading every
+	 * row. It moves when what peers see changes: a client arriving (over its own
+	 * expired row too), changing its state or user, or being removed. A write that
+	 * only refreshes a timestamp leaves it alone, and so does a row expiring, which
+	 * wp_get_presence_room_next_expiry() says when to look for.
+	 *
+	 * @since 0.18.0
+	 *
+	 * @global wpdb $wpdb WordPress database abstraction object.
+	 *
+	 * @param array|string $rooms Array of room identifiers, or a single room.
+	 * @return array Associative array of room => version counter, null when the room has never been written.
+	 */
+	function wp_get_presence_room_versions( $rooms ) {
+		global $wpdb;
+
+		$rooms    = array_values( array_filter( array_unique( (array) $rooms ) ) );
+		$versions = array_fill_keys( $rooms, null );
+
+		if ( empty( $rooms ) || ! wp_presence_has_table() ) {
+			return $versions;
+		}
+
+		if ( wp_using_ext_object_cache() ) {
+			$keys = array();
+			foreach ( $rooms as $room ) {
+				$keys[ $room ] = 'version:' . $room;
+			}
+
+			$found = wp_cache_get_multiple( array_values( $keys ), 'presence_room_versions' );
+			foreach ( $keys as $room => $key ) {
+				if ( isset( $found[ $key ] ) && false !== $found[ $key ] ) {
+					$versions[ $room ] = (string) $found[ $key ];
+				}
+			}
+
+			return $versions;
+		}
+
+		$version_client_id = wp_presence_version_client_id();
+		$placeholders      = implode( ', ', array_fill( 0, count( $rooms ), '%s' ) );
+
+		// $placeholders holds only %s tokens generated above, so the interpolation is safe.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+		$rows = $wpdb->get_results(
+			// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+			$wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"SELECT room, data FROM {$wpdb->presence} WHERE client_id = %s AND room IN ( {$placeholders} )",
+				array_merge( array( $version_client_id ), $rooms )
+			)
+		);
+
+		foreach ( (array) $rows as $row ) {
+			$versions[ $row->room ] = (string) (int) $row->data;
+		}
+
+		return $versions;
+	}
+}
+
+if ( ! function_exists( 'wp_presence_bump_room_version' ) ) {
+	/**
+	 * Bumps the version counter for a room.
+	 *
+	 * Increments the counter in the 'presence_room_versions' cache group when an
+	 * external object cache is in use, or otherwise in the data of the reserved
+	 * '_version' row, where removing or exporting a user's rows never matches it.
+	 *
+	 * @access private
+	 *
+	 * @since 0.18.0
+	 *
+	 * @global wpdb $wpdb WordPress database abstraction object.
+	 *
+	 * @param string $room The room identifier.
+	 */
+	function wp_presence_bump_room_version( $room ) {
+		global $wpdb;
+
+		if ( ! is_string( $room ) || '' === $room || ! wp_presence_has_table() ) {
+			return;
+		}
+
+		if ( wp_using_ext_object_cache() ) {
+			$key = 'version:' . $room;
+			wp_cache_add( $key, 0, 'presence_room_versions' );
+			wp_cache_incr( $key, 1, 'presence_room_versions' );
+			return;
+		}
+
+		$current = gmdate( 'Y-m-d H:i:s' );
+
+		// Outlives every row in the room, so cleanup removes it only once the room is empty.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->query(
+			$wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"INSERT INTO {$wpdb->presence} (room, client_id, user_id, data, date_gmt, expires_gmt) VALUES (%s, %s, 0, '1', %s, %s) ON DUPLICATE KEY UPDATE data = data + 1, date_gmt = VALUES(date_gmt), expires_gmt = VALUES(expires_gmt)",
+				$room,
+				wp_presence_version_client_id(),
+				$current,
+				wp_presence_expiry_for( $current, wp_presence_max_expires_in() )
+			)
+		);
+	}
+}
+
+if ( ! function_exists( 'wp_get_presence_room_next_expiry' ) ) {
+	/**
+	 * Returns when the earliest live row in each room expires.
+	 *
+	 * A row that expires moves no version, so a reader holding versions reads the
+	 * room again once this time passes. Reserved rows are left out, since no peer
+	 * sees them. With an external object cache the answer is kept until it passes
+	 * or the room is written, so a quiet room costs no query.
+	 *
+	 * @since 0.18.0
+	 *
+	 * @global wpdb $wpdb WordPress database abstraction object.
+	 *
+	 * @param array|string $rooms Array of room identifiers, or a single room.
+	 * @return array Associative array of room => GMT time as 'Y-m-d H:i:s', null when the room has no live row.
+	 */
+	function wp_get_presence_room_next_expiry( $rooms ) {
+		global $wpdb;
+
+		$rooms  = array_values( array_filter( array_unique( (array) $rooms ) ) );
+		$expiry = array_fill_keys( $rooms, null );
+
+		if ( empty( $rooms ) || ! wp_presence_has_table() ) {
+			return $expiry;
+		}
+
+		$now     = gmdate( 'Y-m-d H:i:s' );
+		$missing = $rooms;
+
+		if ( wp_using_ext_object_cache() ) {
+			$found   = wp_cache_get_multiple( array_map( 'wp_presence_room_next_expiry_key', $rooms ), 'presence_room_versions' );
+			$missing = array();
+
+			foreach ( $rooms as $room ) {
+				$cached = $found[ wp_presence_room_next_expiry_key( $room ) ] ?? false;
+
+				// '' stands for a room with no live row, which only a write can change.
+				if ( false !== $cached && ( '' === $cached || $cached > $now ) ) {
+					$expiry[ $room ] = '' === $cached ? null : $cached;
+				} else {
+					$missing[] = $room;
+				}
+			}
+
+			if ( ! $missing ) {
+				return $expiry;
+			}
+		}
+
+		$placeholders = implode( ', ', array_fill( 0, count( $missing ), '%s' ) );
+
+		// The room_expires index serves the range on expires_gmt within each room.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$rows = $wpdb->get_results(
+			// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+			$wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"SELECT room, MIN(expires_gmt) AS next_expiry FROM {$wpdb->presence} WHERE room IN ( {$placeholders} ) AND expires_gmt > %s AND client_id NOT LIKE %s GROUP BY room",
+				array_merge( $missing, array( $now, wp_presence_reserved_client_id_pattern() ) )
+			)
+		);
+
+		foreach ( (array) $rows as $row ) {
+			$expiry[ $row->room ] = $row->next_expiry;
+		}
+
+		if ( wp_using_ext_object_cache() ) {
+			$store = array();
+			foreach ( $missing as $room ) {
+				$store[ wp_presence_room_next_expiry_key( $room ) ] = $expiry[ $room ] ?? '';
+			}
+			wp_cache_set_multiple( $store, 'presence_room_versions' );
+		}
+
+		return $expiry;
+	}
+}
+
+if ( ! function_exists( 'wp_presence_room_next_expiry_key' ) ) {
+	/**
+	 * Returns the cache key holding a room's next expiry.
+	 *
+	 * @access private
+	 *
+	 * @since 0.18.0
+	 *
+	 * @param string $room The room identifier.
+	 * @return string The cache key.
+	 */
+	function wp_presence_room_next_expiry_key( $room ) {
+		return 'next_expiry:' . $room;
+	}
+}
+
+if ( ! function_exists( 'wp_presence_forget_room_next_expiry' ) ) {
+	/**
+	 * Drops a room's cached next expiry after a write or removal could have moved it.
+	 *
+	 * @access private
+	 *
+	 * @since 0.18.0
+	 *
+	 * @param string $room The room identifier.
+	 */
+	function wp_presence_forget_room_next_expiry( $room ) {
+		if ( wp_using_ext_object_cache() ) {
+			wp_cache_delete( wp_presence_room_next_expiry_key( $room ), 'presence_room_versions' );
+		}
+	}
+}
+
+if ( ! function_exists( 'wp_remove_user_presence' ) ) {
+	/**
+	 * Removes all presence entries for a given user across all rooms.
+	 *
+	 * @since 0.1.1
+	 * @since 0.15.0 Fires the `removed_user_presence` action.
+	 * @since 0.18.0 Bumps the version of every room it removes a row from.
+	 *
+	 * @param int $user_id The user ID.
+	 * @return bool True on success, false on failure.
+	 */
+	function wp_remove_user_presence( $user_id ) {
+		global $wpdb;
+
+		if ( ! wp_presence_has_table() ) {
+			return false;
+		}
+
+		// Read before the delete, which leaves nothing to say which rooms lost a row.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$rooms = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT DISTINCT room FROM {$wpdb->presence} WHERE user_id = %d AND client_id NOT LIKE %s",
+				$user_id,
+				wp_presence_reserved_client_id_pattern()
+			)
+		);
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$result = $wpdb->delete(
+			$wpdb->presence,
+			array( 'user_id' => $user_id ),
+			array( '%d' )
+		);
+
+		// Deletes across every room, so the admin room is always among them.
+		if ( $result > 0 ) {
+			wp_cache_set_last_changed( 'presence' );
+			wp_presence_admin_room_changed();
+
+			foreach ( $rooms as $room ) {
+				wp_presence_bump_room_version( $room );
+				wp_presence_forget_room_next_expiry( $room );
+			}
+
+			/**
+			 * Fires after all of a user's presence rows are removed, across every room.
+			 *
+			 * Does not fire when the user had no rows.
+			 *
+			 * @since 0.15.0
+			 *
+			 * @param int $user_id The user ID.
+			 */
+			do_action( 'removed_user_presence', $user_id );
+		}
+
+		return false !== $result;
+	}
+}
+
+if ( ! function_exists( 'wp_presence_admin_room_changed' ) ) {
+	/**
+	 * Signals that a write may have changed who's online on this site.
+	 *
+	 * Called from every path that writes the admin room: the heartbeat tick, the
+	 * server-side write on page render, login, logout, and the REST set/delete
+	 * behind the pagehide handler.
+	 *
+	 * @access private
+	 *
+	 * @since 0.2.0
+	 */
+	function wp_presence_admin_room_changed() {
+		/**
+		 * Fires after a write that may have changed who's online on this site.
+		 *
+		 * Fires when an admin-room write changes at least one row.
+		 *
+		 * @since 0.2.0
+		 */
+		do_action( 'wp_presence_admin_room_changed' );
+	}
+}
+
+if ( ! function_exists( 'wp_presence_parse_room' ) ) {
+	/**
+	 * Parses a post room identifier.
+	 *
+	 * Room format: `postType/{post_type}:{post_id}`, the inverse of wp_presence_post_room().
+	 *
+	 * @since 0.1.11
+	 * @since 0.16.0 No longer private.
+	 *
+	 * @param string $room The room identifier.
+	 * @return array|false An array containing 'post_type' and 'post_id' on success, false otherwise.
+	 */
+	function wp_presence_parse_room( $room ) {
+		if ( preg_match( '#^postType/([^:]+):(\d+)$#', $room, $matches ) ) {
+			return array(
+				'post_type' => $matches[1],
+				'post_id'   => (int) $matches[2],
+			);
+		}
+
+		return false;
+	}
+}
+
+if ( ! function_exists( 'wp_presence_map_meta_cap' ) ) {
+	/**
+	 * Maps the capability to see which screen a user is on.
+	 *
+	 * Anyone may see their own; others need `list_users`, since where people are is user-directory information.
+	 *
+	 * @since 0.9.0
+	 *
+	 * @param string[] $caps    Primitive capabilities the user must have.
+	 * @param string   $cap     Capability being checked.
+	 * @param int      $user_id The user ID being checked.
+	 * @param array    $args    The user whose location is being viewed, at index 0.
+	 * @return string[] Primitive capabilities the user must have.
+	 */
+	function wp_presence_map_meta_cap( $caps, $cap, $user_id, $args ) {
+		if ( 'view_presence_location' !== $cap ) {
+			return $caps;
+		}
+
+		if ( $user_id && isset( $args[0] ) && (int) $args[0] === (int) $user_id ) {
+			return array();
+		}
+
+		return array( 'list_users' );
+	}
+}
+
+if ( ! function_exists( 'wp_presence_get_entry_screen' ) ) {
+	/**
+	 * Returns the screen an entry's user is on, if the current user may see it.
+	 *
+	 * @since 0.9.0
+	 *
+	 * @param object $entry Presence entry from wp_get_presence().
+	 * @return string The screen ID, or an empty string.
+	 */
+	function wp_presence_get_entry_screen( $entry ) {
+		if ( ! isset( $entry->data['screen'] ) || ! current_user_can( 'view_presence_location', $entry->user_id ) ) {
+			return '';
+		}
+
+		return (string) $entry->data['screen'];
+	}
+}
+
+if ( ! function_exists( 'wp_can_access_presence_room' ) ) {
+	/**
+	 * Checks if a user can access a presence room.
+	 *
+	 * @since 0.1.1
+	 *
+	 * @param string $room    The room identifier.
+	 * @param int    $user_id Optional. The user ID. Default 0 (current user).
+	 * @return bool True if the user can access the room, false otherwise.
+	 */
+	function wp_can_access_presence_room( $room, $user_id = 0 ) {
+		if ( ! $user_id ) {
+			$user_id = get_current_user_id();
+		}
+
+		if ( ! $user_id ) {
+			return false;
+		}
+
+		$parsed = wp_presence_parse_room( $room );
+		if ( $parsed ) {
+			return get_post_type( $parsed['post_id'] ) === $parsed['post_type'] && user_can( $user_id, 'edit_post', $parsed['post_id'] );
+		}
+
+		// Any post type shown in the admin will do, so a role that edits only pages or a custom post type is included.
+		foreach ( get_post_types( array( 'show_ui' => true ), 'objects' ) as $post_type ) {
+			if ( user_can( $user_id, $post_type->cap->edit_posts ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+}
+
+if ( ! function_exists( 'wp_presence_post_room' ) ) {
+	/**
+	 * Returns the presence room identifier for a given post.
+	 *
+	 * Room format: `postType/{post_type}:{post_id}`
+	 *
+	 * @since 0.1.1
+	 *
+	 * @param int|WP_Post $post The post ID or post object.
+	 * @return string|false The room identifier, or false if the post doesn't exist
+	 *                      or its post type does not support presence.
+	 */
+	function wp_presence_post_room( $post ) {
+		$post = get_post( $post );
+
+		if ( ! $post ) {
+			return false;
+		}
+
+		if ( ! post_type_supports( $post->post_type, 'presence' ) ) {
+			return false;
+		}
+
+		return 'postType/' . $post->post_type . ':' . $post->ID;
+	}
+}
+
+if ( ! function_exists( 'wp_presence_admin_room' ) ) {
+	/**
+	 * Returns the presence room identifier for the admin "who's online" list.
+	 *
+	 * @since 0.1.14
+	 *
+	 * @return string The room identifier.
+	 */
+	function wp_presence_admin_room() {
+		return 'admin/online';
+	}
+}
+
+if ( ! function_exists( 'wp_presence_get_user_color' ) ) {
+	/**
+	 * Returns the color the block editor gives a user in a post room.
+	 *
+	 * @since 0.9.0
+	 *
+	 * @param int $user_id User ID.
+	 * @return string A `#RRGGBB` hex color from Gutenberg's collaborator palette.
+	 */
+	function wp_presence_get_user_color( $user_id ) {
+		$palette = array( '#6F42C1', '#D94145', '#FBBF24', '#FF35EE', '#879F11', '#0F766E', '#00CFFF' );
+
+		return $palette[ absint( $user_id ) % count( $palette ) ];
+	}
+}
+
+if ( ! function_exists( 'wp_presence_is_agent_user' ) ) {
+	/**
+	 * Whether a presence row's user is an AI agent rather than a person.
+	 *
+	 * A row already carries `user_id`, so telling an agent from a person is a
+	 * lookup rather than a schema change. Nothing here decides who counts as an
+	 * agent: that question belongs to whichever plugin marks the `WP_User`, most
+	 * likely the Agent Users work from the WordPress AI team
+	 * (https://github.com/WordPress/ai/pull/961), reached here through
+	 * `wpai_is_agent_user()` when it is loaded. No default, so a site with no
+	 * such plugin never labels anyone as an agent.
+	 *
+	 * @since 0.9.0
+	 *
+	 * @param int $user_id The user ID.
+	 * @return bool Whether the user is an agent.
+	 */
+	function wp_presence_is_agent_user( $user_id ) {
+		/**
+		 * Filters whether a user is an AI agent, for labelling its presence rows.
+		 *
+		 * Every column a presence row's `user_id` might have come from — the
+		 * database, JSON, this function's own callers — reads back as a string,
+		 * so it is cast to an int before it ever reaches a filter, and a filter
+		 * can compare against a plain int without tripping over the difference.
+		 *
+		 * @since 0.9.0
+		 *
+		 * @param bool $is_agent Whether the user is an agent. Default false.
+		 * @param int  $user_id  The user ID.
+		 */
+		return (bool) apply_filters( 'wp_presence_is_agent_user', false, (int) $user_id );
+	}
+}
+
+if ( ! function_exists( 'wp_presence_is_agent_user_via_wpai' ) ) {
+	/**
+	 * Bridges wp_presence_is_agent_user() to the Agent Users plugin, when loaded.
+	 *
+	 * A separate function, rather than an inline closure, so it shows up by name
+	 * in a debugger or a `has_filter()` check.
+	 *
+	 * @access private
+	 *
+	 * @since 0.9.0
+	 *
+	 * @param bool $is_agent Whether the user is already known to be an agent.
+	 * @param int  $user_id  The user ID.
+	 * @return bool Whether the user is an agent.
+	 */
+	function wp_presence_is_agent_user_via_wpai( $is_agent, $user_id ) {
+		return function_exists( 'wpai_is_agent_user' ) ? wpai_is_agent_user( $user_id ) : $is_agent;
+	}
 }
 add_filter( 'wp_presence_is_agent_user', 'wp_presence_is_agent_user_via_wpai', 10, 2 );
 
-/**
- * Writes an agent's presence row in the post room it just saved.
- *
- * An agent has no Heartbeat, so each of its saves writes a row that lasts
- * `wp_presence_idle_threshold()`, skipping auto-drafts, trashed posts and post
- * types without presence support, which covers revisions and autosaves.
- *
- * @access private
- *
- * @since 0.13.0
- *
- * @param int     $post_id Post ID.
- * @param WP_Post $post    Post object.
- */
-function wp_presence_on_agent_post_saved( $post_id, $post ) {
-	$user_id = get_current_user_id();
+if ( ! function_exists( 'wp_presence_on_agent_post_saved' ) ) {
+	/**
+	 * Writes an agent's presence row in the post room it just saved.
+	 *
+	 * An agent has no Heartbeat, so each of its saves writes a row that lasts
+	 * `wp_presence_idle_threshold()`, skipping auto-drafts, trashed posts and post
+	 * types without presence support, which covers revisions and autosaves.
+	 *
+	 * @access private
+	 *
+	 * @since 0.13.0
+	 *
+	 * @param int     $post_id Post ID.
+	 * @param WP_Post $post    Post object.
+	 */
+	function wp_presence_on_agent_post_saved( $post_id, $post ) {
+		$user_id = get_current_user_id();
 
-	if ( ! $user_id || in_array( $post->post_status, array( 'auto-draft', 'trash' ), true ) ) {
-		return;
-	}
-
-	if ( ! wp_presence_is_agent_user( $user_id ) ) {
-		return;
-	}
-
-	$room = wp_presence_post_room( $post );
-
-	if ( ! $room ) {
-		return;
-	}
-
-	wp_set_presence(
-		$room,
-		'agent-' . $user_id,
-		array(),
-		array(
-			'user_id'    => $user_id,
-			'expires_in' => wp_presence_idle_threshold(),
-		)
-	);
-}
-
-/**
- * Returns the admin room's entries, agent rows from post rooms merged in.
- *
- * An agent runs no Heartbeat and joins no `admin/online` room of its own; it
- * writes only the post room it is editing (see the "Agents" section of the
- * README). Rather than have it write a second room, Who's Online and the
- * admin bar both call this instead of `wp_get_presence( wp_presence_admin_room() )`
- * directly, so an agent's row is picked up from wherever it already is.
- *
- * An agent user with a row of its own in `admin/online` is left as that row
- * reads; only agent users absent from it are backfilled from a post room,
- * so an agent that does run Heartbeat is never listed twice.
- *
- * The post room's screen is reported as the post's own post type, which is
- * what a human editor's Heartbeat reports on `post.php` (the screen ID
- * `post.php` renders under is the post type itself), so an agent's row
- * groups with theirs under "On this page" and picks up the same post title
- * lookup the admin bar already does for that screen.
- *
- * @access private
- *
- * @since 0.9.0
- *
- * @param int|null $timeout Optional. Timeout in seconds. Default null, the site's filtered TTL.
- * @return array Array of presence entry objects, as returned by wp_get_presence().
- */
-function wp_presence_admin_room_entries( $timeout = null ) {
-	$entries = wp_get_presence( wp_presence_admin_room(), array( 'timeout' => $timeout ) );
-
-	$known_user_ids = array_map( 'intval', wp_list_pluck( $entries, 'user_id' ) );
-
-	foreach ( wp_get_presence_by_room_prefix( 'postType/', $timeout ) as $row ) {
-		$user_id = (int) $row->user_id;
-
-		if ( in_array( $user_id, $known_user_ids, true ) || ! wp_presence_is_agent_user( $user_id ) ) {
-			continue;
+		if ( ! $user_id || in_array( $post->post_status, array( 'auto-draft', 'trash' ), true ) ) {
+			return;
 		}
 
-		$parsed = wp_presence_parse_room( $row->room );
+		if ( ! wp_presence_is_agent_user( $user_id ) ) {
+			return;
+		}
 
-		$entries[] = (object) array(
-			'room'      => $row->room,
-			'client_id' => $row->client_id,
-			'user_id'   => (string) $user_id,
-			'date_gmt'  => $row->date_gmt,
-			'data'      => array(
-				'screen'   => $parsed ? $parsed['post_type'] : '',
-				'post_id'  => $parsed ? $parsed['post_id'] : 0,
-				'is_agent' => true,
-			),
+		$room = wp_presence_post_room( $post );
+
+		if ( ! $room ) {
+			return;
+		}
+
+		wp_set_presence(
+			$room,
+			'agent-' . $user_id,
+			array(),
+			array(
+				'user_id'    => $user_id,
+				'expires_in' => wp_presence_idle_threshold(),
+			)
 		);
-
-		$known_user_ids[] = $user_id;
 	}
+}
 
-	return $entries;
+if ( ! function_exists( 'wp_presence_admin_room_entries' ) ) {
+	/**
+	 * Returns the admin room's entries, agent rows from post rooms merged in.
+	 *
+	 * An agent runs no Heartbeat and joins no `admin/online` room of its own; it
+	 * writes only the post room it is editing (see the "Agents" section of the
+	 * README). Rather than have it write a second room, Who's Online and the
+	 * admin bar both call this instead of `wp_get_presence( wp_presence_admin_room() )`
+	 * directly, so an agent's row is picked up from wherever it already is.
+	 *
+	 * An agent user with a row of its own in `admin/online` is left as that row
+	 * reads; only agent users absent from it are backfilled from a post room,
+	 * so an agent that does run Heartbeat is never listed twice.
+	 *
+	 * The post room's screen is reported as the post's own post type, which is
+	 * what a human editor's Heartbeat reports on `post.php` (the screen ID
+	 * `post.php` renders under is the post type itself), so an agent's row
+	 * groups with theirs under "On this page" and picks up the same post title
+	 * lookup the admin bar already does for that screen.
+	 *
+	 * @access private
+	 *
+	 * @since 0.9.0
+	 *
+	 * @param int|null $timeout Optional. Timeout in seconds. Default null, the site's filtered TTL.
+	 * @return array Array of presence entry objects, as returned by wp_get_presence().
+	 */
+	function wp_presence_admin_room_entries( $timeout = null ) {
+		$entries = wp_get_presence( wp_presence_admin_room(), array( 'timeout' => $timeout ) );
+
+		$known_user_ids = array_map( 'intval', wp_list_pluck( $entries, 'user_id' ) );
+
+		foreach ( wp_get_presence_by_room_prefix( 'postType/', $timeout ) as $row ) {
+			$user_id = (int) $row->user_id;
+
+			if ( in_array( $user_id, $known_user_ids, true ) || ! wp_presence_is_agent_user( $user_id ) ) {
+				continue;
+			}
+
+			$parsed = wp_presence_parse_room( $row->room );
+
+			$entries[] = (object) array(
+				'room'      => $row->room,
+				'client_id' => $row->client_id,
+				'user_id'   => (string) $user_id,
+				'date_gmt'  => $row->date_gmt,
+				'data'      => array(
+					'screen'   => $parsed ? $parsed['post_type'] : '',
+					'post_id'  => $parsed ? $parsed['post_id'] : 0,
+					'is_agent' => true,
+				),
+			);
+
+			$known_user_ids[] = $user_id;
+		}
+
+		return $entries;
+	}
 }
 
 /*
@@ -1671,446 +1765,466 @@ function wp_presence_admin_room_entries( $timeout = null ) {
  * and may change or be removed without notice. Do not depend on them.
  */
 
-/**
- * Resolves a timeout, falling back to the site's filtered TTL.
- *
- * A caller that named a window gets that window on every site. Only the
- * fallback is filtered, so a site cannot widen someone else's liveness check.
- *
- * @access private
- *
- * @since 0.1.1
- * @param int|null $timeout Timeout in seconds, or null for the site's TTL.
- * @return int The timeout in seconds.
- */
-function wp_presence_get_timeout( $timeout = null ) {
-	if ( null !== $timeout ) {
-		return max( 0, (int) $timeout );
-	}
-
+if ( ! function_exists( 'wp_presence_get_timeout' ) ) {
 	/**
-	 * Filters the presence TTL (time-to-live) used when a caller names no window.
+	 * Resolves a timeout, falling back to the site's filtered TTL.
+	 *
+	 * A caller that named a window gets that window on every site. Only the
+	 * fallback is filtered, so a site cannot widen someone else's liveness check.
+	 *
+	 * @access private
 	 *
 	 * @since 0.1.1
-	 *
-	 * @param int $timeout The timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL (150).
+	 * @param int|null $timeout Timeout in seconds, or null for the site's TTL.
+	 * @return int The timeout in seconds.
 	 */
-	return max( 0, (int) apply_filters( 'wp_presence_default_ttl', WP_PRESENCE_DEFAULT_TTL ) );
-}
-
-/**
- * Gets all present clients in every room whose identifier starts with a prefix.
- *
- * Reserved rows are left out, as in wp_get_presence().
- *
- * @since 0.1.1
- * @since 0.16.0 No longer private.
- *
- * @param string $prefix  The room prefix to match, matched literally (e.g., 'postType/').
- * @param int    $timeout Optional. Timeout in seconds. Default null, the site's filtered TTL.
- * @return array Array of presence entry objects, newest first.
- */
-function wp_get_presence_by_room_prefix( $prefix, $timeout = null ) {
-	global $wpdb;
-
-	if ( ! wp_presence_has_table() ) {
-		return array();
-	}
-
-	$cutoff = gmdate( 'Y-m-d H:i:s' );
-	$stale  = wp_presence_read_floor( $timeout );
-
-	return wp_presence_cached_rows(
-		"prefix:{$prefix}",
-		$wpdb->prepare(
-			"SELECT room, client_id, user_id, data, date_gmt FROM {$wpdb->presence} WHERE room LIKE %s AND expires_gmt > %s AND date_gmt > %s AND client_id NOT LIKE %s ORDER BY date_gmt DESC",
-			$wpdb->esc_like( $prefix ) . '%',
-			$cutoff,
-			$stale,
-			wp_presence_reserved_client_id_pattern()
-		)
-	);
-}
-
-/**
- * Returns a site-wide presence summary grouped by room prefix.
- *
- * @access private
- *
- * @since 0.1.1
- * @param int $timeout Optional. Timeout in seconds. Default null, the site's filtered TTL.
- * @return array {
- *     @type int   $total_entries Total presence entries.
- *     @type int   $total_users   Distinct user count.
- *     @type array $by_prefix     Associative array keyed by prefix, each with 'entries' and 'users'.
- * }
- */
-function wp_get_presence_summary( $timeout = null ) {
-	global $wpdb;
-
-	$summary = array(
-		'total_entries' => 0,
-		'total_users'   => 0,
-		'by_prefix'     => array(),
-	);
-
-	if ( ! wp_presence_has_table() ) {
-		return $summary;
-	}
-
-	$cutoff = gmdate( 'Y-m-d H:i:s' );
-	$stale  = wp_presence_read_floor( $timeout );
-
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-	$room_rows = $wpdb->get_results(
-		$wpdb->prepare(
-			"SELECT room, COUNT(*) AS entries FROM {$wpdb->presence} WHERE expires_gmt > %s AND date_gmt > %s AND client_id NOT LIKE %s GROUP BY room",
-			$cutoff,
-			$stale,
-			wp_presence_reserved_client_id_pattern()
-		)
-	);
-
-	if ( ! $room_rows ) {
-		return $summary;
-	}
-
-	// Grouped by prefix in PHP to avoid MySQL-specific SUBSTRING_INDEX().
-	// Distinct user counts aren't additive across rooms, so those come from
-	// a per-prefix query below rather than being summed here.
-	$rooms_by_prefix = array();
-
-	foreach ( $room_rows as $row ) {
-		$prefix  = explode( '/', $row->room, 2 )[0];
-		$entries = (int) $row->entries;
-
-		if ( ! isset( $summary['by_prefix'][ $prefix ] ) ) {
-			$summary['by_prefix'][ $prefix ] = array(
-				'entries' => 0,
-				'users'   => 0,
-			);
-			$rooms_by_prefix[ $prefix ]      = array();
+	function wp_presence_get_timeout( $timeout = null ) {
+		if ( null !== $timeout ) {
+			return max( 0, (int) $timeout );
 		}
 
-		$summary['by_prefix'][ $prefix ]['entries'] += $entries;
-		$summary['total_entries']                   += $entries;
-		$rooms_by_prefix[ $prefix ][]                = $row->room;
+		/**
+		 * Filters the presence TTL (time-to-live) used when a caller names no window.
+		 *
+		 * @since 0.1.1
+		 *
+		 * @param int $timeout The timeout in seconds. Default WP_PRESENCE_DEFAULT_TTL (150).
+		 */
+		return max( 0, (int) apply_filters( 'wp_presence_default_ttl', WP_PRESENCE_DEFAULT_TTL ) );
 	}
-
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-	$summary['total_users'] = (int) $wpdb->get_var(
-		$wpdb->prepare(
-			"SELECT COUNT(DISTINCT user_id) FROM {$wpdb->presence} WHERE expires_gmt > %s AND date_gmt > %s AND client_id NOT LIKE %s",
-			$cutoff,
-			$stale,
-			wp_presence_reserved_client_id_pattern()
-		)
-	);
-
-	foreach ( $rooms_by_prefix as $prefix => $rooms ) {
-		$placeholders = implode( ', ', array_fill( 0, count( $rooms ), '%s' ) );
-
-		// $placeholders holds only %s tokens generated above, so the interpolation is safe.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
-		$summary['by_prefix'][ $prefix ]['users'] = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(DISTINCT user_id) FROM {$wpdb->presence} WHERE expires_gmt > %s AND date_gmt > %s AND client_id NOT LIKE %s AND room IN ( $placeholders )", array_merge( array( $cutoff, $stale, wp_presence_reserved_client_id_pattern() ), $rooms ) ) );
-	}
-
-	return $summary;
 }
 
-/**
- * Deletes stale presence entries older than the default TTL.
- *
- * Runs on the every-minute cron event. Rather than looping without a ceiling
- * over the MySQL-only `DELETE ... LIMIT` construct, this selects a bounded
- * page of primary keys older than the cutoff and deletes them by key, for a
- * fixed number of passes per invocation. Any remaining backlog is left for the
- * next cron run, so a single request cannot run until `max_execution_time`
- * when a site returns from a cron outage with a large backlog. Deleting by
- * primary key also keeps the query portable to non-MySQL backends, such as the
- * SQLite integration Playground uses to run the demo blueprints.
- *
- * @access private
- *
- * @since 0.1.1
- */
-function wp_delete_expired_presence_data() {
-	global $wpdb;
-
-	if ( ! wp_presence_has_table() ) {
-		return;
-	}
-
-	$cutoff = gmdate( 'Y-m-d H:i:s' );
-
+if ( ! function_exists( 'wp_get_presence_by_room_prefix' ) ) {
 	/**
-	 * Filters the number of expired rows deleted per pass.
+	 * Gets all present clients in every room whose identifier starts with a prefix.
 	 *
-	 * @since 0.1.18
+	 * Reserved rows are left out, as in wp_get_presence().
 	 *
-	 * @param int $batch_size Rows per pass. Default 1000.
+	 * @since 0.1.1
+	 * @since 0.16.0 No longer private.
+	 *
+	 * @param string $prefix  The room prefix to match, matched literally (e.g., 'postType/').
+	 * @param int    $timeout Optional. Timeout in seconds. Default null, the site's filtered TTL.
+	 * @return array Array of presence entry objects, newest first.
 	 */
-	$batch_size = (int) apply_filters( 'wp_presence_cleanup_batch_size', 1000 );
+	function wp_get_presence_by_room_prefix( $prefix, $timeout = null ) {
+		global $wpdb;
 
-	/**
-	 * Filters the maximum number of delete passes per cron invocation.
-	 *
-	 * The remainder is left for the next scheduled run, bounding the work a
-	 * single request performs.
-	 *
-	 * @since 0.1.18
-	 *
-	 * @param int $max_passes Passes per invocation. Default 10.
-	 */
-	$max_passes = (int) apply_filters( 'wp_presence_cleanup_max_passes', 10 );
+		if ( ! wp_presence_has_table() ) {
+			return array();
+		}
 
-	if ( $batch_size < 1 || $max_passes < 1 ) {
-		return;
-	}
+		$cutoff = gmdate( 'Y-m-d H:i:s' );
+		$stale  = wp_presence_read_floor( $timeout );
 
-	for ( $pass = 0; $pass < $max_passes; $pass++ ) {
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$ids = $wpdb->get_col(
+		return wp_presence_cached_rows(
+			"prefix:{$prefix}",
 			$wpdb->prepare(
-				"SELECT id FROM {$wpdb->presence} WHERE expires_gmt <= %s ORDER BY id ASC LIMIT %d",
+				"SELECT room, client_id, user_id, data, date_gmt FROM {$wpdb->presence} WHERE room LIKE %s AND expires_gmt > %s AND date_gmt > %s AND client_id NOT LIKE %s ORDER BY date_gmt DESC",
+				$wpdb->esc_like( $prefix ) . '%',
 				$cutoff,
-				$batch_size
+				$stale,
+				wp_presence_reserved_client_id_pattern()
+			)
+		);
+	}
+}
+
+if ( ! function_exists( 'wp_get_presence_summary' ) ) {
+	/**
+	 * Returns a site-wide presence summary grouped by room prefix.
+	 *
+	 * @access private
+	 *
+	 * @since 0.1.1
+	 * @param int $timeout Optional. Timeout in seconds. Default null, the site's filtered TTL.
+	 * @return array {
+	 *     @type int   $total_entries Total presence entries.
+	 *     @type int   $total_users   Distinct user count.
+	 *     @type array $by_prefix     Associative array keyed by prefix, each with 'entries' and 'users'.
+	 * }
+	 */
+	function wp_get_presence_summary( $timeout = null ) {
+		global $wpdb;
+
+		$summary = array(
+			'total_entries' => 0,
+			'total_users'   => 0,
+			'by_prefix'     => array(),
+		);
+
+		if ( ! wp_presence_has_table() ) {
+			return $summary;
+		}
+
+		$cutoff = gmdate( 'Y-m-d H:i:s' );
+		$stale  = wp_presence_read_floor( $timeout );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$room_rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT room, COUNT(*) AS entries FROM {$wpdb->presence} WHERE expires_gmt > %s AND date_gmt > %s AND client_id NOT LIKE %s GROUP BY room",
+				$cutoff,
+				$stale,
+				wp_presence_reserved_client_id_pattern()
 			)
 		);
 
-		if ( empty( $ids ) ) {
-			break;
+		if ( ! $room_rows ) {
+			return $summary;
 		}
 
-		$ids          = array_map( 'intval', $ids );
-		$placeholders = implode( ', ', array_fill( 0, count( $ids ), '%d' ) );
+		// Grouped by prefix in PHP to avoid MySQL-specific SUBSTRING_INDEX().
+		// Distinct user counts aren't additive across rooms, so those come from
+		// a per-prefix query below rather than being summed here.
+		$rooms_by_prefix = array();
 
-		// IDs are cast to integers above and passed to prepare() as %d
-		// replacements, so the interpolated placeholder list is safe.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
-		$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->presence} WHERE id IN ( $placeholders )", $ids ) );
+		foreach ( $room_rows as $row ) {
+			$prefix  = explode( '/', $row->room, 2 )[0];
+			$entries = (int) $row->entries;
 
-		if ( count( $ids ) < $batch_size ) {
-			break;
+			if ( ! isset( $summary['by_prefix'][ $prefix ] ) ) {
+				$summary['by_prefix'][ $prefix ] = array(
+					'entries' => 0,
+					'users'   => 0,
+				);
+				$rooms_by_prefix[ $prefix ]      = array();
+			}
+
+			$summary['by_prefix'][ $prefix ]['entries'] += $entries;
+			$summary['total_entries']                   += $entries;
+			$rooms_by_prefix[ $prefix ][]                = $row->room;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$summary['total_users'] = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(DISTINCT user_id) FROM {$wpdb->presence} WHERE expires_gmt > %s AND date_gmt > %s AND client_id NOT LIKE %s",
+				$cutoff,
+				$stale,
+				wp_presence_reserved_client_id_pattern()
+			)
+		);
+
+		foreach ( $rooms_by_prefix as $prefix => $rooms ) {
+			$placeholders = implode( ', ', array_fill( 0, count( $rooms ), '%s' ) );
+
+			// $placeholders holds only %s tokens generated above, so the interpolation is safe.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+			$summary['by_prefix'][ $prefix ]['users'] = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(DISTINCT user_id) FROM {$wpdb->presence} WHERE expires_gmt > %s AND date_gmt > %s AND client_id NOT LIKE %s AND room IN ( $placeholders )", array_merge( array( $cutoff, $stale, wp_presence_reserved_client_id_pattern() ), $rooms ) ) );
+		}
+
+		return $summary;
+	}
+}
+
+if ( ! function_exists( 'wp_delete_expired_presence_data' ) ) {
+	/**
+	 * Deletes stale presence entries older than the default TTL.
+	 *
+	 * Runs on the every-minute cron event. Rather than looping without a ceiling
+	 * over the MySQL-only `DELETE ... LIMIT` construct, this selects a bounded
+	 * page of primary keys older than the cutoff and deletes them by key, for a
+	 * fixed number of passes per invocation. Any remaining backlog is left for the
+	 * next cron run, so a single request cannot run until `max_execution_time`
+	 * when a site returns from a cron outage with a large backlog. Deleting by
+	 * primary key also keeps the query portable to non-MySQL backends, such as the
+	 * SQLite integration Playground uses to run the demo blueprints.
+	 *
+	 * @access private
+	 *
+	 * @since 0.1.1
+	 */
+	function wp_delete_expired_presence_data() {
+		global $wpdb;
+
+		if ( ! wp_presence_has_table() ) {
+			return;
+		}
+
+		$cutoff = gmdate( 'Y-m-d H:i:s' );
+
+		/**
+		 * Filters the number of expired rows deleted per pass.
+		 *
+		 * @since 0.1.18
+		 *
+		 * @param int $batch_size Rows per pass. Default 1000.
+		 */
+		$batch_size = (int) apply_filters( 'wp_presence_cleanup_batch_size', 1000 );
+
+		/**
+		 * Filters the maximum number of delete passes per cron invocation.
+		 *
+		 * The remainder is left for the next scheduled run, bounding the work a
+		 * single request performs.
+		 *
+		 * @since 0.1.18
+		 *
+		 * @param int $max_passes Passes per invocation. Default 10.
+		 */
+		$max_passes = (int) apply_filters( 'wp_presence_cleanup_max_passes', 10 );
+
+		if ( $batch_size < 1 || $max_passes < 1 ) {
+			return;
+		}
+
+		for ( $pass = 0; $pass < $max_passes; $pass++ ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$ids = $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT id FROM {$wpdb->presence} WHERE expires_gmt <= %s ORDER BY id ASC LIMIT %d",
+					$cutoff,
+					$batch_size
+				)
+			);
+
+			if ( empty( $ids ) ) {
+				break;
+			}
+
+			$ids          = array_map( 'intval', $ids );
+			$placeholders = implode( ', ', array_fill( 0, count( $ids ), '%d' ) );
+
+			// IDs are cast to integers above and passed to prepare() as %d
+			// replacements, so the interpolated placeholder list is safe.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+			$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->presence} WHERE id IN ( $placeholders )", $ids ) );
+
+			if ( count( $ids ) < $batch_size ) {
+				break;
+			}
 		}
 	}
 }
 
-/**
- * Returns all active rooms with their user counts and member lists.
- *
- * @access private
- *
- * @since 0.1.1
- *
- * @param int  $timeout        Optional. Timeout in seconds. Default null, the site's filtered TTL.
- * @param bool $hydrate_users  Optional. Whether to hydrate user data. Default true.
- * @return array Array of room objects, each with 'room', 'user_count', and optionally 'users'.
- */
-function wp_get_active_rooms( $timeout = null, $hydrate_users = true ) {
-	global $wpdb;
+if ( ! function_exists( 'wp_get_active_rooms' ) ) {
+	/**
+	 * Returns all active rooms with their user counts and member lists.
+	 *
+	 * @access private
+	 *
+	 * @since 0.1.1
+	 *
+	 * @param int  $timeout        Optional. Timeout in seconds. Default null, the site's filtered TTL.
+	 * @param bool $hydrate_users  Optional. Whether to hydrate user data. Default true.
+	 * @return array Array of room objects, each with 'room', 'user_count', and optionally 'users'.
+	 */
+	function wp_get_active_rooms( $timeout = null, $hydrate_users = true ) {
+		global $wpdb;
 
-	if ( ! wp_presence_has_table() ) {
-		return array();
-	}
+		if ( ! wp_presence_has_table() ) {
+			return array();
+		}
 
-	$cutoff = gmdate( 'Y-m-d H:i:s' );
-	$stale  = wp_presence_read_floor( $timeout );
+		$cutoff = gmdate( 'Y-m-d H:i:s' );
+		$stale  = wp_presence_read_floor( $timeout );
 
-	// First pass: get room names and counts only (no user IDs).
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-	$room_stats = $wpdb->get_results(
-		$wpdb->prepare(
-			"SELECT room, COUNT(DISTINCT user_id) as user_count
+		// First pass: get room names and counts only (no user IDs).
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$room_stats = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT room, COUNT(DISTINCT user_id) as user_count
 			FROM {$wpdb->presence}
 			WHERE expires_gmt > %s AND date_gmt > %s AND client_id NOT LIKE %s
 			GROUP BY room",
-			$cutoff,
-			$stale,
-			wp_presence_reserved_client_id_pattern()
-		)
-	);
-
-	if ( ! $room_stats ) {
-		return array();
-	}
-
-	// Sort by user count descending, then room name.
-	usort(
-		$room_stats,
-		function ( $a, $b ) {
-			if ( $a->user_count === $b->user_count ) {
-				return strcmp( $a->room, $b->room );
-			}
-			return $b->user_count <=> $a->user_count;
-		}
-	);
-
-	$rooms = array();
-
-	foreach ( $room_stats as $stat ) {
-		$rooms[] = array(
-			'room'       => $stat->room,
-			'user_count' => (int) $stat->user_count,
+				$cutoff,
+				$stale,
+				wp_presence_reserved_client_id_pattern()
+			)
 		);
-	}
 
-	return $hydrate_users ? wp_presence_hydrate_room_users( $rooms, $timeout ) : $rooms;
+		if ( ! $room_stats ) {
+			return array();
+		}
+
+		// Sort by user count descending, then room name.
+		usort(
+			$room_stats,
+			function ( $a, $b ) {
+				if ( $a->user_count === $b->user_count ) {
+					return strcmp( $a->room, $b->room );
+				}
+				return $b->user_count <=> $a->user_count;
+			}
+		);
+
+		$rooms = array();
+
+		foreach ( $room_stats as $stat ) {
+			$rooms[] = array(
+				'room'       => $stat->room,
+				'user_count' => (int) $stat->user_count,
+			);
+		}
+
+		return $hydrate_users ? wp_presence_hydrate_room_users( $rooms, $timeout ) : $rooms;
+	}
 }
 
-/**
- * Hydrates user data for a list of rooms.
- *
- * @access private
- *
- * @since 0.1.23
- *
- * @param array $rooms   Array of room data (each with a 'room' key).
- * @param int   $timeout Optional. Timeout in seconds. Default null, the site's filtered TTL.
- * @return array Rooms with hydrated user arrays.
- */
-function wp_presence_hydrate_room_users( $rooms, $timeout = null ) {
-	global $wpdb;
+if ( ! function_exists( 'wp_presence_hydrate_room_users' ) ) {
+	/**
+	 * Hydrates user data for a list of rooms.
+	 *
+	 * @access private
+	 *
+	 * @since 0.1.23
+	 *
+	 * @param array $rooms   Array of room data (each with a 'room' key).
+	 * @param int   $timeout Optional. Timeout in seconds. Default null, the site's filtered TTL.
+	 * @return array Rooms with hydrated user arrays.
+	 */
+	function wp_presence_hydrate_room_users( $rooms, $timeout = null ) {
+		global $wpdb;
 
-	if ( empty( $rooms ) ) {
-		return $rooms;
-	}
+		if ( empty( $rooms ) ) {
+			return $rooms;
+		}
 
-	$cutoff = gmdate( 'Y-m-d H:i:s' );
-	$stale  = wp_presence_read_floor( $timeout );
+		$cutoff = gmdate( 'Y-m-d H:i:s' );
+		$stale  = wp_presence_read_floor( $timeout );
 
-	// Get user IDs for all rooms in one query.
-	$room_names   = wp_list_pluck( $rooms, 'room' );
-	$placeholders = implode( ', ', array_fill( 0, count( $room_names ), '%s' ) );
+		// Get user IDs for all rooms in one query.
+		$room_names   = wp_list_pluck( $rooms, 'room' );
+		$placeholders = implode( ', ', array_fill( 0, count( $room_names ), '%s' ) );
 
-	// Dynamic IN clause: $placeholders is "%s, %s, ..." built from count, not user data.
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-	$rows = $wpdb->get_results(
-		$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
-			"SELECT room, user_id
+		// Dynamic IN clause: $placeholders is "%s, %s, ..." built from count, not user data.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$rows = $wpdb->get_results(
+			$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+				"SELECT room, user_id
 			FROM {$wpdb->presence}
 			WHERE room IN ($placeholders) AND expires_gmt > %s AND date_gmt > %s AND client_id NOT LIKE %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
-			array_merge( $room_names, array( $cutoff, $stale, wp_presence_reserved_client_id_pattern() ) )
-		)
-	);
+				array_merge( $room_names, array( $cutoff, $stale, wp_presence_reserved_client_id_pattern() ) )
+			)
+		);
 
-	// Group user IDs by room.
-	$room_user_ids = array();
-	$all_user_ids  = array();
-	foreach ( $rows as $row ) {
-		$uid                           = (int) $row->user_id;
-		$room_user_ids[ $row->room ][] = $uid;
-		$all_user_ids[ $uid ]          = true;
-	}
-
-	// Prime user cache.
-	if ( ! empty( $all_user_ids ) ) {
-		cache_users( array_keys( $all_user_ids ) );
-	}
-
-	// Hydrate each room.
-	foreach ( $rooms as &$room ) {
-		$users = array();
-
-		if ( isset( $room_user_ids[ $room['room'] ] ) ) {
-			foreach ( array_unique( $room_user_ids[ $room['room'] ] ) as $uid ) {
-				$user = get_userdata( $uid );
-
-				if ( ! $user ) {
-					continue;
-				}
-
-				$users[] = array(
-					'user_id'      => $uid,
-					'display_name' => $user->display_name,
-					'avatar_url'   => get_avatar_url( $uid, array( 'size' => 48 ) ),
-				);
-			}
+		// Group user IDs by room.
+		$room_user_ids = array();
+		$all_user_ids  = array();
+		foreach ( $rows as $row ) {
+			$uid                           = (int) $row->user_id;
+			$room_user_ids[ $row->room ][] = $uid;
+			$all_user_ids[ $uid ]          = true;
 		}
 
-		$room['users']      = $users;
-		$room['user_count'] = count( $users );
-	}
+		// Prime user cache.
+		if ( ! empty( $all_user_ids ) ) {
+			cache_users( array_keys( $all_user_ids ) );
+		}
 
-	return $rooms;
-}
+		// Hydrate each room.
+		foreach ( $rooms as &$room ) {
+			$users = array();
 
-/**
- * Renders the small "Agent" badge shown next to an agent's presence row.
- *
- * Shared across every surface that lists a presence row by user — Who's
- * Online, the admin bar, the Active Posts widget and the post list's
- * Editors column — so an agent reads the same way wherever it shows up.
- *
- * @access private
- *
- * @since 0.9.0
- *
- * @param int $user_id The user ID the row belongs to.
- * @return string HTML markup, or an empty string for a user who isn't an agent.
- */
-function wp_presence_render_agent_badge( $user_id ) {
-	if ( ! wp_presence_is_agent_user( $user_id ) ) {
-		return '';
-	}
+			if ( isset( $room_user_ids[ $room['room'] ] ) ) {
+				foreach ( array_unique( $room_user_ids[ $room['room'] ] ) as $uid ) {
+					$user = get_userdata( $uid );
 
-	return ' <span class="presence-agent-badge">' . esc_html__( 'Agent', 'presence-api' ) . '</span>';
-}
+					if ( ! $user ) {
+						continue;
+					}
 
-/**
- * Registers presence support for every post type edited in the admin, including ones registered later.
- *
- * Remove it with `remove_post_type_support()` on `init` at priority 11 or later.
- *
- * @since 0.1.1
- * @since 0.11.0 Covers every post type edited in the admin, not only posts and pages.
- */
-function wp_presence_register_post_type_support() {
-	foreach ( get_post_types( array(), 'objects' ) as $post_type => $post_type_object ) {
-		wp_presence_add_post_type_support( $post_type, $post_type_object );
-	}
+					$users[] = array(
+						'user_id'      => $uid,
+						'display_name' => $user->display_name,
+						'avatar_url'   => get_avatar_url( $uid, array( 'size' => 48 ) ),
+					);
+				}
+			}
 
-	add_action( 'registered_post_type', 'wp_presence_add_post_type_support', 10, 2 );
-	add_action( 'unregistered_post_type', 'wp_presence_forget_post_type' );
-}
+			$room['users']      = $users;
+			$room['user_count'] = count( $users );
+		}
 
-/**
- * Adds presence support to a post type edited in the admin.
- *
- * @access private
- *
- * @since 0.11.0
- *
- * @param string       $post_type        The post type.
- * @param WP_Post_Type $post_type_object The post type object.
- */
-function wp_presence_add_post_type_support( $post_type, $post_type_object ) {
-	global $_wp_presence_post_types_seen;
-
-	// Core re-registers its types on every locale switch, which would undo a site's opt-out.
-	if ( isset( $_wp_presence_post_types_seen[ $post_type ] ) ) {
-		return;
-	}
-
-	$_wp_presence_post_types_seen[ $post_type ] = true;
-
-	// Core hides templates from the admin menus, since only the Site Editor edits them.
-	$site_editor = in_array( $post_type, array( 'wp_template', 'wp_template_part' ), true );
-
-	if ( ( $post_type_object->show_ui || $site_editor ) && post_type_supports( $post_type, 'editor' ) ) {
-		add_post_type_support( $post_type, 'presence' );
+		return $rooms;
 	}
 }
 
-/**
- * Lets an unregistered post type get presence support again if it is registered anew.
- *
- * @access private
- *
- * @since 0.11.0
- *
- * @param string $post_type The post type.
- */
-function wp_presence_forget_post_type( $post_type ) {
-	unset( $GLOBALS['_wp_presence_post_types_seen'][ $post_type ] );
+if ( ! function_exists( 'wp_presence_render_agent_badge' ) ) {
+	/**
+	 * Renders the small "Agent" badge shown next to an agent's presence row.
+	 *
+	 * Shared across every surface that lists a presence row by user — Who's
+	 * Online, the admin bar, the Active Posts widget and the post list's
+	 * Editors column — so an agent reads the same way wherever it shows up.
+	 *
+	 * @access private
+	 *
+	 * @since 0.9.0
+	 *
+	 * @param int $user_id The user ID the row belongs to.
+	 * @return string HTML markup, or an empty string for a user who isn't an agent.
+	 */
+	function wp_presence_render_agent_badge( $user_id ) {
+		if ( ! wp_presence_is_agent_user( $user_id ) ) {
+			return '';
+		}
+
+		return ' <span class="presence-agent-badge">' . esc_html__( 'Agent', 'presence-api' ) . '</span>';
+	}
+}
+
+if ( ! function_exists( 'wp_presence_register_post_type_support' ) ) {
+	/**
+	 * Registers presence support for every post type edited in the admin, including ones registered later.
+	 *
+	 * Remove it with `remove_post_type_support()` on `init` at priority 11 or later.
+	 *
+	 * @since 0.1.1
+	 * @since 0.11.0 Covers every post type edited in the admin, not only posts and pages.
+	 */
+	function wp_presence_register_post_type_support() {
+		foreach ( get_post_types( array(), 'objects' ) as $post_type => $post_type_object ) {
+			wp_presence_add_post_type_support( $post_type, $post_type_object );
+		}
+
+		add_action( 'registered_post_type', 'wp_presence_add_post_type_support', 10, 2 );
+		add_action( 'unregistered_post_type', 'wp_presence_forget_post_type' );
+	}
+}
+
+if ( ! function_exists( 'wp_presence_add_post_type_support' ) ) {
+	/**
+	 * Adds presence support to a post type edited in the admin.
+	 *
+	 * @access private
+	 *
+	 * @since 0.11.0
+	 *
+	 * @param string       $post_type        The post type.
+	 * @param WP_Post_Type $post_type_object The post type object.
+	 */
+	function wp_presence_add_post_type_support( $post_type, $post_type_object ) {
+		global $_wp_presence_post_types_seen;
+
+		// Core re-registers its types on every locale switch, which would undo a site's opt-out.
+		if ( isset( $_wp_presence_post_types_seen[ $post_type ] ) ) {
+			return;
+		}
+
+		$_wp_presence_post_types_seen[ $post_type ] = true;
+
+		// Core hides templates from the admin menus, since only the Site Editor edits them.
+		$site_editor = in_array( $post_type, array( 'wp_template', 'wp_template_part' ), true );
+
+		if ( ( $post_type_object->show_ui || $site_editor ) && post_type_supports( $post_type, 'editor' ) ) {
+			add_post_type_support( $post_type, 'presence' );
+		}
+	}
+}
+
+if ( ! function_exists( 'wp_presence_forget_post_type' ) ) {
+	/**
+	 * Lets an unregistered post type get presence support again if it is registered anew.
+	 *
+	 * @access private
+	 *
+	 * @since 0.11.0
+	 *
+	 * @param string $post_type The post type.
+	 */
+	function wp_presence_forget_post_type( $post_type ) {
+		unset( $GLOBALS['_wp_presence_post_types_seen'][ $post_type ] );
+	}
 }
