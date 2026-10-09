@@ -3,7 +3,7 @@ Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas,
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.1
-Stable tag: 0.17.0
+Stable tag: 0.18.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -76,6 +76,12 @@ For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/presence-api/blob/main/CHANGELOG.md
 
+= 0.18.0 =
+* Let a reader tell a room changed without reading every row ([#791](https://github.com/WordPress/presence-api/issues/791)).
+* Raise a deprecation notice for positional presence arguments ([#800](https://github.com/WordPress/presence-api/issues/800)).
+* Return WP_Error with specific refusal codes when presence write fails ([#792](https://github.com/WordPress/presence-api/issues/792)).
+* Cap the heartbeat ping's title and screen before storing them ([#816](https://github.com/WordPress/presence-api/issues/816)).
+
 = 0.17.0 =
 * Let a network switch off the network admin screens ([#788](https://github.com/WordPress/presence-api/issues/788)).
 * Let a site switch off the Active Posts dashboard widget ([#774](https://github.com/WordPress/presence-api/issues/774)).
@@ -97,7 +103,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 * Let a site switch off the pieces it does not want, starting with post locks ([#724](https://github.com/WordPress/presence-api/issues/724)).
 * Move the feature switches to the plugin's own page under Settings ([#755](https://github.com/WordPress/presence-api/issues/755)).
 * Write reserved rows with recording off, so post locks use wp_set_presence() ([#752](https://github.com/WordPress/presence-api/issues/752)).
-
-= 0.14.0 =
-* REST presence entries no longer include `color`, and wp_presence_get_user_color() returns the block editor's color for the user ID instead of a stored one.
-* Stop saving and serving presence colors ([#707](https://github.com/WordPress/presence-api/issues/707)).
