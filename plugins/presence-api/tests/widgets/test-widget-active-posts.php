@@ -107,6 +107,14 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 
 		$this->assertArrayNotHasKey( 'presence-fragments', $response );
 		$this->assertArrayHasKey( 'existing', $response );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		$unauthorised = WP_Presence_Widget_Active_Posts::heartbeat_received(
+			array(),
+			array( 'presence-fragments' => array( 'active-posts' => true ) ),
+			'dashboard'
+		);
+		$this->assertSame( array(), $unauthorised );
 	}
 
 	/**
@@ -174,6 +182,9 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 		wp_set_current_user( self::$editor_id );
 
 		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( wp_presence_post_room( self::$post_id ), 'deleted-user', array(), array( 'user_id' => 999901 ) );
+		wp_set_presence( 'postType/bad', 'bad-room', array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'postType/attachment:' . self::$post_id, 'attachment-room', array(), array( 'user_id' => self::$editor_id ) );
 
 		$posts = $this->active_posts();
 

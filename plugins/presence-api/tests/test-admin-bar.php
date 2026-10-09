@@ -10,6 +10,8 @@
  * @covers ::wp_presence_admin_bar_assets
  * @covers ::wp_presence_admin_bar_node_markup
  * @covers ::wp_presence_admin_bar_heartbeat_received
+ * @covers ::wp_presence_refresh_screen_token
+ * @covers ::wp_presence_get_entry_screen
  * @covers ::wp_presence_screen_object_id
  * @covers ::wp_presence_get_user_color
  * @covers ::wp_presence_online_users_url
@@ -320,6 +322,8 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 
 	public function test_someone_editing_a_post_links_to_it() {
 		$this->put_editor_on_post( self::$post_id );
+		wp_set_presence( wp_presence_post_room( self::$post_id ), 'editor-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( 'postType/bad', 'bad-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
 
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 		$place = $this->place_of( $this->render_nodes(), self::$editor_id );
@@ -475,6 +479,43 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 
 		$this->assertSame( 'presence-online', $nodes[ 'presence-user-' . $here ]->parent );
 		$this->assertSame( 'presence-elsewhere', $nodes[ 'presence-user-' . $there ]->parent );
+	}
+
+	public function test_people_on_the_front_end_link_to_posts_you_can_read() {
+		set_current_screen( 'dashboard' );
+		$published_id = self::factory()->post->create(
+			array(
+				'post_title'  => 'Public Post',
+				'post_status' => 'publish',
+			)
+		);
+		$on_home      = $this->put_user_on_screen( 'front', array( 'title' => 'Home' ) );
+		$on_published = $this->put_user_on_screen(
+			'front',
+			array(
+				'title'   => 'Public Post',
+				'post_id' => $published_id,
+			)
+		);
+		$on_draft     = $this->put_user_on_screen(
+			'front',
+			array(
+				'title'   => 'Secret Draft',
+				'post_id' => self::$post_id,
+			)
+		);
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'contributor' ) ) );
+		$this->let_current_user_list_users();
+		$nodes = $this->render_nodes();
+
+		$this->assertArrayNotHasKey( 'presence-user-' . $on_published, $nodes );
+		$this->assertSame( get_permalink( $published_id ), $nodes['presence-place-0']->href );
+		$this->assertStringContainsString( '>Public Post</span>', $nodes['presence-place-0']->title );
+		$this->assertSame( 'Home', $this->place_of( $nodes, $on_home )->title );
+		$this->assertFalse( $this->place_of( $nodes, $on_home )->href );
+		$this->assertSame( esc_html( get_userdata( $on_draft )->display_name ), $nodes[ 'presence-user-' . $on_draft ]->title );
+		$this->assertFalse( $nodes[ 'presence-user-' . $on_draft ]->href );
 	}
 
 	public function test_rows_are_not_links() {
@@ -783,5 +824,24 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$title = $nodes[ 'presence-user-' . $agent_id ]->title;
 		$this->assertStringContainsString( $agent->display_name, $title );
 		$this->assertStringContainsString( 'presence-agent-badge', $title );
+
+		wp_remove_presence( wp_presence_post_room( self::$post_id ), 'agent-' . $agent_id );
+		wp_set_presence(
+			'admin/online',
+			'agent-screen-' . $agent_id,
+			array(
+				'screen' => 'users',
+				'title'  => 'Users',
+			),
+			array( 'user_id' => $agent_id )
+		);
+		$nodes = $this->render_nodes();
+		$this->assertSame( $agent->display_name . ' (agent)', $nodes['presence-place-0']->meta['title'] );
+	}
+
+	public function test_node_markup_is_empty_for_a_user_without_edit_posts() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+
+		$this->assertSame( '', wp_presence_admin_bar_node_markup( 'dashboard' ) );
 	}
 }
