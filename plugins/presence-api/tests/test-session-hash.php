@@ -108,6 +108,26 @@ class WP_Test_Presence_Session_Hash extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * The personal data export names the browser a row came from, and leaves it out for a row with none.
+	 *
+	 * @covers ::wp_presence_personal_data_exporter
+	 */
+	public function test_the_export_includes_the_browser() {
+		$room = 'postType/post:1';
+		$this->sign_in();
+		wp_set_presence( $room, 'tab-1', array(), array( 'user_id' => self::$editor_id ) );
+
+		$export = wp_presence_personal_data_exporter( get_userdata( self::$editor_id )->user_email );
+		$this->assertContains( wp_presence_session_hash( $room ), wp_list_pluck( $export['data'][0]['data'], 'value' ) );
+
+		unset( $_COOKIE[ LOGGED_IN_COOKIE ] );
+		wp_set_presence( $room, 'tab-1', array(), array( 'user_id' => self::$editor_id ) );
+
+		$export = wp_presence_personal_data_exporter( get_userdata( self::$editor_id )->user_email );
+		$this->assertNotContains( 'Browser', wp_list_pluck( $export['data'][0]['data'], 'name' ) );
+	}
+
+	/**
 	 * The REST collection returns the hash a browser wrote.
 	 *
 	 * @covers WP_REST_Presence_Controller::prepare_item_for_response
