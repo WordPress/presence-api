@@ -159,6 +159,14 @@ wp_remove_presence( $room, $client_id );
 $entries = wp_presence_exchange( $room, $client_id, $state, array( 'user_id' => 0, 'timeout' => null, 'client_prefix' => '', 'wp_error' => false ) );
 $entries = wp_presence_leave( $room, $client_id, array( 'timeout' => null, 'client_prefix' => '' ) );
 
+// Wait for a room to change without reading its rows. The version moves when
+// what peers see changes: a client arriving (over its own expired row too),
+// changing its state or user, or being removed. A refresh that only restamps a
+// row does not move it, and neither does a row expiring, so read the room again
+// once its next expiry passes. Both return null for a room with nothing to say.
+$versions = wp_get_presence_room_versions( $rooms ); // array( $room => '12', ... )
+$expiry   = wp_get_presence_room_next_expiry( $rooms ); // array( $room => 'Y-m-d H:i:s', ... )
+
 // Remove all presence entries for a user across all rooms.
 wp_remove_user_presence( $user_id );
 

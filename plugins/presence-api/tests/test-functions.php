@@ -699,9 +699,10 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		}
 		$wpdb->query(
 			$wpdb->prepare(
-				"UPDATE {$wpdb->presence} SET date_gmt = %s, expires_gmt = %s",
+				"UPDATE {$wpdb->presence} SET date_gmt = %s, expires_gmt = %s WHERE client_id NOT LIKE %s",
 				gmdate( 'Y-m-d H:i:s', time() - WP_PRESENCE_DEFAULT_TTL - MINUTE_IN_SECONDS ),
-				gmdate( 'Y-m-d H:i:s', time() - MINUTE_IN_SECONDS )
+				gmdate( 'Y-m-d H:i:s', time() - MINUTE_IN_SECONDS ),
+				wp_presence_reserved_client_id_pattern()
 			)
 		);
 
@@ -713,8 +714,9 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		add_filter( 'wp_presence_cleanup_max_passes', $two );
 
 		wp_delete_expired_presence_data();
+		$expected_remaining = 1 + ( wp_using_ext_object_cache() ? 0 : 1 );
 		$this->assertSame(
-			1,
+			$expected_remaining,
 			(int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->presence}" ),
 			'One invocation should delete batch_size * max_passes (4) rows and leave the rest.'
 		);
@@ -722,7 +724,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		// The next scheduled run clears the remainder.
 		wp_delete_expired_presence_data();
 		$this->assertSame(
-			0,
+			wp_using_ext_object_cache() ? 0 : 1,
 			(int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->presence}" )
 		);
 
@@ -748,8 +750,9 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 		wp_delete_expired_presence_data();
 
+		$expected = 2 + ( wp_using_ext_object_cache() ? 0 : 1 );
 		$this->assertSame(
-			2,
+			$expected,
 			(int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->presence}" )
 		);
 
@@ -1988,7 +1991,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		$table = $wpdb->presence;
 
 		$counter = static function ( $query ) use ( &$count, $table ) {
-			if ( 0 === strpos( ltrim( $query ), 'INSERT' ) && false !== strpos( $query, $table ) ) {
+			if ( 0 === strpos( ltrim( $query ), 'INSERT' ) && false !== strpos( $query, $table ) && ! self::is_version_bump( $query ) ) {
 				++$count;
 			}
 
@@ -2053,7 +2056,14 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * Counts every query against the presence table during a callback.
+	 * Whether a query writes a room's version row, which the version tests count on their own.
+	 */
+	private static function is_version_bump( $query ) {
+		return false !== strpos( $query, "'" . wp_presence_version_client_id() . "'" ) && false !== stripos( $query, 'ON DUPLICATE KEY UPDATE' );
+	}
+
+	/**
+	 * Counts every query against the presence table during a callback, other than a room version bump.
 	 */
 	private function count_presence_queries( callable $during ) {
 		global $wpdb;
@@ -2062,7 +2072,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		$table = $wpdb->presence;
 
 		$counter = static function ( $query ) use ( &$count, $table ) {
-			if ( false !== strpos( $query, $table ) ) {
+			if ( false !== strpos( $query, $table ) && ! self::is_version_bump( $query ) ) {
 				++$count;
 			}
 
@@ -2118,7 +2128,7 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 		$upserts = array();
 		$capture = static function ( $query ) use ( &$upserts ) {
-			if ( false !== stripos( $query, 'ON DUPLICATE KEY UPDATE' ) ) {
+			if ( false !== stripos( $query, 'ON DUPLICATE KEY UPDATE' ) && ! self::is_version_bump( $query ) ) {
 				$upserts[] = $query;
 			}
 
@@ -2464,6 +2474,14 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 		unregister_post_type( 'no_presence_type' );
 	}
+
+
+
+
+
+
+
+
 
 	/**
 	 * Marks a user as an agent for the current test, through the same filter
