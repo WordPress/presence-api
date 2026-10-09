@@ -83,17 +83,17 @@ class WP_Test_Presence_Core_Guards extends WP_Presence_UnitTestCase {
 	 *
 	 * @dataProvider data_api_classes
 	 *
-	 * @param string $file  Path relative to the plugin directory.
-	 * @param string $class Class the file declares.
+	 * @param string $file       Path relative to the plugin directory.
+	 * @param string $class_name Class the file declares.
 	 */
-	public function test_loading_a_class_file_again_declares_nothing( $file, $class ) {
-		if ( ! class_exists( $class, false ) ) {
-			$this->markTestSkipped( "{$class} is not loaded in this environment." );
+	public function test_loading_a_class_file_again_declares_nothing( $file, $class_name ) {
+		if ( ! class_exists( $class_name, false ) ) {
+			$this->markTestSkipped( "{$class_name} is not loaded in this environment." );
 		}
 
 		include WP_PRESENCE_PLUGIN_DIR . $file;
 
-		$this->assertTrue( class_exists( $class, false ) );
+		$this->assertTrue( class_exists( $class_name, false ) );
 	}
 
 	/**
