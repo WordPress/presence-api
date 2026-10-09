@@ -189,10 +189,12 @@ class WP_Test_Presence_User_List extends WP_Presence_UnitTestCase {
 
 		$this->assertSame( '(1)', wp_presence_users_online_count_heartbeat_received( array(), $ask, 'users' )['presence-fragments']['users-online-count'] );
 		$this->assertSame( array(), wp_presence_users_online_count_heartbeat_received( array(), $ask, 'users-network' ) );
+		$this->assertSame( array(), wp_presence_users_online_count_heartbeat_received( array(), array(), 'users' ) );
 	}
 
 	public function test_the_online_view_needs_its_nonce() {
 		$this->assertSame( array(), $this->tick_online_view( 'invalid' ) );
+		$this->assertSame( array(), wp_presence_users_list_heartbeat_received( array(), array(), 'users' ) );
 	}
 
 	/**
