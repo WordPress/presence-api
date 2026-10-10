@@ -225,11 +225,43 @@ class WP_Test_Presence_Room_Versions extends WP_Presence_UnitTestCase {
 	public function test_the_next_expiry_is_the_earliest_live_row() {
 		global $wpdb;
 
-		wp_set_presence( 'expiry/a', 'client-1', array(), array( 'user_id' => self::$editor_id, 'expires_in' => 300 ) );
-		wp_set_presence( 'expiry/a', 'client-2', array(), array( 'user_id' => self::$editor_id, 'expires_in' => 60 ) );
+		wp_set_presence(
+			'expiry/a',
+			'client-1',
+			array(),
+			array(
+				'user_id'    => self::$editor_id,
+				'expires_in' => 300,
+			)
+		);
+		wp_set_presence(
+			'expiry/a',
+			'client-2',
+			array(),
+			array(
+				'user_id'    => self::$editor_id,
+				'expires_in' => 60,
+			)
+		);
 		wp_set_presence( 'expiry/a', 'client-3', array(), array( 'user_id' => self::$editor_id ) );
-		wp_set_presence( 'expiry/a', '_lock', array(), array( 'user_id' => self::$editor_id, 'expires_in' => 5 ) );
-		wp_set_presence( 'expiry/b', 'client-4', array(), array( 'user_id' => self::$editor_id, 'expires_in' => 120 ) );
+		wp_set_presence(
+			'expiry/a',
+			'_lock',
+			array(),
+			array(
+				'user_id'    => self::$editor_id,
+				'expires_in' => 5,
+			)
+		);
+		wp_set_presence(
+			'expiry/b',
+			'client-4',
+			array(),
+			array(
+				'user_id'    => self::$editor_id,
+				'expires_in' => 120,
+			)
+		);
 
 		$wpdb->update(
 			$wpdb->presence,
@@ -292,7 +324,15 @@ class WP_Test_Presence_Room_Versions extends WP_Presence_UnitTestCase {
 
 		$this->with_persistent_cache(
 			function () use ( $room ) {
-				wp_set_presence( $room, 'client-1', array(), array( 'user_id' => self::$editor_id, 'expires_in' => 300 ) );
+				wp_set_presence(
+					$room,
+					'client-1',
+					array(),
+					array(
+						'user_id'    => self::$editor_id,
+						'expires_in' => 300,
+					)
+				);
 				$first = wp_get_presence_room_next_expiry( $room )[ $room ];
 
 				$queries = $this->count_presence_queries(
@@ -302,7 +342,15 @@ class WP_Test_Presence_Room_Versions extends WP_Presence_UnitTestCase {
 				);
 				$this->assertSame( 0, $queries, 'A quiet room is answered from the cache.' );
 
-				wp_set_presence( $room, 'client-2', array(), array( 'user_id' => self::$editor_id, 'expires_in' => 60 ) );
+				wp_set_presence(
+					$room,
+					'client-2',
+					array(),
+					array(
+						'user_id'    => self::$editor_id,
+						'expires_in' => 60,
+					)
+				);
 
 				$this->assertNotSame( $first, wp_get_presence_room_next_expiry( $room )[ $room ] );
 				$this->assertSame( $this->stored( $room, 'client-2', 'expires_gmt' ), wp_get_presence_room_next_expiry( $room )[ $room ] );

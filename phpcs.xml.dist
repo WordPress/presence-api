@@ -7,22 +7,39 @@
 	<arg name="parallel" value="8"/>
 	<arg value="ps"/>
 
-	<!-- Scan plugin source files. -->
+	<!-- Scan plugin source files and unit tests. -->
 	<file>plugins/presence-api/presence-api.php</file>
 	<file>plugins/presence-api/includes/</file>
+	<file>plugins/presence-api/tests/</file>
 	<file>plugins/presence-api/uninstall.php</file>
 	<file>plugins/presence-scenes/</file>
 	<file>plugins/presence-debugger/</file>
 
 	<!-- Exclude test and demo files from coding standards. -->
-	<exclude-pattern>tests/</exclude-pattern>
+	<exclude-pattern>plugins/presence-scenes/tests/</exclude-pattern>
+	<exclude-pattern>plugins/presence-debugger/tests/</exclude-pattern>
+	<exclude-pattern>plugins/presence-api/tests/stubs/</exclude-pattern>
+	<exclude-pattern>^tests/</exclude-pattern>
 	<exclude-pattern>vendor/</exclude-pattern>
 	<exclude-pattern>node_modules/</exclude-pattern>
 
-	<!-- Use WordPress Coding Standards. -->
-	<rule ref="WordPress">
+	<!-- Use WordPress-Core Coding Standards for all files. -->
+	<rule ref="WordPress-Core">
 		<!-- Allow short array syntax — common in modern WP development. -->
 		<exclude name="Universal.Arrays.DisallowShortArraySyntax"/>
+	</rule>
+
+	<!-- Source files also follow WordPress-Docs and WordPress-Extra. -->
+	<rule ref="WordPress-Docs">
+		<exclude-pattern>plugins/presence-api/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress-Extra">
+		<exclude-pattern>plugins/presence-api/tests/*</exclude-pattern>
+	</rule>
+
+	<!-- Exclude test files from file name rules as core does. -->
+	<rule ref="WordPress.Files.FileName">
+		<exclude-pattern>plugins/presence-api/tests/*</exclude-pattern>
 	</rule>
 
 	<!-- Meta capability mapped in wp_presence_map_meta_cap(). -->

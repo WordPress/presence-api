@@ -38,7 +38,13 @@ class WP_Test_Presence_Post_List extends WP_Presence_UnitTestCase {
 
 	public function test_registers_columns_only_for_presence_supporting_post_types() {
 		// Public, but does not support presence: excluded by the in-loop check.
-		register_post_type( 'no_presence', array( 'public' => true, 'supports' => array( 'title' ) ) );
+		register_post_type(
+			'no_presence',
+			array(
+				'public'   => true,
+				'supports' => array( 'title' ),
+			)
+		);
 		// Not public, but has a list screen, as core's list tables key off show_ui.
 		register_post_type( 'private_type', array( 'show_ui' => true ) );
 		register_post_type( 'no_ui', array( 'show_ui' => false ) );
@@ -114,8 +120,8 @@ class WP_Test_Presence_Post_List extends WP_Presence_UnitTestCase {
 				'display_name' => 'Bob "><script>alert(1)</script>',
 			)
 		);
-		$deleted_id = self::factory()->user->create( array( 'role' => 'editor' ) );
-		$agent_id   = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$deleted_id  = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$agent_id    = self::factory()->user->create( array( 'role' => 'editor' ) );
 		add_filter(
 			'wp_presence_is_agent_user',
 			static function ( $is_agent, $user_id ) use ( $agent_id ) {
@@ -223,9 +229,15 @@ class WP_Test_Presence_Post_List extends WP_Presence_UnitTestCase {
 	public function test_each_heartbeat_sends_fresh_editors_cells_for_the_rows_on_screen() {
 		wp_set_current_user( self::$editor_id );
 
-		$page    = self::factory()->post->create( array( 'post_type' => 'page' ) );
-		$empty   = self::factory()->post->create();
-		register_post_type( 'no_presence', array( 'show_ui' => true, 'supports' => array( 'title' ) ) );
+		$page  = self::factory()->post->create( array( 'post_type' => 'page' ) );
+		$empty = self::factory()->post->create();
+		register_post_type(
+			'no_presence',
+			array(
+				'show_ui'  => true,
+				'supports' => array( 'title' ),
+			)
+		);
 		$other = self::factory()->post->create( array( 'post_type' => 'no_presence' ) );
 
 		wp_set_presence( wp_presence_post_room( $page ), 'editor-1', array(), array( 'user_id' => self::$editor_id ) );

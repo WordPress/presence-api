@@ -97,13 +97,16 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		wp_set_presence( 'postType/post:1', wp_presence_collaboration_state_client_id(), array( 'count' => 2 ) );
 		wp_set_presence( 'postType/post:2', 'gse-c', array(), array( 'user_id' => self::$editor_id ) );
 
-		$client_ids = wp_list_pluck( wp_get_presence(
-			'postType/post:1',
-			array(
-				'timeout'       => WP_PRESENCE_DEFAULT_TTL,
-				'client_prefix' => 'gse-',
-			)
-		), 'client_id' );
+		$client_ids = wp_list_pluck(
+			wp_get_presence(
+				'postType/post:1',
+				array(
+					'timeout'       => WP_PRESENCE_DEFAULT_TTL,
+					'client_prefix' => 'gse-',
+				)
+			),
+			'client_id'
+		);
 		sort( $client_ids );
 
 		$this->assertSame( array( 'gse-a', 'gse-b' ), $client_ids );
@@ -149,13 +152,16 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		wp_set_presence( 'postType/post:1', 'editor-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
 		wp_set_presence( 'postType/post:1', wp_presence_collaboration_state_client_id(), array( 'count' => 2 ) );
 
-		$this->assertSame( array(), wp_get_presence(
-			'postType/post:1',
-			array(
-				'timeout'       => WP_PRESENCE_DEFAULT_TTL,
-				'client_prefix' => WP_PRESENCE_RESERVED_PREFIX,
+		$this->assertSame(
+			array(),
+			wp_get_presence(
+				'postType/post:1',
+				array(
+					'timeout'       => WP_PRESENCE_DEFAULT_TTL,
+					'client_prefix' => WP_PRESENCE_RESERVED_PREFIX,
+				)
 			)
-		) );
+		);
 	}
 
 	/**
@@ -648,10 +654,12 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		$author_1 = self::factory()->user->create( array( 'role' => 'author' ) );
 		$author_2 = self::factory()->user->create( array( 'role' => 'author' ) );
 
-		$post_id = self::factory()->post->create( array(
-			'post_author' => $author_1,
-			'post_status' => 'draft',
-		) );
+		$post_id = self::factory()->post->create(
+			array(
+				'post_author' => $author_1,
+				'post_status' => 'draft',
+			)
+		);
 
 		$room = 'postType/post:' . $post_id;
 
@@ -947,7 +955,13 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_post_room
 	 */
 	public function test_presence_post_room_unsupported_post_type() {
-		register_post_type( 'no_presence', array( 'public' => true, 'supports' => array( 'title' ) ) );
+		register_post_type(
+			'no_presence',
+			array(
+				'public'   => true,
+				'supports' => array( 'title' ),
+			)
+		);
 		$post_id = self::factory()->post->create( array( 'post_type' => 'no_presence' ) );
 
 		$this->assertFalse( wp_presence_post_room( $post_id ) );
@@ -1300,7 +1314,13 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 		wp_presence_register_post_type_support();
 		register_post_type( 'book', array( 'show_ui' => true ) );
-		register_post_type( 'no_editor', array( 'show_ui' => true, 'supports' => array( 'title' ) ) );
+		register_post_type(
+			'no_editor',
+			array(
+				'show_ui'  => true,
+				'supports' => array( 'title' ),
+			)
+		);
 
 		$this->assertTrue( post_type_supports( 'post', 'presence' ) );
 		$this->assertTrue( post_type_supports( 'page', 'presence' ) );
@@ -1701,33 +1721,39 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_set_presence
 	 */
 	public function test_an_unusable_window_is_refused() {
-		$this->assertFalse( wp_set_presence(
-			'test/room',
-			'relay-1',
-			array(),
-			array(
-				'user_id'    => self::$editor_id,
-				'expires_in' => 0,
+		$this->assertFalse(
+			wp_set_presence(
+				'test/room',
+				'relay-1',
+				array(),
+				array(
+					'user_id'    => self::$editor_id,
+					'expires_in' => 0,
+				)
 			)
-		) );
-		$this->assertFalse( wp_set_presence(
-			'test/room',
-			'relay-1',
-			array(),
-			array(
-				'user_id'    => self::$editor_id,
-				'expires_in' => -5,
+		);
+		$this->assertFalse(
+			wp_set_presence(
+				'test/room',
+				'relay-1',
+				array(),
+				array(
+					'user_id'    => self::$editor_id,
+					'expires_in' => -5,
+				)
 			)
-		) );
-		$this->assertFalse( wp_set_presence(
-			'test/room',
-			'relay-1',
-			array(),
-			array(
-				'user_id'    => self::$editor_id,
-				'expires_in' => 'soon',
+		);
+		$this->assertFalse(
+			wp_set_presence(
+				'test/room',
+				'relay-1',
+				array(),
+				array(
+					'user_id'    => self::$editor_id,
+					'expires_in' => 'soon',
+				)
 			)
-		) );
+		);
 		$this->assertCount( 0, wp_get_presence( 'test/room' ) );
 	}
 

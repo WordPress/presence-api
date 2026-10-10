@@ -101,24 +101,28 @@ class WP_Test_Presence_Write_Actions extends WP_Presence_UnitTestCase {
 	public function test_set_presence_stays_quiet_when_the_write_is_rejected() {
 		$listener = $this->listen( 'set_presence', 4 );
 
-		$this->assertFalse( wp_set_presence(
-			'test/room',
-			'client-1',
-			array(),
-			array(
-				'user_id'  => self::$editor_id,
-				'date_gmt' => 'not a date',
+		$this->assertFalse(
+			wp_set_presence(
+				'test/room',
+				'client-1',
+				array(),
+				array(
+					'user_id'  => self::$editor_id,
+					'date_gmt' => 'not a date',
+				)
 			)
-		) );
-		$this->assertFalse( wp_set_presence(
-			'test/room',
-			'client-1',
-			array(),
-			array(
-				'user_id'    => self::$editor_id,
-				'expires_in' => 0,
+		);
+		$this->assertFalse(
+			wp_set_presence(
+				'test/room',
+				'client-1',
+				array(),
+				array(
+					'user_id'    => self::$editor_id,
+					'expires_in' => 0,
+				)
 			)
-		) );
+		);
 
 		add_filter( 'wp_presence_recording_enabled', '__return_false' );
 		$this->assertFalse( wp_set_presence( 'test/room', 'client-1', array(), array( 'user_id' => self::$editor_id ) ) );

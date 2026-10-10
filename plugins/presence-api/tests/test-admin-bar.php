@@ -243,14 +243,14 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 
 	public function data_elsewhere_links() {
 		return array(
-			'core screen'      => array( 'edit-comments', 'edit-comments.php' ),
-			'post type list'   => array( 'edit-page', 'edit.php?post_type=page' ),
-			'taxonomy list'    => array( 'edit-category', 'edit-tags.php?taxonomy=category' ),
-			'plugin page'      => array( 'settings_page_presence-api', 'admin.php?page=presence-api' ),
-			'needs an ID'      => array( 'user-edit', null ),
+			'core screen'       => array( 'edit-comments', 'edit-comments.php' ),
+			'post type list'    => array( 'edit-page', 'edit.php?post_type=page' ),
+			'taxonomy list'     => array( 'edit-category', 'edit-tags.php?taxonomy=category' ),
+			'plugin page'       => array( 'settings_page_presence-api', 'admin.php?page=presence-api' ),
+			'needs an ID'       => array( 'user-edit', null ),
 			'their own profile' => array( 'profile', null ),
-			'a new post'       => array( 'post-new', null ),
-			'forged path'      => array( '../wp-login', null ),
+			'a new post'        => array( 'post-new', null ),
+			'forged path'       => array( '../wp-login', null ),
 		);
 	}
 
@@ -281,9 +281,9 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 
 	public function test_posts_being_edited_come_first_then_the_busiest_places() {
 		$this->put_editor_on_post( self::$post_id );
-		$hidden = $this->put_user_on_screen( '../wp-login' );
+		$hidden   = $this->put_user_on_screen( '../wp-login' );
 		$untitled = $this->put_user_on_screen( 'edit-comments' );
-		$alone  = $this->put_user_on_screen( 'edit-comments', array( 'title' => 'Comments' ) );
+		$alone    = $this->put_user_on_screen( 'edit-comments', array( 'title' => 'Comments' ) );
 		$this->put_user_on_screen( 'users', array( 'title' => 'Users' ) );
 		$this->put_user_on_screen( 'users', array( 'title' => 'Users' ) );
 		$own = array(
@@ -329,7 +329,13 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 	}
 
 	public function test_someone_editing_a_template_in_the_site_editor_links_to_it() {
-		$template_id = self::factory()->post->create( array( 'post_type' => 'wp_template', 'post_name' => 'home', 'post_title' => 'Home' ) );
+		$template_id = self::factory()->post->create(
+			array(
+				'post_type'  => 'wp_template',
+				'post_name'  => 'home',
+				'post_title' => 'Home',
+			)
+		);
 		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'site-editor' ), array( 'user_id' => self::$editor_id ) );
 		wp_set_presence( wp_presence_post_room( $template_id ), 'editor-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
 
@@ -341,7 +347,15 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 	}
 
 	public function test_someone_editing_an_untitled_draft_is_on_no_title() {
-		$this->put_editor_on_post( self::factory()->post->create( array( 'post_title' => '', 'post_status' => 'draft', 'post_author' => self::$editor_id ) ) );
+		$this->put_editor_on_post(
+			self::factory()->post->create(
+				array(
+					'post_title'  => '',
+					'post_status' => 'draft',
+					'post_author' => self::$editor_id,
+				)
+			)
+		);
 
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 
@@ -351,9 +365,15 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 	/**
 	 * @dataProvider data_objects_being_edited
 	 */
-	public function test_someone_editing_a_comment_user_or_term_links_to_it( $screen, $object, $title ) {
+	public function test_someone_editing_a_comment_user_or_term_links_to_it( $screen, $link_callback, $title ) {
 		$object_id = 'comment' === $screen ? self::factory()->comment->create() : ( 0 === strpos( $screen, 'user-edit' ) ? self::$editor_id : self::factory()->category->create( array( 'name' => 'Recipes' ) ) );
-		$this->put_user_on_screen( $screen, array( 'title' => 'Somewhere', 'object_id' => $object_id ) );
+		$this->put_user_on_screen(
+			$screen,
+			array(
+				'title'     => 'Somewhere',
+				'object_id' => $object_id,
+			)
+		);
 
 		$admin_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
 		// Only a super admin can edit other users on a network.
@@ -361,7 +381,7 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		wp_set_current_user( $admin_id );
 		$row = $this->render_nodes()['presence-place-0'];
 
-		$this->assertSame( call_user_func( $object, $object_id ), $row->href );
+		$this->assertSame( call_user_func( $link_callback, $object_id ), $row->href );
 		$this->assertStringContainsString( '>' . $title . '</span>', $row->title );
 	}
 
@@ -395,9 +415,27 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 
 	public function test_a_user_or_term_you_cannot_edit_is_not_named_or_linked() {
 		$admin_id = self::factory()->user->create( array( 'role' => 'administrator' ) );
-		$on_user  = $this->put_user_on_screen( 'user-edit', array( 'title' => 'Edit User Admin', 'object_id' => $admin_id ) );
-		$on_term  = $this->put_user_on_screen( 'edit-category', array( 'title' => 'Edit Category', 'object_id' => self::factory()->category->create() ) );
-		$on_net   = $this->put_user_on_screen( 'user-edit-network', array( 'title' => 'Edit User Admin', 'object_id' => $admin_id ) );
+		$on_user  = $this->put_user_on_screen(
+			'user-edit',
+			array(
+				'title'     => 'Edit User Admin',
+				'object_id' => $admin_id,
+			)
+		);
+		$on_term  = $this->put_user_on_screen(
+			'edit-category',
+			array(
+				'title'     => 'Edit Category',
+				'object_id' => self::factory()->category->create(),
+			)
+		);
+		$on_net   = $this->put_user_on_screen(
+			'user-edit-network',
+			array(
+				'title'     => 'Edit User Admin',
+				'object_id' => $admin_id,
+			)
+		);
 
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'contributor' ) ) );
 		$this->let_current_user_list_users();
@@ -457,7 +495,15 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$on_term  = $this->put_user_on_screen( 'edit-category', array( 'object_id' => $term_id ) );
 
 		wp_set_current_user( self::$editor_id );
-		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'edit-category', 'object_id' => $term_id ), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence(
+			'admin/online',
+			'user-' . self::$editor_id,
+			array(
+				'screen'    => 'edit-category',
+				'object_id' => $term_id,
+			),
+			array( 'user_id' => self::$editor_id )
+		);
 		$nodes = $this->render_nodes();
 
 		$this->assertSame( 'presence-online', $nodes[ 'presence-user-' . $on_term ]->parent );
@@ -470,7 +516,15 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$here  = $this->put_user_on_screen( 'front', array( 'post_id' => self::$post_id ) );
 
 		wp_set_current_user( self::$editor_id );
-		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'front', 'post_id' => self::$post_id ), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence(
+			'admin/online',
+			'user-' . self::$editor_id,
+			array(
+				'screen'  => 'front',
+				'post_id' => self::$post_id,
+			),
+			array( 'user_id' => self::$editor_id )
+		);
 		$nodes = $this->render_nodes();
 
 		$this->assertSame( 'presence-online', $nodes[ 'presence-user-' . $here ]->parent );
@@ -560,7 +614,15 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$room    = 'postType/post:' . $post_id;
 
 		$with = $this->put_user_on_screen( 'post', array( 'post_id' => $post_id ) );
-		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array( 'screen' => 'post', 'post_id' => $post_id ), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence(
+			'admin/online',
+			'user-' . self::$editor_id,
+			array(
+				'screen'  => 'post',
+				'post_id' => $post_id,
+			),
+			array( 'user_id' => self::$editor_id )
+		);
 		wp_set_presence( $room, 'editor-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
 		wp_set_presence( $room, 'editor-' . $with, array(), array( 'user_id' => $with ) );
 

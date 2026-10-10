@@ -83,7 +83,7 @@ class WP_Test_Presence_Post_Lock_Bridge extends WP_Presence_UnitTestCase {
 		wp_presence_bridge_post_lock(
 			array(),
 			array(
-				'wp-refresh-post-lock'  => array(
+				'wp-refresh-post-lock' => array(
 					'post_id' => $post_id,
 				),
 				'presence-editor-ping' => array(
@@ -112,7 +112,7 @@ class WP_Test_Presence_Post_Lock_Bridge extends WP_Presence_UnitTestCase {
 		wp_presence_bridge_post_lock(
 			array(),
 			array(
-				'wp-refresh-post-lock'  => array(
+				'wp-refresh-post-lock' => array(
 					'post_id' => $locked_id,
 				),
 				'presence-editor-ping' => array(
@@ -169,7 +169,13 @@ class WP_Test_Presence_Post_Lock_Bridge extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_post_lock_room
 	 */
 	public function test_a_type_without_presence_still_keeps_its_lock_out_of_meta() {
-		register_post_type( 'no_presence', array( 'show_ui' => true, 'supports' => array( 'title' ) ) );
+		register_post_type(
+			'no_presence',
+			array(
+				'show_ui'  => true,
+				'supports' => array( 'title' ),
+			)
+		);
 		$post_id = self::factory()->post->create( array( 'post_type' => 'no_presence' ) );
 
 		wp_set_current_user( self::$editor_id );
@@ -274,7 +280,13 @@ class WP_Test_Presence_Post_Lock_Bridge extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_bridge_post_lock
 	 */
 	public function test_post_lock_bridge_skips_a_type_without_presence() {
-		register_post_type( 'no_presence', array( 'show_ui' => true, 'supports' => array( 'title' ) ) );
+		register_post_type(
+			'no_presence',
+			array(
+				'show_ui'  => true,
+				'supports' => array( 'title' ),
+			)
+		);
 		$post_id = self::factory()->post->create( array( 'post_type' => 'no_presence' ) );
 
 		wp_set_current_user( self::$editor_id );
