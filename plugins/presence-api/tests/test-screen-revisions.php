@@ -179,7 +179,7 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 		$post_id = self::factory()->post->create( array( 'post_status' => 'publish' ) );
 		clean_post_cache( $post_id );
 
-		$before  = $wpdb->num_queries;
+		$before = $wpdb->num_queries;
 		wp_presence_get_screen_revision( 'post/' . $post_id );
 		$queries = $wpdb->num_queries - $before;
 
@@ -479,7 +479,7 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 		set_current_screen( 'dashboard' );
 
 		$callback = static function ( $key ) {
-			return $key ?: 'custom-screen';
+			return $key ? $key : 'custom-screen';
 		};
 		add_filter( 'wp_presence_current_screen_key', $callback );
 
@@ -497,8 +497,8 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 		wp_set_current_user( self::$admin_id );
 		set_current_screen( 'post' );
 
-		$post_id                = self::factory()->post->create();
-		$GLOBALS['post']        = get_post( $post_id );
+		$post_id         = self::factory()->post->create();
+		$GLOBALS['post'] = get_post( $post_id );
 
 		$this->assertSame( 'post/' . $post_id, wp_presence_current_screen_key() );
 
@@ -537,9 +537,9 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 		wp_set_current_user( self::$admin_id );
 		set_current_screen( 'edit-tags' );
 
-		$term_id            = self::factory()->term->create( array( 'taxonomy' => 'category' ) );
-		$_GET['taxonomy']   = 'category';
-		$_GET['tag_ID']     = $term_id;
+		$term_id          = self::factory()->term->create( array( 'taxonomy' => 'category' ) );
+		$_GET['taxonomy'] = 'category';
+		$_GET['tag_ID']   = $term_id;
 
 		$this->assertSame( 'term/category/' . $term_id, wp_presence_current_screen_key() );
 	}
@@ -721,10 +721,10 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 		wp_set_current_user( $subscriber );
 
 		$ids = array(
-			'user-edit/%d' => self::$admin_id,
+			'user-edit/%d'     => self::$admin_id,
 			'term/category/%d' => self::factory()->term->create( array( 'taxonomy' => 'category' ) ),
-			'comment/%d'   => self::factory()->comment->create(),
-			'anything/%d'  => 1,
+			'comment/%d'       => self::factory()->comment->create(),
+			'anything/%d'      => 1,
 		);
 
 		$this->assertFalse( wp_presence_current_user_can_access_screen( sprintf( $key_template, $ids[ $key_template ] ) ) );
@@ -732,9 +732,9 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 
 	public function data_screens_out_of_reach() {
 		return array(
-			'another user'  => array( 'user-edit/%d' ),
-			'a term'        => array( 'term/category/%d' ),
-			'a comment'     => array( 'comment/%d' ),
+			'another user'   => array( 'user-edit/%d' ),
+			'a term'         => array( 'term/category/%d' ),
+			'a comment'      => array( 'comment/%d' ),
 			'an unknown key' => array( 'anything/%d' ),
 		);
 	}
