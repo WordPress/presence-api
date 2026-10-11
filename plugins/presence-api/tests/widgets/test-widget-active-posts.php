@@ -215,9 +215,11 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 			'no_presence_support',
 			array(
 				'public'   => true,
-				'supports' => array( 'title', 'editor' ),
+				'supports' => array( 'title' ),
 			)
 		);
+		remove_post_type_support( 'no_presence_support', 'presence' );
+
 		$post_id = self::factory()->post->create(
 			array(
 				'post_type'   => 'no_presence_support',
@@ -234,6 +236,7 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 		$this->assertCount( 0, $posts );
 
 		_unregister_post_type( 'no_presence_support' );
+		wp_presence_forget_post_type( 'no_presence_support' );
 	}
 
 	/**
