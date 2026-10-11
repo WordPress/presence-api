@@ -19,7 +19,7 @@ class WP_Presence_CLI_Command extends WP_CLI_Command {
 	/**
 	 * Sets a presence entry in a room.
 	 *
-	 * Entry expires via normal TTL cleanup (60s).
+	 * Entry expires after the site's presence TTL, 150 seconds by default.
 	 *
 	 * ## OPTIONS
 	 *

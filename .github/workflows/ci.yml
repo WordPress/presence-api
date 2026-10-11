@@ -85,6 +85,12 @@ jobs:
     with:
       should-run: ${{ needs.changes.outputs.release-please != 'true' && needs.changes.outputs.code == 'true' }}
 
+  lint-css:
+    needs: changes
+    uses: ./.github/workflows/lint-css.yml
+    with:
+      should-run: ${{ needs.changes.outputs.release-please != 'true' }}
+
   lint-js:
     needs: changes
     uses: ./.github/workflows/lint-js.yml

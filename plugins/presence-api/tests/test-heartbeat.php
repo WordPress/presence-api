@@ -44,6 +44,32 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Any author can send the ping, and the title lands in every other admin's
+	 * admin bar, so an uncapped one makes their pages as heavy as the sender likes.
+	 *
+	 * @covers ::wp_presence_admin_heartbeat_received
+	 */
+	public function test_an_oversized_ping_is_cut_to_size_before_it_is_stored() {
+		wp_set_current_user( self::$editor_id );
+
+		wp_presence_admin_heartbeat_received(
+			array(),
+			array(
+				'presence-ping' => array(
+					'screen' => 'front' . str_repeat( 'a', 1000 ),
+					'title'  => str_repeat( 'A', 100000 ),
+				),
+			),
+			'front'
+		);
+
+		$entries = wp_get_presence( wp_presence_admin_room() );
+
+		$this->assertSame( WP_PRESENCE_MAX_KEY_LENGTH, strlen( $entries[0]->data['screen'] ) );
+		$this->assertSame( 200, strlen( $entries[0]->data['title'] ) );
+	}
+
+	/**
 	 * @covers ::wp_presence_admin_heartbeat_received
 	 */
 	public function test_a_role_that_edits_only_pages_writes_presence() {

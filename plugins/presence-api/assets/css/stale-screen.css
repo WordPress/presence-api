@@ -12,6 +12,7 @@
 	align-items: center;
 	flex-wrap: wrap;
 	gap: 10px;
+
 	/* Reset core's `.notice p` margin so it doesn't compound with `gap`. */
 	margin: 0;
 }
