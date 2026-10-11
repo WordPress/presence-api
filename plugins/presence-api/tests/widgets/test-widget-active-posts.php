@@ -107,7 +107,12 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 
 		$this->assertArrayNotHasKey( 'presence-fragments', $response );
 		$this->assertArrayHasKey( 'existing', $response );
+	}
 
+	/**
+	 * @covers WP_Presence_Widget_Active_Posts::heartbeat_received
+	 */
+	public function test_heartbeat_received_ignores_unauthorised_user() {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
 		$unauthorised = WP_Presence_Widget_Active_Posts::heartbeat_received(
 			array(),
@@ -182,13 +187,53 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 		wp_set_current_user( self::$editor_id );
 
 		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
-		wp_set_presence( wp_presence_post_room( self::$post_id ), 'deleted-user', array(), array( 'user_id' => 999901 ) );
 		wp_set_presence( 'postType/bad', 'bad-room', array(), array( 'user_id' => self::$editor_id ) );
-		wp_set_presence( 'postType/attachment:' . self::$post_id, 'attachment-room', array(), array( 'user_id' => self::$editor_id ) );
 
 		$posts = $this->active_posts();
 
 		$this->assertCount( 0, $posts );
+	}
+
+	/**
+	 * @covers WP_Presence_Widget_Active_Posts::build_active_posts_data
+	 */
+	public function test_active_posts_skips_users_that_no_longer_exist() {
+		wp_set_current_user( self::$editor_id );
+
+		wp_set_presence( wp_presence_post_room( self::$post_id ), 'deleted-user', array(), array( 'user_id' => 999901 ) );
+
+		$posts = $this->active_posts();
+
+		$this->assertCount( 0, $posts );
+	}
+
+	/**
+	 * @covers WP_Presence_Widget_Active_Posts::build_active_posts_data
+	 */
+	public function test_active_posts_excludes_posts_without_presence_support() {
+		register_post_type(
+			'no_presence_support',
+			array(
+				'public'   => true,
+				'supports' => array( 'title', 'editor' ),
+			)
+		);
+		$post_id = self::factory()->post->create(
+			array(
+				'post_type'   => 'no_presence_support',
+				'post_status' => 'publish',
+				'post_author' => self::$editor_id,
+			)
+		);
+		wp_set_current_user( self::$editor_id );
+
+		$room = 'postType/no_presence_support:' . $post_id;
+		wp_set_presence( $room, 'user-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
+
+		$posts = $this->active_posts();
+		$this->assertCount( 0, $posts );
+
+		_unregister_post_type( 'no_presence_support' );
 	}
 
 	/**

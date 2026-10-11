@@ -322,8 +322,25 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 
 	public function test_someone_editing_a_post_links_to_it() {
 		$this->put_editor_on_post( self::$post_id );
-		wp_set_presence( wp_presence_post_room( self::$post_id ), 'editor-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$place = $this->place_of( $this->render_nodes(), self::$editor_id );
+
+		$this->assertSame( get_edit_post_link( self::$post_id, 'raw' ), $place->href );
+		$this->assertSame( 'Secret Draft', $place->title );
+	}
+
+	public function test_unparseable_post_room_is_skipped_and_first_post_room_wins() {
+		$this->put_editor_on_post( self::$post_id );
 		wp_set_presence( 'postType/bad', 'bad-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
+
+		$second_post_id = self::factory()->post->create(
+			array(
+				'post_title'  => 'Second Post',
+				'post_status' => 'draft',
+			)
+		);
+		wp_set_presence( wp_presence_post_room( $second_post_id ), 'second-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
 
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 		$place = $this->place_of( $this->render_nodes(), self::$editor_id );
