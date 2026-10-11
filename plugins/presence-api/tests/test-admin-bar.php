@@ -330,7 +330,7 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$this->assertSame( 'Secret Draft', $place->title );
 	}
 
-	public function test_unparseable_post_room_is_skipped_and_first_post_room_wins() {
+	public function test_unparsable_post_room_is_skipped_and_first_post_room_wins() {
 		$this->put_editor_on_post( self::$post_id );
 		wp_set_presence( 'postType/bad', 'bad-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
 
