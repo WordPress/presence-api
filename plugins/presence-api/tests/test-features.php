@@ -586,6 +586,24 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * A feature's files load from its registration.
+	 *
+	 * @covers ::wp_presence_load_features
+	 */
+	public function test_a_feature_loads_its_files() {
+		global $wp_presence_features;
+
+		$registered           = $wp_presence_features;
+		$wp_presence_features = array();
+		wp_register_presence_feature( 'loaded', array( 'files' => array( 'tests/data/feature.php' ) ) );
+
+		wp_presence_load_features();
+		$wp_presence_features = $registered;
+
+		$this->assertTrue( function_exists( 'wp_presence_test_feature_loaded' ) );
+	}
+
+	/**
 	 * A feature core has adopted loads no file, adds no hook and has no switch, and reads as on whatever the site chose.
 	 *
 	 * @covers ::wp_presence_load_features
