@@ -4,7 +4,8 @@
  * could adopt on its own.
  *
  * Plugin only. Core has no switch for its own features, so if core adopts a
- * piece, its registration here is marked `core` and core's copy runs instead.
+ * piece, its registration here names the WordPress version that ships it, and
+ * core's copy runs from that version on.
  *
  * Shaped like Gutenberg's experiments (lib/experimental/experiments/load.php):
  * features registered in code, one option keyed by feature, one function to ask.
@@ -43,8 +44,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  *     @type string[] $files    The feature's files, relative to the plugin directory. Default empty.
  *     @type bool     $network  Whether only the network can switch it, for a network-wide screen,
  *                              which also makes it multisite only. Default false.
- *     @type bool     $core     Whether core has adopted it, so core's copy runs instead of the
- *                              plugin's files, hooks and switch. Default false.
+ *     @type string   $core     The WordPress version that ships it, from which core's copy runs
+ *                              instead of the plugin's files, hooks and switch. Default empty.
  * }
  */
 function wp_register_presence_feature( $feature, $args ) {
@@ -57,7 +58,7 @@ function wp_register_presence_feature( $feature, $args ) {
 			'register' => '__return_null',
 			'files'    => array(),
 			'network'  => false,
-			'core'     => false,
+			'core'     => '',
 		)
 	);
 }
@@ -197,8 +198,8 @@ function wp_presence_register_features() {
 function wp_presence_load_features() {
 	global $wp_presence_features;
 
-	foreach ( (array) $wp_presence_features as $args ) {
-		if ( $args['core'] || ( $args['network'] && ! is_multisite() ) ) {
+	foreach ( (array) $wp_presence_features as $feature => $args ) {
+		if ( wp_presence_feature_in_core( $feature ) || ( $args['network'] && ! is_multisite() ) ) {
 			continue;
 		}
 
@@ -206,6 +207,29 @@ function wp_presence_load_features() {
 			require_once WP_PRESENCE_PLUGIN_DIR . $file;
 		}
 	}
+}
+
+/**
+ * Whether the running WordPress ships a feature itself, from the version its registration names.
+ *
+ * Any prerelease of that version counts, the way the plugin's own version check does.
+ *
+ * @access private
+ *
+ * @since 0.19.0
+ *
+ * @global array  $wp_presence_features Registered features, keyed by feature.
+ * @global string $wp_version           The WordPress version string.
+ *
+ * @param string $feature Feature key.
+ * @return bool Whether core has the feature.
+ */
+function wp_presence_feature_in_core( $feature ) {
+	global $wp_presence_features, $wp_version;
+
+	$core = $wp_presence_features[ $feature ]['core'] ?? '';
+
+	return '' !== $core && version_compare( $wp_version, $core . '-alpha', '>=' );
 }
 
 /**
@@ -224,7 +248,7 @@ function wp_presence_register_feature_hooks() {
 	global $wp_presence_features;
 
 	foreach ( (array) $wp_presence_features as $feature => $args ) {
-		if ( $args['core'] || ( $args['network'] && ! is_multisite() ) || ! wp_presence_feature_enabled( $feature ) ) {
+		if ( wp_presence_feature_in_core( $feature ) || ( $args['network'] && ! is_multisite() ) || ! wp_presence_feature_enabled( $feature ) ) {
 			continue;
 		}
 
@@ -256,8 +280,10 @@ function wp_presence_get_features() {
 	global $wp_presence_features;
 
 	$features = array();
-	foreach ( wp_list_filter( (array) $wp_presence_features, array( 'core' => false ) ) as $feature => $args ) {
-		$features[ $feature ] = call_user_func( $args['labels'] );
+	foreach ( (array) $wp_presence_features as $feature => $args ) {
+		if ( ! wp_presence_feature_in_core( $feature ) ) {
+			$features[ $feature ] = call_user_func( $args['labels'] );
+		}
 	}
 
 	return $features;
@@ -304,16 +330,12 @@ function wp_presence_get_network_features() {
  * @since 0.15.0
  * @since 0.19.0 A feature core has adopted is always on.
  *
- * @global array $wp_presence_features Registered features, keyed by feature.
- *
  * @param string $feature Feature key from wp_presence_get_features().
  * @return bool Whether the feature is on.
  */
 function wp_presence_feature_enabled( $feature ) {
-	global $wp_presence_features;
-
 	// Core runs a feature it has adopted, whatever the site last chose.
-	if ( ! empty( $wp_presence_features[ $feature ]['core'] ) ) {
+	if ( wp_presence_feature_in_core( $feature ) ) {
 		return true;
 	}
 
