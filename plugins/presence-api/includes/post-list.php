@@ -215,22 +215,12 @@ function wp_presence_editors_column_css( $hook_suffix ) {
 		return;
 	}
 
-	$css = '
-		.column-presence_editors { width: 80px; }
-		.presence-editors-stack { display: flex; align-items: center; }
-		.presence-editors-stack img {
-			border-radius: 9999px;
-			margin-inline-start: -8px;
-			box-shadow: 0 0 0 2px #fff;
-			position: relative;
-		}
-		.presence-editors-stack img:first-child { margin-inline-start: 0; }
-		.presence-editors-more { margin-inline-start: 4px; font-size: 12px; }
-	';
-
-	wp_register_style( 'presence-post-list', false, array(), WP_PRESENCE_VERSION );
-	wp_enqueue_style( 'presence-post-list' );
-	wp_add_inline_style( 'presence-post-list', $css );
+	wp_enqueue_style(
+		'presence-post-list',
+		WP_PRESENCE_PLUGIN_URL . 'assets/css/post-list.css',
+		array(),
+		WP_PRESENCE_VERSION
+	);
 }
 
 /**
