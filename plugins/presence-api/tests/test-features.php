@@ -586,6 +586,45 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * A feature core has adopted loads no file, adds no hook and has no switch, and reads as on whatever the site chose.
+	 *
+	 * @covers ::wp_presence_load_features
+	 * @covers ::wp_presence_register_feature_hooks
+	 * @covers ::wp_presence_get_features
+	 * @covers ::wp_presence_feature_enabled
+	 */
+	public function test_a_feature_core_has_adopted_steps_aside() {
+		global $wp_presence_features;
+
+		$registered = $wp_presence_features;
+		$hooked     = false;
+
+		$wp_presence_features = array();
+		wp_register_presence_feature(
+			'adopted',
+			array(
+				'files'    => array( 'tests/no-such-file.php' ),
+				'register' => static function () use ( &$hooked ) {
+					$hooked = true;
+				},
+				'core'     => true,
+			)
+		);
+		update_option( 'wp_presence_features', array( 'adopted' => false ) );
+
+		wp_presence_load_features();
+		wp_presence_register_feature_hooks();
+		$features = wp_presence_get_features();
+		$enabled  = wp_presence_feature_enabled( 'adopted' );
+
+		$wp_presence_features = $registered;
+
+		$this->assertFalse( $hooked );
+		$this->assertSame( array(), $features );
+		$this->assertTrue( $enabled );
+	}
+
+	/**
 	 * @covers ::wp_presence_sanitize_features
 	 * @covers ::wp_presence_get_features
 	 */
