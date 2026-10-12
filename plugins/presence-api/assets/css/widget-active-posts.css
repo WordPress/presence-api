@@ -1,0 +1,81 @@
+/**
+ * "Active Posts" dashboard widget.
+ *
+ * @package Presence_API
+ */
+
+#presence-active-posts-list p {
+	margin: 0;
+	padding: 8px 12px;
+	color: #646970;
+}
+
+#presence-active-posts-list .presence-active-posts-list {
+	margin: 0;
+}
+
+#presence-active-posts-list .presence-active-post-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	border-bottom: 1px solid #f0f0f1;
+}
+
+#presence-active-posts-list .presence-active-post-item:last-child {
+	border-bottom: none;
+}
+
+#presence-active-posts-list .presence-active-post-info {
+	flex: 1;
+	min-width: 0;
+}
+
+#presence-active-posts-list .presence-post-title a {
+	text-decoration: none;
+	font-weight: 400;
+}
+
+#presence-active-posts-list .presence-editor-count {
+	color: #646970;
+	font-size: 13px;
+}
+
+#presence-active-posts-list .presence-agent-badge {
+	display: inline-block;
+	margin-left: 4px;
+	padding: 1px 4px;
+	color: #50575e;
+	border: 1px solid #dcdcde;
+	border-radius: 3px;
+	font-size: 10px;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	vertical-align: middle;
+}
+
+#presence-active-posts-list .presence-editor-stack {
+	display: flex;
+	align-items: center;
+}
+
+#presence-active-posts-list .presence-editor-stack img {
+	position: relative;
+	width: 24px;
+	height: 24px;
+	margin-inline-start: -6px;
+	border-radius: 50%;
+	box-shadow: 0 0 0 2px #fff;
+}
+
+#presence-active-posts-list .presence-editor-stack img:first-child {
+	margin-inline-start: 0;
+}
+
+#presence-active-posts-list .presence-status-text {
+	flex-shrink: 0;
+	margin-left: auto;
+	color: #50575e;
+	font-size: 12px;
+	white-space: nowrap;
+}
