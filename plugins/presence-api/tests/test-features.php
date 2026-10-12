@@ -571,8 +571,8 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 		$registered = $wp_presence_features;
 		wp_presence_register_features();
 		wp_register_presence_feature( 'test-feature', array() );
-		$features = wp_presence_get_features();
-		$network  = wp_presence_get_network_features();
+		$features             = wp_presence_get_features();
+		$network              = wp_presence_get_network_features();
 		$wp_presence_features = $registered;
 
 		$this->assertSame( array(), $features['test-feature'] );

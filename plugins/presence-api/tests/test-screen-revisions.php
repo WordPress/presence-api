@@ -281,7 +281,7 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 		wp_set_current_user( self::$admin_id );
 
 		$captured = array();
-		$callback = static function ( $key, $rev, $actor_id ) use ( &$captured ) {
+		$callback = static function ( $key, $rev, $actor_id ) use ( &$captured ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- Read through compact().
 			$captured[] = compact( 'key', 'rev', 'actor_id' );
 		};
 		add_action( 'wp_presence_screen_revision_bumped', $callback, 10, 3 );

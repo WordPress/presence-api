@@ -325,7 +325,7 @@ class WP_Test_Presence_Post_Lock_Bridge extends WP_Presence_UnitTestCase {
 		$post_id = self::factory()->post->create();
 
 		$this->assertSame( '', get_post_meta( $post_id, '_edit_lock', true ) );
-		$this->assertSame( array(), get_post_meta( $post_id, '_edit_lock' ) );
+		$this->assertSame( array(), get_post_meta( $post_id, '_edit_lock' ) ); // phpcs:ignore WordPress.WP.GetMetaSingle.Missing -- Checks the array form.
 	}
 
 	/**

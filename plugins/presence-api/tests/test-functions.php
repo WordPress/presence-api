@@ -37,6 +37,7 @@ if ( ! function_exists( 'wpai_is_agent_user' ) ) {
 	}
 }
 
+// phpcs:ignore Universal.Files.SeparateFunctionsFromOO.Mixed -- The stub above has to exist before any test runs.
 class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 
 	private static $editor_id;
