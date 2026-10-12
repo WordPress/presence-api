@@ -151,6 +151,9 @@ function wp_presence_editors_stack( $editors ) {
 		$html  .= wp_kses_post( $avatar );
 	}
 
+	// Touch has no hover to show the avatars' titles, so the names are spelled out there instead.
+	$html .= '<span class="presence-editors-names" aria-hidden="true">' . esc_html( wp_sprintf( '%l', $titles ) ) . '</span>';
+
 	$hidden = array_diff_key( $titles, $shown );
 	if ( $hidden ) {
 		$names = wp_sprintf( '%l', $hidden );
@@ -226,6 +229,11 @@ function wp_presence_editors_column_css( $hook_suffix ) {
 		}
 		.presence-editors-stack img:first-child { margin-inline-start: 0; }
 		.presence-editors-more { margin-inline-start: 4px; font-size: 12px; }
+		.presence-editors-names { display: none; }
+		@media (hover: none) {
+			.presence-editors-stack { flex-wrap: wrap; }
+			.presence-editors-names { display: block; order: 1; flex-basis: 100%; margin-top: 4px; }
+		}
 	';
 
 	wp_register_style( 'presence-post-list', false, array(), WP_PRESENCE_VERSION );

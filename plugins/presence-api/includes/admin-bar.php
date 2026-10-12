@@ -273,7 +273,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 			// Just inside My Account, which core adds later at 9991; top-secondary renders in DOM order.
 			'parent' => 'top-secondary',
 			'id'     => 'presence-online',
-			'title'  => $stack_html . '<span class="presence-bar-count" aria-hidden="true">' . esc_html( $label ) . '</span><span class="screen-reader-text">' . esc_html( $sr_label ) . '</span>',
+			'title'  => $stack_html . '<span class="presence-bar-count" aria-hidden="true">' . esc_html( $label ) . '</span><span class="presence-bar-number" aria-hidden="true">' . esc_html( number_format_i18n( $online_count ) ) . '</span><span class="screen-reader-text">' . esc_html( $sr_label ) . '</span>',
 			'href'   => $users_url,
 			'meta'   => $users_url ? array( 'class' => 'presence-bar-node menupop' ) : array(
 				'class'    => 'presence-bar-node menupop',
@@ -364,7 +364,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 				array(
 					'parent' => 'presence-elsewhere',
 					'id'     => 'presence-place-' . $i,
-					'title'  => '<span class="presence-bar-label">' . esc_html( $row[0] ) . '</span><span class="presence-bar-crowd" aria-hidden="true">' . count( $row[3] ) . '</span><span class="screen-reader-text">, ' . esc_html( $names ) . '</span>',
+					'title'  => '<span class="presence-bar-label">' . esc_html( $row[0] ) . '</span><span class="presence-bar-crowd" aria-hidden="true">' . count( $row[3] ) . '</span><span class="presence-bar-names" aria-hidden="true">' . esc_html( $names ) . '</span><span class="screen-reader-text">, ' . esc_html( $names ) . '</span>',
 					'href'   => '' !== $row[1] ? $row[1] : false,
 					'meta'   => array(
 						'class' => 'presence-bar-screen',
@@ -524,6 +524,24 @@ function wp_presence_admin_bar_assets() {
 		#wp-admin-bar-presence-online .presence-bar-avatars { display: inline-flex; align-items: center; gap: 9px; margin-inline: 3px; }
 		#wp-admin-bar-presence-online .presence-bar-avatar { width: 20px !important; height: 20px !important; border-radius: 50%; outline: 2px solid var(--wp-admin-theme-color, #2271b1); outline-offset: 1px; }
 		@media (max-width: 1024px) { #wp-admin-bar-presence-online .presence-bar-avatars > :nth-child(n+6) { display: none; } }
+		@media screen and (max-width: 782px) {
+			#wpadminbar li#wp-admin-bar-presence-online { display: block; position: static; }
+			#wpadminbar #wp-admin-bar-presence-online > .ab-item { padding: 0 10px; }
+			#wp-admin-bar-presence-online .presence-bar-avatars > :nth-child(n+3) { display: none; }
+		}
+		#wp-admin-bar-presence-online :is(.presence-bar-number, .presence-bar-names) { display: none; }
+		@media (hover: none) {
+			#wpadminbar #wp-admin-bar-presence-online .presence-bar-screen > .ab-item { flex-wrap: wrap; row-gap: 0; height: auto; }
+			#wpadminbar #wp-admin-bar-presence-online .presence-bar-place > .ab-item { height: auto; }
+			#wpadminbar #wp-admin-bar-presence-online :is(.presence-bar-place > .ab-item, .presence-bar-label, .presence-bar-names) { white-space: normal; }
+			#wpadminbar #wp-admin-bar-presence-online .presence-bar-names { display: block; flex-basis: 100%; padding-bottom: 4px; font-size: 13px; line-height: 1.5; opacity: .8; }
+		}
+		@media screen and (max-width: 600px) {
+			#wpadminbar #wp-admin-bar-presence-online > .ab-item { gap: 2px; padding: 0 12px 0 6px; }
+			#wpadminbar #wp-admin-bar-presence-online > .ab-item:before { content: "\\f307"; font: normal 32px/1 dashicons; top: 0; }
+			#wp-admin-bar-presence-online :is(.presence-bar-avatars, .presence-bar-count) { display: none !important; }
+			#wp-admin-bar-presence-online .presence-bar-number { display: inline; }
+		}
 		#wp-admin-bar-presence-online .ab-sub-wrapper { max-height: calc(100vh - 64px); overflow-y: auto; color-scheme: dark; }
 		.admin-color-light #wp-admin-bar-presence-online .ab-sub-wrapper { color-scheme: light; }
 		#wp-admin-bar-presence-online .ab-submenu .ab-item { display: flex !important; align-items: center; gap: 8px; }
