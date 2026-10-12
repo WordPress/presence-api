@@ -672,10 +672,12 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 		$author_2 = self::factory()->user->create( array( 'role' => 'author' ) );
 
 		// Create a draft post owned by author 1.
-		$post_id = self::factory()->post->create( array(
-			'post_author' => $author_1,
-			'post_status' => 'draft',
-		) );
+		$post_id = self::factory()->post->create(
+			array(
+				'post_author' => $author_1,
+				'post_status' => 'draft',
+			)
+		);
 
 		// Set presence for Author 1 in that post room.
 		$room = 'postType/post:' . $post_id;
@@ -691,7 +693,7 @@ class WP_Test_Presence_REST_Controller extends WP_Presence_UnitTestCase {
 		$response = rest_get_server()->dispatch( $request );
 
 		$this->assertSame( 200, $response->get_status() );
-		$data     = $response->get_data();
+		$data = $response->get_data();
 
 		// Author 2 should see 'admin/online' but NOT see the draft post room.
 		$this->assertCount( 1, $data );

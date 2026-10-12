@@ -156,7 +156,12 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	 */
 	public function test_admin_heartbeat_records_post_status() {
 		register_post_type( 'book', array( 'show_ui' => true ) );
-		$post_id = self::factory()->post->create( array( 'post_type' => 'book', 'post_status' => 'draft' ) );
+		$post_id = self::factory()->post->create(
+			array(
+				'post_type'   => 'book',
+				'post_status' => 'draft',
+			)
+		);
 
 		wp_set_current_user( self::$editor_id );
 
@@ -218,10 +223,28 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 
 		wp_set_current_user( self::$editor_id );
 
-		wp_presence_admin_heartbeat_received( array(), array( 'presence-ping' => array( 'screen' => 'comment', 'object_id' => $comment_id ) ), 'comment' );
+		wp_presence_admin_heartbeat_received(
+			array(),
+			array(
+				'presence-ping' => array(
+					'screen'    => 'comment',
+					'object_id' => $comment_id,
+				),
+			),
+			'comment'
+		);
 		$this->assertSame( $comment_id, wp_get_presence( 'admin/online' )[0]->data['object_id'] );
 
-		wp_presence_admin_heartbeat_received( array(), array( 'presence-ping' => array( 'screen' => 'user-edit', 'object_id' => $admin_id ) ), 'user-edit' );
+		wp_presence_admin_heartbeat_received(
+			array(),
+			array(
+				'presence-ping' => array(
+					'screen'    => 'user-edit',
+					'object_id' => $admin_id,
+				),
+			),
+			'user-edit'
+		);
 		$this->assertArrayNotHasKey( 'object_id', wp_get_presence( 'admin/online' )[0]->data );
 	}
 
@@ -285,11 +308,27 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	 */
 	public function test_the_online_hash_changes_when_someone_moves_to_another_term() {
 		$other_id = self::factory()->user->create( array( 'role' => 'editor' ) );
-		wp_set_presence( wp_presence_admin_room(), 'user-' . $other_id, array( 'screen' => 'edit-category', 'object_id' => 1 ), array( 'user_id' => $other_id ) );
+		wp_set_presence(
+			wp_presence_admin_room(),
+			'user-' . $other_id,
+			array(
+				'screen'    => 'edit-category',
+				'object_id' => 1,
+			),
+			array( 'user_id' => $other_id )
+		);
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 
 		$hash = $this->hash_tick()['presence-online-hash'];
-		wp_set_presence( wp_presence_admin_room(), 'user-' . $other_id, array( 'screen' => 'edit-category', 'object_id' => 2 ), array( 'user_id' => $other_id ) );
+		wp_set_presence(
+			wp_presence_admin_room(),
+			'user-' . $other_id,
+			array(
+				'screen'    => 'edit-category',
+				'object_id' => 2,
+			),
+			array( 'user_id' => $other_id )
+		);
 
 		$this->assertArrayHasKey( 'presence-online-hash', $this->hash_tick( $hash ) );
 	}
@@ -299,11 +338,27 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	 */
 	public function test_the_online_hash_hides_where_a_hidden_user_moves() {
 		$other_id = self::factory()->user->create( array( 'role' => 'editor' ) );
-		wp_set_presence( wp_presence_admin_room(), 'user-' . $other_id, array( 'screen' => 'front', 'post_id' => 1 ), array( 'user_id' => $other_id ) );
+		wp_set_presence(
+			wp_presence_admin_room(),
+			'user-' . $other_id,
+			array(
+				'screen'  => 'front',
+				'post_id' => 1,
+			),
+			array( 'user_id' => $other_id )
+		);
 		wp_set_current_user( self::$editor_id );
 
 		$hash = $this->hash_tick()['presence-online-hash'];
-		wp_set_presence( wp_presence_admin_room(), 'user-' . $other_id, array( 'screen' => 'front', 'post_id' => 2 ), array( 'user_id' => $other_id ) );
+		wp_set_presence(
+			wp_presence_admin_room(),
+			'user-' . $other_id,
+			array(
+				'screen'  => 'front',
+				'post_id' => 2,
+			),
+			array( 'user_id' => $other_id )
+		);
 
 		$this->assertArrayHasKey( 'presence-online-unchanged', $this->hash_tick( $hash ) );
 	}
@@ -349,7 +404,7 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 		wp_set_current_user( self::$editor_id );
 
 		// Reset enqueued scripts.
-		$wp_scripts = wp_scripts();
+		$wp_scripts        = wp_scripts();
 		$wp_scripts->queue = array();
 		$wp_scripts->done  = array();
 
@@ -504,7 +559,7 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 
 		$this->assertSame(
 			array(
-				'existing'                        => true,
+				'existing'                         => true,
 				'presence-heartbeat-collaborators' => 1,
 			),
 			$response
@@ -1004,9 +1059,9 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 
 		$room = wp_presence_post_room( $post_id );
 
-		$action_ran      = false;
-		$passed_room     = null;
-		$passed_entries  = null;
+		$action_ran     = false;
+		$passed_room    = null;
+		$passed_entries = null;
 
 		add_action(
 			'wp_presence_collaboration_started',
@@ -1552,7 +1607,12 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	 */
 	public function test_admin_heartbeat_reads_the_post_from_the_editor_ping() {
 		register_post_type( 'book', array( 'show_ui' => true ) );
-		$post_id = self::factory()->post->create( array( 'post_type' => 'book', 'post_status' => 'pending' ) );
+		$post_id = self::factory()->post->create(
+			array(
+				'post_type'   => 'book',
+				'post_status' => 'pending',
+			)
+		);
 
 		wp_set_current_user( self::$editor_id );
 
@@ -1578,7 +1638,13 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_editor_heartbeat_received
 	 */
 	public function test_editor_heartbeat_skips_a_type_without_presence() {
-		register_post_type( 'no_presence', array( 'show_ui' => true, 'supports' => array( 'title' ) ) );
+		register_post_type(
+			'no_presence',
+			array(
+				'show_ui'  => true,
+				'supports' => array( 'title' ),
+			)
+		);
 		$post_id = self::factory()->post->create( array( 'post_type' => 'no_presence' ) );
 
 		wp_set_current_user( self::$editor_id );
