@@ -61,27 +61,12 @@ class WP_Presence_Network_Widget_Whos_Online {
 
 		wp_presence_enqueue_avatar_stack_style();
 
-		wp_register_style( 'presence-network-widget', false, array(), WP_PRESENCE_VERSION );
-		wp_enqueue_style( 'presence-network-widget' );
-		wp_add_inline_style( 'presence-network-widget', self::get_inline_css() );
-	}
-
-	/**
-	 * Returns the inline CSS for the widget.
-	 *
-	 * @since 0.2.0
-	 *
-	 * @return string CSS code.
-	 */
-	private static function get_inline_css() {
-		return '#presence-network-widget-list p { margin: 0; padding: 6px 12px; color: #646970; }
-			#presence-network-widget-list .presence-user-list { margin: 0; }
-			#presence-network-widget-list .presence-site-item { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-bottom: 1px solid #f0f0f1; }
-			#presence-network-widget-list .presence-site-item:last-child { border-bottom: none; }
-			#presence-network-widget-list .presence-site-info { flex: 1; min-width: 0; }
-			#presence-network-widget-list .presence-site-count { color: #646970; font-size: 12px; }
-			#presence-network-widget-list .presence-more-link { display: block; padding: 6px 12px; color: var(--wp-admin-theme-color, #2271b1); font-size: 13px; text-decoration: none; }
-			#presence-network-widget-list .presence-more-link:hover { text-decoration: underline; }';
+		wp_enqueue_style(
+			'presence-network-widget',
+			WP_PRESENCE_PLUGIN_URL . 'assets/css/network-widget-whos-online.css',
+			array(),
+			WP_PRESENCE_VERSION
+		);
 	}
 
 	/**

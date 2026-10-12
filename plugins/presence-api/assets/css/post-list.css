@@ -1,0 +1,30 @@
+/**
+ * Editors column on the post list screen.
+ *
+ * @package Presence_API
+ */
+
+.column-presence_editors {
+	width: 80px;
+}
+
+.presence-editors-stack {
+	display: flex;
+	align-items: center;
+}
+
+.presence-editors-stack img {
+	position: relative;
+	margin-inline-start: -8px;
+	border-radius: 9999px;
+	box-shadow: 0 0 0 2px #fff;
+}
+
+.presence-editors-stack img:first-child {
+	margin-inline-start: 0;
+}
+
+.presence-editors-more {
+	margin-inline-start: 4px;
+	font-size: 12px;
+}
