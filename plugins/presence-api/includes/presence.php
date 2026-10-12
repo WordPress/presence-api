@@ -77,8 +77,8 @@ if ( ! function_exists( 'wp_get_presence' ) ) {
 	 *
 	 * Reserved rows are left out whatever the prefix, so `_` returns nothing.
 	 *
-	 * A `$timeout` given here is the window used, on every site. Omit it to take
-	 * the site's own TTL, which is what `wp_presence_default_ttl` filters.
+	 * A `$timeout` given here is the window used, on every site. Omit it and each
+	 * row counts until its own expiry, which the writer set.
 	 *
 	 * @since 0.1.1
 	 * @since 0.7.0 Added the `$client_prefix` parameter.
@@ -89,7 +89,7 @@ if ( ! function_exists( 'wp_get_presence' ) ) {
 	 * @param array|string $args {
 	 *     Optional. Array or string of arguments for reading the room.
 	 *
-	 *     @type int|null $timeout       Timeout in seconds. Default null, the site's filtered TTL.
+	 *     @type int|null $timeout       Timeout in seconds. Default null, each row counts until its own expiry.
 	 *     @type string   $client_prefix Only return clients whose client_id starts with this. Default empty.
 	 * }
 	 * @return array Array of presence entry objects.
@@ -120,6 +120,7 @@ if ( ! function_exists( 'wp_presence_positional_args' ) ) {
 	 * @access private
 	 *
 	 * @since 0.17.0
+	 * @since 0.18.0 Added the `$function_name` parameter, and raises a deprecation notice for a positional call.
 	 *
 	 * @param string   $function_name The function that was called, for the deprecation notice.
 	 * @param array    $given         The arguments the function received.
@@ -239,10 +240,10 @@ if ( ! function_exists( 'wp_presence_room_rows' ) ) {
 	 *
 	 * @global wpdb $wpdb WordPress database abstraction object.
 	 *
-	 * @param string $room          The room identifier.
-	 * @param int    $timeout       Optional. Timeout in seconds. Default null, the site's filtered TTL.
-	 * @param string $client_prefix Optional. Only return rows whose client_id starts with this.
-	 *                              Default empty.
+	 * @param string   $room          The room identifier.
+	 * @param int|null $timeout       Optional. Timeout in seconds. Default null, each row counts until its own expiry.
+	 * @param string   $client_prefix Optional. Only return rows whose client_id starts with this.
+	 *                                Default empty.
 	 * @return array Array of presence row objects.
 	 */
 	function wp_presence_room_rows( $room, $timeout = null, $client_prefix = '' ) {
@@ -894,7 +895,7 @@ if ( ! function_exists( 'wp_presence_write_row' ) ) {
 	 * @since 0.7.0 Added the `$expires_gmt` and `$refresh_cutoff` parameters.
 	 * @since 0.11.0 No longer checks whether recording is on, so post locks can bypass it.
 	 * @since 0.15.0 Returns the number of rows affected instead of true.
-	 * @since 0.18.0 Added the `$seen` parameter.
+	 * @since 0.18.0 Added the `$seen` parameter, and stores the session hash.
 	 *
 	 * @global wpdb $wpdb WordPress database abstraction object.
 	 *
@@ -1008,6 +1009,7 @@ if ( ! function_exists( 'wp_remove_presence' ) ) {
 	 *
 	 * @since 0.1.1
 	 * @since 0.15.0 Fires the `removed_presence` action.
+	 * @since 0.18.0 Bumps the room's version.
 	 *
 	 * @param string $room      The room identifier.
 	 * @param string $client_id The client identifier.
@@ -1079,7 +1081,7 @@ if ( ! function_exists( 'wp_presence_exchange' ) ) {
 	 *     Optional. Array or string of arguments for writing the row and reading the room.
 	 *
 	 *     @type int      $user_id       The user ID. Default 0.
-	 *     @type int|null $timeout       Timeout in seconds. Default null, the site's filtered TTL.
+	 *     @type int|null $timeout       Timeout in seconds. Default null, each row counts until its own expiry.
 	 *     @type string   $client_prefix Only return clients whose client_id starts with this. Default empty.
 	 *     @type bool     $wp_error      Whether to return the write's WP_Error instead of reading the room
 	 *                                   when the write is refused or fails. Default false.
@@ -1133,7 +1135,7 @@ if ( ! function_exists( 'wp_presence_leave' ) ) {
 	 * @param array|string $args {
 	 *     Optional. Array or string of arguments for reading the room, as wp_get_presence() takes them.
 	 *
-	 *     @type int|null $timeout       Timeout in seconds. Default null, the site's filtered TTL.
+	 *     @type int|null $timeout       Timeout in seconds. Default null, each row counts until its own expiry.
 	 *     @type string   $client_prefix Only return clients whose client_id starts with this. Default empty.
 	 * }
 	 * @return array Array of presence entry objects, as returned by wp_get_presence().
@@ -1742,7 +1744,7 @@ if ( ! function_exists( 'wp_presence_admin_room_entries' ) ) {
 	 *
 	 * @since 0.9.0
 	 *
-	 * @param int|null $timeout Optional. Timeout in seconds. Default null, the site's filtered TTL.
+	 * @param int|null $timeout Optional. Timeout in seconds. Default null, each row counts until its own expiry.
 	 * @return array Array of presence entry objects, as returned by wp_get_presence().
 	 */
 	function wp_presence_admin_room_entries( $timeout = null ) {
@@ -1824,7 +1826,7 @@ if ( ! function_exists( 'wp_get_presence_by_room_prefix' ) ) {
 	 * @since 0.16.0 No longer private.
 	 *
 	 * @param string $prefix  The room prefix to match, matched literally (e.g., 'postType/').
-	 * @param int    $timeout Optional. Timeout in seconds. Default null, the site's filtered TTL.
+	 * @param int|null $timeout Optional. Timeout in seconds. Default null, each row counts until its own expiry.
 	 * @return array Array of presence entry objects, newest first.
 	 */
 	function wp_get_presence_by_room_prefix( $prefix, $timeout = null ) {
@@ -1857,7 +1859,7 @@ if ( ! function_exists( 'wp_get_presence_summary' ) ) {
 	 * @access private
 	 *
 	 * @since 0.1.1
-	 * @param int $timeout Optional. Timeout in seconds. Default null, the site's filtered TTL.
+	 * @param int|null $timeout Optional. Timeout in seconds. Default null, each row counts until its own expiry.
 	 * @return array {
 	 *     @type int   $total_entries Total presence entries.
 	 *     @type int   $total_users   Distinct user count.
@@ -2026,8 +2028,8 @@ if ( ! function_exists( 'wp_get_active_rooms' ) ) {
 	 *
 	 * @since 0.1.1
 	 *
-	 * @param int  $timeout        Optional. Timeout in seconds. Default null, the site's filtered TTL.
-	 * @param bool $hydrate_users  Optional. Whether to hydrate user data. Default true.
+	 * @param int|null $timeout       Optional. Timeout in seconds. Default null, each row counts until its own expiry.
+	 * @param bool     $hydrate_users Optional. Whether to hydrate user data. Default true.
 	 * @return array Array of room objects, each with 'room', 'user_count', and optionally 'users'.
 	 */
 	function wp_get_active_rooms( $timeout = null, $hydrate_users = true ) {
@@ -2091,7 +2093,7 @@ if ( ! function_exists( 'wp_presence_hydrate_room_users' ) ) {
 	 * @since 0.1.23
 	 *
 	 * @param array $rooms   Array of room data (each with a 'room' key).
-	 * @param int   $timeout Optional. Timeout in seconds. Default null, the site's filtered TTL.
+	 * @param int|null $timeout Optional. Timeout in seconds. Default null, each row counts until its own expiry.
 	 * @return array Rooms with hydrated user arrays.
 	 */
 	function wp_presence_hydrate_room_users( $rooms, $timeout = null ) {

@@ -740,6 +740,7 @@ if ( ! class_exists( 'WP_REST_Presence_Controller' ) ) {
 		 * Prepares a presence entry for the REST response.
 		 *
 		 * @since 0.1.1
+		 * @since 0.18.0 Added the `session_hash` field.
 		 *
 		 * @param object          $item    Presence entry object.
 		 * @param WP_REST_Request $request Full details about the request.
@@ -851,6 +852,7 @@ if ( ! class_exists( 'WP_REST_Presence_Controller' ) ) {
 		 * Retrieves the presence entry schema, conforming to JSON Schema.
 		 *
 		 * @since 0.1.1
+		 * @since 0.18.0 Added the `session_hash` field.
 		 *
 		 * @return array Item schema data.
 		 */
