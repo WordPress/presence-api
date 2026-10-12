@@ -19,14 +19,20 @@ Tracking who is logged in, on which screen and in which post takes frequent writ
 
 ## Features
 
-- Admin bar indicator showing who's online and who's on this page (switch off **Admin bar** on Settings > Presence API to remove it)
-- Active Posts dashboard widget grouped by post (switch off **Dashboard widget** on Settings > Presence API to remove it)
-- Editors column in the post list (switch off **Posts list** on Settings > Presence API to remove it)
-- A notice on synced patterns in the block editor while someone else is editing the pattern itself (switch off **Synced patterns** on Settings > Presence API to remove it)
-- Online filter in the Users list (switch off **Users list** on Settings > Presence API to remove it)
-- AI agents labelled in the admin bar, the Active Posts widget, and the Editors column (see [Agents](#agents))
-- Notice when someone else saves the screen you have open (switch off **Stale-screen notice** on Settings > Presence API to remove it; see [Stale-screen detection](#stale-screen-detection))
-- On multisite, a Who's Online widget in Network Admin, an Online column in the Sites list, and an Online view, filter, and column in the Users list
+Each feature has a switch on Settings > Presence API, on until switched off.
+
+| Feature | Switch |
+| --- | --- |
+| Faces in the admin bar showing who is online and who is on this page | Admin bar |
+| An Active Posts dashboard widget, grouped by post | Dashboard widget |
+| An Editors column on post lists | Posts list |
+| An Online view and count on the Users list | Users list |
+| A notice when someone else saves the screen you have open (see [Stale-screen detection](#stale-screen-detection)) | Stale-screen notice |
+| A notice on a synced pattern in the block editor while someone else edits the pattern itself | Synced patterns |
+| Post locks kept out of post meta (see [Post locks](#post-locks)) | Post locks |
+| On multisite, a Who's Online widget in Network Admin, an Online column on Sites, and an Online view and column on Users | Network Admin screens, on the network's settings page |
+
+AI agents are labelled wherever people appear: the admin bar, the Active Posts widget and the Editors column (see [Agents](#agents)).
 
 ## Run locally
 
@@ -44,12 +50,12 @@ This also activates [Presence Scenes](plugins/presence-scenes/README.md), which 
 
 No install needed: launch a scratch site straight from `main`.
 
-|  | Post locks | RTC |
-| --- | --- | --- |
-| **Single site** | [![Launch post locks, single site](https://img.shields.io/badge/Launch-3858E9?style=for-the-badge&logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json) | [![Launch RTC, single site](https://img.shields.io/badge/Launch-3858E9?style=for-the-badge&logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint-rtc.json) |
-| **Multisite** | [![Launch post locks, multisite](https://img.shields.io/badge/Launch-3858E9?style=for-the-badge&logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint-multisite.json) | [![Launch RTC, multisite](https://img.shields.io/badge/Launch-3858E9?style=for-the-badge&logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint-multisite-rtc.json) |
+|  | Post locks | RTC | Presence Scenes |
+| --- | --- | --- | --- |
+| **Single site** | [![Launch post locks, single site](https://img.shields.io/badge/Launch-3858E9?style=for-the-badge&logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json) | [![Launch RTC, single site](https://img.shields.io/badge/Launch-3858E9?style=for-the-badge&logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint-rtc.json) | [![Launch Presence Scenes](https://img.shields.io/badge/Launch-3858E9?style=for-the-badge&logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint-scenes.json) |
+| **Multisite** | [![Launch post locks, multisite](https://img.shields.io/badge/Launch-3858E9?style=for-the-badge&logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint-multisite.json) | [![Launch RTC, multisite](https://img.shields.io/badge/Launch-3858E9?style=for-the-badge&logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint-multisite-rtc.json) | |
 
-[![Launch Presence Scenes](https://img.shields.io/badge/Launch-3858E9?style=for-the-badge&logo=wordpress&logoColor=white)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint-scenes.json) plays a [Presence Scene](plugins/presence-scenes/README.md) on the Posts screen.
+Presence Scenes plays a [scene](plugins/presence-scenes/README.md) on the Posts screen.
 
 ## Data flow
 
@@ -63,12 +69,12 @@ Only Heartbeat refreshes a row between page loads. With its script removed, or i
 
 ## Rooms
 
-| Pattern                | Example            |
-| ---------------------- | ------------------ |
-| `admin/online`         | All admin pages    |
-| `postType/{type}:{id}` | `postType/post:42` |
+| Room | Who is in it |
+| --- | --- |
+| `admin/online` | Everyone on an admin screen |
+| `postType/{type}:{id}` | Everyone editing that post, such as `postType/post:42` |
 
-Each post type with presence support gets a room; see [Post Type Support](#post-type-support).
+Each post type with presence support gets a room; see [Post type support](#post-type-support).
 
 ### Client IDs
 
@@ -218,14 +224,14 @@ Without that check, a site with no table or with recording off still accepts you
 
 Each entry object returned by `wp_get_presence()` or `wp_get_presence_by_room_prefix()` has:
 
-| Field       | Type     | Notes                                                                                                                      |
-| ----------- | -------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `room`      | `string` | The room the entry belongs to.                                                                                              |
-| `client_id` | `string` | A `varchar` column, opaque, and not guaranteed numeric even when it looks like one. See [Client IDs](#client-ids).         |
-| `user_id`   | `string` | `"0"` for an entry with no signed-in user. Every column comes back as a string, so cast before a strict comparison. |
+| Field | Type | Notes |
+| --- | --- | --- |
+| `room` | `string` | The room the entry belongs to. |
+| `client_id` | `string` | A `varchar` column, opaque, and not guaranteed numeric even when it looks like one. See [Client IDs](#client-ids). |
+| `user_id` | `string` | `"0"` for an entry with no signed-in user. Every column comes back as a string, so cast before a strict comparison. |
 | `session_hash` | `string` | The same for every tab of one login, so two values for one user mean two browsers. It is keyed per room and never the session token itself. Empty for a row written without the user's own login session, such as WP-CLI, cron or an application password. |
-| `data`      | `array`  | Decoded from the stored JSON; an empty array if that JSON failed to decode.                                                 |
-| `date_gmt`  | `string` | A MySQL `datetime` string in UTC (e.g. `2024-01-01 12:00:00`), not a Unix timestamp. Convert with `strtotime( $entry->date_gmt . ' UTC' )`. See below for how far behind a live client it can sit. |
+| `data` | `array` | Decoded from the stored JSON; an empty array if that JSON failed to decode. |
+| `date_gmt` | `string` | A MySQL `datetime` string in UTC (e.g. `2024-01-01 12:00:00`), not a Unix timestamp. Convert with `strtotime( $entry->date_gmt . ' UTC' )`. See below for how far behind a live client it can sit. |
 
 An unchanged row isn't rewritten on every ping, so `date_gmt` can trail a live client. `wp_get_presence()` already filters on each row's expiry, so this only matters for a tighter window of your own.
 
@@ -240,10 +246,12 @@ wp_presence_network_aggregation_enabled();
 
 </details>
 
-## Extension Points
+## Extension points
 
-### Post Type Support
+### Post type support
+
 The plugin adds `presence` support to templates, template parts, and every post type with `show_ui` and `editor` support, including ones registered after it loads. To leave one out, remove support once it is registered:
+
 ```php
 add_action( 'init', function () {
     remove_post_type_support( 'my-post-type', 'presence' );
@@ -253,6 +261,7 @@ add_action( 'init', function () {
 Without support, `wp_presence_post_room()` returns `false` for that post type and no per-post room is created. Its post locks still move out of post meta.
 
 ### React hook
+
 Add `wp-presence` to a script's dependencies to use [`wp.presence.usePresenceUsers()`](plugins/presence-api/src/README.md), which lists who else is in a room.
 
 <details>
@@ -328,7 +337,7 @@ add_filter( 'wp_presence_recording_enabled', '__return_false' );
 On multisite, `wp_presence_network_recording_enabled` does the same for every site, defaulting to the **Presence** checkbox on Network Admin > Settings. Either switch turning recording off wins.
 
 #### `wp_presence_feature_enabled`
-Whether a piece of the plugin is on for this site, passed the feature key. Default: its checkbox on Settings > Presence API, on until switched off. On multisite, the same checkbox on Network Admin > Settings > Presence API switches a feature off for every site. `network-admin`, the Network Admin screens, has its checkbox on the network page alone and follows only the network's choice. Hooks are registered when the plugin loads, so add this from a must-use plugin. Each switchable piece has a checkbox on Settings > Presence API, saved under its key in the `wp_presence_features` option, and [#710](https://github.com/WordPress/presence-api/issues/710) tracks the ones still to come.
+Whether a piece of the plugin is on for this site, passed the feature key. Default: its checkbox on Settings > Presence API, on until switched off. On multisite, the same checkbox on Network Admin > Settings > Presence API switches a feature off for every site. `network-admin`, the Network Admin screens, has its checkbox on the network page alone and follows only the network's choice. Hooks are registered when the plugin loads, so add this from a must-use plugin. Each switchable piece has a checkbox on Settings > Presence API, saved under its key in the `wp_presence_features` option.
 ```php
 add_filter( 'wp_presence_feature_enabled', function ( $enabled, $feature ) {
     return 'post-locks' === $feature ? false : $enabled;
@@ -429,7 +438,8 @@ add_action( 'removed_user_presence', function( $user_id ) {
 } );
 ```
 
-### JS Actions
+### JS actions
+
 Fired through `wp.hooks`, not PHP. The plugin's ping script is the only thing that computes these, so a consumer has to listen rather than poll for them.
 
 #### `presence-api.watchingRoom`
@@ -464,7 +474,7 @@ wp.hooks.addAction( 'presence-api.surfaceUpdated', 'my-plugin', ( key, element )
 } );
 ```
 
-### JS Filters
+### JS filters
 
 #### `presence-api.liveSurfaces`
 The surfaces the plugin's ping script keeps current. A surface asks Heartbeat for its key while `target()` finds it on the page, and the server answers with HTML under the same key. That HTML goes in as is, so escape it in your `heartbeat_received` callback.
@@ -528,12 +538,12 @@ The collection takes `page` and `per_page` (default 50, max 100), with site coun
 <summary>Commands</summary>
 
 ```
-wp presence list <room>  # List a room's entries, reserved rows included
-wp presence summary   # Summary grouped by room
-wp presence set       # Manually upsert an entry
-wp presence cleanup   # Delete every entry, live or expired, after confirmation
-wp presence network   # Network-wide summary (multisite only)
-wp presence recording # Read or set the recording switch
+wp presence list <room>   # List a room's entries, reserved rows included
+wp presence summary       # Summary grouped by room
+wp presence set           # Manually upsert an entry
+wp presence cleanup       # Delete every entry, live or expired, after confirmation
+wp presence network       # Network-wide summary (multisite only)
+wp presence recording     # Read or set the recording switch
 ```
 
 ```
@@ -554,7 +564,7 @@ Both sides use `postType/{type}:{id}`, the grammar of Gutenberg's `WP_Sync_Confi
 
 A consumer like Gutenberg's sync poll loop ([presence-api#444](https://github.com/WordPress/presence-api/issues/444)) can wait for `presence-api.collaborationStarted` instead of polling to learn whether anyone else is in the room.
 
-## Post-lock bridge
+## Post locks
 
 Keeps `_edit_lock` in the post room's `_lock` row instead of post meta, so refreshing a lock no longer makes cached post queries stale. Meta short-circuits keep `wp_check_post_lock()` and other callers working, and it applies to every post type even with recording off. Switch off **Post locks** on Settings > Presence API and locks stay in post meta, as core keeps them.
 
@@ -568,12 +578,12 @@ Warns users when an admin screen they are viewing has been modified by someone e
 
 Classic admin screens that save via `POST` and redirect (like Settings or `post.php`) are covered automatically.
 
-Custom JS-driven screens (like Gutenberg settings panels or custom plugin screens) can opt-in by bumping the screen revision after a successful background save:
+Custom JS-driven screens (like Gutenberg settings panels or custom plugin screens) can opt in by bumping the screen revision after a successful background save:
 
 ```js
 // After a successful REST or AJAX save:
-if (window.wp?.presence?.markScreenStale) {
-    wp.presence.markScreenStale('options/my-custom-plugin-settings');
+if ( window.wp?.presence?.markScreenStale ) {
+	wp.presence.markScreenStale( 'options/my-custom-plugin-settings' );
 }
 ```
 
