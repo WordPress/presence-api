@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.18.0](https://github.com/WordPress/presence-api/compare/v0.17.0...v0.18.0) (2026-10-12)
+
+
+### Features
+
+* let a reader tell a room changed without reading every row ([#791](https://github.com/WordPress/presence-api/issues/791)) ([8f05165](https://github.com/WordPress/presence-api/commit/8f0516568c80f12d32fdd31149a8e08f3ad99cab)), closes [#737](https://github.com/WordPress/presence-api/issues/737)
+* let core's copy of a presence function or class win when it already exists ([#805](https://github.com/WordPress/presence-api/issues/805)) ([7c91227](https://github.com/WordPress/presence-api/commit/7c91227a81e543b9594cb445aa06faa4b1b51bfd))
+* raise a deprecation notice for positional presence arguments ([#800](https://github.com/WordPress/presence-api/issues/800)) ([b09c10f](https://github.com/WordPress/presence-api/commit/b09c10f8c790077396958efc0f3e8e00f36bc4d5))
+* register each switchable piece with the callback that adds its hooks ([#814](https://github.com/WordPress/presence-api/issues/814)) ([1b115a9](https://github.com/WordPress/presence-api/commit/1b115a949cfea9a46659317e65453d174c2f1713))
+* return WP_Error with specific refusal codes when presence write fails ([#792](https://github.com/WordPress/presence-api/issues/792)) ([fbca40d](https://github.com/WordPress/presence-api/commit/fbca40d12a3964de88bcbee2778b2dd15acbd211))
+* tell a second browser from a second tab with a per-room session hash ([#815](https://github.com/WordPress/presence-api/issues/815)) ([e89901e](https://github.com/WordPress/presence-api/commit/e89901e1239546b4284fb29076b4135d61ab73ca))
+
+
+### Bug Fixes
+
+* cap the heartbeat ping's title and screen before storing them ([#816](https://github.com/WordPress/presence-api/issues/816)) ([3433927](https://github.com/WordPress/presence-api/commit/343392769f3eabbb0e53908ef4e302ed4c7904a8))
+
+
+### Dependencies
+
+* lint the CSS with stylelint ([#811](https://github.com/WordPress/presence-api/issues/811)) ([6377fbe](https://github.com/WordPress/presence-api/commit/6377fbefa94ee6f1ca41760c345e292128151ee8))
+
 ## [0.17.0](https://github.com/WordPress/presence-api/compare/v0.16.1...v0.17.0) (2026-10-08)
 
 
