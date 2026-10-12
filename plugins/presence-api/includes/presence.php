@@ -1825,7 +1825,7 @@ if ( ! function_exists( 'wp_get_presence_by_room_prefix' ) ) {
 	 * @since 0.1.1
 	 * @since 0.16.0 No longer private.
 	 *
-	 * @param string $prefix  The room prefix to match, matched literally (e.g., 'postType/').
+	 * @param string   $prefix  The room prefix to match, matched literally (e.g., 'postType/').
 	 * @param int|null $timeout Optional. Timeout in seconds. Default null, each row counts until its own expiry.
 	 * @return array Array of presence entry objects, newest first.
 	 */
@@ -2092,7 +2092,7 @@ if ( ! function_exists( 'wp_presence_hydrate_room_users' ) ) {
 	 *
 	 * @since 0.1.23
 	 *
-	 * @param array $rooms   Array of room data (each with a 'room' key).
+	 * @param array    $rooms   Array of room data (each with a 'room' key).
 	 * @param int|null $timeout Optional. Timeout in seconds. Default null, each row counts until its own expiry.
 	 * @return array Rooms with hydrated user arrays.
 	 */
