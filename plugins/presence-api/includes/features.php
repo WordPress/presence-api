@@ -4,7 +4,7 @@
  * could adopt on its own.
  *
  * Plugin only. Core has no switch for its own features, so if core adopts a
- * piece, its registration here goes and its hooks become core's.
+ * piece, its registration here is marked `core` and core's copy runs instead.
  *
  * Shaped like Gutenberg's experiments (lib/experimental/experiments/load.php):
  * features registered in code, one option keyed by feature, one function to ask.
