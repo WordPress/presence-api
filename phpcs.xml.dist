@@ -23,22 +23,56 @@
 	<exclude-pattern>vendor/</exclude-pattern>
 	<exclude-pattern>node_modules/</exclude-pattern>
 
-	<!-- Use WordPress-Core Coding Standards for all files. -->
-	<rule ref="WordPress-Core">
+	<!-- Use WordPress Coding Standards. -->
+	<rule ref="WordPress">
 		<!-- Allow short array syntax — common in modern WP development. -->
 		<exclude name="Universal.Arrays.DisallowShortArraySyntax"/>
 	</rule>
 
-	<!-- Source files also follow WordPress-Docs and WordPress-Extra. -->
-	<rule ref="WordPress-Docs">
+	<!-- Tests follow the same standard, less the rules that do not fit them, as core does. -->
+	<rule ref="Generic.Commenting.DocComment.MissingShort">
 		<exclude-pattern>plugins/presence-api/tests/*</exclude-pattern>
 	</rule>
-	<rule ref="WordPress-Extra">
+	<rule ref="Generic.Commenting.DocComment.ShortNotCapital">
 		<exclude-pattern>plugins/presence-api/tests/*</exclude-pattern>
 	</rule>
-
-	<!-- Exclude test files from file name rules as core does. -->
+	<rule ref="Generic.Commenting.DocComment.LongNotCapital">
+		<exclude-pattern>plugins/presence-api/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="Squiz.Commenting.FileComment.Missing">
+		<exclude-pattern>plugins/presence-api/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="Squiz.Commenting.ClassComment.Missing">
+		<exclude-pattern>plugins/presence-api/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="Squiz.Commenting.ClassComment.SpacingAfter">
+		<exclude-pattern>plugins/presence-api/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="Squiz.Commenting.FunctionComment.Missing">
+		<exclude-pattern>plugins/presence-api/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="Squiz.Commenting.FunctionComment.MissingParamTag">
+		<exclude-pattern>plugins/presence-api/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="Squiz.Commenting.FunctionComment.WrongStyle">
+		<exclude-pattern>plugins/presence-api/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="Squiz.Commenting.VariableComment.Missing">
+		<exclude-pattern>plugins/presence-api/tests/*</exclude-pattern>
+	</rule>
 	<rule ref="WordPress.Files.FileName">
+		<exclude-pattern>plugins/presence-api/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.DB.DirectDatabaseQuery">
+		<exclude-pattern>plugins/presence-api/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.WP.GlobalVariablesOverride">
+		<exclude-pattern>plugins/presence-api/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.Security.NonceVerification">
+		<exclude-pattern>plugins/presence-api/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.WP.AlternativeFunctions">
 		<exclude-pattern>plugins/presence-api/tests/*</exclude-pattern>
 	</rule>
 
