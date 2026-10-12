@@ -32,7 +32,7 @@ function wp_presence_get_privacy_policy_content() {
 		'</strong> ' .
 		sprintf(
 			/* translators: %s: Number of seconds presence data is retained. */
-			__( 'While you are signed in, this site records that you are active, which screen you are viewing, and which post you are editing. Other signed-in users who can edit content are able to see this. It is kept for at most %s seconds after your last activity and is then deleted automatically. Nothing is retained beyond that.', 'presence-api' ),
+			__( 'While you are signed in, this site records that you are active, which screen you are viewing, which post you are editing, and which of your browsers you are using. Other signed-in users who can edit content are able to see this. It is kept for at most %s seconds after your last activity and is then deleted automatically. Nothing is retained beyond that.', 'presence-api' ),
 			number_format_i18n( $window )
 		) .
 		'<p class="privacy-policy-tutorial">' .
@@ -70,7 +70,7 @@ function wp_presence_add_privacy_policy_content() {
  * @global wpdb $wpdb WordPress database abstraction object.
  *
  * @param int $user_id The user whose rows to read.
- * @return object[] Rows with room, data and date_gmt.
+ * @return object[] Rows with room, session_hash, data and date_gmt.
  */
 function wp_presence_get_rows_for_user( $user_id ) {
 	global $wpdb;
