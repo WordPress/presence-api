@@ -32,7 +32,7 @@ Each feature has a switch on Settings > Presence API, on until switched off.
 | Post locks kept out of post meta (see [Post locks](#post-locks)) | Post locks |
 | On multisite, a Who's Online widget in Network Admin, an Online column on Sites, and an Online view and column on Users | Network Admin screens, on the network's settings page |
 
-AI agents are labelled wherever people appear: the admin bar, the Active Posts widget and the Editors column (see [Agents](#agents)).
+AI agents are labelled in the admin bar, the Active Posts widget and the Editors column (see [Agents](#agents)).
 
 ## Run locally
 
@@ -88,7 +88,7 @@ A `client_id` prefix tells this plugin's rows apart from anyone else's in the sa
 
 Anything else writing to a room, such as a plugin relaying awareness or a REST client, must use its own prefix, like `gse-` for [gutenberg-sync-engines](https://github.com/WordPress/gutenberg-sync-engines). Pass it as `client_prefix` to read back only your rows: `wp_get_presence( $room, array( 'client_prefix' => 'gse-' ) )`.
 
-A leading `_` marks bookkeeping rows, which are not participants: `_collab` holds a post room's last editor count for the collaboration actions, and `_lock` holds the post's `_edit_lock`. `wp_get_presence()` and the REST collection leave them out, and the REST write and delete routes reject them. `wp_set_presence()` writes one even with recording off, which is how a post lock outlasts the switch.
+A leading `_` marks bookkeeping rows, which are not participants: `_collab` holds a post room's last editor count for the collaboration actions, `_lock` holds the post's `_edit_lock`, and `_version` holds the room's version counter. `wp_get_presence()` and the REST collection leave them out, and the REST write and delete routes reject them. `wp_set_presence()` writes one even with recording off, which is how a post lock outlasts the switch.
 
 This plugin counts a post room's editors by the `editor-` prefix, so anyone else using it inflates the count.
 
@@ -269,7 +269,7 @@ Add `wp-presence` to a script's dependencies to use [`wp.presence.usePresenceUse
 
 ### Filters
 #### `wp_presence_default_ttl`
-The TTL in seconds for writes and reads that don't name their own window. Default: 150. Stored rows pick up a new value on their next ping.
+The TTL in seconds a write stamps on a row that names no `expires_in`, while a read with no `timeout` goes by each row's own expiry. Default: 150. Stored rows pick up a new value on their next ping.
 
 Values under 120 drop open tabs, since 120 is core's Heartbeat interval for an unfocused or idle tab.
 
@@ -317,7 +317,7 @@ add_filter( 'wp_presence_current_screen_key', function( $key, $screen ) {
 }, 10, 2 );
 ```
 
-Keys are slash-separated like rooms. The filter cuts them to 191 characters (`WP_PRESENCE_SCREEN_KEY_LIMIT`), while `wp.presence.markScreenStale()` rejects longer keys and any characters other than lowercase letters, digits, `/`, `_` and `-`, so pass it the same key.
+Keys are slash-separated like rooms. The filter cuts them to 191 characters (`WP_PRESENCE_SCREEN_KEY_LIMIT`), while the REST route behind `wp.presence.markScreenStale()` rejects longer keys and any characters other than lowercase letters, digits, `/`, `_` and `-`, so pass it the same key.
 
 #### `wp_presence_editor_state`
 Filters the state saved in an editor's post room row on each tick, so a plugin can add its own data. Keep it stable between ticks, or every tick writes.
@@ -360,7 +360,7 @@ The capability needed to see network-wide presence. Default: `manage_network`. A
 How stale a site's row in the network summary may get, in seconds, before a write refreshes it. It can only be lowered, since the default is the longest that keeps rows inside the TTL.
 
 #### `wp_presence_debugger_indicators`
-Filters the icons beside the admin bar debugger's countdown, which refresh with each Heartbeat. The debugger loads only under `WP_DEBUG` in a git checkout, since the release zip leaves it out.
+Filters the icons beside the admin bar debugger's countdown, which refresh with each Heartbeat. The debugger is a separate development plugin, `presence-debugger`, that loads only under `WP_DEBUG`.
 ```php
 add_filter( 'wp_presence_debugger_indicators', function( $indicators ) {
     $indicators[] = array( 'icon' => 'dashicons-controls-play', 'label' => __( 'Import running', 'my-plugin' ) );
@@ -506,7 +506,7 @@ add_filter( 'heartbeat_received', function( $response, $data ) {
 
 ## REST API
 
-All endpoints require editing at least one post type, and a post room also requires editing that post, and marking a screen stale requires that screen's own capability. GET responses include `Cache-Control: no-store`.
+The presence and rooms routes require editing at least one post type, and a post room also requires editing that post. Marking a screen stale requires only that screen's own capability. GET responses include `Cache-Control: no-store`.
 
 <details>
 <summary>Endpoints</summary>
@@ -528,7 +528,7 @@ Multisite only, and gated on `manage_network` by default rather than `edit_posts
 | `GET` | `/wp-presence/v1/presence/network` | List sites with users online, busiest first |
 | `GET` | `/wp-presence/v1/presence/network/<blog_id>` | One site's users online |
 
-The collection takes `page` and `per_page` (default 50, max 100), with site counts in `X-WP-Total` and `X-WP-TotalPages` and the network headcount in `X-WP-Presence-Users-Online`. Both routes take `users_per_site` to cap the users named per site (default 0, all), while `user_count` stays the real total. Only an unknown `blog_id` is a 404.
+The collection takes `page` and `per_page` (default 50, max 100), with site counts in `X-WP-Total` and `X-WP-TotalPages` the network headcount in `X-WP-Presence-Users-Online`, and whether the network view is being built in `X-WP-Presence-Aggregating`. Both routes take `users_per_site` to cap the users named per site (default 0, all), while `user_count` stays the real total. Only an unknown `blog_id` is a 404.
 
 </details>
 
@@ -570,7 +570,7 @@ Keeps `_edit_lock` in the post room's `_lock` row instead of post meta, so refre
 
 ## Capability
 
-All features require editing at least one post type shown in the admin, so a role limited to pages or a custom post type is included. Network views need `manage_network` by default.
+All features require editing at least one post type shown in the admin, so a role limited to pages or a custom post type is included. Seeing which screen someone else is on also needs `list_users`, through the `view_presence_location` meta capability. Network views need `manage_network` by default.
 
 ## Stale-screen detection
 

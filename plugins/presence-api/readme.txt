@@ -27,6 +27,9 @@ On a multisite network, Network Admin gets its own view of the same data: a Who'
 * Editors column in the post list
 * A notice on synced patterns in the block editor while someone else is editing them
 * Online filter in the Users list
+* A notice when someone else saves the screen you have open
+* Post locks kept in the presence table instead of post meta, so holding a lock no longer makes cached post queries stale
+* A switch for each feature on Settings > Presence API
 * AI agents labelled in the admin bar, the Active Posts widget, and the Editors column, once a plugin such as Agent Users marks them
 
 = For Developers =
