@@ -76,29 +76,20 @@ require_once WP_PRESENCE_PLUGIN_DIR . 'includes/presence.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/cron.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/lifecycle.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/privacy.php';
-require_once WP_PRESENCE_PLUGIN_DIR . 'includes/post-lock-bridge.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/heartbeat.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/site-health.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/rest-api.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/rest-api/endpoints/class-wp-rest-presence-controller.php';
-require_once WP_PRESENCE_PLUGIN_DIR . 'includes/screen-revisions.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/avatar-stack.php';
-require_once WP_PRESENCE_PLUGIN_DIR . 'includes/admin-bar.php';
-require_once WP_PRESENCE_PLUGIN_DIR . 'includes/user-list.php';
-require_once WP_PRESENCE_PLUGIN_DIR . 'includes/post-list.php';
-require_once WP_PRESENCE_PLUGIN_DIR . 'includes/synced-patterns.php';
-require_once WP_PRESENCE_PLUGIN_DIR . 'includes/widgets/class-wp-presence-widget-active-posts.php';
-// Plugin only, ahead of the hooks: decides which switchable pieces they register.
+// Plugin only, ahead of the hooks: loads each switchable piece core has not adopted and decides which register their hooks.
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/features.php';
 wp_presence_register_features();
+wp_presence_load_features();
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/default-filters.php';
 
 if ( is_multisite() ) {
 	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/network-functions.php';
 	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php';
-	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/network-sites-list.php';
-	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/network-user-list.php';
-	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/widgets/class-wp-presence-network-widget-whos-online.php';
 	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/ms-default-filters.php';
 }
 

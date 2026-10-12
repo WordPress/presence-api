@@ -30,6 +30,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @access private
  *
  * @since 0.18.0
+ * @since 0.19.0 Added the `files` and `core` arguments.
  *
  * @global array $wp_presence_features Registered features, keyed by feature.
  *
@@ -39,8 +40,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  *     @type callable $labels   Returns the `label` and `description` the settings page shows.
  *     @type callable $register Adds the feature's hooks, and is only called while the feature is on.
+ *     @type string[] $files    The feature's files, relative to the plugin directory. Default empty.
  *     @type bool     $network  Whether only the network can switch it, for a network-wide screen,
  *                              which also makes it multisite only. Default false.
+ *     @type bool     $core     Whether core has adopted it, so core's copy runs instead of the
+ *                              plugin's files, hooks and switch. Default false.
  * }
  */
 function wp_register_presence_feature( $feature, $args ) {
@@ -51,7 +55,9 @@ function wp_register_presence_feature( $feature, $args ) {
 		array(
 			'labels'   => '__return_empty_array',
 			'register' => '__return_null',
+			'files'    => array(),
 			'network'  => false,
+			'core'     => false,
 		)
 	);
 }
@@ -78,6 +84,7 @@ function wp_presence_register_features() {
 				);
 			},
 			'register' => 'wp_presence_register_post_lock_hooks',
+			'files'    => array( 'includes/post-lock-bridge.php' ),
 		)
 	);
 	wp_register_presence_feature(
@@ -90,6 +97,7 @@ function wp_presence_register_features() {
 				);
 			},
 			'register' => 'wp_presence_register_admin_bar_hooks',
+			'files'    => array( 'includes/admin-bar.php' ),
 		)
 	);
 	wp_register_presence_feature(
@@ -102,6 +110,7 @@ function wp_presence_register_features() {
 				);
 			},
 			'register' => 'wp_presence_register_post_list_hooks',
+			'files'    => array( 'includes/post-list.php' ),
 		)
 	);
 	wp_register_presence_feature(
@@ -114,6 +123,7 @@ function wp_presence_register_features() {
 				);
 			},
 			'register' => 'wp_presence_register_user_list_hooks',
+			'files'    => array( 'includes/user-list.php' ),
 		)
 	);
 	wp_register_presence_feature(
@@ -126,6 +136,7 @@ function wp_presence_register_features() {
 				);
 			},
 			'register' => array( 'WP_Presence_Widget_Active_Posts', 'register_hooks' ),
+			'files'    => array( 'includes/widgets/class-wp-presence-widget-active-posts.php' ),
 		)
 	);
 	wp_register_presence_feature(
@@ -138,6 +149,7 @@ function wp_presence_register_features() {
 				);
 			},
 			'register' => 'wp_presence_register_stale_screen_hooks',
+			'files'    => array( 'includes/screen-revisions.php' ),
 		)
 	);
 	wp_register_presence_feature(
@@ -150,6 +162,7 @@ function wp_presence_register_features() {
 				);
 			},
 			'register' => 'wp_presence_register_synced_pattern_hooks',
+			'files'    => array( 'includes/synced-patterns.php' ),
 		)
 	);
 	wp_register_presence_feature(
@@ -162,9 +175,37 @@ function wp_presence_register_features() {
 				);
 			},
 			'register' => 'wp_presence_register_network_admin_hooks',
+			'files'    => array(
+				'includes/network-sites-list.php',
+				'includes/network-user-list.php',
+				'includes/widgets/class-wp-presence-network-widget-whos-online.php',
+			),
 			'network'  => true,
 		)
 	);
+}
+
+/**
+ * Loads the files of every feature core has not adopted, so core's copy of an adopted one never meets the plugin's.
+ *
+ * @access private
+ *
+ * @since 0.19.0
+ *
+ * @global array $wp_presence_features Registered features, keyed by feature.
+ */
+function wp_presence_load_features() {
+	global $wp_presence_features;
+
+	foreach ( (array) $wp_presence_features as $args ) {
+		if ( $args['core'] || ( $args['network'] && ! is_multisite() ) ) {
+			continue;
+		}
+
+		foreach ( $args['files'] as $file ) {
+			require_once WP_PRESENCE_PLUGIN_DIR . $file;
+		}
+	}
 }
 
 /**
@@ -183,7 +224,7 @@ function wp_presence_register_feature_hooks() {
 	global $wp_presence_features;
 
 	foreach ( (array) $wp_presence_features as $feature => $args ) {
-		if ( ( $args['network'] && ! is_multisite() ) || ! wp_presence_feature_enabled( $feature ) ) {
+		if ( $args['core'] || ( $args['network'] && ! is_multisite() ) || ! wp_presence_feature_enabled( $feature ) ) {
 			continue;
 		}
 
@@ -205,6 +246,7 @@ function wp_presence_register_feature_hooks() {
  *
  * @since 0.15.0
  * @since 0.18.0 Built from the features registered with wp_register_presence_feature().
+ * @since 0.19.0 Leaves out the features core has adopted.
  *
  * @global array $wp_presence_features Registered features, keyed by feature.
  *
@@ -214,7 +256,7 @@ function wp_presence_get_features() {
 	global $wp_presence_features;
 
 	$features = array();
-	foreach ( (array) $wp_presence_features as $feature => $args ) {
+	foreach ( wp_list_filter( (array) $wp_presence_features, array( 'core' => false ) ) as $feature => $args ) {
 		$features[ $feature ] = call_user_func( $args['labels'] );
 	}
 
@@ -260,11 +302,21 @@ function wp_presence_get_network_features() {
  * off.
  *
  * @since 0.15.0
+ * @since 0.19.0 A feature core has adopted is always on.
+ *
+ * @global array $wp_presence_features Registered features, keyed by feature.
  *
  * @param string $feature Feature key from wp_presence_get_features().
  * @return bool Whether the feature is on.
  */
 function wp_presence_feature_enabled( $feature ) {
+	global $wp_presence_features;
+
+	// Core runs a feature it has adopted, whatever the site last chose.
+	if ( ! empty( $wp_presence_features[ $feature ]['core'] ) ) {
+		return true;
+	}
+
 	$network_only = in_array( $feature, wp_presence_get_network_features(), true );
 	$enabled      = $network_only || wp_presence_feature_stored_choice( get_option( 'wp_presence_features', array() ), $feature );
 
