@@ -51,19 +51,24 @@ $part_of = static function ( $path ) use ( $api ) {
 	return str_starts_with( $path, 'plugins/presence-api/' ) ? $path : implode( '/', array_slice( explode( '/', $path ), 0, 2 ) );
 };
 
-// Top-level functions whose docblock says @access private.
+// Top-level functions whose docblock says @access private, counting one inside a function_exists() guard as top-level.
 $private = array();
 foreach ( $files as $path => $tokens ) {
-	$doc   = '';
-	$depth = 0;
+	$doc    = '';
+	$blocks = array();
+	$guard  = false;
 	foreach ( $tokens as $i => $token ) {
+		$top = ! in_array( false, $blocks, true );
 		if ( $token->is( array( '{', T_CURLY_OPEN, T_DOLLAR_OPEN_CURLY_BRACES ) ) ) {
-			++$depth;
+			$blocks[] = $guard;
+			$guard    = false;
 		} elseif ( $token->is( '}' ) ) {
-			--$depth;
+			array_pop( $blocks );
 		} elseif ( $token->is( T_DOC_COMMENT ) ) {
 			$doc = $token->text;
-		} elseif ( $token->is( T_FUNCTION ) && 0 === $depth && $tokens[ $i + 1 ]->is( T_STRING ) && str_contains( $doc, '@access private' ) ) {
+		} elseif ( $top && $token->is( T_STRING ) && 'function_exists' === $token->text ) {
+			$guard = true;
+		} elseif ( $token->is( T_FUNCTION ) && $top && $tokens[ $i + 1 ]->is( T_STRING ) && str_contains( $doc, '@access private' ) ) {
 			$private[ strtolower( $tokens[ $i + 1 ]->text ) ] = $path;
 		}
 		if ( $token->is( array( T_FUNCTION, ';' ) ) ) {
