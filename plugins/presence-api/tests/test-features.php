@@ -604,8 +604,9 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * A feature core has adopted loads no file, adds no hook and has no switch, and reads as on whatever the site chose.
+	 * A feature from a WordPress version already out loads no file, adds no hook and has no switch, and reads as on whatever the site chose.
 	 *
+	 * @covers ::wp_presence_feature_in_core
 	 * @covers ::wp_presence_load_features
 	 * @covers ::wp_presence_register_feature_hooks
 	 * @covers ::wp_presence_get_features
@@ -625,21 +626,59 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 				'register' => static function () use ( &$hooked ) {
 					$hooked = true;
 				},
-				'core'     => true,
+				'core'     => '6.0',
 			)
 		);
-		update_option( 'wp_presence_features', array( 'adopted' => false ) );
+		wp_register_presence_feature(
+			'coming',
+			array(
+				'labels' => static function () {
+					return array( 'label' => 'Coming' );
+				},
+				'core'   => '99.0',
+			)
+		);
+		update_option(
+			'wp_presence_features',
+			array(
+				'adopted' => false,
+				'coming'  => false,
+			)
+		);
 
 		wp_presence_load_features();
 		wp_presence_register_feature_hooks();
 		$features = wp_presence_get_features();
-		$enabled  = wp_presence_feature_enabled( 'adopted' );
+		$adopted  = wp_presence_feature_enabled( 'adopted' );
+		$coming   = wp_presence_feature_enabled( 'coming' );
 
 		$wp_presence_features = $registered;
 
 		$this->assertFalse( $hooked );
-		$this->assertSame( array(), $features );
-		$this->assertTrue( $enabled );
+		$this->assertSame( array( 'coming' => array( 'label' => 'Coming' ) ), $features );
+		$this->assertTrue( $adopted );
+		$this->assertFalse( $coming, 'A version not out yet leaves the plugin\'s copy and the site\'s choice in charge.' );
+	}
+
+	/**
+	 * Any prerelease of the version a feature names already ships it.
+	 *
+	 * @covers ::wp_presence_feature_in_core
+	 */
+	public function test_a_prerelease_of_the_version_counts() {
+		global $wp_presence_features, $wp_version;
+
+		$registered = $wp_presence_features;
+		$version    = $wp_version;
+
+		wp_register_presence_feature( 'adopted', array( 'core' => '99.0' ) );
+		$wp_version = '99.0-beta1';
+		$in_core    = wp_presence_feature_in_core( 'adopted' );
+
+		$wp_version           = $version;
+		$wp_presence_features = $registered;
+
+		$this->assertTrue( $in_core );
 	}
 
 	/**
