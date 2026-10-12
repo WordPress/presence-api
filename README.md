@@ -29,7 +29,7 @@ Each feature has a switch on Settings > Presence API, on until switched off.
 | An Online view and count on the Users list | Users list |
 | A notice when someone else saves the screen you have open (see [Stale-screen detection](#stale-screen-detection)) | Stale-screen notice |
 | A notice on a synced pattern in the block editor while someone else edits the pattern itself | Synced patterns |
-| Post locks kept out of post meta (see [Post-lock bridge](#post-lock-bridge)) | Post locks |
+| Post locks kept out of post meta (see [Post locks](#post-locks)) | Post locks |
 | On multisite, a Who's Online widget in Network Admin, an Online column on Sites, and an Online view and column on Users | Network Admin screens, on the network's settings page |
 
 AI agents are labelled wherever people appear: the admin bar, the Active Posts widget and the Editors column (see [Agents](#agents)).
@@ -564,7 +564,7 @@ Both sides use `postType/{type}:{id}`, the grammar of Gutenberg's `WP_Sync_Confi
 
 A consumer like Gutenberg's sync poll loop ([presence-api#444](https://github.com/WordPress/presence-api/issues/444)) can wait for `presence-api.collaborationStarted` instead of polling to learn whether anyone else is in the room.
 
-## Post-lock bridge
+## Post locks
 
 Keeps `_edit_lock` in the post room's `_lock` row instead of post meta, so refreshing a lock no longer makes cached post queries stale. Meta short-circuits keep `wp_check_post_lock()` and other callers working, and it applies to every post type even with recording off. Switch off **Post locks** on Settings > Presence API and locks stay in post meta, as core keeps them.
 
