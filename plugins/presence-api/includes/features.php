@@ -1,14 +1,13 @@
 <?php
 /**
- * Features: the pieces of the plugin a site can switch off while core adopts
- * them one at a time.
+ * Features: the pieces of the plugin a site can switch off, each of which core
+ * could adopt on its own.
  *
- * Plugin only. Core has no switch for its own features, so when a piece is
- * merged its entry here and the check around its hooks in default-filters.php
- * go with it.
+ * Plugin only. Core has no switch for its own features, so if core adopts a
+ * piece, its registration here goes and its hooks become core's.
  *
  * Shaped like Gutenberg's experiments (lib/experimental/experiments/load.php):
- * one list declared in code, one option keyed by feature, one function to ask.
+ * features registered in code, one option keyed by feature, one function to ask.
  * Like Gutenberg's, the switches sit on the plugin's own page under Settings,
  * apart from the recording switch on Settings > General that a site keeps.
  * Unlike an experiment, a feature is on until someone switches it off, so a
@@ -23,10 +22,177 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Returns the pieces a site can switch off, keyed by feature.
+ * Registers a piece of the plugin a site can switch off.
  *
- * Each piece is added here in the same change that puts a check around its
- * hooks, so a checkbox never appears for something it cannot turn off.
+ * Called when the plugin loads, so the labels come from a callback and are
+ * only translated once something asks for them.
+ *
+ * @access private
+ *
+ * @since 0.18.0
+ *
+ * @global array $wp_presence_features Registered features, keyed by feature.
+ *
+ * @param string $feature Feature key, the key its choice is stored under.
+ * @param array  $args {
+ *     Arguments for the feature.
+ *
+ *     @type callable $labels   Returns the `label` and `description` the settings page shows.
+ *     @type callable $register Adds the feature's hooks, and is only called while the feature is on.
+ *     @type bool     $network  Whether only the network can switch it, for a network-wide screen,
+ *                              which also makes it multisite only. Default false.
+ * }
+ */
+function wp_register_presence_feature( $feature, $args ) {
+	global $wp_presence_features;
+
+	$wp_presence_features[ $feature ] = wp_parse_args(
+		$args,
+		array(
+			'labels'   => '__return_empty_array',
+			'register' => '__return_null',
+			'network'  => false,
+		)
+	);
+}
+
+/**
+ * Registers the pieces a site can switch off.
+ *
+ * Each piece is registered in the same change that moves its hooks into its
+ * `register` callback, so a checkbox never appears for something it cannot
+ * turn off.
+ *
+ * @access private
+ *
+ * @since 0.18.0
+ */
+function wp_presence_register_features() {
+	wp_register_presence_feature(
+		'post-locks',
+		array(
+			'labels'   => static function () {
+				return array(
+					'label'       => __( 'Post locks', 'presence-api' ),
+					'description' => __( 'Keep post locks in the presence table instead of post meta, so refreshing a lock does not make cached post queries stale.', 'presence-api' ),
+				);
+			},
+			'register' => 'wp_presence_register_post_lock_hooks',
+		)
+	);
+	wp_register_presence_feature(
+		'admin-bar',
+		array(
+			'labels'   => static function () {
+				return array(
+					'label'       => __( 'Admin bar', 'presence-api' ),
+					'description' => __( 'Show the faces of who is online in the admin bar, with a menu of where each person is.', 'presence-api' ),
+				);
+			},
+			'register' => 'wp_presence_register_admin_bar_hooks',
+		)
+	);
+	wp_register_presence_feature(
+		'post-list',
+		array(
+			'labels'   => static function () {
+				return array(
+					'label'       => __( 'Posts list', 'presence-api' ),
+					'description' => __( 'Show who has each post open in an Editors column on post lists.', 'presence-api' ),
+				);
+			},
+			'register' => 'wp_presence_register_post_list_hooks',
+		)
+	);
+	wp_register_presence_feature(
+		'user-list',
+		array(
+			'labels'   => static function () {
+				return array(
+					'label'       => __( 'Users list', 'presence-api' ),
+					'description' => __( 'Show who is online in an Online view with a live count on the Users list.', 'presence-api' ),
+				);
+			},
+			'register' => 'wp_presence_register_user_list_hooks',
+		)
+	);
+	wp_register_presence_feature(
+		'dashboard-widget',
+		array(
+			'labels'   => static function () {
+				return array(
+					'label'       => __( 'Dashboard widget', 'presence-api' ),
+					'description' => __( 'Show the posts people have open right now in an Active Posts widget on the Dashboard.', 'presence-api' ),
+				);
+			},
+			'register' => array( 'WP_Presence_Widget_Active_Posts', 'register_hooks' ),
+		)
+	);
+	wp_register_presence_feature(
+		'stale-screen',
+		array(
+			'labels'   => static function () {
+				return array(
+					'label'       => __( 'Stale-screen notice', 'presence-api' ),
+					'description' => __( 'Show a notice when someone else saves changes to what you have open.', 'presence-api' ),
+				);
+			},
+			'register' => 'wp_presence_register_stale_screen_hooks',
+		)
+	);
+	wp_register_presence_feature(
+		'synced-patterns',
+		array(
+			'labels'   => static function () {
+				return array(
+					'label'       => __( 'Synced patterns', 'presence-api' ),
+					'description' => __( 'Show a notice on a synced pattern in the block editor while someone else is editing the pattern itself.', 'presence-api' ),
+				);
+			},
+			'register' => 'wp_presence_register_synced_pattern_hooks',
+		)
+	);
+	wp_register_presence_feature(
+		'network-admin',
+		array(
+			'labels'   => static function () {
+				return array(
+					'label'       => __( 'Network Admin screens', 'presence-api' ),
+					'description' => __( 'Show who is online on Network Admin: a column on Sites, a view and column on Users, and the Who\'s Online dashboard widget.', 'presence-api' ),
+				);
+			},
+			'register' => 'wp_presence_register_network_admin_hooks',
+			'network'  => true,
+		)
+	);
+}
+
+/**
+ * Adds the hooks of every feature that is switched on.
+ *
+ * Runs once, after every file has loaded, so a feature's callback can live in
+ * whichever file holds the rest of that feature.
+ *
+ * @access private
+ *
+ * @since 0.18.0
+ *
+ * @global array $wp_presence_features Registered features, keyed by feature.
+ */
+function wp_presence_register_feature_hooks() {
+	global $wp_presence_features;
+
+	foreach ( (array) $wp_presence_features as $feature => $args ) {
+		if ( ( $args['network'] && ! is_multisite() ) || ! wp_presence_feature_enabled( $feature ) ) {
+			continue;
+		}
+
+		call_user_func( $args['register'] );
+	}
+}
+
+/**
+ * Returns the pieces a site can switch off, keyed by feature.
  *
  * Only call this once translations can load (init or later). Gating hooks at
  * load time goes through wp_presence_feature_enabled(), which never needs the
@@ -38,62 +204,42 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @access private
  *
  * @since 0.15.0
+ * @since 0.18.0 Built from the features registered with wp_register_presence_feature().
+ *
+ * @global array $wp_presence_features Registered features, keyed by feature.
  *
  * @return array<string, array{label: string, description: string}> Features keyed by feature.
  */
 function wp_presence_get_features() {
-	return array(
-		'post-locks'       => array(
-			'label'       => __( 'Post locks', 'presence-api' ),
-			'description' => __( 'Keep post locks in the presence table instead of post meta, so refreshing a lock does not make cached post queries stale.', 'presence-api' ),
-		),
-		'admin-bar'        => array(
-			'label'       => __( 'Admin bar', 'presence-api' ),
-			'description' => __( 'Show the faces of who is online in the admin bar, with a menu of where each person is.', 'presence-api' ),
-		),
-		'post-list'        => array(
-			'label'       => __( 'Posts list', 'presence-api' ),
-			'description' => __( 'Show who has each post open in an Editors column on post lists.', 'presence-api' ),
-		),
-		'user-list'        => array(
-			'label'       => __( 'Users list', 'presence-api' ),
-			'description' => __( 'Show who is online in an Online view with a live count on the Users list.', 'presence-api' ),
-		),
-		'dashboard-widget' => array(
-			'label'       => __( 'Dashboard widget', 'presence-api' ),
-			'description' => __( 'Show the posts people have open right now in an Active Posts widget on the Dashboard.', 'presence-api' ),
-		),
-		'stale-screen'     => array(
-			'label'       => __( 'Stale-screen notice', 'presence-api' ),
-			'description' => __( 'Show a notice when someone else saves changes to what you have open.', 'presence-api' ),
-		),
-		'synced-patterns'  => array(
-			'label'       => __( 'Synced patterns', 'presence-api' ),
-			'description' => __( 'Show a notice on a synced pattern in the block editor while someone else is editing the pattern itself.', 'presence-api' ),
-		),
-		'network-admin'    => array(
-			'label'       => __( 'Network Admin screens', 'presence-api' ),
-			'description' => __( 'Show who is online on Network Admin: a column on Sites, a view and column on Users, and the Who\'s Online dashboard widget.', 'presence-api' ),
-		),
-	);
+	global $wp_presence_features;
+
+	$features = array();
+	foreach ( (array) $wp_presence_features as $feature => $args ) {
+		$features[ $feature ] = call_user_func( $args['labels'] );
+	}
+
+	return $features;
 }
 
 /**
  * Returns the keys of the features only the network can switch.
  *
  * These decide network-wide screens, so a site's choice would decide them by
- * whichever site the request started on. Kept apart from
- * wp_presence_get_features() because wp_presence_feature_enabled() runs at
- * load time, before the labels can be translated.
+ * whichever site the request started on.
  *
  * @access private
  *
  * @since 0.17.0
+ * @since 0.18.0 Read from the `network` argument of wp_register_presence_feature().
+ *
+ * @global array $wp_presence_features Registered features, keyed by feature.
  *
  * @return string[] Feature keys.
  */
 function wp_presence_get_network_features() {
-	return array( 'network-admin' );
+	global $wp_presence_features;
+
+	return array_keys( wp_list_filter( (array) $wp_presence_features, array( 'network' => true ) ) );
 }
 
 /**
