@@ -891,7 +891,7 @@ function wp_presence_write_row( $room, $client_id, $user_id, $data_json, $date_g
 	 */
 	$signal = '';
 	if ( ! $on_sqlite ) {
-		$signal = 'id = id + 0 * LAST_INSERT_ID( CASE WHEN data <> VALUES(data) OR user_id <> VALUES(user_id) OR expires_gmt <= %s THEN 1 ELSE 2 END ), ';
+		$signal = 'id = id + 0 * LAST_INSERT_ID( CASE WHEN data <> VALUES(data) OR user_id <> VALUES(user_id) OR session_hash <> VALUES(session_hash) OR expires_gmt <= %s THEN 1 ELSE 2 END ), ';
 		$args[] = $now;
 	}
 
