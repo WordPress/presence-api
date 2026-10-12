@@ -527,6 +527,7 @@ function wp_presence_admin_bar_assets() {
 		@media screen and (max-width: 782px) {
 			#wpadminbar li#wp-admin-bar-presence-online { display: block; position: static; }
 			#wpadminbar #wp-admin-bar-presence-online > .ab-item { padding: 0 10px; }
+			#wpadminbar #wp-admin-bar-presence-online .presence-bar-there > .ab-item { padding-inline-start: 40px; }
 			#wp-admin-bar-presence-online .presence-bar-avatars > :nth-child(n+3) { display: none; }
 		}
 		#wp-admin-bar-presence-online :is(.presence-bar-number, .presence-bar-names) { display: none; }
@@ -534,7 +535,7 @@ function wp_presence_admin_bar_assets() {
 			#wpadminbar #wp-admin-bar-presence-online .presence-bar-screen > .ab-item { flex-wrap: wrap; row-gap: 0; height: auto; }
 			#wpadminbar #wp-admin-bar-presence-online .presence-bar-place > .ab-item { height: auto; }
 			#wpadminbar #wp-admin-bar-presence-online :is(.presence-bar-place > .ab-item, .presence-bar-label, .presence-bar-names) { white-space: normal; }
-			#wpadminbar #wp-admin-bar-presence-online .presence-bar-names { display: block; flex-basis: 100%; padding-bottom: 4px; font-size: 13px; line-height: 1.5; opacity: .8; }
+			#wpadminbar #wp-admin-bar-presence-online .presence-bar-names { display: block; flex-basis: 100%; padding-bottom: 4px; font-size: 13px; line-height: 1.5; }
 		}
 		@media screen and (max-width: 600px) {
 			#wpadminbar #wp-admin-bar-presence-online > .ab-item { gap: 2px; padding: 0 12px 0 6px; }
@@ -553,9 +554,9 @@ function wp_presence_admin_bar_assets() {
 		#wp-admin-bar-presence-online .presence-bar-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 		#wp-admin-bar-presence-online .presence-bar-crowd { margin-inline-start: auto; padding-inline-start: 16px; }
 		#wp-admin-bar-presence-online .ab-submenu div.ab-item { cursor: default; }
-		#wp-admin-bar-presence-online :is(.presence-bar-idle, .presence-bar-crowd, .presence-bar-more > .ab-item) { opacity: .8; }
-		.admin-color-light #wp-admin-bar-presence-online :is(.presence-bar-idle, .presence-bar-crowd, .presence-bar-more > .ab-item) { opacity: 1; }
-		.admin-color-light #wpadminbar #wp-admin-bar-presence-online .presence-bar-count { color: #50575e !important; }
+		#wp-admin-bar-presence-online :is(.presence-bar-idle, .presence-bar-crowd, .presence-bar-names, .presence-bar-more > .ab-item) { opacity: .8; }
+		.admin-color-light #wp-admin-bar-presence-online :is(.presence-bar-idle, .presence-bar-crowd, .presence-bar-names, .presence-bar-more > .ab-item) { opacity: 1; }
+		.admin-color-light #wpadminbar #wp-admin-bar-presence-online :is(.presence-bar-count, .presence-bar-number) { color: #50575e !important; }
 		#wp-admin-bar-presence-online .presence-agent-badge { padding: 0 6px; border-radius: 2px; background: rgba(0, 0, 0, .25); color: #fff; font-size: 11px; line-height: 18px; }
 		.admin-color-light #wp-admin-bar-presence-online .presence-agent-badge { background: rgba(0, 0, 0, .07); color: #1d2327; }
 	';
