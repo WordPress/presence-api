@@ -896,3 +896,33 @@ function wp_presence_enqueue_stale_screen_banner() {
 		'before'
 	);
 }
+
+/**
+ * Adds the hooks that track screen revisions and show the stale-screen notice.
+ *
+ * @access private
+ *
+ * @since 0.18.0
+ */
+function wp_presence_register_stale_screen_hooks() {
+	add_filter( 'heartbeat_received', 'wp_presence_screen_heartbeat_received', 12, 3 );
+	add_action( 'admin_enqueue_scripts', 'wp_presence_enqueue_stale_screen_banner' );
+	add_action( 'added_option', 'wp_presence_on_updated_option' );
+	add_action( 'updated_option', 'wp_presence_on_updated_option' );
+	add_action( 'update_option_wp_page_for_privacy_policy', 'wp_presence_on_privacy_policy_page_updated' );
+	add_action( 'post_updated', 'wp_presence_on_post_updated', 10, 3 );
+	add_action( 'profile_update', 'wp_presence_on_profile_update' );
+	add_action( 'edited_term', 'wp_presence_on_edited_term', 10, 3 );
+	add_action( 'edit_comment', 'wp_presence_on_edit_comment' );
+
+	if ( is_multisite() ) {
+		add_action( 'update_wpmu_options', 'wp_presence_on_update_network_options' );
+		add_action( 'wp_update_site', 'wp_presence_on_update_site', 10, 2 );
+		add_action( 'wpmu_update_blog_options', 'wp_presence_on_update_site_options' );
+		add_action( 'add_option_allowedthemes', 'wp_presence_on_site_allowed_themes_updated' );
+		add_action( 'update_option_allowedthemes', 'wp_presence_on_site_allowed_themes_updated' );
+		add_action( 'add_user_to_blog', 'wp_presence_on_site_users_changed', 10, 3 );
+		add_action( 'remove_user_from_blog', 'wp_presence_on_site_users_changed', 10, 2 );
+		add_action( 'set_user_role', 'wp_presence_on_site_users_changed', 10, 3 );
+	}
+}
