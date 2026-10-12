@@ -56,12 +56,14 @@ class WP_Test_Presence_Session_Hash extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * Two tabs of one login share a value and a second login gets another, and neither is the token.
+	 * Two tabs of one login share a value and a second login gets another, and no token reaches the table.
 	 *
 	 * @covers ::wp_presence_session_hash
 	 * @covers ::wp_set_presence
 	 */
 	public function test_tabs_share_a_session_and_browsers_do_not() {
+		global $wpdb;
+
 		$room = 'postType/post:1';
 
 		$laptop = $this->sign_in();
@@ -75,8 +77,29 @@ class WP_Test_Presence_Session_Hash extends WP_Presence_UnitTestCase {
 		$this->assertMatchesRegularExpression( '/^[0-9a-f]{16}$/', $first );
 		$this->assertSame( $first, $this->stored_hash( $room, 'tab-2' ) );
 		$this->assertNotSame( $first, $this->stored_hash( $room, 'tab-3' ) );
-		$this->assertStringNotContainsString( $first, $laptop );
-		$this->assertStringNotContainsString( $this->stored_hash( $room, 'tab-3' ), $phone );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$rows = wp_json_encode( $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->presence} WHERE room = %s", $room ) ) );
+		$this->assertStringNotContainsString( $laptop, $rows );
+		$this->assertStringNotContainsString( $phone, $rows );
+	}
+
+	/**
+	 * Signing in again in the same tab changes what peers see, so it moves the room version like any other change.
+	 *
+	 * @covers ::wp_presence_write_row
+	 */
+	public function test_a_new_login_in_the_same_tab_moves_the_version() {
+		$room = 'postType/post:1';
+
+		$this->sign_in();
+		wp_set_presence( $room, 'tab-1', array(), array( 'user_id' => self::$editor_id ) );
+		$before = wp_get_presence_room_versions( $room )[ $room ];
+
+		$this->sign_in();
+		wp_set_presence( $room, 'tab-1', array(), array( 'user_id' => self::$editor_id ) );
+
+		$this->assertSame( (string) ( $before + 1 ), wp_get_presence_room_versions( $room )[ $room ] );
 	}
 
 	/**
@@ -128,13 +151,13 @@ class WP_Test_Presence_Session_Hash extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * The REST collection returns the hash a browser wrote.
+	 * The REST collection returns the hash a browser wrote, and never the token behind it.
 	 *
 	 * @covers WP_REST_Presence_Controller::prepare_item_for_response
 	 */
 	public function test_rest_returns_the_hash() {
-		$room = 'postType/post:' . self::factory()->post->create( array( 'post_author' => self::$editor_id ) );
-		$this->sign_in();
+		$room  = 'postType/post:' . self::factory()->post->create( array( 'post_author' => self::$editor_id ) );
+		$token = $this->sign_in();
 		wp_set_presence( $room, 'tab-1', array(), array( 'user_id' => self::$editor_id ) );
 
 		$request = new WP_REST_Request( 'GET', '/wp-presence/v1/presence' );
@@ -142,5 +165,6 @@ class WP_Test_Presence_Session_Hash extends WP_Presence_UnitTestCase {
 		$data = rest_get_server()->dispatch( $request )->get_data();
 
 		$this->assertSame( wp_presence_session_hash( $room ), $data[0]['session_hash'] );
+		$this->assertStringNotContainsString( $token, wp_json_encode( $data ) );
 	}
 }
