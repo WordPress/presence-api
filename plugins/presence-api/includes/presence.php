@@ -269,7 +269,7 @@ if ( ! function_exists( 'wp_presence_room_rows' ) ) {
 			// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 			$wpdb->prepare(
 				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				"SELECT room, client_id, user_id, data, date_gmt FROM {$wpdb->presence} WHERE room = %s AND expires_gmt > %s AND date_gmt > %s{$client_clause} ORDER BY date_gmt DESC",
+				"SELECT room, client_id, user_id, session_hash, data, date_gmt FROM {$wpdb->presence} WHERE room = %s AND expires_gmt > %s AND date_gmt > %s{$client_clause} ORDER BY date_gmt DESC",
 				...$args
 			)
 		);
@@ -925,8 +925,11 @@ if ( ! function_exists( 'wp_presence_write_row' ) ) {
 			$expires_gmt = wp_presence_expiry_for( $date_gmt );
 		}
 
+		// A session belongs to the person making the request, so a row written for anyone else carries none.
+		$session_hash = ! wp_presence_is_reserved_client_id( $client_id ) && $user_id && get_current_user_id() === (int) $user_id ? wp_presence_session_hash( $room ) : '';
+
 		$date_clause = 'date_gmt = VALUES(date_gmt), expires_gmt = VALUES(expires_gmt)';
-		$args        = array( $room, $client_id, $user_id, $data_json, $date_gmt, $expires_gmt );
+		$args        = array( $room, $client_id, $user_id, $session_hash, $data_json, $date_gmt, $expires_gmt );
 		$now         = gmdate( 'Y-m-d H:i:s' );
 		$on_sqlite   = is_a( $wpdb, 'WP_SQLite_DB' );
 
@@ -939,7 +942,7 @@ if ( ! function_exists( 'wp_presence_write_row' ) ) {
 		 */
 		$signal = '';
 		if ( ! $on_sqlite ) {
-			$signal = 'id = id + 0 * LAST_INSERT_ID( CASE WHEN data <> VALUES(data) OR user_id <> VALUES(user_id) OR expires_gmt <= %s THEN 1 ELSE 2 END ), ';
+			$signal = 'id = id + 0 * LAST_INSERT_ID( CASE WHEN data <> VALUES(data) OR user_id <> VALUES(user_id) OR session_hash <> VALUES(session_hash) OR expires_gmt <= %s THEN 1 ELSE 2 END ), ';
 			$args[] = $now;
 		}
 
@@ -958,7 +961,7 @@ if ( ! function_exists( 'wp_presence_write_row' ) ) {
 			// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 			$wpdb->prepare(
 				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				"INSERT INTO {$wpdb->presence} (room, client_id, user_id, data, date_gmt, expires_gmt) VALUES (%s, %s, %d, %s, %s, %s) ON DUPLICATE KEY UPDATE {$signal}user_id = VALUES(user_id), {$date_clause}, data = VALUES(data)",
+				"INSERT INTO {$wpdb->presence} (room, client_id, user_id, session_hash, data, date_gmt, expires_gmt) VALUES (%s, %s, %d, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE {$signal}user_id = VALUES(user_id), session_hash = VALUES(session_hash), {$date_clause}, data = VALUES(data)",
 				...$args
 			)
 		);
@@ -979,6 +982,23 @@ if ( ! function_exists( 'wp_presence_write_row' ) ) {
 		}
 
 		return false === $result ? false : (int) $result;
+	}
+}
+
+if ( ! function_exists( 'wp_presence_session_hash' ) ) {
+	/**
+	 * Returns which browser the current request comes from, as a per-room hash of its login session that every tab of that login shares.
+	 *
+	 * @since 0.18.0
+	 *
+	 * @param string $room The room identifier.
+	 * @return string Sixteen hex characters, or an empty string for a request with
+	 *                no login session, such as cron, WP-CLI or an application password.
+	 */
+	function wp_presence_session_hash( $room ) {
+		$token = wp_get_session_token();
+
+		return '' === $token ? '' : substr( hash_hmac( 'sha256', (string) $room, $token ), 0, 16 );
 	}
 }
 
@@ -1820,7 +1840,7 @@ if ( ! function_exists( 'wp_get_presence_by_room_prefix' ) ) {
 		return wp_presence_cached_rows(
 			"prefix:{$prefix}",
 			$wpdb->prepare(
-				"SELECT room, client_id, user_id, data, date_gmt FROM {$wpdb->presence} WHERE room LIKE %s AND expires_gmt > %s AND date_gmt > %s AND client_id NOT LIKE %s ORDER BY date_gmt DESC",
+				"SELECT room, client_id, user_id, session_hash, data, date_gmt FROM {$wpdb->presence} WHERE room LIKE %s AND expires_gmt > %s AND date_gmt > %s AND client_id NOT LIKE %s ORDER BY date_gmt DESC",
 				$wpdb->esc_like( $prefix ) . '%',
 				$cutoff,
 				$stale,

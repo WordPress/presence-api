@@ -41,7 +41,7 @@ class WP_Test_Network_Screen_Revisions extends WP_Presence_Network_UnitTestCase 
 	 */
 	public function test_each_edit_site_tab_keys_to_the_site_being_edited() {
 		$this->become_network_admin();
-		$blog_id   = $this->create_blog();
+		$blog_id    = $this->create_blog();
 		$_GET['id'] = (string) $blog_id;
 
 		$keys = array();

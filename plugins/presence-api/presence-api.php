@@ -46,7 +46,7 @@ if ( isset( $wpdb->presence ) ) {
 }
 
 define( 'WP_PRESENCE_VERSION', '0.17.0' );
-define( 'WP_PRESENCE_DB_VERSION', 3 );
+define( 'WP_PRESENCE_DB_VERSION', 4 );
 define( 'WP_PRESENCE_NETWORK_SUMMARY_DB_VERSION', 1 );
 define( 'WP_PRESENCE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WP_PRESENCE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -90,6 +90,7 @@ require_once WP_PRESENCE_PLUGIN_DIR . 'includes/synced-patterns.php';
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/widgets/class-wp-presence-widget-active-posts.php';
 // Plugin only, ahead of the hooks: decides which switchable pieces they register.
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/features.php';
+wp_presence_register_features();
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/default-filters.php';
 
 if ( is_multisite() ) {
@@ -100,6 +101,9 @@ if ( is_multisite() ) {
 	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/widgets/class-wp-presence-network-widget-whos-online.php';
 	require_once WP_PRESENCE_PLUGIN_DIR . 'includes/ms-default-filters.php';
 }
+
+// Plugin only: after every file, so each feature's hooks can live with the rest of it.
+wp_presence_register_feature_hooks();
 
 // Plugin only.
 require_once WP_PRESENCE_PLUGIN_DIR . 'includes/plugin.php';
