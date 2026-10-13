@@ -712,10 +712,7 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		wp_presence_admin_bar_assets();
 
 		$this->assertTrue( wp_style_is( 'presence-admin-bar', 'enqueued' ) );
-		$this->assertStringContainsString(
-			'#wp-admin-bar-presence-online',
-			implode( '', (array) wp_styles()->get_data( 'presence-admin-bar', 'after' ) )
-		);
+		$this->assertStringEndsWith( 'assets/css/admin-bar.css', wp_styles()->registered['presence-admin-bar']->src );
 
 		remove_filter( 'show_admin_bar', '__return_true' );
 	}

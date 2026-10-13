@@ -54,32 +54,12 @@ class WP_Presence_Widget_Active_Posts {
 			return;
 		}
 
-		wp_register_style( 'presence-active-posts-widget', false, array(), WP_PRESENCE_VERSION );
-		wp_enqueue_style( 'presence-active-posts-widget' );
-		wp_add_inline_style( 'presence-active-posts-widget', self::get_inline_css() );
-	}
-
-	/**
-	 * Returns the inline CSS for the dashboard widget.
-	 *
-	 * @since 0.1.1
-	 *
-	 * @return string CSS code.
-	 */
-	private static function get_inline_css() {
-		return '#presence-active-posts-list p { margin: 0; padding: 8px 12px; color: #646970; }
-			#presence-active-posts-list .presence-active-posts-list { margin: 0; }
-			#presence-active-posts-list .presence-active-post-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid #f0f0f1; }
-			#presence-active-posts-list .presence-active-post-item:last-child { border-bottom: none; }
-			#presence-active-posts-list .presence-active-post-info { flex: 1; min-width: 0; }
-			#presence-active-posts-list .presence-post-title a { text-decoration: none; font-weight: 400; }
-			#presence-active-posts-list .presence-editor-count { color: #646970; font-size: 13px; }
-			#presence-active-posts-list .presence-agent-badge { display: inline-block; color: #50575e; border: 1px solid #dcdcde; border-radius: 3px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; padding: 1px 4px; vertical-align: middle; margin-left: 4px; }
-			#presence-active-posts-list .presence-editor-stack { display: flex; align-items: center; }
-			#presence-active-posts-list .presence-editor-stack img { border-radius: 50%; width: 24px; height: 24px; margin-inline-start: -6px; box-shadow: 0 0 0 2px #fff; position: relative; }
-			#presence-active-posts-list .presence-editor-stack img:first-child { margin-inline-start: 0; }
-			#presence-active-posts-list .presence-status-text { font-size: 12px; margin-left: auto; white-space: nowrap; flex-shrink: 0; color: #50575e; }
-';
+		wp_enqueue_style(
+			'presence-active-posts-widget',
+			WP_PRESENCE_PLUGIN_URL . 'assets/css/widget-active-posts.css',
+			array(),
+			WP_PRESENCE_VERSION
+		);
 	}
 
 	/**

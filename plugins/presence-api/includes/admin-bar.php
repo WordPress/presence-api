@@ -518,54 +518,12 @@ function wp_presence_admin_bar_assets() {
 		return;
 	}
 
-	$css = '
-		#wp-admin-bar-presence-online > .ab-item { display: flex !important; align-items: center; gap: 6px; }
-		#wp-admin-bar-presence-online > div.ab-item { cursor: default; }
-		#wp-admin-bar-presence-online .presence-bar-avatars { display: inline-flex; align-items: center; gap: 9px; margin-inline: 3px; }
-		#wp-admin-bar-presence-online .presence-bar-avatar { width: 20px !important; height: 20px !important; border-radius: 50%; outline: 2px solid var(--wp-admin-theme-color, #2271b1); outline-offset: 1px; }
-		@media (max-width: 1024px) { #wp-admin-bar-presence-online .presence-bar-avatars > :nth-child(n+6) { display: none; } }
-		@media screen and (max-width: 782px) {
-			#wpadminbar li#wp-admin-bar-presence-online { display: block; position: static; }
-			#wpadminbar #wp-admin-bar-presence-online > .ab-item { padding: 0 10px; }
-			#wpadminbar #wp-admin-bar-presence-online .presence-bar-there > .ab-item { padding-inline-start: 40px; }
-			#wp-admin-bar-presence-online .presence-bar-avatars > :nth-child(n+3) { display: none; }
-		}
-		#wp-admin-bar-presence-online :is(.presence-bar-number, .presence-bar-names) { display: none; }
-		@media (hover: none) {
-			#wpadminbar #wp-admin-bar-presence-online .presence-bar-screen > .ab-item { flex-wrap: wrap; row-gap: 0; height: auto; }
-			#wpadminbar #wp-admin-bar-presence-online .presence-bar-place > .ab-item { height: auto; }
-			#wpadminbar #wp-admin-bar-presence-online :is(.presence-bar-place > .ab-item, .presence-bar-label, .presence-bar-names) { white-space: normal; }
-			#wpadminbar #wp-admin-bar-presence-online .presence-bar-names { display: block; flex-basis: 100%; padding-bottom: 4px; font-size: 13px; line-height: 1.5; }
-		}
-		@media screen and (max-width: 600px) {
-			#wpadminbar #wp-admin-bar-presence-online > .ab-item { gap: 2px; padding: 0 12px 0 6px; }
-			#wpadminbar #wp-admin-bar-presence-online > .ab-item:before { content: "\\f307"; font: normal 32px/1 dashicons; top: 0; }
-			#wp-admin-bar-presence-online :is(.presence-bar-avatars, .presence-bar-count) { display: none !important; }
-			#wp-admin-bar-presence-online .presence-bar-number { display: inline; }
-		}
-		#wp-admin-bar-presence-online .ab-sub-wrapper { max-height: calc(100vh - 64px); overflow-y: auto; color-scheme: dark; }
-		.admin-color-light #wp-admin-bar-presence-online .ab-sub-wrapper { color-scheme: light; }
-		#wp-admin-bar-presence-online .ab-submenu .ab-item { display: flex !important; align-items: center; gap: 8px; }
-		#wp-admin-bar-presence-online .ab-submenu .presence-bar-avatar { width: 18px !important; height: 18px !important; flex: none; outline-offset: 0; }
-		#wp-admin-bar-presence-online .presence-bar-idle { margin-inline-start: auto; padding-inline-start: 16px; }
-		#wp-admin-bar-presence-online .presence-bar-place > .ab-item { display: block !important; max-width: 20em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
-		#wp-admin-bar-presence-online .presence-bar-there > .ab-item { padding-inline-start: 24px; }
-		#wp-admin-bar-presence-online .presence-bar-screen > .ab-item { max-width: 24em; }
-		#wp-admin-bar-presence-online .presence-bar-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-		#wp-admin-bar-presence-online .presence-bar-crowd { margin-inline-start: auto; padding-inline-start: 16px; }
-		#wp-admin-bar-presence-online .ab-submenu div.ab-item { cursor: default; }
-		#wp-admin-bar-presence-online :is(.presence-bar-idle, .presence-bar-crowd, .presence-bar-names, .presence-bar-more > .ab-item) { opacity: .8; }
-		.admin-color-light #wp-admin-bar-presence-online :is(.presence-bar-idle, .presence-bar-crowd, .presence-bar-names, .presence-bar-more > .ab-item) { opacity: 1; }
-		.admin-color-light #wpadminbar #wp-admin-bar-presence-online :is(.presence-bar-count, .presence-bar-number) { color: #50575e !important; }
-		#wp-admin-bar-presence-online .presence-agent-badge { padding: 0 6px; border-radius: 2px; background: rgba(0, 0, 0, .25); color: #fff; font-size: 11px; line-height: 18px; }
-		.admin-color-light #wp-admin-bar-presence-online .presence-agent-badge { background: rgba(0, 0, 0, .07); color: #1d2327; }
-	';
-
-	$css .= '#wpadminbar:has(.presence-bar-avatars) #wp-admin-bar-my-account.with-avatar > .ab-item img { outline: 2px solid var(--wp-admin-theme-color, #2271b1); outline-offset: 1px; }';
-
-	wp_register_style( 'presence-admin-bar', false, array(), WP_PRESENCE_VERSION );
-	wp_enqueue_style( 'presence-admin-bar' );
-	wp_add_inline_style( 'presence-admin-bar', $css );
+	wp_enqueue_style(
+		'presence-admin-bar',
+		WP_PRESENCE_PLUGIN_URL . 'assets/css/admin-bar.css',
+		array(),
+		WP_PRESENCE_VERSION
+	);
 }
 
 /**
