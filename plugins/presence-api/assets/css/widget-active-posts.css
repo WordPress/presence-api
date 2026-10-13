@@ -79,3 +79,18 @@
 	font-size: 12px;
 	white-space: nowrap;
 }
+
+#presence-active-posts-list .presence-editor-names {
+	display: none;
+}
+
+/* Touch cannot hover the avatars' titles, so the names are spelled out. */
+@media (hover: none) {
+
+	#presence-active-posts-list .presence-editor-names {
+		display: block;
+		margin-top: 2px;
+		color: #646970;
+		font-size: 13px;
+	}
+}
