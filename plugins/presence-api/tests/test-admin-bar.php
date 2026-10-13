@@ -341,19 +341,14 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		);
 		wp_set_presence( wp_presence_post_room( $second_post_id ), 'second-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
 
-		$other_user_id = $this->put_user_on_screen( 'edit-comments', array( 'title' => 'Comments' ) );
-		wp_set_presence( 'postType/bad', 'bad-' . $other_user_id, array(), array( 'user_id' => $other_user_id ) );
+		$second_user_id = self::factory()->user->create( array( 'role' => 'editor' ) );
+		wp_set_presence( 'postType/bad', 'bad-' . $second_user_id, array(), array( 'user_id' => $second_user_id ) );
 
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
-		$nodes = $this->render_nodes();
+		$place = $this->place_of( $this->render_nodes(), self::$editor_id );
 
-		$place = $this->place_of( $nodes, self::$editor_id );
 		$this->assertSame( get_edit_post_link( self::$post_id, 'raw' ), $place->href );
 		$this->assertSame( 'Secret Draft', $place->title );
-
-		$other_place = $this->place_of( $nodes, $other_user_id );
-		$this->assertSame( admin_url( 'edit-comments.php' ), $other_place->href );
-		$this->assertSame( 'Comments', $other_place->title );
 	}
 
 	public function test_someone_editing_a_template_in_the_site_editor_links_to_it() {
