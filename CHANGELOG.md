@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.18.1](https://github.com/WordPress/presence-api/compare/v0.18.0...v0.18.1) (2026-10-13)
+
+
+### Bug Fixes
+
+* show the admin bar presence node on phones and spell out hover-only names on touch ([#830](https://github.com/WordPress/presence-api/issues/830)) ([443d4c3](https://github.com/WordPress/presence-api/commit/443d4c361c02eb8dc68493fcc78a455c99b4c03f))
+
+
+### Dependencies
+
+* move the inline CSS into stylesheets so stylelint covers it ([#825](https://github.com/WordPress/presence-api/issues/825)) ([b5a5951](https://github.com/WordPress/presence-api/commit/b5a59511d22f798cceaea64a1817545b1dee8607))
+
 ## [0.18.0](https://github.com/WordPress/presence-api/compare/v0.17.0...v0.18.0) (2026-10-12)
 
 
