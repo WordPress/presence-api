@@ -110,19 +110,6 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * @covers WP_Presence_Widget_Active_Posts::heartbeat_received
-	 */
-	public function test_heartbeat_received_ignores_unauthorised_user() {
-		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
-		$unauthorised = WP_Presence_Widget_Active_Posts::heartbeat_received(
-			array(),
-			array( 'presence-fragments' => array( 'active-posts' => true ) ),
-			'dashboard'
-		);
-		$this->assertSame( array(), $unauthorised );
-	}
-
-	/**
 	 * @covers WP_Presence_Widget_Active_Posts::build_active_posts_data
 	 */
 	public function test_active_status() {

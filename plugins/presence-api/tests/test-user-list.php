@@ -200,6 +200,8 @@ class WP_Test_Presence_User_List extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_users_list_heartbeat_received
 	 */
 	public function test_heartbeat_received_returns_empty_without_fragment_request() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+
 		$this->assertSame( array(), wp_presence_users_online_count_heartbeat_received( array(), array(), 'users' ) );
 		$this->assertSame( array(), wp_presence_users_list_heartbeat_received( array(), array(), 'users' ) );
 	}
