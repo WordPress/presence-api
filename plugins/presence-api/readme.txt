@@ -3,7 +3,7 @@ Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas,
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.1
-Stable tag: 0.18.0
+Stable tag: 0.18.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -79,6 +79,9 @@ For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/presence-api/blob/main/CHANGELOG.md
 
+= 0.18.1 =
+* Show the admin bar presence node on phones and spell out hover-only names on touch ([#830](https://github.com/WordPress/presence-api/issues/830)).
+
 = 0.18.0 =
 * Let a reader tell a room changed without reading every row ([#791](https://github.com/WordPress/presence-api/issues/791)).
 * Let core's copy of a presence function or class win when it already exists ([#805](https://github.com/WordPress/presence-api/issues/805)).
@@ -103,9 +106,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 * Make the room prefix read and the room parser public ([#766](https://github.com/WordPress/presence-api/issues/766)).
 * Register usePresenceUsers as the wp-presence script ([#767](https://github.com/WordPress/presence-api/issues/767)).
 * Keep the Editors column's faces inside the column on a busy post ([#780](https://github.com/WordPress/presence-api/issues/780)).
-
-= 0.15.0 =
-* Fire an action when a presence row is set or removed ([#756](https://github.com/WordPress/presence-api/issues/756)).
-* Let a site switch off the pieces it does not want, starting with post locks ([#724](https://github.com/WordPress/presence-api/issues/724)).
-* Move the feature switches to the plugin's own page under Settings ([#755](https://github.com/WordPress/presence-api/issues/755)).
-* Write reserved rows with recording off, so post locks use wp_set_presence() ([#752](https://github.com/WordPress/presence-api/issues/752)).
