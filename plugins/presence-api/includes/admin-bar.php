@@ -273,7 +273,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 			// Just inside My Account, which core adds later at 9991; top-secondary renders in DOM order.
 			'parent' => 'top-secondary',
 			'id'     => 'presence-online',
-			'title'  => $stack_html . '<span class="presence-bar-count" aria-hidden="true">' . esc_html( $label ) . '</span><span class="screen-reader-text">' . esc_html( $sr_label ) . '</span>',
+			'title'  => $stack_html . '<span class="presence-bar-count" aria-hidden="true">' . esc_html( $label ) . '</span><span class="presence-bar-number" aria-hidden="true">' . esc_html( number_format_i18n( $online_count ) ) . '</span><span class="screen-reader-text">' . esc_html( $sr_label ) . '</span>',
 			'href'   => $users_url,
 			'meta'   => $users_url ? array( 'class' => 'presence-bar-node menupop' ) : array(
 				'class'    => 'presence-bar-node menupop',
@@ -364,7 +364,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 				array(
 					'parent' => 'presence-elsewhere',
 					'id'     => 'presence-place-' . $i,
-					'title'  => '<span class="presence-bar-label">' . esc_html( $row[0] ) . '</span><span class="presence-bar-crowd" aria-hidden="true">' . count( $row[3] ) . '</span><span class="screen-reader-text">, ' . esc_html( $names ) . '</span>',
+					'title'  => '<span class="presence-bar-label">' . esc_html( $row[0] ) . '</span><span class="presence-bar-crowd" aria-hidden="true">' . count( $row[3] ) . '</span><span class="presence-bar-names" aria-hidden="true">' . esc_html( $names ) . '</span><span class="screen-reader-text">, ' . esc_html( $names ) . '</span>',
 					'href'   => '' !== $row[1] ? $row[1] : false,
 					'meta'   => array(
 						'class' => 'presence-bar-screen',

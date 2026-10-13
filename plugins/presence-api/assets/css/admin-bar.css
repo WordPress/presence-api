@@ -36,6 +36,83 @@
 	}
 }
 
+@media screen and (max-width: 782px) {
+
+	#wpadminbar li#wp-admin-bar-presence-online {
+		display: block;
+		position: static;
+	}
+
+	#wpadminbar #wp-admin-bar-presence-online > .ab-item {
+		padding: 0 10px;
+	}
+
+	#wpadminbar #wp-admin-bar-presence-online .presence-bar-there > .ab-item {
+		padding-inline-start: 40px;
+	}
+
+	#wp-admin-bar-presence-online .presence-bar-avatars > :nth-child(n+3) {
+		display: none;
+	}
+}
+
+#wp-admin-bar-presence-online :is(.presence-bar-number, .presence-bar-names) {
+	display: none;
+}
+
+/* Touch cannot hover a crowd's title, so its names are spelled out. */
+@media (hover: none) {
+
+	#wpadminbar #wp-admin-bar-presence-online .presence-bar-screen > .ab-item {
+		flex-wrap: wrap;
+		row-gap: 0;
+		height: auto;
+	}
+
+	#wpadminbar #wp-admin-bar-presence-online .presence-bar-place > .ab-item {
+		height: auto;
+	}
+
+	#wpadminbar #wp-admin-bar-presence-online :is(.presence-bar-place > .ab-item, .presence-bar-label, .presence-bar-names) {
+		white-space: normal;
+	}
+
+	#wpadminbar #wp-admin-bar-presence-online .presence-bar-names {
+		display: block;
+		flex-basis: 100%;
+		padding-bottom: 4px;
+		font-size: 13px;
+		line-height: 1.5;
+	}
+}
+
+/* A phone's bar fits an icon and a count, like core's Comments. */
+@media screen and (max-width: 600px) {
+
+	#wpadminbar #wp-admin-bar-presence-online > .ab-item {
+		gap: 2px;
+		padding: 0 12px 0 6px;
+	}
+
+	#wpadminbar #wp-admin-bar-presence-online > .ab-item::before {
+		content: "\f307";
+		top: 0;
+		/* stylelint-disable font-family-no-missing-generic-family-keyword */
+		font-family: dashicons;
+		/* stylelint-enable font-family-no-missing-generic-family-keyword */
+		font-size: 32px;
+		line-height: 1;
+	}
+
+	#wp-admin-bar-presence-online :is(.presence-bar-avatars, .presence-bar-count) {
+		display: none !important;
+	}
+
+	#wp-admin-bar-presence-online .presence-bar-number {
+		display: inline;
+	}
+}
+
 #wp-admin-bar-presence-online .ab-sub-wrapper {
 	max-height: calc(100vh - 64px);
 	overflow-y: auto;
@@ -97,15 +174,15 @@
 	cursor: default;
 }
 
-#wp-admin-bar-presence-online :is(.presence-bar-idle, .presence-bar-crowd, .presence-bar-more > .ab-item) {
+#wp-admin-bar-presence-online :is(.presence-bar-idle, .presence-bar-crowd, .presence-bar-names, .presence-bar-more > .ab-item) {
 	opacity: 0.8;
 }
 
-.admin-color-light #wp-admin-bar-presence-online :is(.presence-bar-idle, .presence-bar-crowd, .presence-bar-more > .ab-item) {
+.admin-color-light #wp-admin-bar-presence-online :is(.presence-bar-idle, .presence-bar-crowd, .presence-bar-names, .presence-bar-more > .ab-item) {
 	opacity: 1;
 }
 
-.admin-color-light #wpadminbar #wp-admin-bar-presence-online .presence-bar-count {
+.admin-color-light #wpadminbar #wp-admin-bar-presence-online :is(.presence-bar-count, .presence-bar-number) {
 	color: #50575e !important;
 }
 

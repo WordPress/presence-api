@@ -450,6 +450,44 @@ class WP_Test_Presence_Widget_Active_Posts extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * @covers WP_Presence_Widget_Active_Posts::render
+	 */
+	public function test_render_spells_out_a_crowd_beyond_the_four_faces() {
+		wp_set_current_user( self::$editor_id );
+
+		$room     = wp_presence_post_room( self::$post_id );
+		$user_ids = array_merge( array( self::$editor_id, self::$editor2_id ), self::factory()->user->create_many( 3, array( 'role' => 'editor' ) ) );
+		foreach ( $user_ids as $user_id ) {
+			wp_set_presence( $room, 'lock-' . $user_id, array(), array( 'user_id' => $user_id ) );
+		}
+
+		ob_start();
+		WP_Presence_Widget_Active_Posts::render();
+		$html = ob_get_clean();
+
+		$this->assertSame( 1, preg_match( '#<div class="presence-editor-names" aria-hidden="true">([^<]*)</div>#', $html, $matches ) );
+		foreach ( $user_ids as $user_id ) {
+			$this->assertStringContainsString( esc_html( get_userdata( $user_id )->display_name ), $matches[1] );
+		}
+	}
+
+	/**
+	 * @covers WP_Presence_Widget_Active_Posts::render
+	 */
+	public function test_render_does_not_repeat_a_lone_editor_name() {
+		wp_set_current_user( self::$editor_id );
+
+		$room = wp_presence_post_room( self::$post_id );
+		wp_set_presence( $room, 'lock-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
+
+		ob_start();
+		WP_Presence_Widget_Active_Posts::render();
+		$html = ob_get_clean();
+
+		$this->assertStringNotContainsString( 'presence-editor-names', $html );
+	}
+
+	/**
 	 * @covers WP_Presence_Widget_Active_Posts::build_active_posts_data
 	 */
 	public function test_only_the_lock_holder_is_currently_editing() {

@@ -28,3 +28,22 @@
 	margin-inline-start: 4px;
 	font-size: 12px;
 }
+
+.presence-editors-names {
+	display: none;
+}
+
+/* Touch cannot hover the avatars' titles, so the names are spelled out. */
+@media (hover: none) {
+
+	.presence-editors-stack {
+		flex-wrap: wrap;
+	}
+
+	.presence-editors-names {
+		display: block;
+		flex-basis: 100%;
+		order: 1;
+		margin-top: 4px;
+	}
+}

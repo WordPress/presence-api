@@ -114,6 +114,15 @@ class WP_Presence_Widget_Active_Posts {
 			$html .= '<div class="presence-active-post-info">';
 			$html .= '<div><span class="presence-editor-count">' . esc_html( $post_data['editor_label'] ) . '</span></div>';
 			$html .= '<div><span class="presence-post-title"><a href="' . esc_url( $post_data['edit_url'] ) . '">' . esc_html( $post_data['post_title'] ) . '</a></span></div>';
+
+			// Touch has no hover to show the avatars' titles, and the stack only shows four, so everyone is spelled out there.
+			if ( count( $post_data['editors'] ) > 1 ) {
+				$names = array();
+				foreach ( $post_data['editors'] as $editor ) {
+					$names[] = $editor['is_agent'] ? self::agent_label( $editor['display_name'] ) : $editor['display_name'];
+				}
+				$html .= '<div class="presence-editor-names" aria-hidden="true">' . esc_html( wp_sprintf( '%l', $names ) ) . '</div>';
+			}
 			$html .= '</div>';
 
 			$html .= '<span class="presence-status-text">' . esc_html( $status_label ) . '</span>';

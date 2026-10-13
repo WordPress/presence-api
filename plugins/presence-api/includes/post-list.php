@@ -151,6 +151,9 @@ function wp_presence_editors_stack( $editors ) {
 		$html  .= wp_kses_post( $avatar );
 	}
 
+	// Touch has no hover to show the avatars' titles, so the names are spelled out there instead.
+	$html .= '<span class="presence-editors-names" aria-hidden="true">' . esc_html( wp_sprintf( '%l', $titles ) ) . '</span>';
+
 	$hidden = array_diff_key( $titles, $shown );
 	if ( $hidden ) {
 		$names = wp_sprintf( '%l', $hidden );
