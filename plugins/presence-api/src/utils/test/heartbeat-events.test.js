@@ -115,8 +115,13 @@ describe( 'heartbeat-events', () => {
 				unsubscribe();
 				expect( removeSpy ).toHaveBeenCalledWith(
 					'heartbeat-tick',
-					expect.any( Function )
+					addSpy.mock.calls[ 0 ][ 1 ]
 				);
+
+				document.dispatchEvent(
+					new CustomEvent( 'heartbeat-tick', { detail: tickData } )
+				);
+				expect( callback ).toHaveBeenCalledTimes( 1 );
 			} );
 		} );
 	} );
