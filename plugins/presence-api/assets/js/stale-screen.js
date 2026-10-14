@@ -162,6 +162,12 @@
 		dismiss.appendChild( sr );
 		dismiss.addEventListener( 'click', function () {
 			notice.remove();
+			// The button that had focus is gone, so focus lands where the notice stood rather than back at the top of the page.
+			const landing = heading || target;
+			if ( ! landing.hasAttribute( 'tabindex' ) ) {
+				landing.tabIndex = -1;
+			}
+			landing.focus();
 			bannerShown = false;
 			// Dismissal acknowledges this revision, not the screen. The tick
 			// handler only compares against baselineRev, so clearing the flag
