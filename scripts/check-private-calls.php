@@ -12,7 +12,8 @@ $files = array();
 foreach ( glob( $root . '/plugins/*', GLOB_ONLYDIR ) as $plugin ) {
 	$iterator = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $plugin, FilesystemIterator::SKIP_DOTS ) );
 	foreach ( $iterator as $file ) {
-		$path = substr( $file->getPathname(), strlen( $root ) + 1 );
+		// Forward slashes on Windows too, so the path matches the exclusions, $api and the baseline.
+		$path = str_replace( '\\', '/', substr( $file->getPathname(), strlen( $root ) + 1 ) );
 		if ( 'php' === $file->getExtension() && ! preg_match( '#/(tests|vendor|node_modules)/#', $path ) ) {
 			$tokens         = PhpToken::tokenize( file_get_contents( $file->getPathname() ) );
 			$files[ $path ] = array_values( array_filter( $tokens, static fn( $token ) => ! $token->is( array( T_WHITESPACE, T_COMMENT ) ) ) );
