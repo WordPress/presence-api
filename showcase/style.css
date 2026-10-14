@@ -1,0 +1,566 @@
+/*
+ * Tokens copied from WordPress/wporg-parent-2021's theme.json under the names
+ * it generates, so this page can move into a WordPress.org theme unchanged.
+ */
+
+@font-face {
+	font-family: Inter;
+	font-weight: 100 900;
+	font-style: normal;
+	font-display: swap;
+	src: url(fonts/Inter-latin.woff2) format("woff2");
+}
+
+@font-face {
+	font-family: "EB Garamond";
+	font-weight: 400 700;
+	font-style: normal;
+	font-display: swap;
+	src: url(fonts/EBGaramond-latin.woff2) format("woff2");
+}
+
+@font-face {
+	font-family: "IBM Plex Mono";
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+	src: url(fonts/IBMPlexMono-Regular-latin.woff2) format("woff2");
+}
+
+:root {
+	--wp--preset--color--charcoal-1: #1e1e1e;
+	--wp--preset--color--charcoal-2: #23282d;
+	--wp--preset--color--charcoal-4: #656a71;
+	--wp--preset--color--charcoal-5: #979aa1;
+	--wp--preset--color--light-grey-1: #d9d9d9;
+	--wp--preset--color--light-grey-2: #f6f6f6;
+	--wp--preset--color--white: #fff;
+	--wp--preset--color--white-opacity-15: #ffffff26;
+	--wp--preset--color--deep-blueberry: #213fd4;
+	--wp--preset--color--blueberry-1: #3858e9;
+	--wp--preset--color--blueberry-2: #9fb1ff;
+	--wp--preset--color--blueberry-4: #eff2ff;
+
+	--wp--preset--font-family--inter: "Inter", sans-serif;
+	--wp--preset--font-family--eb-garamond: "EB Garamond", serif;
+	--wp--preset--font-family--monospace: "IBM Plex Mono", monospace;
+
+	--wp--preset--font-size--small: 14px;
+	--wp--preset--font-size--normal: 16px;
+	--wp--preset--font-size--large: 20px;
+	--wp--preset--font-size--extra-large: 24px;
+	--wp--preset--font-size--heading-4: 30px;
+	--wp--preset--font-size--heading-3: 36px;
+	--wp--preset--font-size--heading-2: 50px;
+	--wp--preset--font-size--heading-1: 70px;
+
+	--wp--preset--spacing--10: 10px;
+	--wp--preset--spacing--20: 20px;
+	--wp--preset--spacing--30: 30px;
+	--wp--preset--spacing--40: clamp(30px, 5vw, 50px);
+	--wp--preset--spacing--50: clamp(40px, calc(5vw + 10px), 60px);
+	--wp--preset--spacing--60: clamp(20px, calc(10vw - 40px), 80px);
+	--wp--preset--spacing--80: clamp(80px, calc(6.67vw + 40px), 120px);
+	--wp--preset--spacing--edge-space: 80px;
+
+	--wp--style--global--content-size: 680px;
+	--wp--style--global--wide-size: 1160px;
+}
+
+@media (max-width: 781px) {
+
+	:root {
+		--wp--preset--spacing--edge-space: 20px;
+	}
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	background: var(--wp--preset--color--white);
+	color: var(--wp--preset--color--charcoal-1);
+	font-family: var(--wp--preset--font-family--inter);
+	font-size: var(--wp--preset--font-size--normal);
+	line-height: 1.875;
+	text-wrap: pretty;
+	-webkit-font-smoothing: antialiased;
+}
+
+img {
+	display: block;
+	max-width: 100%;
+	height: auto;
+}
+
+a {
+	color: var(--wp--preset--color--blueberry-1);
+}
+
+a:hover {
+	text-decoration: none;
+}
+
+:focus-visible {
+	outline: 1.5px solid var(--wp--preset--color--blueberry-1);
+	outline-offset: 2px;
+}
+
+h1,
+h2,
+h3 {
+	margin: 0;
+	font-family: var(--wp--preset--font-family--eb-garamond);
+	font-weight: 400;
+	text-wrap: balance;
+}
+
+h1 {
+	font-size: var(--wp--preset--font-size--heading-1);
+	line-height: 1.05;
+}
+
+h2 {
+	font-size: var(--wp--preset--font-size--heading-2);
+	line-height: 1.2;
+}
+
+h3 {
+	font-size: var(--wp--preset--font-size--heading-4);
+	line-height: 1.3;
+}
+
+@media (max-width: 599px) {
+
+	h1 {
+		font-size: 52px;
+		line-height: 1.08;
+	}
+
+	h2 {
+		font-size: 30px;
+		line-height: 1.07;
+	}
+
+	h3 {
+		font-size: 26px;
+		line-height: 1.15;
+	}
+}
+
+p {
+	margin: 0;
+}
+
+code,
+pre {
+	font-family: var(--wp--preset--font-family--monospace);
+}
+
+.skip-link {
+	position: absolute;
+	top: -100px;
+	left: var(--wp--preset--spacing--20);
+	z-index: 10;
+	padding: var(--wp--preset--spacing--10) var(--wp--preset--spacing--20);
+	background: var(--wp--preset--color--white);
+	color: var(--wp--preset--color--blueberry-1);
+}
+
+.skip-link:focus {
+	top: var(--wp--preset--spacing--10);
+}
+
+/* Layout */
+
+.wrap {
+	width: 100%;
+	max-width: calc(var(--wp--style--global--wide-size) + 2 * var(--wp--preset--spacing--edge-space));
+	margin: 0 auto;
+	padding: 0 var(--wp--preset--spacing--edge-space);
+}
+
+.wrap--content {
+	max-width: calc(var(--wp--style--global--content-size) + 2 * var(--wp--preset--spacing--edge-space));
+}
+
+.section {
+	padding: var(--wp--preset--spacing--80) 0;
+}
+
+.section--grey {
+	background: var(--wp--preset--color--light-grey-2);
+}
+
+.section--dark {
+	background: var(--wp--preset--color--charcoal-1);
+	color: var(--wp--preset--color--white);
+}
+
+.section--dark a {
+	color: var(--wp--preset--color--blueberry-2);
+}
+
+.section__intro {
+	max-width: var(--wp--style--global--content-size);
+	margin-bottom: var(--wp--preset--spacing--50);
+}
+
+.section__intro p {
+	margin-top: var(--wp--preset--spacing--20);
+	font-size: var(--wp--preset--font-size--large);
+	line-height: 1.7;
+}
+
+/* Global header, as WordPress.org draws it */
+
+.global-header {
+	display: flex;
+	align-items: center;
+	gap: var(--wp--preset--spacing--20);
+	height: 60px;
+	padding: 0 var(--wp--preset--spacing--20);
+	background: var(--wp--preset--color--charcoal-2);
+	border-bottom: 1px solid var(--wp--preset--color--white-opacity-15);
+	color: var(--wp--preset--color--white);
+}
+
+.global-header a {
+	display: flex;
+	color: inherit;
+}
+
+/* Local navigation bar */
+
+.local-nav {
+	position: sticky;
+	top: 0;
+	z-index: 5;
+	background: var(--wp--preset--color--charcoal-2);
+	color: var(--wp--preset--color--white);
+}
+
+.local-nav .wrap {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0 var(--wp--preset--spacing--30);
+	min-height: 60px;
+}
+
+.local-nav__title {
+	font-family: var(--wp--preset--font-family--inter);
+	font-size: var(--wp--preset--font-size--normal);
+	font-weight: 600;
+	color: inherit;
+	text-decoration: none;
+}
+
+.local-nav ul {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0 var(--wp--preset--spacing--30);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	font-size: var(--wp--preset--font-size--small);
+}
+
+.local-nav ul a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.local-nav ul a:hover {
+	text-decoration: underline;
+}
+
+/* Hero */
+
+.hero {
+	padding: var(--wp--preset--spacing--80) 0 0;
+	background: var(--wp--preset--color--charcoal-1);
+	color: var(--wp--preset--color--white);
+}
+
+.hero__eyebrow {
+	margin-bottom: var(--wp--preset--spacing--20);
+	color: var(--wp--preset--color--charcoal-5);
+	font-size: var(--wp--preset--font-size--small);
+	font-weight: 600;
+	letter-spacing: 0.01em;
+}
+
+.hero__lede {
+	max-width: var(--wp--style--global--content-size);
+	margin-top: var(--wp--preset--spacing--30);
+	font-size: var(--wp--preset--font-size--extra-large);
+	line-height: 1.58;
+}
+
+.hero__meta {
+	margin-top: var(--wp--preset--spacing--20);
+	color: var(--wp--preset--color--charcoal-5);
+	font-size: var(--wp--preset--font-size--small);
+}
+
+.hero__image {
+	margin: var(--wp--preset--spacing--60) 0 0;
+	border: 1px solid var(--wp--preset--color--white-opacity-15);
+	border-bottom: 0;
+}
+
+.buttons {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--wp--preset--spacing--20);
+	margin-top: var(--wp--preset--spacing--40);
+}
+
+.button {
+	display: inline-block;
+	padding: 16px 32px;
+	border: 1px solid var(--wp--preset--color--blueberry-1);
+	border-radius: 2px;
+	background: var(--wp--preset--color--blueberry-1);
+	color: var(--wp--preset--color--white);
+	font-size: var(--wp--preset--font-size--normal);
+	font-weight: 600;
+	line-height: 1;
+	text-decoration: none;
+}
+
+.button:hover {
+	border-color: var(--wp--preset--color--deep-blueberry);
+	background: var(--wp--preset--color--deep-blueberry);
+}
+
+.button--outline {
+	border-color: currentcolor;
+	background: transparent;
+	color: inherit;
+}
+
+.button--outline:hover {
+	border-color: currentcolor;
+	background: var(--wp--preset--color--white-opacity-15);
+}
+
+.section--dark .button,
+.hero .button {
+	color: var(--wp--preset--color--white);
+}
+
+/* Quote */
+
+.quote {
+	margin: 0;
+}
+
+.quote p {
+	font-family: var(--wp--preset--font-family--eb-garamond);
+	font-size: var(--wp--preset--font-size--heading-4);
+	line-height: 1.4;
+}
+
+.quote cite {
+	display: block;
+	margin-top: var(--wp--preset--spacing--30);
+	font-size: var(--wp--preset--font-size--normal);
+	font-style: normal;
+}
+
+/* Features */
+
+.feature {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: var(--wp--preset--spacing--30);
+	align-items: center;
+}
+
+.feature + .feature {
+	margin-top: var(--wp--preset--spacing--80);
+}
+
+.feature p {
+	margin-top: var(--wp--preset--spacing--20);
+	font-size: var(--wp--preset--font-size--large);
+	line-height: 1.7;
+}
+
+.feature img {
+	border: 1px solid var(--wp--preset--color--light-grey-1);
+}
+
+@media (min-width: 782px) {
+
+	.feature {
+		grid-template-columns: 1fr 2fr;
+		gap: var(--wp--preset--spacing--60);
+	}
+
+	.feature:nth-child(even) {
+		grid-template-columns: 2fr 1fr;
+	}
+
+	.feature:nth-child(even) .feature__text {
+		order: 2;
+	}
+}
+
+.more {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+	gap: var(--wp--preset--spacing--30);
+	margin: var(--wp--preset--spacing--80) 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.more li {
+	padding-top: var(--wp--preset--spacing--20);
+	border-top: 1px solid var(--wp--preset--color--light-grey-1);
+}
+
+.more strong {
+	display: block;
+	font-family: var(--wp--preset--font-family--eb-garamond);
+	font-size: var(--wp--preset--font-size--extra-large);
+	font-weight: 400;
+	line-height: 1.3;
+}
+
+/* Hosting */
+
+.stats {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	gap: var(--wp--preset--spacing--30);
+	margin: var(--wp--preset--spacing--50) 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.stats li {
+	padding: var(--wp--preset--spacing--30);
+	background: var(--wp--preset--color--white);
+}
+
+.stats strong {
+	display: block;
+	font-family: var(--wp--preset--font-family--eb-garamond);
+	font-size: var(--wp--preset--font-size--heading-3);
+	font-weight: 400;
+	line-height: 1.28;
+}
+
+/* Developers */
+
+.code {
+	margin: var(--wp--preset--spacing--30) 0 0;
+	padding: var(--wp--preset--spacing--30);
+	overflow-x: auto;
+	background: var(--wp--preset--color--charcoal-2);
+	color: var(--wp--preset--color--white);
+	font-size: var(--wp--preset--font-size--small);
+	line-height: 1.714;
+}
+
+.code .comment {
+	color: var(--wp--preset--color--charcoal-5);
+}
+
+.dev-grid {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: var(--wp--preset--spacing--40);
+}
+
+@media (min-width: 782px) {
+
+	.dev-grid {
+		grid-template-columns: 3fr 2fr;
+	}
+}
+
+.dev-grid > div {
+	min-width: 0;
+}
+
+.dev-grid h3 {
+	font-size: var(--wp--preset--font-size--extra-large);
+}
+
+.dev-grid .code + h3 {
+	margin-top: var(--wp--preset--spacing--40);
+}
+
+/* Get involved */
+
+.links {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+	gap: var(--wp--preset--spacing--20);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.links a {
+	display: block;
+	height: 100%;
+	padding: var(--wp--preset--spacing--30);
+	border: 1px solid var(--wp--preset--color--white-opacity-15);
+	color: var(--wp--preset--color--white);
+	text-decoration: none;
+}
+
+.links a:hover {
+	background: var(--wp--preset--color--white-opacity-15);
+}
+
+.links strong {
+	display: block;
+	font-family: var(--wp--preset--font-family--eb-garamond);
+	font-size: var(--wp--preset--font-size--extra-large);
+	font-weight: 400;
+}
+
+.links span {
+	color: var(--wp--preset--color--light-grey-1);
+	font-size: var(--wp--preset--font-size--small);
+}
+
+/* Footer */
+
+.footer {
+	padding: var(--wp--preset--spacing--50) 0;
+	border-top: 1px solid var(--wp--preset--color--white-opacity-15);
+	background: var(--wp--preset--color--charcoal-1);
+	color: var(--wp--preset--color--light-grey-1);
+	font-size: var(--wp--preset--font-size--small);
+}
+
+.footer .wrap {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--wp--preset--spacing--20);
+}
+
+.footer a {
+	color: inherit;
+}
+
+.footer__poetry {
+	font-family: var(--wp--preset--font-family--eb-garamond);
+	font-size: var(--wp--preset--font-size--extra-large);
+	color: var(--wp--preset--color--white);
+}
