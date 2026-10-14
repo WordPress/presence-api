@@ -157,7 +157,7 @@ async function captureHeartbeatSendWith( page, key, maxAttempts = 20 ) {
 	return captured;
 }
 
-test.describe( 'Presence Visibility', () => {
+test.describe( 'Presence Visibility @firefox @webkit', () => {
 	test.afterEach( async ( { requestUtils } ) => {
 		await requestUtils.deleteAllPosts();
 	} );

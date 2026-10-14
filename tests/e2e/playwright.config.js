@@ -39,7 +39,14 @@ process.env.WP_MULTISITE_BASE_URL = multisiteBaseUrl.href;
  */
 const NETWORK_SPECS = /presence-network-[^/]+\.test\.js$/;
 
-const PROJECTS = [ 'chromium', 'chromium-multisite' ];
+const PROJECTS = [ 'chromium', 'chromium-multisite', 'firefox', 'webkit' ];
+
+/**
+ * The projects that run against the single-site instance.
+ *
+ * @type {string[]}
+ */
+const SINGLE_SITE_PROJECTS = [ 'chromium', 'firefox', 'webkit' ];
 
 /**
  * Reads `--project` from argv, which Playwright does not pass to the config or global setup.
@@ -95,7 +102,7 @@ export default defineConfig( {
 		screenshot: 'only-on-failure',
 	},
 	webServer: [
-		selected.includes( 'chromium' ) && {
+		selected.some( ( name ) => SINGLE_SITE_PROJECTS.includes( name ) ) && {
 			command: 'npm run env:start',
 			port: parseInt( baseUrl.port, 10 ),
 			timeout: 120_000,
@@ -127,6 +134,20 @@ export default defineConfig( {
 				baseURL: multisiteBaseUrl.href,
 				storageState: process.env.MULTISITE_STORAGE_STATE_PATH,
 			},
+		},
+		{
+			// Only the specs tagged `@firefox`, which cover the code that can
+			// break in one engine and not another, as Gutenberg does.
+			name: 'firefox',
+			testIgnore: NETWORK_SPECS,
+			grep: /@firefox/,
+			use: { ...devices[ 'Desktop Firefox' ] },
+		},
+		{
+			name: 'webkit',
+			testIgnore: NETWORK_SPECS,
+			grep: /@webkit/,
+			use: { ...devices[ 'Desktop Safari' ] },
 		},
 	],
 } );

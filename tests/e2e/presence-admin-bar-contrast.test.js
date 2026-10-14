@@ -74,7 +74,7 @@ async function computedColors( locator ) {
 
 const test = base.extend( {} );
 
-test.describe.serial( 'Presence admin bar contrast', () => {
+test.describe.serial( 'Presence admin bar contrast @firefox @webkit', () => {
 	test.beforeAll( () => {
 		demoSeeder( 'wp_presence_demo_seed( 5 );' );
 		wpCli( 'user meta update admin admin_color light' );

@@ -102,7 +102,7 @@ async function waitForLeaderPing( page, maxAttempts = 20 ) {
 	return winningData;
 }
 
-test.describe( 'Presence Stale-Screen Tab Coalescing', () => {
+test.describe( 'Presence Stale-Screen Tab Coalescing @firefox @webkit', () => {
 	test.afterEach( async ( { requestUtils } ) => {
 		await requestUtils.deleteAllPosts();
 	} );
