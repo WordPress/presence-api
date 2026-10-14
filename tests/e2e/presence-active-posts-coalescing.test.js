@@ -77,7 +77,7 @@ function waitForActivePostsTick( page, timeoutMs = 8000 ) {
 	}, timeoutMs );
 }
 
-test.describe( 'Presence Active Posts Tab Coalescing', () => {
+test.describe( 'Presence Active Posts Tab Coalescing @firefox @webkit', () => {
 	test.afterEach( async ( { requestUtils } ) => {
 		await requestUtils.deleteAllPosts();
 	} );

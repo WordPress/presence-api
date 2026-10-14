@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Presence API: presence and awareness for WordPress</title>
+	<meta name="description" content="See who is logged in, which admin screen they are on, and which posts they are editing.">
+	<link rel="canonical" href="https://wordpress.github.io/presence-api/">
+	<meta property="og:type" content="website">
+	<meta property="og:title" content="Presence API">
+	<meta property="og:description" content="See who is logged in, which admin screen they are on, and which posts they are editing.">
+	<meta property="og:url" content="https://wordpress.github.io/presence-api/">
+	<meta property="og:image" content="https://wordpress.github.io/presence-api/og.png">
+	<meta property="og:image:width" content="1200">
+	<meta property="og:image:height" content="630">
+	<meta property="og:image:alt" content="Presence API, beside the admin bar's presence menu listing who is online and which posts they are editing.">
+	<meta name="twitter:card" content="summary_large_image">
+	<link rel="icon" href="images/icon-256x256.png">
+	<link rel="preload" href="fonts/Inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="preload" href="fonts/EBGaramond-latin.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+	<a class="skip-link" href="#main">Skip to content</a>
+
+	<nav class="local-nav" aria-label="Presence API">
+		<a class="local-nav__logo" href="https://wordpress.org/">
+			<svg xmlns="http://www.w3.org/2000/svg" role="img" width="30" height="30" viewBox="0 0 28 28">
+				<title>WordPress.org</title>
+				<path fill="currentColor" d="M13.6052 0.923525C16.1432 0.923525 18.6137 1.67953 20.7062 3.09703C22.7447 4.47403 24.3512 6.41803 25.3097 8.68603C26.9837 12.6415 26.5382 17.164 24.1352 20.7145C22.7582 22.753 20.8142 24.3595 18.5462 25.318C14.5907 26.992 10.0682 26.5465 6.51772 24.1435C4.47922 22.7665 2.87272 20.8225 1.91422 18.5545C0.240225 14.599 0.685725 10.0765 3.08872 6.52603C4.46572 4.48753 6.40973 2.88103 8.67772 1.92253C10.2302 1.26103 11.9177 0.923525 13.6052 0.923525ZM13.6052 0.113525C6.15322 0.113525 0.105225 6.16153 0.105225 13.6135C0.105225 21.0655 6.15322 27.1135 13.6052 27.1135C21.0572 27.1135 27.1052 21.0655 27.1052 13.6135C27.1052 6.16153 21.0572 0.113525 13.6052 0.113525Z"/>
+				<path fill="currentColor" d="M2.36011 13.6133C2.36011 17.9198 4.81711 21.8618 8.70511 23.7383L3.33211 9.03684C2.68411 10.4813 2.36011 12.0338 2.36011 13.6133ZM21.2061 13.0463C21.2061 11.6558 20.7066 10.6973 20.2746 9.94134C19.8426 9.18534 19.1676 8.22684 19.1676 7.30884C19.1676 6.39084 19.9506 5.31084 21.0576 5.31084H21.2061C16.6296 1.11234 9.51511 1.42284 5.31661 6.01284C4.91161 6.45834 4.53361 6.93084 4.20961 7.43034H4.93861C6.11311 7.43034 7.93561 7.28184 7.93561 7.28184C8.54311 7.24134 8.61061 8.13234 8.00311 8.21334C8.00311 8.21334 7.39561 8.28084 6.72061 8.32134L10.8111 20.5118L13.2681 13.1273L11.5131 8.32134C10.9056 8.28084 10.3386 8.21334 10.3386 8.21334C9.73111 8.17284 9.79861 7.25484 10.4061 7.28184C10.4061 7.28184 12.2691 7.43034 13.3626 7.43034C14.4561 7.43034 16.3596 7.28184 16.3596 7.28184C16.9671 7.24134 17.0346 8.13234 16.4271 8.21334C16.4271 8.21334 15.8196 8.28084 15.1446 8.32134L19.2081 20.4173L20.3691 16.7453C20.8821 15.1388 21.1926 14.0048 21.1926 13.0328L21.2061 13.0463ZM13.7946 14.5853L10.4196 24.3998C12.6876 25.0613 15.1041 25.0073 17.3316 24.2243L17.2506 24.0758L13.7946 14.5853ZM23.4741 8.21334C23.5281 8.59134 23.5551 8.98284 23.5551 9.37434C23.5551 10.5218 23.3391 11.8043 22.7046 13.3973L19.2621 23.3333C24.5271 20.2688 26.4036 13.5593 23.4741 8.21334Z"/>
+			</svg>
+		</a>
+		<a class="local-nav__title" href="#main">Presence API</a>
+		<ul>
+			<li><a href="#features">Features</a></li>
+			<li><a href="#hosting">Hosting</a></li>
+			<li><a href="#developers">Developers</a></li>
+			<li><a href="#get-involved">Get involved</a></li>
+		</ul>
+	</nav>
+
+	<main id="main">
+		<section class="hero">
+			<h1>Presence API</h1>
+			<p class="hero__lede">See who is logged in, which admin screen they are on, and which posts they are editing.</p>
+		</section>
+
+		<figure class="showcase-image">
+			<img src="images/screenshot-1.png" width="2560" height="1568" alt="The dashboard with 101 people online, the admin bar's presence menu open, and Active Posts listing who is editing each post and page.">
+			<figcaption>Faces in the admin bar show who is online and who is on this page, and Active Posts on the dashboard groups everyone by the post they are editing.</figcaption>
+		</figure>
+
+		<section class="quote" aria-label="Why presence">
+			<blockquote>
+				<p>“You log into your WordPress, I see oh Matias is moderating some comments, Lynn is on the dashboard maybe reading some news… that idea of like you log in and you can kind of see the neighborhood of like who else is also there.”</p>
+				<cite><a href="https://youtu.be/F-xMPY9WqG4?t=2435">Matt Mullenweg, WordPress 7.0 planning session</a></cite>
+			</blockquote>
+		</section>
+
+		<section class="split" aria-label="Get the plugin">
+			<div class="split__column">
+				<h2>Try it in your browser</h2>
+				<p>WordPress Playground starts a scratch site with the plugin active and a hundred people already online. A scene plays people editing together on the Posts screen.</p>
+				<div class="buttons">
+					<a class="button" href="https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json">Try it in Playground</a>
+					<a class="button button--outline" href="https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint-scenes.json">Watch a scene</a>
+				</div>
+			</div>
+			<div class="split__column">
+				<h2>Install it on your site</h2>
+				<p>Presence API is a feature plugin in the WordPress plugin directory.</p>
+				<div class="buttons">
+					<a class="button" href="https://wordpress.org/plugins/presence-api/">Download the plugin</a>
+					<a class="button button--outline" href="https://github.com/WordPress/presence-api">View on GitHub</a>
+				</div>
+			</div>
+		</section>
+
+		<section class="feature-list" id="features" aria-label="Features">
+			<div class="feature">
+				<div class="feature__text">
+					<h2>Who has it open</h2>
+					<p class="feature__lead">An Editors column on post lists.</p>
+					<p>The Posts list shows who has each post open.</p>
+				</div>
+				<img src="images/screenshot-2.png" width="2560" height="1568" alt="The Posts list, with an Editors column showing who has each post open." loading="lazy">
+			</div>
+
+			<div class="feature">
+				<div class="feature__text">
+					<h2>Online now</h2>
+					<p class="feature__lead">An Online view on the Users list.</p>
+					<p>Filter the Users list to the people online right now.</p>
+				</div>
+				<img src="images/screenshot-3.png" width="2560" height="1568" alt="The Users list filtered to the people online right now." loading="lazy">
+			</div>
+
+			<div class="feature">
+				<div class="feature__text">
+					<h2>A screen that changed</h2>
+					<p class="feature__lead">A notice when someone else saves.</p>
+					<p>When someone else saves a screen you have open, such as Settings or a post, a notice tells you it changed.</p>
+				</div>
+				<img src="images/screenshot-4.png" width="2560" height="1568" alt="The notice someone sees when another person saves the settings screen they have open." loading="lazy">
+			</div>
+
+			<div class="feature">
+				<div class="feature__text">
+					<h2>Network Admin</h2>
+					<p class="feature__lead">Who's Online, for the whole network.</p>
+					<p>On multisite, a Who's Online widget lists the busiest sites and how many people are on each, with an Online column on Sites and Users.</p>
+				</div>
+				<img src="images/screenshot-6.png" width="2560" height="1568" alt="Network Admin's Who's Online widget, listing the busiest sites and how many people are on each." loading="lazy">
+			</div>
+		</section>
+
+		<section class="details" aria-labelledby="details-title">
+			<h2 id="details-title">More details</h2>
+			<ul class="details__grid">
+				<li>
+					<img src="images/screenshot-5.png" width="2560" height="1568" alt="Settings > Presence API, where a site switches features off." loading="lazy">
+					<h3>A switch for each feature</h3>
+					<p>Every feature is on until a site switches it off on Settings > Presence API.</p>
+				</li>
+				<li>
+					<h3>Synced patterns</h3>
+					<p>A notice on a synced pattern in the block editor while someone else edits the pattern itself.</p>
+					<h3>AI agents</h3>
+					<p>Labelled in the admin bar, the Active Posts widget and the Editors column, once a plugin such as Agent Users marks them.</p>
+				</li>
+			</ul>
+		</section>
+
+		<section class="editor" aria-labelledby="editor-title">
+			<h2 id="editor-title">In the block editor, too</h2>
+			<p>A plugin that adds real-time collaboration to the block editor can keep its awareness rows in the presence table, so someone editing a post also shows up in the admin bar and the post list. <a href="https://github.com/WordPress/gutenberg-sync-engines">gutenberg-sync-engines</a> has a Presence API backend that does this.</p>
+		</section>
+
+		<section class="hosting" id="hosting" aria-labelledby="hosting-title">
+			<div class="hosting__intro">
+				<h2 id="hosting-title">Built for every host</h2>
+				<p>Tracking who is where takes frequent writes, and in post meta or options those writes clear caches across the whole site (<a href="https://core.trac.wordpress.org/ticket/64696">#64696</a>). Presence API writes to its own table instead, through the Heartbeat API WordPress already runs.</p>
+			</div>
+			<ul class="hosting__grid">
+				<li>
+					<h3>One table</h3>
+					<p><code>wp_presence</code>, with a unique key on room and client.</p>
+				</li>
+				<li>
+					<h3>150 seconds</h3>
+					<p>How long a row counts as present without a fresh heartbeat.</p>
+				</li>
+				<li>
+					<h3>Post locks</h3>
+					<p><code>_edit_lock</code> lives in the presence table, so refreshing a lock no longer makes cached post queries stale.</p>
+				</li>
+				<li>
+					<h3>No extra services</h3>
+					<p>No object cache, no WebSockets. Anything a host adds is a bonus.</p>
+				</li>
+			</ul>
+		</section>
+
+		<section class="developers" id="developers" aria-labelledby="developers-title">
+			<div class="developers__intro">
+				<h2 id="developers-title">For developers</h2>
+				<p>PHP functions, REST endpoints, WP-CLI commands, filters and room conventions are documented in the <a href="https://github.com/WordPress/presence-api#php-api">GitHub repository</a>.</p>
+			</div>
+			<div class="developers__code">
+<pre class="code"><code><span class="comment">// Put this client in a post's room.</span>
+wp_set_presence(
+	'postType/post:42',
+	$client_id,
+	array( 'screen' => 'edit' ),
+	array( 'user_id' => get_current_user_id() )
+);
+
+<span class="comment">// Read who is in it.</span>
+$entries = wp_get_presence( 'postType/post:42' );</code></pre>
+<pre class="code"><code><span class="comment">// In a script that depends on wp-presence.</span>
+const { users } = wp.presence.usePresenceUsers( room );</code></pre>
+<pre class="code"><code>GET /wp-presence/v1/presence?room=admin/online</code></pre>
+<pre class="code"><code>wp presence summary</code></pre>
+			</div>
+		</section>
+
+		<section class="involved" id="get-involved" aria-labelledby="get-involved-title">
+			<div class="involved__intro">
+				<h2 id="get-involved-title">Get involved</h2>
+				<p>Presence API is a feature plugin sponsored by the Core team. If core adopts it, it would land one piece at a time.</p>
+			</div>
+			<ul class="involved__links">
+				<li><a href="https://github.com/WordPress/presence-api">GitHub repository</a></li>
+				<li><a href="https://wordpress.slack.com/archives/feature-presence-api">#feature-presence-api on Slack</a></li>
+				<li><a href="https://make.wordpress.org/core/tag/presence-api/">Updates on Make WordPress Core</a></li>
+				<li><a href="https://github.com/WordPress/presence-api/issues">Report a bug</a></li>
+				<li><a href="https://github.com/WordPress/presence-api/graphs/contributors">Everyone who contributed</a></li>
+			</ul>
+		</section>
+	</main>
+
+	<footer class="global-footer">
+		<div class="global-footer__logos">
+			<a href="https://wordpress.org/"><svg xmlns="http://www.w3.org/2000/svg" role="img" width="171" height="27" viewBox="0 0 329 52">
+	<title>WordPress.org</title>
+	<path fill="currentColor" d="M4.33 26a21.68 21.68 0 0 0 12.22 19.5L6.21 17.18A21.66 21.66 0 0 0 4.33 26ZM26.38 27.89l-6.5 18.89a21.31 21.31 0 0 0 6.12.89 21.77 21.77 0 0 0 7.2-1.23 1.429 1.429 0 0 1-.16-.3l-6.66-18.25Z"/>
+	<path fill="currentColor" d="M26 0a26 26 0 1 0 0 52 26 26 0 0 0 0-52Zm20.27 39.66a24.47 24.47 0 0 1-29.78 8.86 24.49 24.49 0 0 1-13-13 24.4 24.4 0 0 1 5.23-26.8 24.46 24.46 0 0 1 26.79-5.24 24.49 24.49 0 0 1 13 13 24.42 24.42 0 0 1-2.25 23.17l.01.01Z"/>
+	<path fill="currentColor" d="M45 15.61c.103.736.153 1.477.15 2.22a20.38 20.38 0 0 1-1.65 7.76l-6.61 19.14A21.65 21.65 0 0 0 45 15.61ZM40.63 24.91a11.45 11.45 0 0 0-1.79-6c-1.1-1.78-2.13-3.29-2.13-5.08A3.76 3.76 0 0 1 40.35 10h.28A21.65 21.65 0 0 0 7.9 14.1h1.39c2.27 0 5.78-.27 5.78-.27a.9.9 0 0 1 .13 1.79s-1.17.13-2.47.2l7.88 23.47 4.75-14.22L22 15.84c-1.17-.07-2.27-.2-2.27-.2a.9.9 0 0 1 .14-1.79s3.57.27 5.7.27c2.13 0 5.78-.27 5.78-.27a.9.9 0 0 1 .14 1.79s-1.18.13-2.48.2l7.83 23.29 2.23-7.08a25.171 25.171 0 0 0 1.56-7.14ZM145.83 19.3h-10.34v1.1c3.23 0 3.75.69 3.75 4.79v7.4c0 4.1-.52 4.85-3.75 4.85-2.48-.35-4.16-1.68-6.47-4.22l-2.66-2.89c3.58-.63 5.49-2.89 5.49-5.43 0-3.18-2.72-5.6-7.8-5.6h-10.17v1.1c3.24 0 3.76.69 3.76 4.79v7.4c0 4.1-.52 4.85-3.76 4.85v1.1h11.5v-1.1c-3.24 0-3.76-.75-3.76-4.85v-2.08h1l6.42 8h16.81c8.26 0 11.85-4.39 11.85-9.65 0-5.26-3.61-9.56-11.87-9.56Zm-24.21 9.42V21H124a3.551 3.551 0 0 1 3.76 3.87 3.536 3.536 0 0 1-3.76 3.85h-2.38Zm24.38 8h-.4c-2.08 0-2.37-.52-2.37-3.18V21H146c6 0 7.11 4.39 7.11 7.8S152 36.75 146 36.75v-.03ZM93.49 13.52H82.62v1.16c3.7 0 4.22 1 3.07 4.39l-4 11.78L76 13.52h-1.1l-5.85 17.33-3.87-11.78c-1.22-3.59-.29-4.39 3.12-4.39v-1.16H55.47v1.16c3.35 0 4.28.86 5.66 5.08l6.42 19.76h.75l6-18.08 5.9 18.08h.8l6.59-19.76c1.44-4.22 2.31-5.08 5.95-5.08l-.05-1.16ZM101.34 18.55c-6.35 0-11.55 4.68-11.55 10.34s5.2 10.4 11.55 10.4c6.35 0 11.56-4.68 11.56-10.4 0-5.72-5.2-10.34-11.56-10.34Zm0 18.89c-5.31 0-7.16-4.74-7.16-8.55 0-3.81 1.85-8.55 7.16-8.55 5.31 0 7.23 4.79 7.23 8.55 0 3.76-1.85 8.55-7.23 8.55ZM170.67 13.52h-12v1.16c3.88 0 4.57.92 4.57 6.7v9.24c0 5.78-.69 6.76-4.57 6.76v1.16H172v-1.16c-3.88 0-4.57-1-4.57-6.76v-2.83h3.29c6 0 9.25-3.12 9.25-7.11s-3.35-7.16-9.3-7.16Zm0 12.13h-3.29v-10h3.29c3.24 0 4.74 2.31 4.74 5.08s-1.5 4.92-4.74 4.92ZM219.32 34.15c-.52 1.9-1.15 2.6-5.26 2.6h-.81c-3 0-3.52-.7-3.52-4.8v-2.66c4.51 0 4.85.41 4.85 3.41h1.1v-8.61h-1.1c0 3-.34 3.41-4.85 3.41V21h3.18c4.1 0 4.74.69 5.26 2.6l.28 1.1h.93l-.38-5.4h-17v1.1c3.23 0 3.75.69 3.75 4.79v7.4c0 3.75-.44 4.69-3 4.83-2.42-.37-4.09-1.69-6.37-4.2l-2.65-2.89c3.58-.63 5.49-2.89 5.49-5.43 0-3.18-2.72-5.6-7.8-5.6h-10.17v1.1c3.23 0 3.75.69 3.75 4.79v7.4c0 4.1-.52 4.85-3.75 4.85v1.1h11.49v-1.1c-3.23 0-3.75-.75-3.75-4.85v-2.08h1l6.41 8h23.75l.35-5.43h-.87l-.31 1.07ZM189 28.72V21h2.37a3.542 3.542 0 0 1 3.75 3.87 3.532 3.532 0 0 1-.998 2.77 3.532 3.532 0 0 1-2.752 1.05l-2.37.03ZM234.52 27.91l-3.18-1.56c-2.78-1.27-4-2.08-4-3.59 0-1.51 1.5-2.36 3.12-2.36 3.06 0 4.57 2.25 5 5h1.21v-6.85h-1.09a3.415 3.415 0 0 1-.75 1.56 7.25 7.25 0 0 0-4.51-1.5c-3.58 0-6.18 2.36-6.18 5.14 0 2.54 1.73 4.45 4 5.54l3.29 1.56c2.37 1.1 3.7 2.26 3.7 3.76 0 1.73-1.5 2.77-3.35 2.77-3.41 0-6.07-2.25-6.53-6.06h-1.15v8h1.09a4.194 4.194 0 0 1 .93-2 8.481 8.481 0 0 0 5.2 2c3.87 0 7-2.54 7-6.18.07-1.77-1.03-3.9-3.8-5.23ZM252 27.91l-3.18-1.56c-2.78-1.27-4-2.08-4-3.59 0-1.51 1.5-2.36 3.12-2.36 3.06 0 4.57 2.25 5 5h1.21v-6.85H253a3.415 3.415 0 0 1-.75 1.56 7.25 7.25 0 0 0-4.51-1.5c-3.58 0-6.18 2.36-6.18 5.14 0 2.54 1.73 4.45 4 5.54l3.29 1.56c2.37 1.1 3.7 2.26 3.7 3.76 0 1.73-1.5 2.77-3.35 2.77-3.41 0-6.07-2.25-6.53-6.06h-1.15v8h1.09a4.194 4.194 0 0 1 .93-2 8.481 8.481 0 0 0 5.2 2c3.87 0 7.05-2.54 7.05-6.18.07-1.77-1.03-3.9-3.79-5.23ZM277.56 18.75a10.481 10.481 0 0 0-10.68 10.17 10.47 10.47 0 0 0 10.68 10.16c5.9 0 10.71-4.58 10.71-10.16s-4.81-10.17-10.71-10.17Zm0 19c-5.52 0-7.63-4.91-7.63-8.88 0-3.97 2.07-8.87 7.63-8.87 5.56 0 7.66 4.94 7.66 8.92 0 3.98-2.11 8.88-7.66 8.88v-.05ZM301.71 33.79l-3.14-3.69c3.63-.38 5.71-2.59 5.71-5.38 0-3-2.44-5.42-6.89-5.42h-8.47v.7c2.66 0 3.05.51 3.05 3.72v10.39c0 3.21-.39 3.76-3.05 3.76v.67h8.66v-.67c-2.66 0-3.05-.55-3.05-3.76v-4H296l6.35 8.44h5.29v-.67c-1.88-.24-4.03-1.88-5.93-4.09ZM294.53 29v-8.52h2.82c2.79 0 4.08 1.93 4.08 4.24 0 2.31-1.29 4.28-4.08 4.28h-2.82ZM319.6 30.59v.64c2.21 0 3 .7 3 2.08 0 2.89-2.5 4.39-5.29 4.39-5.93 0-7.6-4.81-7.6-8.78 0-3.97 1.86-8.92 7-8.92 3.59 0 6.09 2.54 7 6.7h.64v-7h-.64a3.281 3.281 0 0 1-1.09 1.83 8.203 8.203 0 0 0-6-2.73 10.167 10.167 0 0 0-9.851 10.165 10.169 10.169 0 0 0 9.851 10.165c3.34 0 4.78-1.66 8.34-1.66V35c0-3.21.39-3.75 3.05-3.75v-.64l-8.41-.02ZM261.9 34.77a2.061 2.061 0 1 0 .288 4.112 2.061 2.061 0 0 0-.288-4.112Z"/>
+</svg></a>
+			<p>The WordPress® trademark is the intellectual property of the WordPress Foundation.</p>
+		</div>
+	</footer>
+</body>
+</html>
