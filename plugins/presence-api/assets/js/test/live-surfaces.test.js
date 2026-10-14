@@ -169,4 +169,26 @@ describe( 'live surfaces', () => {
 
 		expect( lengths[ 0 ] ).toBe( lengths[ 1 ] );
 	} );
+
+	it( 'closes the admin bar menu once Tab leaves it, so it refreshes again', () => {
+		document.body.innerHTML =
+			'<ul><li id="wp-admin-bar-presence-online" class="menupop hover"><a class="ab-item" href="#">2 online</a><div class="ab-sub-wrapper"><div class="ab-item" tabindex="0">Ada</div></div></li></ul><button>Help</button>';
+		loadPing();
+		const node = document.getElementById( 'wp-admin-bar-presence-online' );
+
+		node.querySelector( 'a' ).focus();
+		node.querySelector( 'div.ab-item' ).focus();
+		expect( node.classList.contains( 'hover' ) ).toBe( true );
+
+		document.querySelector( 'button' ).focus();
+		expect( node.classList.contains( 'hover' ) ).toBe( false );
+
+		trigger( 'heartbeat-tick', {
+			'presence-fragments': {
+				'admin-bar':
+					'<li id="wp-admin-bar-presence-online" class="menupop"><a class="ab-item" href="#">3 online</a></li>',
+			},
+		} );
+		expect( node.textContent ).toBe( '3 online' );
+	} );
 } );
