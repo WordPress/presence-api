@@ -200,6 +200,25 @@
 	color: #1d2327;
 }
 
+/* A keyboard cannot hover a crowd's title, so focus spells its names out. */
+#wpadminbar #wp-admin-bar-presence-online .presence-bar-screen > .ab-item:focus-visible {
+	flex-wrap: wrap;
+	row-gap: 0;
+	height: auto;
+}
+
+#wpadminbar #wp-admin-bar-presence-online .presence-bar-screen > .ab-item:focus-visible :is(.presence-bar-label, .presence-bar-names) {
+	white-space: normal;
+}
+
+#wpadminbar #wp-admin-bar-presence-online .presence-bar-screen > .ab-item:focus-visible .presence-bar-names {
+	display: block;
+	flex-basis: 100%;
+	padding-bottom: 4px;
+	font-size: 13px;
+	line-height: 1.5;
+}
+
 /* Rings the current user's own avatar to match the faces beside it. */
 #wpadminbar:has(.presence-bar-avatars) #wp-admin-bar-my-account.with-avatar > .ab-item img {
 	outline: 2px solid var(--wp-admin-theme-color, #2271b1);
