@@ -23,6 +23,7 @@ jobs:
       matrix:
         include:
           - project: chromium
+            browser: chromium
             start: npx wp-env start
             env-dir: .
             log-container: tests-cli
@@ -30,9 +31,22 @@ jobs:
           # reason given in scripts/start-multisite-env.sh. This one seeds its
           # fixture network too.
           - project: chromium-multisite
+            browser: chromium
             start: npm run env:start:multisite
             env-dir: tests/e2e/multisite
             log-container: cli
+          # Only the specs tagged for each engine run here, so these legs stay
+          # short enough to run on every pull request.
+          - project: firefox
+            browser: firefox
+            start: npx wp-env start
+            env-dir: .
+            log-container: tests-cli
+          - project: webkit
+            browser: webkit
+            start: npx wp-env start
+            env-dir: .
+            log-container: tests-cli
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -45,24 +59,28 @@ jobs:
       - run: npm ci
       - run: npm run build
 
+      # The browser is in the key so a leg never restores another leg's
+      # browser and skips installing its own.
       - name: Cache Playwright browsers
         id: playwright-cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
-          restore-keys: ${{ runner.os }}-playwright-
+          key: ${{ runner.os }}-playwright-${{ matrix.browser }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: ${{ runner.os }}-playwright-${{ matrix.browser }}-
 
       # The Ubuntu mirror throttles the packages install-deps downloads often
       # enough to stall a job for minutes, so they are cached the way Gutenberg's
       # .github/setup-playwright action caches them.
       - name: Prepare the package cache
         id: apt-prepare
+        env:
+          BROWSER: ${{ matrix.browser }}
         run: |
           VERSION="$(node -p "require('playwright/package.json').version")"
           # Packages cached under another runner image mostly miss.
           IMAGE="${ImageOS:-unknown}-${ImageVersion:-unknown}"
-          echo "PREFIX=playwright-apt--os-${RUNNER_OS}--arch-${RUNNER_ARCH}--img-${IMAGE}--pw-${VERSION}--browsers-chromium--fingerprint-" >> "$GITHUB_OUTPUT"
+          echo "PREFIX=playwright-apt--os-${RUNNER_OS}--arch-${RUNNER_ARCH}--img-${IMAGE}--pw-${VERSION}--browsers-${BROWSER}--fingerprint-" >> "$GITHUB_OUTPUT"
           echo 'APT::Keep-Downloaded-Packages "true";' | sudo tee /etc/apt/apt.conf.d/99keep-downloaded-packages > /dev/null
           mkdir -p "$HOME/apt-cache"
 
@@ -78,6 +96,8 @@ jobs:
       - name: Install Playwright system dependencies
         id: apt-install
         timeout-minutes: 5
+        env:
+          BROWSER: ${{ matrix.browser }}
         run: |
           fingerprint() {
             find "$HOME/apt-cache" -maxdepth 1 -name '*.deb' -printf '%f\n' | LC_ALL=C sort | sha256sum | cut -c1-16
@@ -88,7 +108,7 @@ jobs:
           # a stale one here is never used.
           sudo cp -r --update=none "$HOME/apt-cache/." /var/cache/apt/archives/
 
-          npx playwright install-deps chromium
+          npx playwright install-deps "$BROWSER"
 
           sudo find /var/cache/apt/archives -maxdepth 1 -name '*.deb' -exec cp --update=none -t "$HOME/apt-cache" {} +
           sudo chown -R "$(id -u):$(id -g)" "$HOME/apt-cache"
@@ -104,8 +124,10 @@ jobs:
           path: ~/apt-cache
           key: ${{ steps.apt-prepare.outputs.PREFIX }}${{ steps.apt-install.outputs.FINGERPRINT }}
 
-      - run: npx playwright install chromium
+      - run: npx playwright install "$BROWSER"
         if: ${{ steps.playwright-cache.outputs.cache-hit != 'true' }}
+        env:
+          BROWSER: ${{ matrix.browser }}
 
       # The Playwright config declares a `webServer` that would start wp-env on
       # demand, but starting it here keeps a boot failure in its own step
