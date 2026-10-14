@@ -305,6 +305,31 @@ pre {
 	text-align: center;
 }
 
+/* Quote */
+
+.quote {
+	max-width: calc(var(--wp--style--global--content-size) + 2 * var(--wp--preset--spacing--edge-space));
+	margin: 0 auto;
+	padding: 0 var(--wp--preset--spacing--edge-space) var(--wp--preset--spacing--80);
+}
+
+.quote blockquote {
+	margin: 0;
+}
+
+.quote p {
+	font-family: var(--wp--preset--font-family--eb-garamond);
+	font-size: var(--wp--preset--font-size--heading-4);
+	line-height: 1.4;
+}
+
+.quote cite {
+	display: block;
+	margin-top: var(--wp--preset--spacing--20);
+	font-size: var(--wp--preset--font-size--small);
+	font-style: normal;
+}
+
 /* Two columns with a rule between, as on wordpress.org/download */
 
 .split {
@@ -451,6 +476,20 @@ pre {
 		grid-template-columns: 1fr 1fr;
 		gap: var(--wp--preset--spacing--60);
 	}
+}
+
+/* Block editor */
+
+.editor {
+	max-width: calc(var(--wp--style--global--content-size) + 2 * var(--wp--preset--spacing--edge-space));
+	margin: 0 auto;
+	padding: var(--wp--preset--spacing--80) var(--wp--preset--spacing--edge-space) 0;
+	text-align: center;
+}
+
+.editor p {
+	margin-top: var(--wp--preset--spacing--30);
+	color: var(--wp--preset--color--charcoal-3);
 }
 
 /* Hosting */

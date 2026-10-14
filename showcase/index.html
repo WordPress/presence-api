@@ -3,12 +3,17 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Presence API | WordPress.org</title>
+	<title>Presence API: presence and awareness for WordPress</title>
 	<meta name="description" content="See who is logged in, which admin screen they are on, and which posts they are editing.">
+	<link rel="canonical" href="https://wordpress.github.io/presence-api/">
+	<meta property="og:type" content="website">
 	<meta property="og:title" content="Presence API">
-	<meta property="og:description" content="System-wide presence and awareness for WordPress.">
-	<meta property="og:image" content="https://wordpress.github.io/presence-api/images/banner-1544x500.png">
+	<meta property="og:description" content="See who is logged in, which admin screen they are on, and which posts they are editing.">
 	<meta property="og:url" content="https://wordpress.github.io/presence-api/">
+	<meta property="og:image" content="https://wordpress.github.io/presence-api/og.png">
+	<meta property="og:image:width" content="1200">
+	<meta property="og:image:height" content="630">
+	<meta property="og:image:alt" content="Presence API, beside the admin bar's presence menu listing who is online and which posts they are editing.">
 	<meta name="twitter:card" content="summary_large_image">
 	<link rel="icon" href="images/icon-256x256.png">
 	<link rel="preload" href="fonts/Inter-latin.woff2" as="font" type="font/woff2" crossorigin>
@@ -46,12 +51,20 @@
 			<figcaption>Faces in the admin bar show who is online and who is on this page, and Active Posts on the dashboard groups everyone by the post they are editing.</figcaption>
 		</figure>
 
+		<section class="quote" aria-label="Why presence">
+			<blockquote>
+				<p>“You log into your WordPress, I see oh Matias is moderating some comments, Lynn is on the dashboard maybe reading some news… that idea of like you log in and you can kind of see the neighborhood of like who else is also there.”</p>
+				<cite><a href="https://youtu.be/F-xMPY9WqG4?t=2435">Matt Mullenweg, WordPress 7.0 planning session</a></cite>
+			</blockquote>
+		</section>
+
 		<section class="split" aria-label="Get the plugin">
 			<div class="split__column">
 				<h2>Try it in your browser</h2>
-				<p>WordPress Playground starts a scratch site with the plugin active and people already online.</p>
+				<p>WordPress Playground starts a scratch site with the plugin active and a hundred people already online. A scene plays people editing together on the Posts screen.</p>
 				<div class="buttons">
 					<a class="button" href="https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json">Try it in Playground</a>
+					<a class="button button--outline" href="https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint-scenes.json">Watch a scene</a>
 				</div>
 			</div>
 			<div class="split__column">
@@ -69,7 +82,7 @@
 				<div class="feature__text">
 					<h2>Who has it open</h2>
 					<p class="feature__lead">An Editors column on post lists.</p>
-					<p>The Posts list shows who has each post open, so you know before you open it yourself.</p>
+					<p>The Posts list shows who has each post open.</p>
 				</div>
 				<img src="images/screenshot-2.png" width="2560" height="1568" alt="The Posts list, with an Editors column showing who has each post open." loading="lazy">
 			</div>
@@ -113,12 +126,15 @@
 				<li>
 					<h3>Synced patterns</h3>
 					<p>A notice on a synced pattern in the block editor while someone else edits the pattern itself.</p>
-					<h3>Post locks</h3>
-					<p>Kept in the presence table instead of post meta, so holding a lock no longer makes cached post queries stale.</p>
 					<h3>AI agents</h3>
 					<p>Labelled in the admin bar, the Active Posts widget and the Editors column, once a plugin such as Agent Users marks them.</p>
 				</li>
 			</ul>
+		</section>
+
+		<section class="editor" aria-labelledby="editor-title">
+			<h2 id="editor-title">In the block editor, too</h2>
+			<p>A plugin that adds real-time collaboration to the block editor can keep its awareness rows in the presence table, so someone editing a post also shows up in the admin bar and the post list. <a href="https://github.com/WordPress/gutenberg-sync-engines">gutenberg-sync-engines</a> has a Presence API backend that does this.</p>
 		</section>
 
 		<section class="hosting" id="hosting" aria-labelledby="hosting-title">
@@ -134,6 +150,10 @@
 				<li>
 					<h3>150 seconds</h3>
 					<p>How long a row counts as present without a fresh heartbeat.</p>
+				</li>
+				<li>
+					<h3>Post locks</h3>
+					<p><code>_edit_lock</code> lives in the presence table, so refreshing a lock no longer makes cached post queries stale.</p>
 				</li>
 				<li>
 					<h3>No extra services</h3>
@@ -158,6 +178,8 @@ wp_set_presence(
 
 <span class="comment">// Read who is in it.</span>
 $entries = wp_get_presence( 'postType/post:42' );</code></pre>
+<pre class="code"><code><span class="comment">// In a script that depends on wp-presence.</span>
+const { users } = wp.presence.usePresenceUsers( room );</code></pre>
 <pre class="code"><code>GET /wp-presence/v1/presence?room=admin/online</code></pre>
 <pre class="code"><code>wp presence summary</code></pre>
 			</div>
@@ -173,6 +195,7 @@ $entries = wp_get_presence( 'postType/post:42' );</code></pre>
 				<li><a href="https://wordpress.slack.com/archives/feature-presence-api">#feature-presence-api on Slack</a></li>
 				<li><a href="https://make.wordpress.org/core/tag/presence-api/">Updates on Make WordPress Core</a></li>
 				<li><a href="https://github.com/WordPress/presence-api/issues">Report a bug</a></li>
+				<li><a href="https://github.com/WordPress/presence-api/graphs/contributors">Everyone who contributed</a></li>
 			</ul>
 		</section>
 	</main>
