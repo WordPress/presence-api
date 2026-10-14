@@ -17,7 +17,6 @@
  * @since 7.1.0
  */
 import { test as base, expect } from '@wordpress/e2e-test-utils-playwright';
-import { chromium } from '@playwright/test';
 
 const BASE_URL = ( process.env.WP_BASE_URL || 'http://localhost:8888' ).replace(
 	/\/$/,
@@ -208,6 +207,7 @@ test.describe( 'Presence Visibility', () => {
 
 	test( 'heartbeat-send omits wp-refresh-post-lock while editor tab is hidden', async ( {
 		admin,
+		browser,
 		page,
 		requestUtils,
 		testUsers,
@@ -224,16 +224,15 @@ test.describe( 'Presence Visibility', () => {
 		);
 		await waitForHeartbeat( page );
 
-		// User B opens the same post editor in a new browser context.
-		const headlessBrowser = await chromium.launch( { headless: true } );
+		// User B opens the same post editor in a second context of the
+		// project's browser, so a Firefox or WebKit run tests that engine.
+		const userB = await loginHeadlessUser(
+			browser,
+			testUsers[ 0 ],
+			`${ BASE_URL }/wp-admin/post.php?post=${ post.id }&action=edit`
+		);
 
 		try {
-			const userB = await loginHeadlessUser(
-				headlessBrowser,
-				testUsers[ 0 ],
-				`${ BASE_URL }/wp-admin/post.php?post=${ post.id }&action=edit`
-			);
-
 			// User B clicks "Take over" to become the active lock holder.
 			const takeOverButton = userB.page.locator(
 				'a:has-text("Take over")'
@@ -265,10 +264,8 @@ test.describe( 'Presence Visibility', () => {
 			await setVisibility( userB.page, 'visible' );
 			const visible = await captureHeartbeatSend( userB.page );
 			expect( visible[ 'wp-refresh-post-lock' ] ).toBeDefined();
-
-			await userB.context.close();
 		} finally {
-			await headlessBrowser.close();
+			await userB.context.close();
 		}
 	} );
 
