@@ -18,7 +18,6 @@ class WP_Test_Presence_Core_Guards extends WP_Presence_UnitTestCase {
 			'presence'           => array( 'includes/presence.php' ),
 			'rest controller'    => array( 'includes/rest-api/endpoints/class-wp-rest-presence-controller.php' ),
 			'network controller' => array( 'includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php' ),
-			'cli command'        => array( 'includes/cli/class-wp-presence-cli-command.php' ),
 		);
 	}
 
@@ -105,7 +104,6 @@ class WP_Test_Presence_Core_Guards extends WP_Presence_UnitTestCase {
 		return array(
 			'rest controller'    => array( 'includes/rest-api/endpoints/class-wp-rest-presence-controller.php', 'WP_REST_Presence_Controller' ),
 			'network controller' => array( 'includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php', 'WP_REST_Presence_Network_Controller' ),
-			'cli command'        => array( 'includes/cli/class-wp-presence-cli-command.php', 'WP_Presence_CLI_Command' ),
 		);
 	}
 
