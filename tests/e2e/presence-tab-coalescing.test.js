@@ -108,7 +108,7 @@ function waitForOnlineDataTick( page, timeoutMs = 8000 ) {
 	}, timeoutMs );
 }
 
-test.describe( 'Presence Tab Coalescing', () => {
+test.describe( 'Presence Tab Coalescing @firefox @webkit', () => {
 	test.afterEach( async ( { requestUtils } ) => {
 		await requestUtils.deleteAllPosts();
 	} );

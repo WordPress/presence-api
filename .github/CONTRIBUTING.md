@@ -55,11 +55,13 @@ npm test
 npm run test:multisite
 
 # E2E tests (requires wp-env running)
-npx playwright install chromium
+npx playwright install chromium firefox webkit
 npm run test:e2e
 ```
 
 The Network Admin specs need a network, which is a second wp-env instance on [localhost:8890](http://localhost:8890/wp-admin/network/) with its own database. `npm run test:e2e` starts and seeds it on demand, so the first run after a fresh checkout takes a few minutes longer. `npm run test:e2e -- --project chromium` skips the network, and `--project chromium-multisite` runs only the network specs. `npm run env:stop:multisite` shuts it down.
+
+The `firefox` and `webkit` projects run only the specs tagged `@firefox` or `@webkit`, which cover the code that can break in one engine and not another: tab coalescing, Page Visibility and the admin bar's colors. Add the tags to a spec's `test.describe` title when it covers that kind of code.
 
 Tests here carry `@covers`, and PHPUnit records coverage only for the functions a test names. A new helper called by a function that is already covered still reports as unexecuted until some test names it, which shows up as a Codecov drop with every test passing. Add the helper to the `@covers` list of whichever tests exercise it.
 
