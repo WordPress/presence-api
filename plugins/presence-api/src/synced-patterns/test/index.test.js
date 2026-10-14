@@ -20,8 +20,12 @@ vi.mock( '@wordpress/hooks', () => ( { addFilter: vi.fn() } ) );
 
 // The real Notice pulls in rich-text, which fails to load under jsdom.
 vi.mock( '@wordpress/components', () => ( {
-	Notice: ( { status, children } ) => (
-		<div role="status" data-status={ status }>
+	Notice: ( { status, isDismissible, children } ) => (
+		<div
+			role="status"
+			data-status={ status }
+			data-dismissible={ String( isDismissible ) }
+		>
 			{ children }
 		</div>
 	),
@@ -91,6 +95,7 @@ describe( 'synced pattern editors notice', () => {
 		const notice = screen.getByRole( 'status' );
 		expect( notice.textContent ).toBe( message );
 		expect( notice.dataset.status ).toBe( 'warning' );
+		expect( notice.dataset.dismissible ).toBe( 'false' );
 		expect( screen.getByTestId( 'block-edit' ) ).toBeTruthy();
 	} );
 
