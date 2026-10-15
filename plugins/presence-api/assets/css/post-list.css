@@ -47,3 +47,15 @@
 		margin-top: 4px;
 	}
 }
+
+/* A keyboard cannot hover either, so the focused row spells them out. */
+.wp-list-table tr:has(:focus-visible) .presence-editors-stack {
+	flex-wrap: wrap;
+}
+
+.wp-list-table tr:has(:focus-visible) .presence-editors-names {
+	display: block;
+	flex-basis: 100%;
+	order: 1;
+	margin-top: 4px;
+}
