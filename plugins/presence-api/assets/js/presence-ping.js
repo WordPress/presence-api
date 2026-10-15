@@ -334,6 +334,17 @@
 				adminBarNode.classList.remove( 'hover' );
 			} );
 
+			// Core closes the menu only on Escape or when the pointer leaves, so one left open by Tab would hold its refresh.
+			adminBarNode.addEventListener( 'focusout', function ( event ) {
+				if (
+					adminBarNode.contains( event.relatedTarget ) ||
+					adminBarNode.matches( ':hover' )
+				) {
+					return;
+				}
+				adminBarNode.classList.remove( 'hover' );
+			} );
+
 			// Core toggles aria-expanded on the first link inside, which is a row, not this toggle.
 			new window.MutationObserver( function () {
 				adminBarNode

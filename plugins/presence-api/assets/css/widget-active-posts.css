@@ -94,3 +94,11 @@
 		font-size: 13px;
 	}
 }
+
+/* A keyboard cannot hover either, so the focused post spells them out. */
+#presence-active-posts-list .presence-active-post-item:has(:focus-visible) .presence-editor-names {
+	display: block;
+	margin-top: 2px;
+	color: #646970;
+	font-size: 13px;
+}
