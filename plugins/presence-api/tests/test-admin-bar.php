@@ -591,15 +591,25 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$this->assertFalse( $nodes[ 'presence-user-' . $on_draft ]->href );
 	}
 
-	public function test_rows_are_not_links() {
+	/**
+	 * WP_Admin_Bar renders a row without a link as a div, which Tab skips unless it has a tabindex.
+	 */
+	public function test_every_row_without_a_link_is_reachable_by_keyboard() {
 		$this->view_admin_page( 'upload.php', 'upload' );
-		$user_id = $this->put_user_on_screen( 'upload' );
+		$here = $this->put_user_on_screen( 'upload' );
+		$this->put_user_on_screen( 'profile', array( 'title' => 'Profile' ) );
+		$this->put_user_on_screen( 'front', array( 'title' => 'Home' ) );
+		$this->put_user_on_screen( 'users', array( 'title' => 'Users' ) );
+		$this->put_user_on_screen( 'users', array( 'title' => 'Users' ) );
+		$this->put_editor_on_post( self::$post_id );
 
-		wp_set_current_user( self::$editor_id );
-		$row = $this->render_nodes()[ 'presence-user-' . $user_id ];
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$nodes = $this->render_nodes();
 
-		$this->assertFalse( $row->href );
-		$this->assertArrayNotHasKey( 'tabindex', $row->meta );
+		$this->assertFalse( $nodes[ 'presence-user-' . $here ]->href );
+		foreach ( wp_list_filter( $nodes, array( 'group' => false ) ) as $node ) {
+			$this->assertSame( empty( $node->href ) ? 0 : null, $node->meta['tabindex'] ?? null, "Node '{$node->id}'" );
+		}
 	}
 
 	/**
@@ -719,7 +729,9 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$this->put_user_on_screen( 'users', array( 'title' => 'Users' ) );
 
 		wp_set_current_user( self::$editor_id );
-		$this->assertSame( '2 more', $this->render_nodes()['presence-more']->title, 'Without the Online list to open, the row says how many it leaves out.' );
+		$more = $this->render_nodes()['presence-more'];
+		$this->assertSame( '2 more', $more->title, 'Without the Online list to open, the row says how many it leaves out.' );
+		$this->assertSame( 0, $more->meta['tabindex'] );
 
 		$this->let_current_user_list_users();
 		$nodes = $this->render_nodes();
