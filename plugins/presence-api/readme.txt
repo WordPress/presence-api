@@ -1,9 +1,9 @@
 === Presence API ===
-Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas, aldorza, bejignesh, stfulldev, obenland, moriikuri, ishitaj34, theaminuldev, muneebashraf, mindctrl, zahidui, mitgiselle, jaredrethman, jooahmed, noruzzaman, huzaifaalmesbah, rejaulalomkhan
+Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas, aldorza, bejignesh, stfulldev, obenland, moriikuri, ishitaj34, theaminuldev, muneebashraf, mindctrl, zahidui, mitgiselle, jaredrethman, jooahmed, noruzzaman, huzaifaalmesbah, rejaulalomkhan, bosskhj
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.1
-Stable tag: 0.18.1
+Stable tag: 0.18.2
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -79,6 +79,9 @@ For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/presence-api/blob/main/CHANGELOG.md
 
+= 0.18.2 =
+* Make the presence screens readable with only a keyboard ([#841](https://github.com/WordPress/presence-api/issues/841)).
+
 = 0.18.1 =
 * Show the admin bar presence node on phones and spell out hover-only names on touch ([#830](https://github.com/WordPress/presence-api/issues/830)).
 
@@ -99,10 +102,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 
 = 0.16.1 =
 * Show identicons in the WordPress.org live preview ([#782](https://github.com/WordPress/presence-api/issues/782)).
-
-= 0.16.0 =
-* Add npm run check for every check that works without wp-env ([#758](https://github.com/WordPress/presence-api/issues/758)).
-* Let a site switch off the admin bar faces ([#773](https://github.com/WordPress/presence-api/issues/773)).
-* Make the room prefix read and the room parser public ([#766](https://github.com/WordPress/presence-api/issues/766)).
-* Register usePresenceUsers as the wp-presence script ([#767](https://github.com/WordPress/presence-api/issues/767)).
-* Keep the Editors column's faces inside the column on a busy post ([#780](https://github.com/WordPress/presence-api/issues/780)).
