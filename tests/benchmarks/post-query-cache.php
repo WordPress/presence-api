@@ -3,13 +3,8 @@
  * Plugin Name: Presence API post query cache measurement
  * Description: Counts how often posts last_changed moves, and how often cached post queries hit, with Presence API's post locks on and off.
  *
- * Copy this file into wp-content/mu-plugins on a site with a persistent object cache, leave it for a few
- * hours with Settings > Presence API > Post locks on and a few with it off, then run:
- *
- *   wp presence-measure post-query-cache
- *
- * Counters live in the object cache for two days, so nothing is written to the database. Delete the file
- * to stop.
+ * Drop it into wp-content/mu-plugins on a site with a persistent object cache, leave Settings > Presence API >
+ * Post locks on for a few hours and off for a few, then run `wp presence-measure post-query-cache`.
  *
  * @package Presence_API
  */
@@ -18,14 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-/**
- * Seconds each hour's counters are kept.
- */
-const PRESENCE_MEASURE_TTL = 2 * DAY_IN_SECONDS;
-
-/**
- * Cache group the counters live in.
- */
+const PRESENCE_MEASURE_TTL   = 2 * DAY_IN_SECONDS;
 const PRESENCE_MEASURE_GROUP = 'presence-measure';
 
 /**
@@ -182,10 +170,6 @@ add_action(
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	/**
 	 * Prints each hour's counters, split by whether post locks were on.
-	 *
-	 * ## EXAMPLES
-	 *
-	 *     wp presence-measure post-query-cache
 	 */
 	WP_CLI::add_command(
 		'presence-measure post-query-cache',
