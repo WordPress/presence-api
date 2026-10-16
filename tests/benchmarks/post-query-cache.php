@@ -46,22 +46,22 @@ function presence_measure_count( $metric ) {
 		wp_cache_incr( $key, 1, PRESENCE_MEASURE_GROUP );
 	}
 
-	$hour = substr( $key, 0, strrpos( $key, '|' ) );
-	wp_cache_add( "{$hour}|first", time(), PRESENCE_MEASURE_GROUP, PRESENCE_MEASURE_TTL );
-	wp_cache_set( "{$hour}|last", time(), PRESENCE_MEASURE_GROUP, PRESENCE_MEASURE_TTL );
+	$bucket = substr( $key, 0, strrpos( $key, '|' ) );
+	wp_cache_add( "{$bucket}|first", time(), PRESENCE_MEASURE_GROUP, PRESENCE_MEASURE_TTL );
+	wp_cache_set( "{$bucket}|last", time(), PRESENCE_MEASURE_GROUP, PRESENCE_MEASURE_TTL );
 
-	$hours = wp_cache_get( 'hours', PRESENCE_MEASURE_GROUP );
-	if ( ! is_array( $hours ) || ! in_array( $hour, $hours, true ) ) {
-		$hours   = is_array( $hours ) ? $hours : array();
-		$hours[] = $hour;
-		wp_cache_set( 'hours', array_slice( $hours, -96 ), PRESENCE_MEASURE_GROUP, PRESENCE_MEASURE_TTL );
+	$buckets = wp_cache_get( 'buckets', PRESENCE_MEASURE_GROUP );
+	$buckets = is_array( $buckets ) ? $buckets : array();
+	if ( ! in_array( $bucket, $buckets, true ) ) {
+		$buckets[] = $bucket;
+		wp_cache_set( 'buckets', array_slice( $buckets, -96 ), PRESENCE_MEASURE_GROUP, PRESENCE_MEASURE_TTL );
 	}
 }
 
 /**
  * The post meta key being written while core moves posts last_changed, or null outside a meta write.
  *
- * @param string|null $meta_key Optional. A key to remember, or false to forget it.
+ * @param string|false|null $meta_key Optional. A key to remember, or false to forget it.
  * @return string|null
  */
 function presence_measure_meta_key( $meta_key = null ) {
@@ -105,20 +105,26 @@ add_action(
 );
 
 /**
- * The SQL of cacheable post queries that have not run yet, from the first FROM on.
+ * Returns a query's SQL from its first FROM on, which a split query keeps when it swaps the field list.
  *
- * A split query swaps the field list before it runs, so only what follows FROM is compared.
- *
- * @param string|null $add  Optional. A query to start watching.
- * @param string|null $seen Optional. SQL that just ran.
- * @return void
+ * @param string $sql SQL.
+ * @return string
  */
-function presence_measure_queries( $add = null, $seen = null ) {
+function presence_measure_tail( $sql ) {
+	return (string) preg_replace( '/^.*?\bFROM\b/is', '', $sql, 1 );
+}
+
+/**
+ * Tracks cacheable post queries between WP_Query's cache lookup and the SQL a miss runs.
+ *
+ * @param string $action 'watch' a query, note SQL that 'ran', or 'settle' what is waiting as hits.
+ * @param string $sql    Optional. The query's SQL.
+ */
+function presence_measure_queries( $action, $sql = '' ) {
 	static $pending = array();
 
-	if ( null !== $seen ) {
-		$tail = strstr( $seen, ' FROM ' );
-		$at   = false === $tail ? false : array_search( $tail, $pending, true );
+	if ( 'ran' === $action ) {
+		$at = array_search( presence_measure_tail( $sql ), $pending, true );
 		if ( false !== $at ) {
 			unset( $pending[ $at ] );
 			presence_measure_count( 'queries_miss' );
@@ -130,11 +136,7 @@ function presence_measure_queries( $add = null, $seen = null ) {
 	foreach ( $pending as $unused ) {
 		presence_measure_count( 'queries_hit' );
 	}
-	$pending = array();
-
-	if ( null !== $add ) {
-		$pending[] = $add;
-	}
+	$pending = 'watch' === $action ? array( presence_measure_tail( $sql ) ) : array();
 }
 
 add_filter(
@@ -142,7 +144,7 @@ add_filter(
 	static function ( $posts, $query ) {
 		global $wpdb;
 
-		presence_measure_queries();
+		presence_measure_queries( 'settle' );
 
 		if ( null !== $posts || empty( $query->query_vars['cache_results'] ) ) {
 			return $posts;
@@ -154,10 +156,7 @@ add_filter(
 			return $posts;
 		}
 
-		$tail = strstr( $query->request, ' FROM ' );
-		if ( false !== $tail ) {
-			presence_measure_queries( $tail );
-		}
+		presence_measure_queries( 'watch', $query->request );
 
 		return $posts;
 	},
@@ -168,7 +167,7 @@ add_filter(
 add_filter(
 	'query',
 	static function ( $sql ) {
-		presence_measure_queries( null, $sql );
+		presence_measure_queries( 'ran', $sql );
 		return $sql;
 	}
 );
@@ -176,7 +175,7 @@ add_filter(
 add_action(
 	'shutdown',
 	static function () {
-		presence_measure_queries();
+		presence_measure_queries( 'settle' );
 	}
 );
 
@@ -195,16 +194,16 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 				WP_CLI::error( 'This site has no persistent object cache, so there is nothing to measure.' );
 			}
 
-			$hours = wp_cache_get( 'hours', PRESENCE_MEASURE_GROUP );
-			if ( ! is_array( $hours ) || ! $hours ) {
+			$buckets = wp_cache_get( 'buckets', PRESENCE_MEASURE_GROUP );
+			if ( ! is_array( $buckets ) || ! $buckets ) {
 				WP_CLI::error( 'Nothing counted yet.' );
 			}
 
 			$rows = array();
-			foreach ( $hours as $hour ) {
-				list( $time, $locks ) = explode( '|', $hour );
+			foreach ( $buckets as $bucket ) {
+				list( $time, $locks ) = explode( '|', $bucket );
 
-				$get  = static fn( $metric ) => (int) wp_cache_get( "{$hour}|{$metric}", PRESENCE_MEASURE_GROUP );
+				$get  = static fn( $metric ) => (int) wp_cache_get( "{$bucket}|{$metric}", PRESENCE_MEASURE_GROUP );
 				$hits = $get( 'queries_hit' );
 				$miss = $get( 'queries_miss' );
 
