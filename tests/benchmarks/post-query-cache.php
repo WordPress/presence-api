@@ -17,33 +17,41 @@ const PRESENCE_MEASURE_TTL   = 2 * DAY_IN_SECONDS;
 const PRESENCE_MEASURE_GROUP = 'presence-measure';
 
 /**
- * Adds one to a counter for the current hour and post lock setting.
+ * Adds one to a counter in memory, or with no metric writes the request's counts to the object cache.
  *
- * @param string $metric Counter name.
+ * @param string|null $metric Optional. Counter name.
  */
-function presence_measure_count( $metric ) {
-	if ( ! wp_using_ext_object_cache() ) {
+function presence_measure_count( $metric = null ) {
+	static $counts = array(), $since = 0;
+
+	if ( null !== $metric ) {
+		$counts[ $metric ] = ( $counts[ $metric ] ?? 0 ) + 1;
+		$since             = $since ? $since : time();
+
+		// A long WP-CLI or cron run writes once a minute rather than only when it ends.
+		if ( time() - $since < MINUTE_IN_SECONDS ) {
+			return;
+		}
+	}
+
+	if ( ! $counts || ! wp_using_ext_object_cache() ) {
 		return;
 	}
 
-	$locks = function_exists( 'wp_presence_feature_enabled' ) && wp_presence_feature_enabled( 'post-locks' ) ? 'on' : 'off';
-	$key   = gmdate( 'Y-m-d H:00', time() ) . "|{$locks}|{$metric}";
+	$locks  = function_exists( 'wp_presence_feature_enabled' ) && wp_presence_feature_enabled( 'post-locks' ) ? 'on' : 'off';
+	$bucket = gmdate( 'Y-m-d H:00' ) . "|{$locks}";
 
-	if ( false === wp_cache_incr( $key, 1, PRESENCE_MEASURE_GROUP ) ) {
-		wp_cache_add( $key, 0, PRESENCE_MEASURE_GROUP, PRESENCE_MEASURE_TTL );
-		wp_cache_incr( $key, 1, PRESENCE_MEASURE_GROUP );
+	foreach ( $counts as $name => $count ) {
+		if ( false === wp_cache_incr( "{$bucket}|{$name}", $count, PRESENCE_MEASURE_GROUP ) ) {
+			wp_cache_add( "{$bucket}|{$name}", 0, PRESENCE_MEASURE_GROUP, PRESENCE_MEASURE_TTL );
+			wp_cache_incr( "{$bucket}|{$name}", $count, PRESENCE_MEASURE_GROUP );
+		}
 	}
-
-	$bucket = substr( $key, 0, strrpos( $key, '|' ) );
-	wp_cache_add( "{$bucket}|first", time(), PRESENCE_MEASURE_GROUP, PRESENCE_MEASURE_TTL );
+	wp_cache_add( "{$bucket}|first", $since, PRESENCE_MEASURE_GROUP, PRESENCE_MEASURE_TTL );
 	wp_cache_set( "{$bucket}|last", time(), PRESENCE_MEASURE_GROUP, PRESENCE_MEASURE_TTL );
 
-	$buckets = wp_cache_get( 'buckets', PRESENCE_MEASURE_GROUP );
-	$buckets = is_array( $buckets ) ? $buckets : array();
-	if ( ! in_array( $bucket, $buckets, true ) ) {
-		$buckets[] = $bucket;
-		wp_cache_set( 'buckets', array_slice( $buckets, -96 ), PRESENCE_MEASURE_GROUP, PRESENCE_MEASURE_TTL );
-	}
+	$counts = array();
+	$since  = 0;
 }
 
 /**
@@ -152,19 +160,23 @@ add_filter(
 	2
 );
 
+// First, so the SQL is compared before another plugin rewrites it.
 add_filter(
 	'query',
 	static function ( $sql ) {
 		presence_measure_queries( 'ran', $sql );
 		return $sql;
-	}
+	},
+	PHP_INT_MIN
 );
 
 add_action(
 	'shutdown',
 	static function () {
 		presence_measure_queries( 'settle' );
-	}
+		presence_measure_count();
+	},
+	PHP_INT_MAX
 );
 
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
@@ -178,32 +190,37 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 				WP_CLI::error( 'This site has no persistent object cache, so there is nothing to measure.' );
 			}
 
-			$buckets = wp_cache_get( 'buckets', PRESENCE_MEASURE_GROUP );
-			if ( ! is_array( $buckets ) || ! $buckets ) {
-				WP_CLI::error( 'Nothing counted yet.' );
+			$rows = array();
+			for ( $ago = PRESENCE_MEASURE_TTL / HOUR_IN_SECONDS; $ago >= 0; $ago-- ) {
+				$time = gmdate( 'Y-m-d H:00', time() - $ago * HOUR_IN_SECONDS );
+
+				foreach ( array( 'off', 'on' ) as $locks ) {
+					$values = wp_cache_get_multiple( array_map( static fn( $metric ) => "{$time}|{$locks}|{$metric}", array( 'first', 'last', 'moves_lock', 'moves_other', 'queries_hit', 'queries_miss' ) ), PRESENCE_MEASURE_GROUP );
+					if ( ! array_filter( $values ) ) {
+						continue;
+					}
+
+					$get     = static fn( $metric ) => (int) $values[ "{$time}|{$locks}|{$metric}" ];
+					$hits    = $get( 'queries_hit' );
+					$miss    = $get( 'queries_miss' );
+					$minutes = max( 1, ( $get( 'last' ) - $get( 'first' ) ) / MINUTE_IN_SECONDS );
+					$moves   = $get( 'moves_lock' ) + $get( 'moves_other' );
+
+					$rows[] = array(
+						'hour (UTC)'              => $time,
+						'post locks'              => $locks,
+						'minutes'                 => round( $minutes ),
+						'moves from lock refresh' => $get( 'moves_lock' ),
+						'other moves'             => $get( 'moves_other' ),
+						'moves per hour'          => round( 60 * $moves / $minutes ),
+						'cacheable queries'       => $hits + $miss,
+						'hit rate'                => $hits + $miss ? round( 100 * $hits / ( $hits + $miss ), 1 ) . '%' : '-',
+					);
+				}
 			}
 
-			$rows = array();
-			foreach ( $buckets as $bucket ) {
-				list( $time, $locks ) = explode( '|', $bucket );
-
-				$get  = static fn( $metric ) => (int) wp_cache_get( "{$bucket}|{$metric}", PRESENCE_MEASURE_GROUP );
-				$hits = $get( 'queries_hit' );
-				$miss = $get( 'queries_miss' );
-
-				$minutes = max( 1, ( $get( 'last' ) - $get( 'first' ) ) / MINUTE_IN_SECONDS );
-				$moves   = $get( 'moves_lock' ) + $get( 'moves_other' );
-
-				$rows[] = array(
-					'hour (UTC)'              => $time,
-					'post locks'              => $locks,
-					'minutes'                 => round( $minutes ),
-					'moves from lock refresh' => $get( 'moves_lock' ),
-					'other moves'             => $get( 'moves_other' ),
-					'moves per hour'          => round( 60 * $moves / $minutes ),
-					'cacheable queries'       => $hits + $miss,
-					'hit rate'                => $hits + $miss ? round( 100 * $hits / ( $hits + $miss ), 1 ) . '%' : '-',
-				);
+			if ( ! $rows ) {
+				WP_CLI::error( 'Nothing counted yet.' );
 			}
 
 			WP_CLI\Utils\format_items( 'table', $rows, array_keys( $rows[0] ) );
