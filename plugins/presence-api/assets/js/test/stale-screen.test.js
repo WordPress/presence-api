@@ -174,6 +174,22 @@ describe( 'stale screen', () => {
 		expect( notices() ).toHaveLength( 1 );
 	} );
 
+	it( 'hands focus to the heading when dismissed, or the wrap without one', () => {
+		loadStaleScreen();
+
+		tick( 101 );
+		notices()[ 0 ].querySelector( '.notice-dismiss' ).focus();
+		notices()[ 0 ].querySelector( '.notice-dismiss' ).click();
+		expect( document.activeElement.tagName ).toBe( 'H1' );
+
+		loadStaleScreen();
+		document.querySelector( 'h1' ).remove();
+
+		tick( 101 );
+		notices()[ 0 ].querySelector( '.notice-dismiss' ).click();
+		expect( document.activeElement.className ).toBe( 'wrap' );
+	} );
+
 	it( 'posts a stale mark with the REST nonce, or refuses without one', () => {
 		const ajax = vi.fn();
 		loadStaleScreen( { restUrl: '/stale', nonce: 'abc' }, true, ajax );

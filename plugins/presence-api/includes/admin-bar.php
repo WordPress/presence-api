@@ -285,6 +285,9 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 	// The menu scrolls, so the cap only bounds the markup every Heartbeat tick resends.
 	$max_rows = 100;
 
+	// WP_Admin_Bar renders a row without a link as a div, which Tab skips unless it has a tabindex.
+	$focusable = array( 'tabindex' => 0 );
+
 	foreach ( array_slice( $here, 0, $max_rows ) as $entry ) {
 		$user = get_userdata( $entry->user_id );
 		if ( ! $user ) {
@@ -296,6 +299,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 				'parent' => 'presence-online',
 				'id'     => 'presence-user-' . $user->ID,
 				'title'  => $avatar( $user, 18 ) . esc_html( $user->display_name ) . wp_presence_render_agent_badge( $entry->user_id ) . ( $idle ? '<span class="presence-bar-idle">' . esc_html__( 'Idle', 'presence-api' ) . '</span>' : '' ),
+				'meta'   => $focusable,
 			)
 		);
 	}
@@ -384,7 +388,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 					'meta'   => array(
 						'class' => 'presence-bar-place',
 						'title' => $row[0],
-					),
+					) + ( '' !== $row[1] ? array() : $focusable ),
 				)
 			);
 			continue;
@@ -401,7 +405,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 				'id'     => 'presence-user-' . $user->ID,
 				/* translators: %s: Where the person is, such as a post title or an admin screen. */
 				'title'  => esc_html( $user->display_name ) . wp_presence_render_agent_badge( $user->ID ) . ( '' !== $label ? '<span class="screen-reader-text">, ' . esc_html( sprintf( __( 'on %s', 'presence-api' ), $label ) ) . '</span>' : '' ),
-				'meta'   => '' !== $label ? array( 'class' => 'presence-bar-there' ) : array(),
+				'meta'   => ( '' !== $label ? array( 'class' => 'presence-bar-there' ) : array() ) + $focusable,
 			)
 		);
 	}
@@ -417,7 +421,7 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 					/* translators: %d: Number of people online the menu leaves out. */
 					: sprintf( _n( '%d more', '%d more', $more, 'presence-api' ), $more ),
 				'href'   => $users_url,
-				'meta'   => array( 'class' => 'presence-bar-more' ),
+				'meta'   => array( 'class' => 'presence-bar-more' ) + ( $users_url ? array() : $focusable ),
 			)
 		);
 	}
