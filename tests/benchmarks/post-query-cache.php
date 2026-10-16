@@ -6,6 +6,8 @@
  * Drop it into wp-content/mu-plugins on a site with a persistent object cache, leave Settings > Presence API >
  * Post locks on for a few hours and off for a few, then run `wp presence-measure post-query-cache`.
  *
+ * The moves are counted exactly, but core doesn't expose cache hits, so a hit is inferred from SQL that never ran.
+ *
  * @package Presence_API
  */
 
@@ -214,7 +216,7 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 						'other moves'             => $get( 'moves_other' ),
 						'moves per hour'          => round( 60 * $moves / $minutes ),
 						'cacheable queries'       => $hits + $miss,
-						'hit rate'                => $hits + $miss ? round( 100 * $hits / ( $hits + $miss ), 1 ) . '%' : '-',
+						'hit rate (estimated)'    => $hits + $miss ? round( 100 * $hits / ( $hits + $miss ), 1 ) . '%' : '-',
 					);
 				}
 			}
