@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.18.2](https://github.com/WordPress/presence-api/compare/v0.18.1...v0.18.2) (2026-10-16)
+
+
+### Bug Fixes
+
+* make the presence screens readable with only a keyboard ([#841](https://github.com/WordPress/presence-api/issues/841)) ([6f058fd](https://github.com/WordPress/presence-api/commit/6f058fdc6e5d7e1ae42fa1c8e345eea0ad5a162f))
+
+
+### Dependencies
+
+* **deps-dev:** bump @wordpress/e2e-test-utils-playwright from 2.1.0 to 3.0.0 ([#845](https://github.com/WordPress/presence-api/issues/845)) ([2ed5688](https://github.com/WordPress/presence-api/commit/2ed568837e5b41da4fde2b62bc34ad9700ccfcbb))
+* **deps-dev:** bump @wordpress/env from 11.16.0 to 11.17.0 ([#843](https://github.com/WordPress/presence-api/issues/843)) ([fac7068](https://github.com/WordPress/presence-api/commit/fac7068d76e54eed4207fe87fead38d47631fc8d))
+* **deps-dev:** bump @wordpress/eslint-plugin from 27.0.0 to 27.1.0 ([#847](https://github.com/WordPress/presence-api/issues/847)) ([715372e](https://github.com/WordPress/presence-api/commit/715372ee0cc02cfa77351d1cc11710f40f360f92))
+* **deps-dev:** bump globals from 17.12.0 to 17.13.0 ([#848](https://github.com/WordPress/presence-api/issues/848)) ([fd60ebd](https://github.com/WordPress/presence-api/commit/fd60ebd95da1fcd53b00ccaeeafa7376bdf736da))
+* **deps-dev:** bump jsdom from 30.1.1 to 30.1.2 ([#842](https://github.com/WordPress/presence-api/issues/842)) ([f8ff8cc](https://github.com/WordPress/presence-api/commit/f8ff8cc436e9566d530f20113827ad90f84a9202))
+* **deps-dev:** update phpstan/phpstan requirement from 2.2.16 to 2.3.0 ([#846](https://github.com/WordPress/presence-api/issues/846)) ([726062b](https://github.com/WordPress/presence-api/commit/726062b546515c15f600bbdb639abd7ab836fbc4))
+* **deps:** bump actions/setup-node from 7.0.0 to 7.1.0 ([#844](https://github.com/WordPress/presence-api/issues/844)) ([4db6633](https://github.com/WordPress/presence-api/commit/4db6633250f6b15df429af41635fa2986eb2fb1c))
+* **deps:** bump actions/upload-artifact from 7.0.1 to 7.0.2 ([#849](https://github.com/WordPress/presence-api/issues/849)) ([2088fb7](https://github.com/WordPress/presence-api/commit/2088fb74f9d2ea7ae2d95851510e2881b2908caa))
+* **deps:** bump crate-ci/typos from 1.50.3 to 1.51.1 ([#850](https://github.com/WordPress/presence-api/issues/850)) ([d0d285c](https://github.com/WordPress/presence-api/commit/d0d285ca85f22933cced92daebf3b64f525e024d))
+* let check-private-calls.php run on Windows ([#829](https://github.com/WordPress/presence-api/issues/829)) ([ed38626](https://github.com/WordPress/presence-api/commit/ed38626b17891c8809bd7a4c4c8c140c9f1f578a))
+
 ## [0.18.1](https://github.com/WordPress/presence-api/compare/v0.18.0...v0.18.1) (2026-10-13)
 
 
