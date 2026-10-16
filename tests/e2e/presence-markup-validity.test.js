@@ -1,14 +1,8 @@
 /**
  * Presence API — Markup Validity E2E Tests
  *
- * Runs the markup the plugin adds to each screen through html-validate's
- * standards rules. Most of it is built as strings in PHP, such as the admin
- * bar menu, the Editors column's avatar stack and the widgets, so a mistake
- * there shows up in no lint (#824).
- *
- * Only the plugin's own fragments are checked. Whole pages also carry core's
- * markup, which the plugin can't fix, such as the admin bar's role="group"
- * rows and list tables' colspans.
+ * Validates the markup the plugin adds to each screen, most of which is built
+ * as PHP strings that no lint checks (#824).
  *
  * Run from plugin root:
  *   npx playwright test --config tests/e2e/playwright.config.js tests/e2e/presence-markup-validity.test.js
@@ -16,8 +10,8 @@
  * @package WordPress
  */
 import { test as base, expect } from '@wordpress/e2e-test-utils-playwright';
-import { HtmlValidate } from 'html-validate';
 import { execSync } from 'node:child_process';
+import { markupErrors } from './markup-helpers';
 
 const TEST_USERS = [
 	{
@@ -37,16 +31,6 @@ const TEST_USERS = [
 		roles: [ 'editor' ],
 	},
 ];
-
-// The standards preset, plus the two conformance errors the Nu Html Checker
-// raises that the preset leaves to its accessibility rules.
-const htmlValidate = new HtmlValidate( {
-	extends: [ 'html-validate:standard' ],
-	rules: {
-		'aria-label-misuse': 'error',
-		'wcag/h37': 'error',
-	},
-} );
 
 const test = base.extend( {
 	testUsers: [
@@ -82,37 +66,6 @@ function seedEditors( users, postId ) {
 				`wp_set_presence( 'postType/post:${ postId }', 'editor-${ id }', array( 'action' => 'editing', 'screen' => 'post' ), array( 'user_id' => ${ id } ) );`
 		);
 	}
-}
-
-/**
- * Validates every element matching a selector on its own.
- *
- * @param {import('@playwright/test').Page} page     Page to read.
- * @param {string}                          selector Plugin-owned fragment.
- * @return {Promise<string[]>} One line per problem, empty when the markup is valid.
- */
-async function markupErrors( page, selector ) {
-	const fragments = await page
-		.locator( selector )
-		.evaluateAll( ( elements ) => elements.map( ( el ) => el.outerHTML ) );
-
-	if ( ! fragments.length ) {
-		return [ `${ selector } is not on the page` ];
-	}
-
-	const errors = [];
-	for ( const fragment of fragments ) {
-		const report = await htmlValidate.validateString( fragment );
-		for ( const result of report.results ) {
-			for ( const message of result.messages ) {
-				errors.push(
-					`${ selector }: ${ message.ruleId }: ${ message.message } in ${ fragment }`
-				);
-			}
-		}
-	}
-
-	return errors;
 }
 
 test.describe( 'Presence Markup Validity', () => {
