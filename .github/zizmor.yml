@@ -1,0 +1,4 @@
+rules:
+  # actionlint doesn't accept GitHub's `$/` self-repository syntax yet, so `./` stays until it does.
+  self-repository:
+    disable: true

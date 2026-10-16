@@ -29,7 +29,7 @@ jobs:
       releases: ${{ toJSON(steps.release.outputs) }}
     steps:
       # Opens the release PR as github-actions[bot], which needs the repo setting "Allow GitHub Actions to create and approve pull requests".
-      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         id: release
 
   # release-please only updates the manifest and CHANGELOG. Every place
@@ -54,7 +54,7 @@ jobs:
       - run: bash scripts/sync-versions.sh
       # Regenerated after the version sync so the template's
       # `Project-Id-Version` names the release it ships in.
-      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
         if: ${{ endsWith(matrix.pr.headBranchName, '--components--presence-api') }}
         with:
           php-version: '8.3'
@@ -141,7 +141,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
         with:
           php-version: '8.3'
           tools: composer
