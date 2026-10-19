@@ -1,7 +1,7 @@
 /**
  * Presence API — markup validation for the markup validity specs.
  *
- * Checks the plugin's fragments only, since whole pages carry core's errors too.
+ * Reports errors in the plugin's fragments only, since whole pages carry core's errors too.
  *
  * @package WordPress
  */
