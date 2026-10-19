@@ -31,7 +31,7 @@ export async function markupErrors( page, selector ) {
 		.querySelectorAll( selector )
 		.map( ( el ) => el.generateSelector() );
 
-	// Markup that JavaScript adds is not in the response, so only the browser's copy can be checked.
+	// Markup that JavaScript adds is not in the response, so check the browser's copy.
 	if ( ! roots.length ) {
 		return outerHtmlErrors( page, selector );
 	}
