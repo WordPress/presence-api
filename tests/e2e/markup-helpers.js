@@ -40,9 +40,11 @@ export async function markupErrors( page, selector ) {
 
 	return report.results
 		.flatMap( ( result ) => result.messages )
-		.filter( ( { selector: at } ) =>
+		.filter( ( message ) =>
 			roots.some(
-				( root ) => at === root || at?.startsWith( `${ root } ` )
+				( root ) =>
+					message.selector === root ||
+					message.selector?.startsWith( `${ root } ` )
 			)
 		)
 		.map(
