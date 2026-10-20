@@ -103,6 +103,30 @@ class WP_Test_Presence_Session_Hash extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * The admin room keeps one row per person, so two browsers taking turns on it store no hash and move no version.
+	 *
+	 * @covers ::wp_presence_write_row
+	 */
+	public function test_browsers_taking_turns_on_the_admin_room_change_nothing() {
+		if ( $GLOBALS['wpdb'] instanceof WP_SQLite_DB ) {
+			$this->markTestSkipped( 'The SQLite integration counts every write as one a peer sees.' );
+		}
+
+		$room   = wp_presence_admin_room();
+		$client = 'user-' . self::$editor_id;
+
+		$this->sign_in();
+		wp_set_presence( $room, $client, array(), array( 'user_id' => self::$editor_id ) );
+		$before = wp_get_presence_room_versions( $room )[ $room ];
+
+		$this->sign_in();
+		wp_set_presence( $room, $client, array(), array( 'user_id' => self::$editor_id ) );
+
+		$this->assertSame( '', $this->stored_hash( $room, $client ) );
+		$this->assertSame( $before, wp_get_presence_room_versions( $room )[ $room ] );
+	}
+
+	/**
 	 * One session hashes differently per room, so the value cannot follow it from room to room.
 	 *
 	 * @covers ::wp_presence_session_hash
@@ -166,5 +190,21 @@ class WP_Test_Presence_Session_Hash extends WP_Presence_UnitTestCase {
 
 		$this->assertSame( wp_presence_session_hash( $room ), $data[0]['session_hash'] );
 		$this->assertStringNotContainsString( $token, wp_json_encode( $data ) );
+	}
+
+	/**
+	 * A REST write to the admin room answers with the empty hash it stored.
+	 *
+	 * @covers WP_REST_Presence_Controller::create_item
+	 */
+	public function test_rest_write_to_the_admin_room_returns_no_hash() {
+		$this->sign_in();
+
+		$request = new WP_REST_Request( 'POST', '/wp-presence/v1/presence' );
+		$request->set_param( 'room', wp_presence_admin_room() );
+		$request->set_param( 'client_id', 'tab-1' );
+		$data = rest_get_server()->dispatch( $request )->get_data();
+
+		$this->assertSame( '', $data['session_hash'] );
 	}
 }

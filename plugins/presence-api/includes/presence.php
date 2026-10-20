@@ -992,15 +992,16 @@ if ( ! function_exists( 'wp_presence_session_hash' ) ) {
 	 * Returns which browser the current request comes from, as a per-room hash of its login session that every tab of that login shares.
 	 *
 	 * @since 0.18.0
+	 * @since 0.18.3 Returns an empty string for the admin room, which keeps one row per person rather than per browser.
 	 *
 	 * @param string $room The room identifier.
-	 * @return string Sixteen hex characters, or an empty string for a request with
-	 *                no login session, such as cron, WP-CLI or an application password.
+	 * @return string Sixteen hex characters, or an empty string for the admin room or a request
+	 *                with no login session, such as cron, WP-CLI or an application password.
 	 */
 	function wp_presence_session_hash( $room ) {
 		$token = wp_get_session_token();
 
-		return '' === $token ? '' : substr( hash_hmac( 'sha256', (string) $room, $token ), 0, 16 );
+		return '' === $token || wp_presence_admin_room() === $room ? '' : substr( hash_hmac( 'sha256', (string) $room, $token ), 0, 16 );
 	}
 }
 
