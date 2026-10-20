@@ -36,7 +36,6 @@ jobs:
             browser: chromium
             start: npx wp-env start
             env-dir: .
-            log-container: tests-cli
           # A second instance rather than a flag on the first one, for the
           # reason given in scripts/start-multisite-env.sh. This one seeds its
           # fixture network too.
@@ -44,19 +43,16 @@ jobs:
             browser: chromium
             start: npm run env:start:multisite
             env-dir: tests/e2e/multisite
-            log-container: cli
           # Only the specs tagged for each engine run here, so these legs stay
           # short enough to run on every pull request.
           - project: firefox
             browser: firefox
             start: npx wp-env start
             env-dir: .
-            log-container: tests-cli
           - project: webkit
             browser: webkit
             start: npx wp-env start
             env-dir: .
-            log-container: tests-cli
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -165,12 +161,12 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-      # wp-env selects an instance by the directory it runs in, so the network's
-      # log is only reachable from the directory holding its config.
+      # Every leg tests against its instance's development site, whose container is
+      # `cli`; wp-env picks the instance by the directory it runs in.
       - name: WordPress debug log
         if: ${{ failure() }}
         working-directory: ${{ matrix.env-dir }}
-        run: npx wp-env run ${{ matrix.log-container }} -- cat wp-content/debug.log || true
+        run: npx wp-env run cli -- cat wp-content/debug.log || true
 
   # Reports the `e2e / Playwright` check the `main` ruleset requires. Without
   # `!cancelled()` a failed leg would skip this job, and a skipped check passes.
