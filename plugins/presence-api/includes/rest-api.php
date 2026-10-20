@@ -9,17 +9,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-/**
- * Registers the presence REST routes.
- *
- * @since 0.1.1
- */
-function wp_presence_register_rest_routes() {
-	$controller = new WP_REST_Presence_Controller();
-	$controller->register_routes();
+if ( ! function_exists( 'wp_presence_register_rest_routes' ) ) {
+	/**
+	 * Registers the presence REST routes.
+	 *
+	 * @since 0.1.1
+	 */
+	function wp_presence_register_rest_routes() {
+		$controller = new WP_REST_Presence_Controller();
+		$controller->register_routes();
 
-	if ( is_multisite() ) {
-		$network_controller = new WP_REST_Presence_Network_Controller();
-		$network_controller->register_routes();
+		if ( is_multisite() ) {
+			$network_controller = new WP_REST_Presence_Network_Controller();
+			$network_controller->register_routes();
+		}
 	}
 }

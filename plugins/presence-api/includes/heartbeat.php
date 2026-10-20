@@ -9,662 +9,694 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-/**
- * Builds the state stored on a user's entry in a post room.
- *
- * Shared so the two writers of that entry cannot drift apart on its shape.
- *
- * @access private
- *
- * @since 0.1.20
- *
- * @param string $screen_id The screen ID.
- * @param bool   $locked    Whether this write carries a post lock refresh.
- * @return array The state to store.
- */
-function wp_presence_editor_state( $screen_id, $locked ) {
-	return array(
-		'action' => 'editing',
-		'screen' => $screen_id,
-		'locked' => (bool) $locked,
-	);
+if ( ! function_exists( 'wp_presence_editor_state' ) ) {
+	/**
+	 * Builds the state stored on a user's entry in a post room.
+	 *
+	 * Shared so the two writers of that entry cannot drift apart on its shape.
+	 *
+	 * @access private
+	 *
+	 * @since 0.1.20
+	 *
+	 * @param string $screen_id The screen ID.
+	 * @param bool   $locked    Whether this write carries a post lock refresh.
+	 * @return array The state to store.
+	 */
+	function wp_presence_editor_state( $screen_id, $locked ) {
+		return array(
+			'action' => 'editing',
+			'screen' => $screen_id,
+			'locked' => (bool) $locked,
+		);
+	}
 }
 
-/**
- * Returns the comment, user or term an admin screen edits, when the current user can edit it.
- *
- * @access private
- *
- * @since 0.10.0
- *
- * @param string $screen    The screen ID.
- * @param mixed  $object_id The object ID to check.
- * @return int The object ID, or 0.
- */
-function wp_presence_screen_object_id( $screen, $object_id ) {
-	$object_id = is_numeric( $object_id ) ? (int) $object_id : 0;
-	$taxonomy  = 0 === strpos( $screen, 'edit-' ) ? substr( $screen, 5 ) : '';
+if ( ! function_exists( 'wp_presence_screen_object_id' ) ) {
+	/**
+	 * Returns the comment, user or term an admin screen edits, when the current user can edit it.
+	 *
+	 * @access private
+	 *
+	 * @since 0.10.0
+	 *
+	 * @param string $screen    The screen ID.
+	 * @param mixed  $object_id The object ID to check.
+	 * @return int The object ID, or 0.
+	 */
+	function wp_presence_screen_object_id( $screen, $object_id ) {
+		$object_id = is_numeric( $object_id ) ? (int) $object_id : 0;
+		$taxonomy  = 0 === strpos( $screen, 'edit-' ) ? substr( $screen, 5 ) : '';
 
-	if ( $object_id <= 0 ) {
+		if ( $object_id <= 0 ) {
+			return 0;
+		}
+		if ( 'comment' === $screen ) {
+			return current_user_can( 'edit_comment', $object_id ) ? $object_id : 0;
+		}
+		if ( 'user-edit' === $screen || 'user-edit-network' === $screen ) {
+			return get_userdata( $object_id ) && current_user_can( 'edit_user', $object_id ) ? $object_id : 0;
+		}
+		if ( taxonomy_exists( $taxonomy ) ) {
+			return get_term( $object_id, $taxonomy ) instanceof WP_Term && current_user_can( 'edit_term', $object_id ) ? $object_id : 0;
+		}
+
 		return 0;
 	}
-	if ( 'comment' === $screen ) {
-		return current_user_can( 'edit_comment', $object_id ) ? $object_id : 0;
-	}
-	if ( 'user-edit' === $screen || 'user-edit-network' === $screen ) {
-		return get_userdata( $object_id ) && current_user_can( 'edit_user', $object_id ) ? $object_id : 0;
-	}
-	if ( taxonomy_exists( $taxonomy ) ) {
-		return get_term( $object_id, $taxonomy ) instanceof WP_Term && current_user_can( 'edit_term', $object_id ) ? $object_id : 0;
-	}
-
-	return 0;
 }
 
-/**
- * Returns how many consecutive unchanged ticks trigger the idle Heartbeat backoff.
- *
- * @access private
- *
- * @since 0.1.24
- *
- * @return int Tick count. Default 5. 0 disables the backoff.
- */
-function wp_presence_get_heartbeat_idle_ticks() {
+if ( ! function_exists( 'wp_presence_get_heartbeat_idle_ticks' ) ) {
 	/**
-	 * Filters the tick count.
+	 * Returns how many consecutive unchanged ticks trigger the idle Heartbeat backoff.
+	 *
+	 * @access private
 	 *
 	 * @since 0.1.24
 	 *
-	 * @param int $ticks Tick count. Default 5.
+	 * @return int Tick count. Default 5. 0 disables the backoff.
 	 */
-	return (int) apply_filters( 'wp_presence_heartbeat_idle_ticks', 5 );
+	function wp_presence_get_heartbeat_idle_ticks() {
+		/**
+		 * Filters the tick count.
+		 *
+		 * @since 0.1.24
+		 *
+		 * @param int $ticks Tick count. Default 5.
+		 */
+		return (int) apply_filters( 'wp_presence_heartbeat_idle_ticks', 5 );
+	}
 }
 
-/**
- * Returns the desired widened Heartbeat interval, in seconds, for idle rooms.
- *
- * The client clamps this below the presence TTL, so it backs off by less
- * than this (or not at all) on a screen whose normal interval is already
- * near that ceiling.
- *
- * @access private
- *
- * @since 0.1.24
- *
- * @return int Interval in seconds. Default 45.
- */
-function wp_presence_get_heartbeat_idle_interval() {
+if ( ! function_exists( 'wp_presence_get_heartbeat_idle_interval' ) ) {
 	/**
-	 * Filters the interval.
+	 * Returns the desired widened Heartbeat interval, in seconds, for idle rooms.
+	 *
+	 * The client clamps this below the presence TTL, so it backs off by less
+	 * than this (or not at all) on a screen whose normal interval is already
+	 * near that ceiling.
+	 *
+	 * @access private
 	 *
 	 * @since 0.1.24
 	 *
-	 * @param int $interval Interval in seconds. Default 45.
+	 * @return int Interval in seconds. Default 45.
 	 */
-	return (int) apply_filters( 'wp_presence_heartbeat_idle_interval', 45 );
+	function wp_presence_get_heartbeat_idle_interval() {
+		/**
+		 * Filters the interval.
+		 *
+		 * @since 0.1.24
+		 *
+		 * @param int $interval Interval in seconds. Default 45.
+		 */
+		return (int) apply_filters( 'wp_presence_heartbeat_idle_interval', 45 );
+	}
 }
 
-/**
- * Enqueues heartbeat and the presence ping script on all admin pages.
- *
- * @since 0.1.1
- */
-function wp_presence_enqueue_heartbeat_ping() {
-	if ( ! is_user_logged_in() ) {
-		return;
-	}
-
-	if ( ! wp_can_access_presence_room( wp_presence_admin_room() ) ) {
-		// The network screens' live surfaces answer to the network capability, so load the script without any presence to write.
-		if ( is_network_admin() && current_user_can( wp_presence_network_capability() ) ) {
-			wp_presence_enqueue_ping_script( array() );
-		}
-		return;
-	}
-
-	// On the front-end, only enqueue if the admin bar is showing.
-	if ( ! is_admin() && ! is_admin_bar_showing() ) {
-		return;
-	}
-
-	wp_enqueue_script( 'heartbeat' );
-
-	$user_id = get_current_user_id();
-
-	// Every page where the ping is enqueued occupies the admin/online room.
-	$entries = array(
-		array(
-			'room'      => wp_presence_admin_room(),
-			'client_id' => 'user-' . $user_id,
-		),
-	);
-
-	// Every page carries its title so others can see where someone is; singular front-end views also carry the post ID.
-	$page_context = null;
-	if ( is_admin() ) {
-		$page_context = array( 'title' => wp_strip_all_tags( get_admin_page_title() ) );
-	} else {
-		if ( is_front_page() ) {
-			$title = __( 'Home', 'presence-api' );
-		} else {
-			$strip_branding = static function ( $parts ) {
-				unset( $parts['tagline'], $parts['site'] );
-				return $parts;
-			};
-			add_filter( 'document_title_parts', $strip_branding );
-			$title = wp_get_document_title();
-			remove_filter( 'document_title_parts', $strip_branding );
+if ( ! function_exists( 'wp_presence_enqueue_heartbeat_ping' ) ) {
+	/**
+	 * Enqueues heartbeat and the presence ping script on all admin pages.
+	 *
+	 * @since 0.1.1
+	 */
+	function wp_presence_enqueue_heartbeat_ping() {
+		if ( ! is_user_logged_in() ) {
+			return;
 		}
 
-		$page_context = array( 'title' => $title );
-
-		if ( is_singular() ) {
-			$queried = get_queried_object();
-			if ( $queried instanceof WP_Post ) {
-				$page_context['post_id'] = $queried->ID;
+		if ( ! wp_can_access_presence_room( wp_presence_admin_room() ) ) {
+			// The network screens' live surfaces answer to the network capability, so load the script without any presence to write.
+			if ( is_network_admin() && current_user_can( wp_presence_network_capability() ) ) {
+				wp_presence_enqueue_ping_script( array() );
 			}
+			return;
 		}
-	}
 
-	// On the post-edit screen, also occupy the per-post room.
-	$editor_post_id = 0;
-	$editor_room    = '';
-	if ( is_admin() && function_exists( 'get_current_screen' ) ) {
-		$screen = get_current_screen();
-		if ( $screen && 'post' === $screen->base ) {
-			$post = get_post();
-			if ( $post && post_type_supports( $post->post_type, 'presence' ) ) {
-				$room = wp_presence_post_room( $post->ID );
-				if ( $room ) {
-					$editor_post_id = $post->ID;
-					$editor_room    = $room;
-					$entries[]      = array(
-						'room'      => $room,
-						'client_id' => 'editor-' . $user_id,
-					);
+		// On the front-end, only enqueue if the admin bar is showing.
+		if ( ! is_admin() && ! is_admin_bar_showing() ) {
+			return;
+		}
+
+		wp_enqueue_script( 'heartbeat' );
+
+		$user_id = get_current_user_id();
+
+		// Every page where the ping is enqueued occupies the admin/online room.
+		$entries = array(
+			array(
+				'room'      => wp_presence_admin_room(),
+				'client_id' => 'user-' . $user_id,
+			),
+		);
+
+		// Every page carries its title so others can see where someone is; singular front-end views also carry the post ID.
+		$page_context = null;
+		if ( is_admin() ) {
+			$page_context = array( 'title' => wp_strip_all_tags( get_admin_page_title() ) );
+		} else {
+			if ( is_front_page() ) {
+				$title = __( 'Home', 'presence-api' );
+			} else {
+				$strip_branding = static function ( $parts ) {
+					unset( $parts['tagline'], $parts['site'] );
+					return $parts;
+				};
+				add_filter( 'document_title_parts', $strip_branding );
+				$title = wp_get_document_title();
+				remove_filter( 'document_title_parts', $strip_branding );
+			}
+
+			$page_context = array( 'title' => $title );
+
+			if ( is_singular() ) {
+				$queried = get_queried_object();
+				if ( $queried instanceof WP_Post ) {
+					$page_context['post_id'] = $queried->ID;
 				}
 			}
 		}
-	}
 
-	// Write presence server-side during this request so the new page closes the
-	// gap between the old page's pagehide DELETE and the next heartbeat tick.
-	$screen_id = is_admin() && function_exists( 'get_current_screen' ) && get_current_screen()
-		? get_current_screen()->id
-		: 'front';
-
-	if ( is_admin() ) {
-		$target    = wp_presence_parse_screen_key_target( wp_presence_current_screen_key() );
-		$screens   = array(
-			'comment' => array( 'comment' ),
-			'user'    => array( 'user-edit', 'user-edit-network' ),
-			'term'    => array( 'edit-' . ( $target['taxonomy'] ?? '' ) ),
-		);
-		$object_id = in_array( $screen_id, $screens[ $target['type'] ] ?? array(), true ) ? wp_presence_screen_object_id( $screen_id, $target['id'] ) : 0;
-		if ( $object_id ) {
-			$page_context['object_id'] = $object_id;
-		}
-	}
-
-	$admin_state = array( 'screen' => $screen_id );
-	if ( $page_context ) {
-		if ( ! empty( $page_context['title'] ) ) {
-			$admin_state['title'] = $page_context['title'];
-		}
-		if ( ! empty( $page_context['post_id'] ) ) {
-			$admin_state['post_id'] = $page_context['post_id'];
-		}
-		if ( ! empty( $page_context['object_id'] ) ) {
-			$admin_state['object_id'] = $page_context['object_id'];
-		}
-	}
-	wp_set_presence( wp_presence_admin_room(), 'user-' . $user_id, $admin_state, array( 'user_id' => $user_id ) );
-
-	$initial_collaborator_count = 0;
-	if ( $editor_room ) {
-		// No tick has carried a lock refresh yet. connectNow() on load makes
-		// that a single request, not a visible state.
-		wp_set_presence(
-			$editor_room,
-			'editor-' . $user_id,
-			wp_presence_editor_state( $screen_id, false ),
-			array( 'user_id' => $user_id )
-		);
-
-		// Reads the room back, so a reload or late join into an already 2+
-		// room seeds the same count the next tick would report.
-		$initial_collaborator_count = wp_presence_count_editors( wp_get_presence( $editor_room ) );
-	}
-
-	$config = array(
-		'entries'                  => $entries,
-		'pageContext'              => $page_context,
-		'editorPostId'             => $editor_post_id,
-		// Lets presence-ping.js fire `presence-api.watchingRoom` without
-		// duplicating the postType/{type}:{id} grammar client-side.
-		'editorRoom'               => $editor_room,
-		'initialCollaboratorCount' => $initial_collaborator_count,
-		'restUrl'                  => esc_url_raw( rest_url( 'wp-presence/v1/presence' ) ),
-		'nonce'                    => wp_create_nonce( 'wp_rest' ),
-		'screenToken'              => wp_create_nonce( 'wp_presence_screen_' . $screen_id ),
-		'idleTicks'                => wp_presence_get_heartbeat_idle_ticks(),
-		'idleInterval'             => wp_presence_get_heartbeat_idle_interval(),
-		'ttl'                      => wp_presence_get_timeout(),
-		'ttlMargin'                => wp_presence_ttl_margin(),
-	);
-
-	wp_presence_enqueue_ping_script( $config );
-}
-
-/**
- * Enqueues the presence ping script, which also keeps the live surfaces current.
- *
- * @since 0.11.0
- *
- * @access private
- * @param array $config The `wpPresenceConfig` object.
- */
-function wp_presence_enqueue_ping_script( $config ) {
-	wp_enqueue_script(
-		'wp-presence-tab-coordinator',
-		WP_PRESENCE_PLUGIN_URL . 'assets/js/tab-coordinator.js',
-		array( 'jquery' ),
-		WP_PRESENCE_VERSION,
-		true
-	);
-
-	wp_enqueue_script(
-		'wp-presence-ping',
-		WP_PRESENCE_PLUGIN_URL . 'assets/js/presence-ping.js',
-		array( 'jquery', 'heartbeat', 'wp-hooks', 'wp-presence-tab-coordinator' ),
-		WP_PRESENCE_VERSION,
-		true
-	);
-
-	wp_add_inline_script(
-		'wp-presence-ping',
-		sprintf( 'window.wpPresenceConfig = %s;', wp_json_encode( $config, JSON_HEX_TAG | JSON_UNESCAPED_SLASHES ) ),
-		'before'
-	);
-}
-
-/**
- * Registers the `wp-presence` script, which exposes `wp.presence.usePresenceUsers()`.
- *
- * @since 0.16.0
- *
- * @access private
- * @param WP_Scripts $scripts WP_Scripts object.
- */
-function wp_presence_register_packages_scripts( $scripts ) {
-	$asset_file = WP_PRESENCE_PLUGIN_DIR . 'build/index.asset.php';
-
-	if ( ! file_exists( $asset_file ) ) {
-		return;
-	}
-
-	$asset = require $asset_file;
-
-	// The hook reads the current user from the core store and polls on Heartbeat ticks.
-	$scripts->add(
-		'wp-presence',
-		WP_PRESENCE_PLUGIN_URL . 'build/index.js',
-		array_merge( $asset['dependencies'], array( 'heartbeat', 'wp-core-data' ) ),
-		$asset['version']
-	);
-	$scripts->add_data( 'wp-presence', 'group', 1 );
-}
-
-/**
- * Records the current user's presence in the admin/online room on every tick.
- *
- * This is the API's primary write path. It runs regardless of which dashboard
- * widgets are registered.
- *
- * @since 0.1.10
- *
- * @param array  $response  The Heartbeat response.
- * @param array  $data      The $_POST data sent.
- * @param string $screen_id The screen ID.
- * Nonce verification is handled by WordPress in wp_ajax_heartbeat().
- *
- * @return array The Heartbeat response.
- */
-function wp_presence_admin_heartbeat_received( $response, $data, $screen_id ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- Required by filter signature.
-	if ( empty( $data['presence-ping'] ) ) {
-		return $response;
-	}
-
-	if ( ! wp_can_access_presence_room( wp_presence_admin_room() ) ) {
-		return $response;
-	}
-
-	$user_id = get_current_user_id();
-	// The ping is client-supplied and shown to other users, so cap it as the REST route caps its data.
-	$screen = isset( $data['presence-ping']['screen'] ) ? substr( sanitize_text_field( $data['presence-ping']['screen'] ), 0, WP_PRESENCE_MAX_KEY_LENGTH ) : '';
-
-	// Enrich post-editing screens with the post status.
-	$post_status = '';
-	if ( post_type_exists( $screen ) ) {
-		// The editor heartbeat includes the post ID in wp-refresh-post-lock.
-		$post_id = 0;
-		if ( ! empty( $data['wp-refresh-post-lock']['post_id'] ) ) {
-			$post_id = absint( $data['wp-refresh-post-lock']['post_id'] );
-		} elseif ( ! empty( $data['presence-editor-ping']['post_id'] ) ) {
-			$post_id = absint( $data['presence-editor-ping']['post_id'] );
-		}
-		if ( $post_id ) {
-			$post = get_post( $post_id );
-			if ( $post && current_user_can( 'edit_post', $post_id ) && isset( get_post_stati()[ $post->post_status ] ) ) {
-				$post_status = $post->post_status;
+		// On the post-edit screen, also occupy the per-post room.
+		$editor_post_id = 0;
+		$editor_room    = '';
+		if ( is_admin() && function_exists( 'get_current_screen' ) ) {
+			$screen = get_current_screen();
+			if ( $screen && 'post' === $screen->base ) {
+				$post = get_post();
+				if ( $post && post_type_supports( $post->post_type, 'presence' ) ) {
+					$room = wp_presence_post_room( $post->ID );
+					if ( $room ) {
+						$editor_post_id = $post->ID;
+						$editor_room    = $room;
+						$entries[]      = array(
+							'room'      => $room,
+							'client_id' => 'editor-' . $user_id,
+						);
+					}
+				}
 			}
 		}
-	}
 
-	$state = array( 'screen' => $screen );
-	if ( $post_status ) {
-		$state['post_status'] = $post_status;
-	}
+		// Write presence server-side during this request so the new page closes the
+		// gap between the old page's pagehide DELETE and the next heartbeat tick.
+		$screen_id = is_admin() && function_exists( 'get_current_screen' ) && get_current_screen()
+			? get_current_screen()->id
+			: 'front';
 
-	if ( ! empty( $data['presence-ping']['title'] ) ) {
-		$state['title'] = wp_html_excerpt( sanitize_text_field( $data['presence-ping']['title'] ), 200 );
-	}
-
-	$object_id = wp_presence_screen_object_id( $screen, $data['presence-ping']['object_id'] ?? 0 );
-	if ( $object_id ) {
-		$state['object_id'] = $object_id;
-	}
-
-	if ( 'front' === $screen ) {
-		$post_id = (int) ( $data['presence-ping']['post_id'] ?? 0 );
-		if ( $post_id > 0 ) {
-			$front_post = get_post( $post_id );
-			if ( $front_post && current_user_can( 'read_post', $front_post->ID ) ) {
-				$state['post_id'] = $front_post->ID;
+		if ( is_admin() ) {
+			$target    = wp_presence_parse_screen_key_target( wp_presence_current_screen_key() );
+			$screens   = array(
+				'comment' => array( 'comment' ),
+				'user'    => array( 'user-edit', 'user-edit-network' ),
+				'term'    => array( 'edit-' . ( $target['taxonomy'] ?? '' ) ),
+			);
+			$object_id = in_array( $screen_id, $screens[ $target['type'] ] ?? array(), true ) ? wp_presence_screen_object_id( $screen_id, $target['id'] ) : 0;
+			if ( $object_id ) {
+				$page_context['object_id'] = $object_id;
 			}
 		}
-	}
 
-	wp_set_presence( wp_presence_admin_room(), 'user-' . $user_id, $state, array( 'user_id' => $user_id ) );
+		$admin_state = array( 'screen' => $screen_id );
+		if ( $page_context ) {
+			if ( ! empty( $page_context['title'] ) ) {
+				$admin_state['title'] = $page_context['title'];
+			}
+			if ( ! empty( $page_context['post_id'] ) ) {
+				$admin_state['post_id'] = $page_context['post_id'];
+			}
+			if ( ! empty( $page_context['object_id'] ) ) {
+				$admin_state['object_id'] = $page_context['object_id'];
+			}
+		}
+		wp_set_presence( wp_presence_admin_room(), 'user-' . $user_id, $admin_state, array( 'user_id' => $user_id ) );
 
-	return $response;
-}
+		$initial_collaborator_count = 0;
+		if ( $editor_room ) {
+			// No tick has carried a lock refresh yet. connectNow() on load makes
+			// that a single request, not a visible state.
+			wp_set_presence(
+				$editor_room,
+				'editor-' . $user_id,
+				wp_presence_editor_state( $screen_id, false ),
+				array( 'user_id' => $user_id )
+			);
 
-/**
- * Tells a pinging client whether anyone online arrived, left, or moved.
- *
- * The ping script widens the heartbeat interval after a run of unchanged ticks.
- *
- * @since 0.9.0
- *
- * @param array $response The Heartbeat response.
- * @param array $data     The $_POST data sent.
- * @return array The Heartbeat response.
- */
-function wp_presence_online_hash_heartbeat_received( $response, $data ) {
-	if ( empty( $data['presence-ping'] ) || ! wp_can_access_presence_room( wp_presence_admin_room() ) ) {
-		return $response;
-	}
+			// Reads the room back, so a reload or late join into an already 2+
+			// room seeds the same count the next tick would report.
+			$initial_collaborator_count = wp_presence_count_editors( wp_get_presence( $editor_room ) );
+		}
 
-	$state = array();
-	foreach ( wp_get_presence( wp_presence_admin_room() ) as $entry ) {
-		$screen = wp_presence_get_entry_screen( $entry );
-		// Keeps only whether date_gmt has gone idle, since the timestamp itself moves every tick.
-		$idle    = time() - strtotime( $entry->date_gmt . ' +0000' ) > wp_presence_idle_threshold();
-		$state[] = '' === $screen ? array( (int) $entry->user_id, $idle ) : array(
-			(int) $entry->user_id,
-			$idle,
-			$screen,
-			isset( $entry->data['post_status'] ) ? $entry->data['post_status'] : '',
-			isset( $entry->data['title'] ) ? $entry->data['title'] : '',
-			isset( $entry->data['post_id'] ) ? (int) $entry->data['post_id'] : 0,
-			isset( $entry->data['object_id'] ) ? (int) $entry->data['object_id'] : 0,
+		$config = array(
+			'entries'                  => $entries,
+			'pageContext'              => $page_context,
+			'editorPostId'             => $editor_post_id,
+			// Lets presence-ping.js fire `presence-api.watchingRoom` without
+			// duplicating the postType/{type}:{id} grammar client-side.
+			'editorRoom'               => $editor_room,
+			'initialCollaboratorCount' => $initial_collaborator_count,
+			'restUrl'                  => esc_url_raw( rest_url( 'wp-presence/v1/presence' ) ),
+			'nonce'                    => wp_create_nonce( 'wp_rest' ),
+			'screenToken'              => wp_create_nonce( 'wp_presence_screen_' . $screen_id ),
+			'idleTicks'                => wp_presence_get_heartbeat_idle_ticks(),
+			'idleInterval'             => wp_presence_get_heartbeat_idle_interval(),
+			'ttl'                      => wp_presence_get_timeout(),
+			'ttlMargin'                => wp_presence_ttl_margin(),
 		);
+
+		wp_presence_enqueue_ping_script( $config );
 	}
-
-	// wp_get_presence() orders by date_gmt, which reshuffles as clients ping.
-	sort( $state );
-	$hash = md5( (string) wp_json_encode( $state ) );
-
-	if ( isset( $data['presence-online-hash'] ) && $data['presence-online-hash'] === $hash ) {
-		$response['presence-online-unchanged'] = true;
-	} else {
-		$response['presence-online-hash'] = $hash;
-	}
-
-	return $response;
 }
 
-/**
- * Handles the editor presence heartbeat and creates a presence entry for the post being edited.
- *
- * Also carries the room's current editor count back as
- * `presence-heartbeat-collaborators`, so a client can decide whether to start
- * a real-time sync loop without polling for it separately.
- *
- * @since 0.1.1
- *
- * @param array  $response  The Heartbeat response.
- * @param array  $data      The $_POST data sent.
- * @param string $screen_id The screen ID.
- * @return array The Heartbeat response.
- */
-function wp_presence_editor_heartbeat_received( $response, $data, $screen_id ) {
-	if ( empty( $data['presence-editor-ping']['post_id'] ) ) {
-		return $response;
-	}
-
-	$post_id = absint( $data['presence-editor-ping']['post_id'] );
-	$user_id = get_current_user_id();
-
-	if ( ! $user_id || ! current_user_can( 'edit_post', $post_id ) ) {
-		return $response;
-	}
-
-	$room = wp_presence_post_room( $post_id );
-
-	if ( ! $room ) {
-		return $response;
-	}
-
-	// Read per tick: a tick carrying no refresh means the lock is no longer
-	// being held open, which is what the separate row's expiry used to say.
-	$locked = ! empty( $data['wp-refresh-post-lock']['post_id'] )
-		&& absint( $data['wp-refresh-post-lock']['post_id'] ) === $post_id;
-
-	$state = wp_presence_editor_state( $screen_id, $locked );
-
+if ( ! function_exists( 'wp_presence_enqueue_ping_script' ) ) {
 	/**
-	 * Filters the editor presence state before it's saved.
+	 * Enqueues the presence ping script, which also keeps the live surfaces current.
 	 *
-	 * Allows plugins to enrich the state data with additional metadata
-	 * (e.g., cursor position, selected blocks, collaboration status).
+	 * @since 0.11.0
+	 *
+	 * @access private
+	 * @param array $config The `wpPresenceConfig` object.
+	 */
+	function wp_presence_enqueue_ping_script( $config ) {
+		wp_enqueue_script(
+			'wp-presence-tab-coordinator',
+			WP_PRESENCE_PLUGIN_URL . 'assets/js/tab-coordinator.js',
+			array( 'jquery' ),
+			WP_PRESENCE_VERSION,
+			true
+		);
+
+		wp_enqueue_script(
+			'wp-presence-ping',
+			WP_PRESENCE_PLUGIN_URL . 'assets/js/presence-ping.js',
+			array( 'jquery', 'heartbeat', 'wp-hooks', 'wp-presence-tab-coordinator' ),
+			WP_PRESENCE_VERSION,
+			true
+		);
+
+		wp_add_inline_script(
+			'wp-presence-ping',
+			sprintf( 'window.wpPresenceConfig = %s;', wp_json_encode( $config, JSON_HEX_TAG | JSON_UNESCAPED_SLASHES ) ),
+			'before'
+		);
+	}
+}
+
+if ( ! function_exists( 'wp_presence_register_packages_scripts' ) ) {
+	/**
+	 * Registers the `wp-presence` script, which exposes `wp.presence.usePresenceUsers()`.
+	 *
+	 * @since 0.16.0
+	 *
+	 * @access private
+	 * @param WP_Scripts $scripts WP_Scripts object.
+	 */
+	function wp_presence_register_packages_scripts( $scripts ) {
+		$asset_file = WP_PRESENCE_PLUGIN_DIR . 'build/index.asset.php';
+
+		if ( ! file_exists( $asset_file ) ) {
+			return;
+		}
+
+		$asset = require $asset_file;
+
+		// The hook reads the current user from the core store and polls on Heartbeat ticks.
+		$scripts->add(
+			'wp-presence',
+			WP_PRESENCE_PLUGIN_URL . 'build/index.js',
+			array_merge( $asset['dependencies'], array( 'heartbeat', 'wp-core-data' ) ),
+			$asset['version']
+		);
+		$scripts->add_data( 'wp-presence', 'group', 1 );
+	}
+}
+
+if ( ! function_exists( 'wp_presence_admin_heartbeat_received' ) ) {
+	/**
+	 * Records the current user's presence in the admin/online room on every tick.
+	 *
+	 * This is the API's primary write path. It runs regardless of which dashboard
+	 * widgets are registered.
+	 *
+	 * @since 0.1.10
+	 *
+	 * @param array  $response  The Heartbeat response.
+	 * @param array  $data      The $_POST data sent.
+	 * @param string $screen_id The screen ID.
+	 * Nonce verification is handled by WordPress in wp_ajax_heartbeat().
+	 *
+	 * @return array The Heartbeat response.
+	 */
+	function wp_presence_admin_heartbeat_received( $response, $data, $screen_id ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- Required by filter signature.
+		if ( empty( $data['presence-ping'] ) ) {
+			return $response;
+		}
+
+		if ( ! wp_can_access_presence_room( wp_presence_admin_room() ) ) {
+			return $response;
+		}
+
+		$user_id = get_current_user_id();
+		// The ping is client-supplied and shown to other users, so cap it as the REST route caps its data.
+		$screen = isset( $data['presence-ping']['screen'] ) ? substr( sanitize_text_field( $data['presence-ping']['screen'] ), 0, WP_PRESENCE_MAX_KEY_LENGTH ) : '';
+
+		// Enrich post-editing screens with the post status.
+		$post_status = '';
+		if ( post_type_exists( $screen ) ) {
+			// The editor heartbeat includes the post ID in wp-refresh-post-lock.
+			$post_id = 0;
+			if ( ! empty( $data['wp-refresh-post-lock']['post_id'] ) ) {
+				$post_id = absint( $data['wp-refresh-post-lock']['post_id'] );
+			} elseif ( ! empty( $data['presence-editor-ping']['post_id'] ) ) {
+				$post_id = absint( $data['presence-editor-ping']['post_id'] );
+			}
+			if ( $post_id ) {
+				$post = get_post( $post_id );
+				if ( $post && current_user_can( 'edit_post', $post_id ) && isset( get_post_stati()[ $post->post_status ] ) ) {
+					$post_status = $post->post_status;
+				}
+			}
+		}
+
+		$state = array( 'screen' => $screen );
+		if ( $post_status ) {
+			$state['post_status'] = $post_status;
+		}
+
+		if ( ! empty( $data['presence-ping']['title'] ) ) {
+			$state['title'] = wp_html_excerpt( sanitize_text_field( $data['presence-ping']['title'] ), 200 );
+		}
+
+		$object_id = wp_presence_screen_object_id( $screen, $data['presence-ping']['object_id'] ?? 0 );
+		if ( $object_id ) {
+			$state['object_id'] = $object_id;
+		}
+
+		if ( 'front' === $screen ) {
+			$post_id = (int) ( $data['presence-ping']['post_id'] ?? 0 );
+			if ( $post_id > 0 ) {
+				$front_post = get_post( $post_id );
+				if ( $front_post && current_user_can( 'read_post', $front_post->ID ) ) {
+					$state['post_id'] = $front_post->ID;
+				}
+			}
+		}
+
+		wp_set_presence( wp_presence_admin_room(), 'user-' . $user_id, $state, array( 'user_id' => $user_id ) );
+
+		return $response;
+	}
+}
+
+if ( ! function_exists( 'wp_presence_online_hash_heartbeat_received' ) ) {
+	/**
+	 * Tells a pinging client whether anyone online arrived, left, or moved.
+	 *
+	 * The ping script widens the heartbeat interval after a run of unchanged ticks.
+	 *
+	 * @since 0.9.0
+	 *
+	 * @param array $response The Heartbeat response.
+	 * @param array $data     The $_POST data sent.
+	 * @return array The Heartbeat response.
+	 */
+	function wp_presence_online_hash_heartbeat_received( $response, $data ) {
+		if ( empty( $data['presence-ping'] ) || ! wp_can_access_presence_room( wp_presence_admin_room() ) ) {
+			return $response;
+		}
+
+		$state = array();
+		foreach ( wp_get_presence( wp_presence_admin_room() ) as $entry ) {
+			$screen = wp_presence_get_entry_screen( $entry );
+			// Keeps only whether date_gmt has gone idle, since the timestamp itself moves every tick.
+			$idle    = time() - strtotime( $entry->date_gmt . ' +0000' ) > wp_presence_idle_threshold();
+			$state[] = '' === $screen ? array( (int) $entry->user_id, $idle ) : array(
+				(int) $entry->user_id,
+				$idle,
+				$screen,
+				isset( $entry->data['post_status'] ) ? $entry->data['post_status'] : '',
+				isset( $entry->data['title'] ) ? $entry->data['title'] : '',
+				isset( $entry->data['post_id'] ) ? (int) $entry->data['post_id'] : 0,
+				isset( $entry->data['object_id'] ) ? (int) $entry->data['object_id'] : 0,
+			);
+		}
+
+		// wp_get_presence() orders by date_gmt, which reshuffles as clients ping.
+		sort( $state );
+		$hash = md5( (string) wp_json_encode( $state ) );
+
+		if ( isset( $data['presence-online-hash'] ) && $data['presence-online-hash'] === $hash ) {
+			$response['presence-online-unchanged'] = true;
+		} else {
+			$response['presence-online-hash'] = $hash;
+		}
+
+		return $response;
+	}
+}
+
+if ( ! function_exists( 'wp_presence_editor_heartbeat_received' ) ) {
+	/**
+	 * Handles the editor presence heartbeat and creates a presence entry for the post being edited.
+	 *
+	 * Also carries the room's current editor count back as
+	 * `presence-heartbeat-collaborators`, so a client can decide whether to start
+	 * a real-time sync loop without polling for it separately.
+	 *
+	 * @since 0.1.1
+	 *
+	 * @param array  $response  The Heartbeat response.
+	 * @param array  $data      The $_POST data sent.
+	 * @param string $screen_id The screen ID.
+	 * @return array The Heartbeat response.
+	 */
+	function wp_presence_editor_heartbeat_received( $response, $data, $screen_id ) {
+		if ( empty( $data['presence-editor-ping']['post_id'] ) ) {
+			return $response;
+		}
+
+		$post_id = absint( $data['presence-editor-ping']['post_id'] );
+		$user_id = get_current_user_id();
+
+		if ( ! $user_id || ! current_user_can( 'edit_post', $post_id ) ) {
+			return $response;
+		}
+
+		$room = wp_presence_post_room( $post_id );
+
+		if ( ! $room ) {
+			return $response;
+		}
+
+		// Read per tick: a tick carrying no refresh means the lock is no longer
+		// being held open, which is what the separate row's expiry used to say.
+		$locked = ! empty( $data['wp-refresh-post-lock']['post_id'] )
+			&& absint( $data['wp-refresh-post-lock']['post_id'] ) === $post_id;
+
+		$state = wp_presence_editor_state( $screen_id, $locked );
+
+		/**
+		 * Filters the editor presence state before it's saved.
+		 *
+		 * Allows plugins to enrich the state data with additional metadata
+		 * (e.g., cursor position, selected blocks, collaboration status).
+		 *
+		 * @since 0.1.21
+		 *
+		 * @param array $state   The presence state data.
+		 * @param int   $post_id The post ID being edited.
+		 * @param int   $user_id The user ID.
+		 */
+		$state = apply_filters( 'wp_presence_editor_state', $state, $post_id, $user_id );
+
+		// The editor count below needs the room anyway. Reading it first lets an
+		// unchanged tick skip the write.
+		$rows = wp_presence_set_presence_in_rows(
+			wp_presence_room_rows( $room ),
+			$room,
+			'editor-' . $user_id,
+			$state,
+			$user_id
+		);
+
+		$response['presence-heartbeat-collaborators'] = wp_presence_check_collaboration_threshold( $room, $rows );
+
+		return $response;
+	}
+}
+
+if ( ! function_exists( 'wp_presence_collaboration_state_client_id' ) ) {
+	/**
+	 * The reserved client_id holding a room's last observed editor count.
+	 *
+	 * @since 0.6.0
+	 *
+	 * @access private
+	 * @return string The reserved client_id.
+	 */
+	function wp_presence_collaboration_state_client_id() {
+		return WP_PRESENCE_RESERVED_PREFIX . 'collab';
+	}
+}
+
+if ( ! function_exists( 'wp_presence_collaboration_state_row' ) ) {
+	/**
+	 * Reads a room's last observed editor count out of its rows.
+	 *
+	 * @since 0.6.0
+	 *
+	 * @access private
+	 * @param array $rows Rows as returned by wp_presence_room_rows().
+	 * @return object|null The state row, or null when the room has none.
+	 */
+	function wp_presence_collaboration_state_row( $rows ) {
+		foreach ( $rows as $row ) {
+			if ( wp_presence_collaboration_state_client_id() === $row->client_id ) {
+				return $row;
+			}
+		}
+
+		return null;
+	}
+}
+
+if ( ! function_exists( 'wp_presence_count_editors' ) ) {
+	/**
+	 * Counts the editor entries in a set of presence entries.
+	 *
+	 * @since 0.6.0
+	 *
+	 * @param array $entries Presence entries, as returned by wp_get_presence().
+	 * @return int The number of editor entries.
+	 */
+	function wp_presence_count_editors( $entries ) {
+		return count(
+			array_filter(
+				$entries,
+				static function ( $entry ) {
+					return str_starts_with( $entry->client_id, 'editor-' );
+				}
+			)
+		);
+	}
+}
+
+if ( ! function_exists( 'wp_presence_check_collaboration_threshold' ) ) {
+	/**
+	 * Checks if the collaboration threshold has been crossed and fires appropriate actions.
+	 *
+	 * Fires 'wp_presence_collaboration_started' when editor count goes from 1 to 2+.
+	 * Fires 'wp_presence_collaboration_ended' when editor count goes from 2+ to 1.
 	 *
 	 * @since 0.1.21
+	 * @since 0.4.0 Returns the current editor count instead of void.
+	 * @since 0.9.0 Added the `$rows` parameter.
 	 *
-	 * @param array $state   The presence state data.
-	 * @param int   $post_id The post ID being edited.
-	 * @param int   $user_id The user ID.
+	 * @param string     $room The presence room identifier.
+	 * @param array|null $rows Optional. The room's rows, as returned by
+	 *                         wp_presence_room_rows(), for a caller that has
+	 *                         already read them. Default null, which reads them.
+	 * @return int The number of editors currently present in the room.
 	 */
-	$state = apply_filters( 'wp_presence_editor_state', $state, $post_id, $user_id );
-
-	// The editor count below needs the room anyway. Reading it first lets an
-	// unchanged tick skip the write.
-	$rows = wp_presence_set_presence_in_rows(
-		wp_presence_room_rows( $room ),
-		$room,
-		'editor-' . $user_id,
-		$state,
-		$user_id
-	);
-
-	$response['presence-heartbeat-collaborators'] = wp_presence_check_collaboration_threshold( $room, $rows );
-
-	return $response;
-}
-
-/**
- * The reserved client_id holding a room's last observed editor count.
- *
- * @since 0.6.0
- *
- * @access private
- * @return string The reserved client_id.
- */
-function wp_presence_collaboration_state_client_id() {
-	return WP_PRESENCE_RESERVED_PREFIX . 'collab';
-}
-
-/**
- * Reads a room's last observed editor count out of its rows.
- *
- * @since 0.6.0
- *
- * @access private
- * @param array $rows Rows as returned by wp_presence_room_rows().
- * @return object|null The state row, or null when the room has none.
- */
-function wp_presence_collaboration_state_row( $rows ) {
-	foreach ( $rows as $row ) {
-		if ( wp_presence_collaboration_state_client_id() === $row->client_id ) {
-			return $row;
+	function wp_presence_check_collaboration_threshold( $room, $rows = null ) {
+		if ( null === $rows ) {
+			$rows = wp_presence_room_rows( $room );
 		}
-	}
 
-	return null;
+		$entries      = wp_presence_client_rows( $rows );
+		$editor_count = wp_presence_count_editors( $entries );
+
+		// Every tick is its own request, so this cannot be held in memory. The
+		// state row came back with the entries above and ages out on the same TTL:
+		// once they have gone there is no earlier count left to be the edge from.
+		$stored     = wp_presence_collaboration_state_row( $rows );
+		$prev_count = $stored && isset( $stored->data['count'] ) ? (int) $stored->data['count'] : 1;
+
+		if ( 1 === $prev_count && $editor_count >= 2 ) {
+			/**
+			 * Fires when collaboration starts (1 to 2+ editors).
+			 *
+			 * @since 0.1.21
+			 *
+			 * @param string $room    The presence room identifier.
+			 * @param array  $entries The current presence entries.
+			 */
+			do_action( 'wp_presence_collaboration_started', $room, $entries );
+		} elseif ( $prev_count >= 2 && 1 === $editor_count ) {
+			/**
+			 * Fires when collaboration ends (2+ to 1 editor).
+			 *
+			 * @since 0.1.21
+			 *
+			 * @param string $room    The presence room identifier.
+			 * @param array  $entries The current presence entries.
+			 */
+			do_action( 'wp_presence_collaboration_ended', $room, $entries );
+		}
+
+		// Kept alive as it ages, not only when the count moves: a steady pair that
+		// let this lapse would read back as a fresh start and re-announce itself.
+		// Below two there is nothing to hold, since absent already reads as 1.
+		if ( $editor_count >= 2 ) {
+			wp_presence_store_collaboration_state( $room, $editor_count, $stored );
+		} elseif ( $stored ) {
+			wp_remove_presence( $room, wp_presence_collaboration_state_client_id() );
+		}
+
+		return $editor_count;
+	}
 }
 
-/**
- * Counts the editor entries in a set of presence entries.
- *
- * @since 0.6.0
- *
- * @param array $entries Presence entries, as returned by wp_get_presence().
- * @return int The number of editor entries.
- */
-function wp_presence_count_editors( $entries ) {
-	return count(
-		array_filter(
-			$entries,
-			static function ( $entry ) {
-				return str_starts_with( $entry->client_id, 'editor-' );
-			}
-		)
-	);
+if ( ! function_exists( 'wp_presence_store_collaboration_state' ) ) {
+	/**
+	 * Writes a room's editor count to its state row.
+	 *
+	 * @since 0.6.0
+	 *
+	 * @access private
+	 * @param string      $room   The presence room identifier.
+	 * @param int         $count  The current editor count.
+	 * @param object|null $stored The room's existing state row, if any.
+	 */
+	function wp_presence_store_collaboration_state( $room, $count, $stored ) {
+		if ( ! wp_presence_recording_enabled() ) {
+			return;
+		}
+
+		$threshold = wp_presence_refresh_threshold();
+		$unchanged = $stored && isset( $stored->data['count'] ) && (int) $stored->data['count'] === $count;
+		$age       = $stored ? time() - (int) strtotime( $stored->date_gmt . ' UTC' ) : 0;
+
+		// Same rule as wp_presence_refresh_cutoff(), decided from the row already read.
+		if ( $unchanged && $threshold > 0 && $age <= $threshold ) {
+			return;
+		}
+
+		wp_presence_write_row(
+			$room,
+			wp_presence_collaboration_state_client_id(),
+			0,
+			wp_json_encode( array( 'count' => $count ) ),
+			gmdate( 'Y-m-d H:i:s' )
+		);
+	}
 }
 
-/**
- * Checks if the collaboration threshold has been crossed and fires appropriate actions.
- *
- * Fires 'wp_presence_collaboration_started' when editor count goes from 1 to 2+.
- * Fires 'wp_presence_collaboration_ended' when editor count goes from 2+ to 1.
- *
- * @since 0.1.21
- * @since 0.4.0 Returns the current editor count instead of void.
- * @since 0.9.0 Added the `$rows` parameter.
- *
- * @param string     $room The presence room identifier.
- * @param array|null $rows Optional. The room's rows, as returned by
- *                         wp_presence_room_rows(), for a caller that has
- *                         already read them. Default null, which reads them.
- * @return int The number of editors currently present in the room.
- */
-function wp_presence_check_collaboration_threshold( $room, $rows = null ) {
-	if ( null === $rows ) {
-		$rows = wp_presence_room_rows( $room );
+if ( ! function_exists( 'wp_presence_fragment_request' ) ) {
+	/**
+	 * Returns what the page asked a live surface's Heartbeat feed for.
+	 *
+	 * Surfaces register in presence-ping.js and ask under `presence-fragments`,
+	 * each by its key; the feed answers with HTML under the same key.
+	 *
+	 * @access private
+	 *
+	 * @since 0.11.0
+	 *
+	 * @param array  $data Data received from the client.
+	 * @param string $key  The surface key.
+	 * @return mixed What the surface sent, or null when it did not ask.
+	 */
+	function wp_presence_fragment_request( $data, $key ) {
+		return $data['presence-fragments'][ $key ] ?? null;
 	}
-
-	$entries      = wp_presence_client_rows( $rows );
-	$editor_count = wp_presence_count_editors( $entries );
-
-	// Every tick is its own request, so this cannot be held in memory. The
-	// state row came back with the entries above and ages out on the same TTL:
-	// once they have gone there is no earlier count left to be the edge from.
-	$stored     = wp_presence_collaboration_state_row( $rows );
-	$prev_count = $stored && isset( $stored->data['count'] ) ? (int) $stored->data['count'] : 1;
-
-	if ( 1 === $prev_count && $editor_count >= 2 ) {
-		/**
-		 * Fires when collaboration starts (1 to 2+ editors).
-		 *
-		 * @since 0.1.21
-		 *
-		 * @param string $room    The presence room identifier.
-		 * @param array  $entries The current presence entries.
-		 */
-		do_action( 'wp_presence_collaboration_started', $room, $entries );
-	} elseif ( $prev_count >= 2 && 1 === $editor_count ) {
-		/**
-		 * Fires when collaboration ends (2+ to 1 editor).
-		 *
-		 * @since 0.1.21
-		 *
-		 * @param string $room    The presence room identifier.
-		 * @param array  $entries The current presence entries.
-		 */
-		do_action( 'wp_presence_collaboration_ended', $room, $entries );
-	}
-
-	// Kept alive as it ages, not only when the count moves: a steady pair that
-	// let this lapse would read back as a fresh start and re-announce itself.
-	// Below two there is nothing to hold, since absent already reads as 1.
-	if ( $editor_count >= 2 ) {
-		wp_presence_store_collaboration_state( $room, $editor_count, $stored );
-	} elseif ( $stored ) {
-		wp_remove_presence( $room, wp_presence_collaboration_state_client_id() );
-	}
-
-	return $editor_count;
-}
-
-/**
- * Writes a room's editor count to its state row.
- *
- * @since 0.6.0
- *
- * @access private
- * @param string      $room   The presence room identifier.
- * @param int         $count  The current editor count.
- * @param object|null $stored The room's existing state row, if any.
- */
-function wp_presence_store_collaboration_state( $room, $count, $stored ) {
-	if ( ! wp_presence_recording_enabled() ) {
-		return;
-	}
-
-	$threshold = wp_presence_refresh_threshold();
-	$unchanged = $stored && isset( $stored->data['count'] ) && (int) $stored->data['count'] === $count;
-	$age       = $stored ? time() - (int) strtotime( $stored->date_gmt . ' UTC' ) : 0;
-
-	// Same rule as wp_presence_refresh_cutoff(), decided from the row already read.
-	if ( $unchanged && $threshold > 0 && $age <= $threshold ) {
-		return;
-	}
-
-	wp_presence_write_row(
-		$room,
-		wp_presence_collaboration_state_client_id(),
-		0,
-		wp_json_encode( array( 'count' => $count ) ),
-		gmdate( 'Y-m-d H:i:s' )
-	);
-}
-
-/**
- * Returns what the page asked a live surface's Heartbeat feed for.
- *
- * Surfaces register in presence-ping.js and ask under `presence-fragments`,
- * each by its key; the feed answers with HTML under the same key.
- *
- * @access private
- *
- * @since 0.11.0
- *
- * @param array  $data Data received from the client.
- * @param string $key  The surface key.
- * @return mixed What the surface sent, or null when it did not ask.
- */
-function wp_presence_fragment_request( $data, $key ) {
-	return $data['presence-fragments'][ $key ] ?? null;
 }
