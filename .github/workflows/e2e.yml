@@ -22,7 +22,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Split in two, since the full suite alone took longer than any other leg's whole job.
+          # Two shards, since the whole suite outlasted every other leg's entire job.
           - project: chromium
             shard: 1
             shards: 2
