@@ -147,8 +147,8 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-      # wp-env selects an instance by the directory it runs in, so the network's
-      # log is only reachable from the directory holding its config.
+      # Every leg tests against its instance's development site, whose container is
+      # `cli`; wp-env picks the instance by the directory it runs in.
       - name: WordPress debug log
         if: ${{ failure() }}
         working-directory: ${{ matrix.env-dir }}
