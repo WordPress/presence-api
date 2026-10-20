@@ -34,17 +34,18 @@ if ( ! function_exists( 'wp_presence_has_table' ) ) {
 	 * database error.
 	 *
 	 * The option is set by wp_maybe_create_presence_table() and is autoloaded, so
-	 * this costs nothing beyond a cache lookup. Any value counts, including one
-	 * from an older schema: the table is there, and the admin upgrade path will
-	 * bring it current.
+	 * this costs nothing beyond a cache lookup. Only the current schema counts,
+	 * since an older table can lack a column the queries name until the admin
+	 * upgrade path brings it current.
 	 *
 	 * @access private
 	 *
 	 * @since 0.1.17
+	 * @since 0.18.3 Returns false for a table from an older schema.
 	 * @return bool Whether presence storage is available on this site.
 	 */
 	function wp_presence_has_table() {
-		return (bool) get_option( 'wp_presence_db_version' );
+		return WP_PRESENCE_DB_VERSION === (int) get_option( 'wp_presence_db_version' );
 	}
 }
 
