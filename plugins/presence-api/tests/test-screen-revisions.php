@@ -128,11 +128,10 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 	}
 
 	/**
-	 * A setting saved through /wp/v2/settings, as the Site Title block saves
-	 * blogname, bumps the Settings screen it was registered on.
+	 * A /wp/v2/settings save, like the Site Title block's, bumps its setting's group.
 	 *
-	 * The group is the test's own: the bump runs once per group per request,
-	 * and a PHPUnit run is one request.
+	 * The group is the test's own because the bump runs once per group per
+	 * request, and a PHPUnit run is one request.
 	 *
 	 * @covers ::wp_presence_on_updated_option
 	 */
@@ -312,7 +311,6 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 	 */
 	public function test_a_rest_user_update_bumps_the_user_screen() {
 		wp_set_current_user( self::$admin_id );
-		// A REST request runs outside the admin, where is_admin() is false.
 		set_current_screen( 'front' );
 
 		$request = new WP_REST_Request( 'POST', '/wp/v2/users/me' );
@@ -333,7 +331,6 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 	 */
 	public function test_a_rest_save_of_only_user_meta_bumps_nothing() {
 		wp_set_current_user( self::$admin_id );
-		// A REST request runs outside the admin, where is_admin() is false.
 		set_current_screen( 'front' );
 		// Core registers this on init, which earlier tests' resets can undo.
 		wp_register_persisted_preferences_meta();
@@ -361,7 +358,6 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 	 */
 	public function test_a_rest_term_update_bumps_the_term_screen() {
 		wp_set_current_user( self::$admin_id );
-		// A REST request runs outside the admin, where is_admin() is false.
 		set_current_screen( 'front' );
 		$term_id = self::factory()->term->create( array( 'taxonomy' => 'category' ) );
 
@@ -380,7 +376,6 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 	 */
 	public function test_a_rest_comment_update_bumps_the_comment_screen() {
 		wp_set_current_user( self::$admin_id );
-		// A REST request runs outside the admin, where is_admin() is false.
 		set_current_screen( 'front' );
 		$comment_id = self::factory()->comment->create();
 

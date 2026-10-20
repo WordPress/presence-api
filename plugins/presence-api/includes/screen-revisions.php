@@ -537,8 +537,7 @@ function wp_presence_settings_page_option_group( $screen_base ) {
  */
 function wp_presence_on_updated_option( $option ) {
 	if ( wp_is_rest_endpoint() ) {
-		// A REST save, like the Site Title block's, sends no option_page, so
-		// read the screen from the group the setting was registered under.
+		// A REST save sends no option_page, so use the setting's registered group.
 		$settings    = get_registered_settings();
 		$option_page = isset( $settings[ $option ]['group'] ) ? sanitize_key( $settings[ $option ]['group'] ) : '';
 	} elseif ( wp_presence_is_admin_screen_save() ) {
@@ -598,9 +597,9 @@ function wp_presence_on_profile_update( $user_id ) {
 /**
  * Bumps a user-edit screen's revision when a REST request updates the user.
  *
- * Core calls wp_update_user() on every REST user update, so profile_update
- * can't tell a profile change from the block editor saving its preferences
- * as user meta. A request that sends only meta changes nothing on the screen.
+ * Core calls wp_update_user() on every REST user update, including the block
+ * editor's meta-only preference saves, so profile_update can't tell those
+ * from a profile change.
  *
  * @since 0.18.3
  *
