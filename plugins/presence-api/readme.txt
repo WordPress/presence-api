@@ -3,7 +3,7 @@ Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas,
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.1
-Stable tag: 0.18.2
+Stable tag: 0.18.3
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -79,6 +79,12 @@ For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/presence-api/blob/main/CHANGELOG.md
 
+= 0.18.3 =
+* Guard the functions in the six files core would ship in separate tickets ([#861](https://github.com/WordPress/presence-api/issues/861)).
+* Leave a presence table from an older schema alone until it is upgraded ([#866](https://github.com/WordPress/presence-api/issues/866)).
+* Store no session hash on the admin room's one row per person ([#867](https://github.com/WordPress/presence-api/issues/867)).
+* Warn an open screen when a REST request saves what it shows ([#868](https://github.com/WordPress/presence-api/issues/868)).
+
 = 0.18.2 =
 * Make the presence screens readable with only a keyboard ([#841](https://github.com/WordPress/presence-api/issues/841)).
 
@@ -99,6 +105,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 * Let a site switch off the Active Posts dashboard widget ([#774](https://github.com/WordPress/presence-api/issues/774)).
 * Show who else is editing a synced pattern on its block ([#779](https://github.com/WordPress/presence-api/issues/779)).
 * Take an $args array in the presence functions ([#789](https://github.com/WordPress/presence-api/issues/789)).
-
-= 0.16.1 =
-* Show identicons in the WordPress.org live preview ([#782](https://github.com/WordPress/presence-api/issues/782)).
