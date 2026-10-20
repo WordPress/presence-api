@@ -596,6 +596,32 @@ function wp_presence_on_profile_update( $user_id ) {
 }
 
 /**
+ * Bumps a user-edit screen's revision when a REST request updates the user.
+ *
+ * Core calls wp_update_user() on every REST user update, so profile_update
+ * can't tell a profile change from the block editor saving its preferences
+ * as user meta. A request that sends only meta changes nothing on the screen.
+ *
+ * @since 0.18.3
+ *
+ * @param WP_User         $user     User after the update.
+ * @param WP_REST_Request $request  Request that updated the user.
+ * @param bool            $creating True when the user was just created.
+ */
+function wp_presence_on_rest_after_insert_user( $user, $request, $creating ) {
+	if ( $creating ) {
+		return;
+	}
+	$fields = array_merge( (array) $request->get_body_params(), (array) $request->get_json_params() );
+	// Core writes id (on /users/me) and context into the request's own parameters.
+	unset( $fields['id'], $fields['context'], $fields['meta'] );
+	if ( ! $fields ) {
+		return;
+	}
+	wp_presence_bump_screen_revision( 'user-edit/' . (int) $user->ID );
+}
+
+/**
  * Bumps a term-edit screen's revision when the term is updated.
  *
  * @since 0.1.3
@@ -921,6 +947,7 @@ function wp_presence_register_stale_screen_hooks() {
 	add_action( 'update_option_wp_page_for_privacy_policy', 'wp_presence_on_privacy_policy_page_updated' );
 	add_action( 'post_updated', 'wp_presence_on_post_updated', 10, 3 );
 	add_action( 'profile_update', 'wp_presence_on_profile_update' );
+	add_action( 'rest_after_insert_user', 'wp_presence_on_rest_after_insert_user', 10, 3 );
 	add_action( 'edited_term', 'wp_presence_on_edited_term', 10, 3 );
 	add_action( 'edit_comment', 'wp_presence_on_edit_comment' );
 

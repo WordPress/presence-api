@@ -99,6 +99,7 @@ class WP_Test_Presence_Features extends WP_Presence_UnitTestCase {
 		array( 'update_option_wp_page_for_privacy_policy', 'wp_presence_on_privacy_policy_page_updated', 10 ),
 		array( 'post_updated', 'wp_presence_on_post_updated', 10 ),
 		array( 'profile_update', 'wp_presence_on_profile_update', 10 ),
+		array( 'rest_after_insert_user', 'wp_presence_on_rest_after_insert_user', 10 ),
 		array( 'edited_term', 'wp_presence_on_edited_term', 10 ),
 		array( 'edit_comment', 'wp_presence_on_edit_comment', 10 ),
 	);
