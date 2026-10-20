@@ -128,6 +128,37 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A setting saved through /wp/v2/settings, as the Site Title block saves
+	 * blogname, bumps the Settings screen it was registered on.
+	 *
+	 * The group is the test's own: the bump runs once per group per request,
+	 * and a PHPUnit run is one request.
+	 *
+	 * @covers ::wp_presence_on_updated_option
+	 */
+	public function test_a_rest_settings_save_bumps_the_settings_group() {
+		wp_set_current_user( self::$admin_id );
+		register_setting(
+			'presence-rest-group',
+			'presence_rest_setting',
+			array(
+				'type'         => 'string',
+				'show_in_rest' => true,
+			)
+		);
+
+		$request = new WP_REST_Request( 'POST', '/wp/v2/settings' );
+		$request->set_body_params( array( 'presence_rest_setting' => 'Changed via REST' ) );
+		$response = rest_do_request( $request );
+		unregister_setting( 'presence-rest-group', 'presence_rest_setting' );
+
+		$this->assertSame( 200, $response->get_status() );
+		$entry = wp_presence_get_screen_revision( 'options/presence-rest-group' );
+		$this->assertNotNull( $entry );
+		$this->assertSame( self::$admin_id, (int) $entry['actor_id'] );
+	}
+
+	/**
 	 * @covers ::wp_presence_on_post_updated
 	 */
 	public function test_post_updated_bumps_post_screen() {

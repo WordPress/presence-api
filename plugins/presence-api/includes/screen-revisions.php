@@ -527,19 +527,26 @@ function wp_presence_settings_page_option_group( $screen_base ) {
 }
 
 /**
- * Bumps the Settings screen's revision when its option_page is saved.
+ * Bumps the Settings screen's revision when its option_page is saved, or when
+ * a REST request saves one of its registered settings.
  *
  * @since 0.1.3
+ * @since 0.18.3 Bumps the setting's group when a REST request saves it.
  *
- * @param string $option Updated option name. Unused; we key on $_POST['option_page'].
+ * @param string $option Updated option name.
  */
 function wp_presence_on_updated_option( $option ) {
-	unset( $option );
-	if ( ! wp_presence_is_admin_screen_save() ) {
+	if ( wp_is_rest_endpoint() ) {
+		// A REST save, like the Site Title block's, sends no option_page, so
+		// read the screen from the group the setting was registered under.
+		$settings    = get_registered_settings();
+		$option_page = isset( $settings[ $option ]['group'] ) ? sanitize_key( $settings[ $option ]['group'] ) : '';
+	} elseif ( wp_presence_is_admin_screen_save() ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- options.php verifies its own nonce; we only read $_POST to identify the originating screen.
+		$option_page = isset( $_POST['option_page'] ) ? sanitize_key( wp_unslash( $_POST['option_page'] ) ) : '';
+	} else {
 		return;
 	}
-	// phpcs:ignore WordPress.Security.NonceVerification.Missing -- options.php verifies its own nonce; we only read $_POST to identify the originating screen.
-	$option_page = isset( $_POST['option_page'] ) ? sanitize_key( wp_unslash( $_POST['option_page'] ) ) : '';
 	if ( ! $option_page ) {
 		return;
 	}
