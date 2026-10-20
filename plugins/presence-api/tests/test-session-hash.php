@@ -103,6 +103,26 @@ class WP_Test_Presence_Session_Hash extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * The admin room keeps one row per person, so two browsers taking turns on it store no hash and move no version.
+	 *
+	 * @covers ::wp_presence_write_row
+	 */
+	public function test_browsers_taking_turns_on_the_admin_room_change_nothing() {
+		$room   = wp_presence_admin_room();
+		$client = 'user-' . self::$editor_id;
+
+		$this->sign_in();
+		wp_set_presence( $room, $client, array(), array( 'user_id' => self::$editor_id ) );
+		$before = wp_get_presence_room_versions( $room )[ $room ];
+
+		$this->sign_in();
+		wp_set_presence( $room, $client, array(), array( 'user_id' => self::$editor_id ) );
+
+		$this->assertSame( '', $this->stored_hash( $room, $client ) );
+		$this->assertSame( $before, wp_get_presence_room_versions( $room )[ $room ] );
+	}
+
+	/**
 	 * One session hashes differently per room, so the value cannot follow it from room to room.
 	 *
 	 * @covers ::wp_presence_session_hash
