@@ -13,7 +13,7 @@ class WP_Test_Presence_Core_Guards extends WP_Presence_UnitTestCase {
 	 *
 	 * @return array[]
 	 */
-	public static function data_api_files() {
+	public static function data_guarded_files() {
 		return array(
 			'presence'           => array( 'includes/presence.php' ),
 			'rest controller'    => array( 'includes/rest-api/endpoints/class-wp-rest-presence-controller.php' ),
@@ -32,7 +32,7 @@ class WP_Test_Presence_Core_Guards extends WP_Presence_UnitTestCase {
 	 * without its guard breaks the plugin on the first release that adopts it.
 	 *
 	 * @coversNothing
-	 * @dataProvider data_api_files
+	 * @dataProvider data_guarded_files
 	 *
 	 * @param string $file Path relative to the plugin directory.
 	 */
