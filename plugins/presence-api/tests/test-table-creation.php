@@ -442,6 +442,28 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * A site updated from an older release keeps its old table until the admin
+	 * upgrade runs, so presence stays quiet until then instead of querying a
+	 * column the table lacks.
+	 *
+	 * @covers ::wp_presence_has_table
+	 * @covers ::wp_set_presence
+	 * @covers ::wp_get_presence
+	 */
+	public function test_a_table_from_an_older_schema_is_left_alone_until_upgraded() {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL
+		$wpdb->query( "ALTER TABLE {$wpdb->presence} DROP COLUMN session_hash" );
+		update_option( 'wp_presence_db_version', WP_PRESENCE_DB_VERSION - 1 );
+		$wpdb->last_error = '';
+
+		$this->assertFalse( wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) ) );
+		$this->assertSame( array(), wp_get_presence( 'admin/online' ) );
+		$this->assertSame( '', $wpdb->last_error );
+	}
+
+	/**
 	 * The residual case the core pattern accepts: a site nothing has provisioned.
 	 * It must not raise a database error.
 	 *
