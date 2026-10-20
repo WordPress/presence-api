@@ -29,7 +29,6 @@ jobs:
             browser: chromium
             start: npx wp-env start
             env-dir: .
-            log-container: tests-cli
           - project: chromium
             shard: 2
             shards: 2
