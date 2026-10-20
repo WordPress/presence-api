@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.18.3](https://github.com/WordPress/presence-api/compare/v0.18.2...v0.18.3) (2026-10-20)
+
+
+### Bug Fixes
+
+* guard the functions in the six files core would ship in separate tickets ([#861](https://github.com/WordPress/presence-api/issues/861)) ([e13fd95](https://github.com/WordPress/presence-api/commit/e13fd95597a06aeff70dfb1baff0914d4af6d508))
+* leave a presence table from an older schema alone until it is upgraded ([#866](https://github.com/WordPress/presence-api/issues/866)) ([d91654a](https://github.com/WordPress/presence-api/commit/d91654a971f11267b24ebfbfed4b32aaace1ffc0))
+* store no session hash on the admin room's one row per person ([#867](https://github.com/WordPress/presence-api/issues/867)) ([3b63b66](https://github.com/WordPress/presence-api/commit/3b63b66c40b6d1ba3f116ee47c486dacdbbd78cd))
+* warn an open screen when a REST request saves what it shows ([#868](https://github.com/WordPress/presence-api/issues/868)) ([835ed04](https://github.com/WordPress/presence-api/commit/835ed0437cad6c6b4cba2c43034a3b522ce25655))
+
 ## [0.18.2](https://github.com/WordPress/presence-api/compare/v0.18.1...v0.18.2) (2026-10-16)
 
 
