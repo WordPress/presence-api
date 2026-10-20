@@ -1,6 +1,6 @@
 <?php
 /**
- * Tests that the API's declarations step aside when core already has them.
+ * Tests that the plugin's declarations step aside when core already has them.
  *
  * @package Presence_API
  *
