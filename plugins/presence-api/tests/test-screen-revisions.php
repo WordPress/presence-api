@@ -128,6 +128,38 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A /wp/v2/settings save, like the Site Title block's, bumps its setting's group.
+	 *
+	 * The group is the test's own because the bump runs once per group per
+	 * request, and a PHPUnit run is one request.
+	 *
+	 * @covers ::wp_presence_on_updated_option
+	 */
+	public function test_a_rest_settings_save_bumps_the_settings_group() {
+		wp_set_current_user( self::$admin_id );
+		// A REST request runs outside the admin, where is_admin() is false.
+		set_current_screen( 'front' );
+		register_setting(
+			'presence-rest-group',
+			'presence_rest_setting',
+			array(
+				'type'         => 'string',
+				'show_in_rest' => true,
+			)
+		);
+
+		$request = new WP_REST_Request( 'POST', '/wp/v2/settings' );
+		$request->set_body_params( array( 'presence_rest_setting' => 'Changed via REST' ) );
+		$response = rest_do_request( $request );
+		unregister_setting( 'presence-rest-group', 'presence_rest_setting' );
+
+		$this->assertSame( 200, $response->get_status() );
+		$entry = wp_presence_get_screen_revision( 'options/presence-rest-group' );
+		$this->assertNotNull( $entry );
+		$this->assertSame( self::$admin_id, (int) $entry['actor_id'] );
+	}
+
+	/**
 	 * @covers ::wp_presence_on_post_updated
 	 */
 	public function test_post_updated_bumps_post_screen() {
@@ -272,6 +304,89 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 		$entry = wp_presence_get_screen_revision( 'comment/' . $comment_id );
 		$this->assertNotNull( $entry );
 		$this->assertGreaterThanOrEqual( $before, (int) $entry['rev'] );
+	}
+
+	/**
+	 * @covers ::wp_presence_on_rest_after_insert_user
+	 */
+	public function test_a_rest_user_update_bumps_the_user_screen() {
+		wp_set_current_user( self::$admin_id );
+		set_current_screen( 'front' );
+
+		$request = new WP_REST_Request( 'POST', '/wp/v2/users/me' );
+		$request->set_body_params( array( 'first_name' => 'Changed via REST' ) );
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$entry = wp_presence_get_screen_revision( 'user-edit/' . self::$admin_id );
+		$this->assertNotNull( $entry );
+		$this->assertSame( self::$admin_id, (int) $entry['actor_id'] );
+	}
+
+	/**
+	 * The block editor saves its preferences as user meta through
+	 * /wp/v2/users/me, which changes nothing on the profile screen.
+	 *
+	 * @covers ::wp_presence_on_rest_after_insert_user
+	 */
+	public function test_a_rest_save_of_only_user_meta_bumps_nothing() {
+		wp_set_current_user( self::$admin_id );
+		set_current_screen( 'front' );
+		// Core registers this on init, which earlier tests' resets can undo.
+		wp_register_persisted_preferences_meta();
+
+		$request = new WP_REST_Request( 'POST', '/wp/v2/users/me' );
+		$request->set_body_params(
+			array(
+				'meta' => array(
+					'persisted_preferences' => array(
+						'core/edit-post' => array( 'fixedToolbar' => true ),
+						'_modified'      => gmdate( 'c' ),
+					),
+				),
+			)
+		);
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertTrue( $response->get_data()['meta']['persisted_preferences']['core/edit-post']['fixedToolbar'] );
+		$this->assertNull( wp_presence_get_screen_revision( 'user-edit/' . self::$admin_id ) );
+	}
+
+	/**
+	 * @covers ::wp_presence_on_edited_term
+	 */
+	public function test_a_rest_term_update_bumps_the_term_screen() {
+		wp_set_current_user( self::$admin_id );
+		set_current_screen( 'front' );
+		$term_id = self::factory()->term->create( array( 'taxonomy' => 'category' ) );
+
+		$request = new WP_REST_Request( 'POST', '/wp/v2/categories/' . $term_id );
+		$request->set_body_params( array( 'description' => 'Changed via REST' ) );
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$entry = wp_presence_get_screen_revision( 'term/category/' . $term_id );
+		$this->assertNotNull( $entry );
+		$this->assertSame( self::$admin_id, (int) $entry['actor_id'] );
+	}
+
+	/**
+	 * @covers ::wp_presence_on_edit_comment
+	 */
+	public function test_a_rest_comment_update_bumps_the_comment_screen() {
+		wp_set_current_user( self::$admin_id );
+		set_current_screen( 'front' );
+		$comment_id = self::factory()->comment->create();
+
+		$request = new WP_REST_Request( 'POST', '/wp/v2/comments/' . $comment_id );
+		$request->set_body_params( array( 'content' => 'Changed via REST' ) );
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$entry = wp_presence_get_screen_revision( 'comment/' . $comment_id );
+		$this->assertNotNull( $entry );
+		$this->assertSame( self::$admin_id, (int) $entry['actor_id'] );
 	}
 
 	/**

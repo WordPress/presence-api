@@ -527,19 +527,25 @@ function wp_presence_settings_page_option_group( $screen_base ) {
 }
 
 /**
- * Bumps the Settings screen's revision when its option_page is saved.
+ * Bumps the Settings screen's revision when its option_page is saved, or when
+ * a REST request saves one of its registered settings.
  *
  * @since 0.1.3
+ * @since 0.18.3 Bumps the setting's group when a REST request saves it.
  *
- * @param string $option Updated option name. Unused; we key on $_POST['option_page'].
+ * @param string $option Updated option name.
  */
 function wp_presence_on_updated_option( $option ) {
-	unset( $option );
-	if ( ! wp_presence_is_admin_screen_save() ) {
+	if ( wp_is_rest_endpoint() ) {
+		// A REST save sends no option_page, so use the setting's registered group.
+		$settings    = get_registered_settings();
+		$option_page = isset( $settings[ $option ]['group'] ) ? sanitize_key( $settings[ $option ]['group'] ) : '';
+	} elseif ( wp_presence_is_admin_screen_save() ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- options.php verifies its own nonce; we only read $_POST to identify the originating screen.
+		$option_page = isset( $_POST['option_page'] ) ? sanitize_key( wp_unslash( $_POST['option_page'] ) ) : '';
+	} else {
 		return;
 	}
-	// phpcs:ignore WordPress.Security.NonceVerification.Missing -- options.php verifies its own nonce; we only read $_POST to identify the originating screen.
-	$option_page = isset( $_POST['option_page'] ) ? sanitize_key( wp_unslash( $_POST['option_page'] ) ) : '';
 	if ( ! $option_page ) {
 		return;
 	}
@@ -589,9 +595,36 @@ function wp_presence_on_profile_update( $user_id ) {
 }
 
 /**
+ * Bumps a user-edit screen's revision when a REST request updates the user.
+ *
+ * Core calls wp_update_user() on every REST user update, including the block
+ * editor's meta-only preference saves, so profile_update can't tell those
+ * from a profile change.
+ *
+ * @since 0.18.3
+ *
+ * @param WP_User         $user     User after the update.
+ * @param WP_REST_Request $request  Request that updated the user.
+ * @param bool            $creating True when the user was just created.
+ */
+function wp_presence_on_rest_after_insert_user( $user, $request, $creating ) {
+	if ( $creating ) {
+		return;
+	}
+	$fields = array_merge( (array) $request->get_body_params(), (array) $request->get_json_params() );
+	// Core writes id (on /users/me) and context into the request's own parameters.
+	unset( $fields['id'], $fields['context'], $fields['meta'] );
+	if ( ! $fields ) {
+		return;
+	}
+	wp_presence_bump_screen_revision( 'user-edit/' . (int) $user->ID );
+}
+
+/**
  * Bumps a term-edit screen's revision when the term is updated.
  *
  * @since 0.1.3
+ * @since 0.18.3 Also bumps when a REST request updates the term.
  *
  * @param int    $term_id  Term ID.
  * @param int    $tt_id    Term taxonomy ID. Unused.
@@ -599,7 +632,7 @@ function wp_presence_on_profile_update( $user_id ) {
  */
 function wp_presence_on_edited_term( $term_id, $tt_id, $taxonomy ) {
 	unset( $tt_id );
-	if ( ! wp_presence_is_admin_screen_save() ) {
+	if ( ! wp_presence_is_admin_screen_save() && ! wp_is_rest_endpoint() ) {
 		return;
 	}
 	wp_presence_bump_screen_revision( 'term/' . sanitize_key( $taxonomy ) . '/' . (int) $term_id );
@@ -609,11 +642,12 @@ function wp_presence_on_edited_term( $term_id, $tt_id, $taxonomy ) {
  * Bumps a comment-edit screen's revision when the comment is updated.
  *
  * @since 0.1.3
+ * @since 0.18.3 Also bumps when a REST request updates the comment.
  *
  * @param int $comment_id Comment ID.
  */
 function wp_presence_on_edit_comment( $comment_id ) {
-	if ( ! wp_presence_is_admin_screen_save() ) {
+	if ( ! wp_presence_is_admin_screen_save() && ! wp_is_rest_endpoint() ) {
 		return;
 	}
 	wp_presence_bump_screen_revision( 'comment/' . (int) $comment_id );
@@ -912,6 +946,7 @@ function wp_presence_register_stale_screen_hooks() {
 	add_action( 'update_option_wp_page_for_privacy_policy', 'wp_presence_on_privacy_policy_page_updated' );
 	add_action( 'post_updated', 'wp_presence_on_post_updated', 10, 3 );
 	add_action( 'profile_update', 'wp_presence_on_profile_update' );
+	add_action( 'rest_after_insert_user', 'wp_presence_on_rest_after_insert_user', 10, 3 );
 	add_action( 'edited_term', 'wp_presence_on_edited_term', 10, 3 );
 	add_action( 'edit_comment', 'wp_presence_on_edit_comment' );
 
