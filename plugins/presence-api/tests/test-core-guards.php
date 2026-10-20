@@ -1,6 +1,6 @@
 <?php
 /**
- * Tests that the API's declarations step aside when core already has them.
+ * Tests that the plugin's declarations step aside when core already has them.
  *
  * @package Presence_API
  *
@@ -13,11 +13,17 @@ class WP_Test_Presence_Core_Guards extends WP_Presence_UnitTestCase {
 	 *
 	 * @return array[]
 	 */
-	public static function data_api_files() {
+	public static function data_guarded_files() {
 		return array(
 			'presence'           => array( 'includes/presence.php' ),
 			'rest controller'    => array( 'includes/rest-api/endpoints/class-wp-rest-presence-controller.php' ),
 			'network controller' => array( 'includes/rest-api/endpoints/class-wp-rest-presence-network-controller.php' ),
+			'cron'               => array( 'includes/cron.php' ),
+			'privacy'            => array( 'includes/privacy.php' ),
+			'lifecycle'          => array( 'includes/lifecycle.php' ),
+			'heartbeat'          => array( 'includes/heartbeat.php' ),
+			'site health'        => array( 'includes/site-health.php' ),
+			'rest api'           => array( 'includes/rest-api.php' ),
 		);
 	}
 
@@ -26,7 +32,7 @@ class WP_Test_Presence_Core_Guards extends WP_Presence_UnitTestCase {
 	 * without its guard breaks the plugin on the first release that adopts it.
 	 *
 	 * @coversNothing
-	 * @dataProvider data_api_files
+	 * @dataProvider data_guarded_files
 	 *
 	 * @param string $file Path relative to the plugin directory.
 	 */

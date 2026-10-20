@@ -9,52 +9,58 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-/**
- * Sets presence when a user logs in.
- *
- * @since 0.1.1
- *
- * @param string  $user_login Username.
- * @param WP_User $user       User object.
- */
-function wp_presence_on_login( $user_login, $user ) {
-	if ( ! wp_can_access_presence_room( wp_presence_admin_room(), $user->ID ) ) {
-		return;
-	}
+if ( ! function_exists( 'wp_presence_on_login' ) ) {
+	/**
+	 * Sets presence when a user logs in.
+	 *
+	 * @since 0.1.1
+	 *
+	 * @param string  $user_login Username.
+	 * @param WP_User $user       User object.
+	 */
+	function wp_presence_on_login( $user_login, $user ) {
+		if ( ! wp_can_access_presence_room( wp_presence_admin_room(), $user->ID ) ) {
+			return;
+		}
 
-	wp_set_presence(
-		wp_presence_admin_room(),
-		'user-' . $user->ID,
-		array( 'screen' => 'login' ),
-		array( 'user_id' => $user->ID )
-	);
+		wp_set_presence(
+			wp_presence_admin_room(),
+			'user-' . $user->ID,
+			array( 'screen' => 'login' ),
+			array( 'user_id' => $user->ID )
+		);
+	}
 }
 
-/**
- * Removes all presence entries when a user logs out.
- *
- * @since 0.1.1
- *
- * @param int $user_id The ID of the user who just logged out.
- */
-function wp_presence_on_logout( $user_id ) {
-	if ( $user_id && wp_can_access_presence_room( wp_presence_admin_room(), $user_id ) ) {
+if ( ! function_exists( 'wp_presence_on_logout' ) ) {
+	/**
+	 * Removes all presence entries when a user logs out.
+	 *
+	 * @since 0.1.1
+	 *
+	 * @param int $user_id The ID of the user who just logged out.
+	 */
+	function wp_presence_on_logout( $user_id ) {
+		if ( $user_id && wp_can_access_presence_room( wp_presence_admin_room(), $user_id ) ) {
+			wp_remove_user_presence( $user_id );
+		}
+	}
+}
+
+if ( ! function_exists( 'wp_presence_on_user_removed' ) ) {
+	/**
+	 * Removes a user's presence when their account is deleted or they are
+	 * removed from a site.
+	 *
+	 * Hooked to 'deleted_user' and 'remove_user_from_blog', both of which fire
+	 * with the site already switched to the one the user is leaving. No
+	 * capability gate, unlike login/logout: their role may already be gone.
+	 *
+	 * @since 0.2.0
+	 *
+	 * @param int $user_id The ID of the user being deleted or removed.
+	 */
+	function wp_presence_on_user_removed( $user_id ) {
 		wp_remove_user_presence( $user_id );
 	}
-}
-
-/**
- * Removes a user's presence when their account is deleted or they are
- * removed from a site.
- *
- * Hooked to 'deleted_user' and 'remove_user_from_blog', both of which fire
- * with the site already switched to the one the user is leaving. No
- * capability gate, unlike login/logout: their role may already be gone.
- *
- * @since 0.2.0
- *
- * @param int $user_id The ID of the user being deleted or removed.
- */
-function wp_presence_on_user_removed( $user_id ) {
-	wp_remove_user_presence( $user_id );
 }
