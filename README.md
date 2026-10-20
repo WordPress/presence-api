@@ -229,7 +229,7 @@ Each entry object returned by `wp_get_presence()` or `wp_get_presence_by_room_pr
 | `room` | `string` | The room the entry belongs to. |
 | `client_id` | `string` | A `varchar` column, opaque, and not guaranteed numeric even when it looks like one. See [Client IDs](#client-ids). |
 | `user_id` | `string` | `"0"` for an entry with no signed-in user. Every column comes back as a string, so cast before a strict comparison. |
-| `session_hash` | `string` | The same for every tab of one login, so two values for one user mean two browsers. It is keyed per room and never the session token itself. Empty for a row written without the user's own login session, such as WP-CLI, cron or an application password. |
+| `session_hash` | `string` | The same for every tab of one login, so two values for one user mean two browsers. It is keyed per room and never the session token itself. Empty for a row written without the user's own login session, such as WP-CLI, cron or an application password, and for the admin room, which keeps one row per person. |
 | `data` | `array` | Decoded from the stored JSON; an empty array if that JSON failed to decode. |
 | `date_gmt` | `string` | A MySQL `datetime` string in UTC (e.g. `2024-01-01 12:00:00`), not a Unix timestamp. Convert with `strtotime( $entry->date_gmt . ' UTC' )`. See below for how far behind a live client it can sit. |
 

@@ -896,6 +896,7 @@ if ( ! function_exists( 'wp_presence_write_row' ) ) {
 	 * @since 0.11.0 No longer checks whether recording is on, so post locks can bypass it.
 	 * @since 0.15.0 Returns the number of rows affected instead of true.
 	 * @since 0.18.0 Added the `$seen` parameter, and stores the session hash.
+	 * @since 0.18.3 Stores no session hash on the admin room.
 	 *
 	 * @global wpdb $wpdb WordPress database abstraction object.
 	 *
@@ -926,8 +927,8 @@ if ( ! function_exists( 'wp_presence_write_row' ) ) {
 			$expires_gmt = wp_presence_expiry_for( $date_gmt );
 		}
 
-		// A session belongs to the person making the request, so a row written for anyone else carries none.
-		$session_hash = ! wp_presence_is_reserved_client_id( $client_id ) && $user_id && get_current_user_id() === (int) $user_id ? wp_presence_session_hash( $room ) : '';
+		// A session is one browser of the person making the request, so a row written for anyone else carries none, and so does the admin room's one row per person.
+		$session_hash = ! wp_presence_is_reserved_client_id( $client_id ) && $user_id && get_current_user_id() === (int) $user_id && wp_presence_admin_room() !== $room ? wp_presence_session_hash( $room ) : '';
 
 		$date_clause = 'date_gmt = VALUES(date_gmt), expires_gmt = VALUES(expires_gmt)';
 		$args        = array( $room, $client_id, $user_id, $session_hash, $data_json, $date_gmt, $expires_gmt );
