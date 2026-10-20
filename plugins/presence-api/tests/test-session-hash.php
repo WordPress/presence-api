@@ -108,6 +108,10 @@ class WP_Test_Presence_Session_Hash extends WP_Presence_UnitTestCase {
 	 * @covers ::wp_presence_write_row
 	 */
 	public function test_browsers_taking_turns_on_the_admin_room_change_nothing() {
+		if ( $GLOBALS['wpdb'] instanceof WP_SQLite_DB ) {
+			$this->markTestSkipped( 'The SQLite integration counts every write as one a peer sees.' );
+		}
+
 		$room   = wp_presence_admin_room();
 		$client = 'user-' . self::$editor_id;
 
