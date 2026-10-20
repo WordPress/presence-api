@@ -599,6 +599,7 @@ function wp_presence_on_profile_update( $user_id ) {
  * Bumps a term-edit screen's revision when the term is updated.
  *
  * @since 0.1.3
+ * @since 0.18.3 Also bumps when a REST request updates the term.
  *
  * @param int    $term_id  Term ID.
  * @param int    $tt_id    Term taxonomy ID. Unused.
@@ -606,7 +607,7 @@ function wp_presence_on_profile_update( $user_id ) {
  */
 function wp_presence_on_edited_term( $term_id, $tt_id, $taxonomy ) {
 	unset( $tt_id );
-	if ( ! wp_presence_is_admin_screen_save() ) {
+	if ( ! wp_presence_is_admin_screen_save() && ! wp_is_rest_endpoint() ) {
 		return;
 	}
 	wp_presence_bump_screen_revision( 'term/' . sanitize_key( $taxonomy ) . '/' . (int) $term_id );
@@ -616,11 +617,12 @@ function wp_presence_on_edited_term( $term_id, $tt_id, $taxonomy ) {
  * Bumps a comment-edit screen's revision when the comment is updated.
  *
  * @since 0.1.3
+ * @since 0.18.3 Also bumps when a REST request updates the comment.
  *
  * @param int $comment_id Comment ID.
  */
 function wp_presence_on_edit_comment( $comment_id ) {
-	if ( ! wp_presence_is_admin_screen_save() ) {
+	if ( ! wp_presence_is_admin_screen_save() && ! wp_is_rest_endpoint() ) {
 		return;
 	}
 	wp_presence_bump_screen_revision( 'comment/' . (int) $comment_id );

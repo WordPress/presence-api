@@ -306,6 +306,40 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 	}
 
 	/**
+	 * @covers ::wp_presence_on_edited_term
+	 */
+	public function test_a_rest_term_update_bumps_the_term_screen() {
+		wp_set_current_user( self::$admin_id );
+		$term_id = self::factory()->term->create( array( 'taxonomy' => 'category' ) );
+
+		$request = new WP_REST_Request( 'POST', '/wp/v2/categories/' . $term_id );
+		$request->set_body_params( array( 'description' => 'Changed via REST' ) );
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$entry = wp_presence_get_screen_revision( 'term/category/' . $term_id );
+		$this->assertNotNull( $entry );
+		$this->assertSame( self::$admin_id, (int) $entry['actor_id'] );
+	}
+
+	/**
+	 * @covers ::wp_presence_on_edit_comment
+	 */
+	public function test_a_rest_comment_update_bumps_the_comment_screen() {
+		wp_set_current_user( self::$admin_id );
+		$comment_id = self::factory()->comment->create();
+
+		$request = new WP_REST_Request( 'POST', '/wp/v2/comments/' . $comment_id );
+		$request->set_body_params( array( 'content' => 'Changed via REST' ) );
+		$response = rest_do_request( $request );
+
+		$this->assertSame( 200, $response->get_status() );
+		$entry = wp_presence_get_screen_revision( 'comment/' . $comment_id );
+		$this->assertNotNull( $entry );
+		$this->assertSame( self::$admin_id, (int) $entry['actor_id'] );
+	}
+
+	/**
 	 * @covers ::wp_presence_bump_screen_revision
 	 */
 	public function test_bump_fires_revision_bumped_action() {
