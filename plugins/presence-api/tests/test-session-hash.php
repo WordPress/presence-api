@@ -191,4 +191,20 @@ class WP_Test_Presence_Session_Hash extends WP_Presence_UnitTestCase {
 		$this->assertSame( wp_presence_session_hash( $room ), $data[0]['session_hash'] );
 		$this->assertStringNotContainsString( $token, wp_json_encode( $data ) );
 	}
+
+	/**
+	 * A REST write to the admin room answers with the empty hash it stored.
+	 *
+	 * @covers WP_REST_Presence_Controller::create_item
+	 */
+	public function test_rest_write_to_the_admin_room_returns_no_hash() {
+		$this->sign_in();
+
+		$request = new WP_REST_Request( 'POST', '/wp-presence/v1/presence' );
+		$request->set_param( 'room', wp_presence_admin_room() );
+		$request->set_param( 'client_id', 'tab-1' );
+		$data = rest_get_server()->dispatch( $request )->get_data();
+
+		$this->assertSame( '', $data['session_hash'] );
+	}
 }
