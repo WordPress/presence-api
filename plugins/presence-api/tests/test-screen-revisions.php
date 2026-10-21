@@ -160,6 +160,32 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A REST request updating an option with no registered settings group bumps nothing.
+	 *
+	 * @covers ::wp_presence_on_updated_option
+	 */
+	public function test_a_rest_settings_save_without_registered_group_bumps_nothing() {
+		wp_set_current_user( self::$admin_id );
+		set_current_screen( 'front' );
+		register_setting(
+			'',
+			'presence_ungrouped_setting',
+			array(
+				'type'         => 'string',
+				'show_in_rest' => true,
+			)
+		);
+
+		$request = new WP_REST_Request( 'POST', '/wp/v2/settings' );
+		$request->set_body_params( array( 'presence_ungrouped_setting' => 'Changed via REST' ) );
+		$response = rest_do_request( $request );
+		unregister_setting( '', 'presence_ungrouped_setting' );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertNull( wp_presence_get_screen_revision( 'options/' ) );
+	}
+
+	/**
 	 * @covers ::wp_presence_on_post_updated
 	 */
 	public function test_post_updated_bumps_post_screen() {
