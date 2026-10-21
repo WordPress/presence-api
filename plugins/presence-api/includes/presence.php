@@ -1003,7 +1003,12 @@ if ( ! function_exists( 'wp_presence_session_hash' ) ) {
 	function wp_presence_session_hash( $room, $client_id = '' ) {
 		$token = wp_get_session_token();
 
-		if ( '' === $token || wp_presence_admin_room() === $room || 'editor-' . get_current_user_id() === $client_id ) {
+		if ( '' === $token || wp_presence_admin_room() === $room ) {
+			return '';
+		}
+
+		// A post room's editor row is one per person, like the admin room's; any other room's editor- row is a client's own.
+		if ( 'editor-' . get_current_user_id() === $client_id && wp_presence_parse_room( $room ) ) {
 			return '';
 		}
 
