@@ -364,6 +364,25 @@ class WP_Test_Presence_Table_Creation extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Uninstalling a site clears its cleanup cron so no scheduled event survives deletion.
+	 *
+	 * @covers ::wp_presence_uninstall_site
+	 */
+	public function test_uninstall_site_clears_cleanup_cron() {
+		wp_schedule_event( time(), 'hourly', 'wp_delete_expired_presence_data' );
+		$this->assertNotFalse( wp_next_scheduled( 'wp_delete_expired_presence_data' ), 'Precondition: event is scheduled.' );
+
+		if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
+			define( 'WP_UNINSTALL_PLUGIN', true );
+		}
+		require_once WP_PRESENCE_PLUGIN_DIR . 'uninstall.php';
+
+		wp_presence_uninstall_site();
+
+		$this->assertFalse( wp_next_scheduled( 'wp_delete_expired_presence_data' ) );
+	}
+
+	/**
 	 * Cron events are per site, so a network deactivation that only cleared the
 	 * current one would leave every other site rescheduling a dead callback.
 	 *
