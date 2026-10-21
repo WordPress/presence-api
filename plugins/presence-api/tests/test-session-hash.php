@@ -154,6 +154,44 @@ class WP_Test_Presence_Session_Hash extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Outside a post room an `editor-{id}` client is just a client's own name, so it keeps its hash.
+	 *
+	 * @covers ::wp_presence_session_hash
+	 */
+	public function test_an_editor_client_outside_a_post_room_keeps_its_hash() {
+		$this->sign_in();
+		wp_set_presence( 'custom/room', 'editor-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
+
+		$this->assertMatchesRegularExpression( '/^[0-9a-f]{16}$/', $this->stored_hash( 'custom/room', 'editor-' . self::$editor_id ) );
+	}
+
+	/**
+	 * The post-lock bridge rewrites the editor row on every tick, so two browsers taking turns through it must not move the version.
+	 *
+	 * @covers ::wp_presence_bridge_post_lock
+	 * @covers ::wp_presence_session_hash
+	 */
+	public function test_browsers_taking_turns_through_the_post_lock_bridge_change_nothing() {
+		if ( $GLOBALS['wpdb'] instanceof WP_SQLite_DB ) {
+			$this->markTestSkipped( 'The SQLite integration counts every write as one a peer sees.' );
+		}
+
+		$post_id = self::factory()->post->create( array( 'post_author' => self::$editor_id ) );
+		$room    = wp_presence_post_room( $post_id );
+		$tick    = array( 'wp-refresh-post-lock' => array( 'post_id' => $post_id ) );
+
+		$this->sign_in();
+		wp_presence_bridge_post_lock( array(), $tick, 'post' );
+		$before = wp_get_presence_room_versions( $room )[ $room ];
+
+		$this->sign_in();
+		wp_presence_bridge_post_lock( array(), $tick, 'post' );
+
+		$this->assertSame( '', $this->stored_hash( $room, 'editor-' . self::$editor_id ) );
+		$this->assertSame( $before, wp_get_presence_room_versions( $room )[ $room ] );
+	}
+
+	/**
 	 * One session hashes differently per room, so the value cannot follow it from room to room.
 	 *
 	 * @covers ::wp_presence_session_hash
