@@ -127,6 +127,33 @@ class WP_Test_Presence_Session_Hash extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * A post room's `editor-{id}` row is one per person too, while a tab's own row in the same room keeps its hash.
+	 *
+	 * @covers ::wp_presence_session_hash
+	 * @covers ::wp_presence_write_row
+	 */
+	public function test_browsers_taking_turns_on_a_post_rooms_editor_row_change_nothing() {
+		if ( $GLOBALS['wpdb'] instanceof WP_SQLite_DB ) {
+			$this->markTestSkipped( 'The SQLite integration counts every write as one a peer sees.' );
+		}
+
+		$room   = 'postType/post:1';
+		$client = 'editor-' . self::$editor_id;
+
+		$this->sign_in();
+		wp_set_presence( $room, $client, array(), array( 'user_id' => self::$editor_id ) );
+		wp_set_presence( $room, 'tab-1', array(), array( 'user_id' => self::$editor_id ) );
+		$before = wp_get_presence_room_versions( $room )[ $room ];
+
+		$this->sign_in();
+		wp_set_presence( $room, $client, array(), array( 'user_id' => self::$editor_id ) );
+
+		$this->assertSame( '', $this->stored_hash( $room, $client ) );
+		$this->assertMatchesRegularExpression( '/^[0-9a-f]{16}$/', $this->stored_hash( $room, 'tab-1' ) );
+		$this->assertSame( $before, wp_get_presence_room_versions( $room )[ $room ] );
+	}
+
+	/**
 	 * One session hashes differently per room, so the value cannot follow it from room to room.
 	 *
 	 * @covers ::wp_presence_session_hash
