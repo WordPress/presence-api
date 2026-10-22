@@ -41,6 +41,8 @@ function wp_presence_uninstall_site() {
 
 	delete_metadata( 'term', 0, '_wp_presence_screen_rev', '', true );
 	delete_metadata( 'comment', 0, '_wp_presence_screen_rev', '', true );
+
+	wp_clear_scheduled_hook( 'wp_delete_expired_presence_data' );
 }
 
 global $wpdb;
