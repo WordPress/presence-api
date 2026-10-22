@@ -339,7 +339,16 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 				'post_status' => 'draft',
 			)
 		);
-		wp_set_presence( wp_presence_post_room( $second_post_id ), 'second-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
+		// Rows are read newest first, so a clock tick between the two writes would otherwise let this one win.
+		wp_set_presence(
+			wp_presence_post_room( $second_post_id ),
+			'second-' . self::$editor_id,
+			array(),
+			array(
+				'user_id'  => self::$editor_id,
+				'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - 10 ),
+			)
+		);
 
 		$second_user_id = self::factory()->user->create( array( 'role' => 'editor' ) );
 		wp_set_presence( 'postType/bad', 'bad-' . $second_user_id, array(), array( 'user_id' => $second_user_id ) );
