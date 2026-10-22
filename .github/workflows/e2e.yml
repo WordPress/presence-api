@@ -90,13 +90,16 @@ jobs:
           mkdir -p "$HOME/apt-cache"
 
       # The key carries a fingerprint of the packages, so `key` never matches on
-      # its own and the prefix search restores the newest entry.
+      # its own and the prefix search restores the newest entry, falling back to
+      # any image or Playwright version, since both roll over without warning.
       - name: Restore the cached packages
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/apt-cache
           key: ${{ steps.apt-prepare.outputs.PREFIX }}
-          restore-keys: ${{ steps.apt-prepare.outputs.PREFIX }}
+          restore-keys: |
+            ${{ steps.apt-prepare.outputs.PREFIX }}
+            playwright-apt--os-${{ runner.os }}--arch-${{ runner.arch }}--
 
       - name: Install Playwright system dependencies
         id: apt-install
