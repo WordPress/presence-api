@@ -928,7 +928,7 @@ if ( ! function_exists( 'wp_presence_write_row' ) ) {
 		}
 
 		// A session belongs to the person making the request, so a row written for anyone else carries none.
-		$session_hash = ! wp_presence_is_reserved_client_id( $client_id ) && $user_id && get_current_user_id() === (int) $user_id ? wp_presence_session_hash( $room ) : '';
+		$session_hash = ! wp_presence_is_reserved_client_id( $client_id ) && $user_id && get_current_user_id() === (int) $user_id ? wp_presence_session_hash( $room, $client_id ) : '';
 
 		$date_clause = 'date_gmt = VALUES(date_gmt), expires_gmt = VALUES(expires_gmt)';
 		$args        = array( $room, $client_id, $user_id, $session_hash, $data_json, $date_gmt, $expires_gmt );
@@ -993,15 +993,26 @@ if ( ! function_exists( 'wp_presence_session_hash' ) ) {
 	 *
 	 * @since 0.18.0
 	 * @since 0.18.3 Returns an empty string for the admin room, which keeps one row per person rather than per browser.
+	 * @since 0.18.4 Added the `$client_id` parameter, and returns an empty string for a post room's `editor-{id}` row, also one per person.
 	 *
-	 * @param string $room The room identifier.
-	 * @return string Sixteen hex characters, or an empty string for the admin room or a request
-	 *                with no login session, such as cron, WP-CLI or an application password.
+	 * @param string $room      The room identifier.
+	 * @param string $client_id Optional. The client the hash is for. Default empty.
+	 * @return string Sixteen hex characters, or an empty string for a row kept per person rather than per browser
+	 *                or a request with no login session, such as cron, WP-CLI or an application password.
 	 */
-	function wp_presence_session_hash( $room ) {
+	function wp_presence_session_hash( $room, $client_id = '' ) {
 		$token = wp_get_session_token();
 
-		return '' === $token || wp_presence_admin_room() === $room ? '' : substr( hash_hmac( 'sha256', (string) $room, $token ), 0, 16 );
+		if ( '' === $token || wp_presence_admin_room() === $room ) {
+			return '';
+		}
+
+		// A post room's editor row is one per person, like the admin room's; any other room's editor- row is a client's own.
+		if ( 'editor-' . get_current_user_id() === $client_id && wp_presence_parse_room( $room ) ) {
+			return '';
+		}
+
+		return substr( hash_hmac( 'sha256', (string) $room, $token ), 0, 16 );
 	}
 }
 
