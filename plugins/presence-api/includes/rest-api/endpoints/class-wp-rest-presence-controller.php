@@ -568,7 +568,7 @@ if ( ! class_exists( 'WP_REST_Presence_Controller' ) ) {
 				'room'         => $room,
 				'client_id'    => $client_id,
 				'user_id'      => $current_user_id,
-				'session_hash' => wp_presence_session_hash( $room ),
+				'session_hash' => wp_presence_session_hash( $room, $client_id ),
 				'data'         => $data,
 				'date_gmt'     => gmdate( 'Y-m-d H:i:s' ),
 			);
