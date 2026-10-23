@@ -19,8 +19,8 @@ class WP_Presence_CLI_Command extends WP_CLI_Command {
 	/**
 	 * Sets a presence entry in a room.
 	 *
-	 * The entry belongs to the user named by WP-CLI's global `--user`, or user 0,
-	 * and expires after the site's presence TTL, 150 seconds by default.
+	 * Written for WP-CLI's global `--user`, or user 0, and expires after the
+	 * site's presence TTL, 150 seconds by default.
 	 *
 	 * ## OPTIONS
 	 *

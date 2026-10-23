@@ -1395,7 +1395,7 @@ if ( ! function_exists( 'wp_remove_user_presence' ) ) {
 	 * @since 0.1.1
 	 * @since 0.15.0 Fires the `removed_user_presence` action.
 	 * @since 0.18.0 Bumps the version of every room it removes a row from.
-	 * @since 0.18.4 Fires `wp_presence_admin_room_changed` only when the user had a row in the admin room.
+	 * @since 0.18.4 Fires `wp_presence_admin_room_changed` only if the user had an admin room row.
 	 *
 	 * @param int $user_id The user ID.
 	 * @return bool True on success, false on failure.
