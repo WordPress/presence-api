@@ -19,7 +19,7 @@ class WP_Presence_CLI_Command extends WP_CLI_Command {
 	/**
 	 * Sets a presence entry in a room.
 	 *
-	 * Entry expires after the site's presence TTL, 150 seconds by default.
+	 * Entry expires after the site's presence TTL, 150 seconds by default, and belongs to the user WP-CLI's global `--user` runs as, or user 0.
 	 *
 	 * ## OPTIONS
 	 *
@@ -31,9 +31,6 @@ class WP_Presence_CLI_Command extends WP_CLI_Command {
 	 *
 	 * [--data=<json>]
 	 * : JSON-encoded data to attach to the presence entry.
-	 *
-	 * [--user=<id>]
-	 * : The user ID. Defaults to the current CLI user (0).
 	 *
 	 * ## EXAMPLES
 	 *
@@ -48,14 +45,10 @@ class WP_Presence_CLI_Command extends WP_CLI_Command {
 	 */
 	public function set( $args, $assoc_args ) {
 		$room    = $args[0];
-		$user_id = (int) WP_CLI\Utils\get_flag_value( $assoc_args, 'user', 0 );
+		$user_id = get_current_user_id();
 
 		if ( ! wp_presence_recording_enabled() ) {
 			WP_CLI::error( __( 'Presence is not recorded on this site.', 'presence-api' ) );
-		}
-
-		if ( $user_id && ! get_user_by( 'id', $user_id ) ) {
-			WP_CLI::error( __( 'User not found.', 'presence-api' ) );
 		}
 
 		$client_id = isset( $args[1] ) ? $args[1] : 'cli-' . $user_id;
@@ -82,10 +75,6 @@ class WP_Presence_CLI_Command extends WP_CLI_Command {
 	/**
 	 * Lists presence entries in a room.
 	 *
-	 * @since 0.1.1
-	 *
-	 * @subcommand list
-	 *
 	 * ## OPTIONS
 	 *
 	 * <room>
@@ -106,14 +95,14 @@ class WP_Presence_CLI_Command extends WP_CLI_Command {
 	 *     wp presence list admin/online
 	 *     wp presence list postType/post:42 --format=json
 	 *
+	 * @subcommand list
+	 *
+	 * @since 0.1.1
+	 *
 	 * @param array $args       Positional arguments.
 	 * @param array $assoc_args Associative arguments.
 	 */
 	public function list_( $args, $assoc_args ) {
-		if ( empty( $args[0] ) ) {
-			WP_CLI::error( __( 'Please specify a room. Usage: wp presence list <room>', 'presence-api' ) );
-		}
-
 		$room = $args[0];
 
 		// Every row, reserved ones included. This is a debugging view of the
