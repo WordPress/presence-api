@@ -31,6 +31,7 @@ function wp_presence_uninstall_site() {
 	delete_option( 'wp_presence_features' );
 	delete_option( 'wp_presence_screen_revisions' );
 	delete_option( 'wp_presence_network_pushed' );
+	delete_option( 'wp_presence_table.lock' );
 
 	// Matches wp_presence_known_options_pages() in includes/screen-revisions.php.
 	// Not required here, since this file runs standalone without the rest of
