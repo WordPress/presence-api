@@ -622,7 +622,7 @@ if ( ! class_exists( 'WP_REST_Presence_Controller' ) ) {
 				)
 			);
 
-			// Entry doesn't exist, so allow the delete, which removes nothing.
+			// Entry doesn't exist; allow the delete, which removes nothing.
 			if ( null === $entry_user_id ) {
 				return true;
 			}

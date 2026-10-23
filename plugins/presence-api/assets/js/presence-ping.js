@@ -31,7 +31,7 @@
 
 	if ( editorRoom ) {
 		/**
-		 * Fires synchronously, ahead of Heartbeat's first tick, so a listener can tell "presence-api isn't here" apart from "here, no tick yet".
+		 * Fires synchronously, before Heartbeat's first tick, so a listener can tell "presence-api isn't here" from "here, no tick yet".
 		 *
 		 * @since 0.6.0
 		 *
@@ -382,7 +382,7 @@
 
 				hasCollaborators = nowHasCollaborators;
 				/**
-				 * Fires `presence-api.collaborationStarted` when a second person joins the editor's room, and `presence-api.collaborationEnded` when only one is left.
+				 * Fires `presence-api.collaborationStarted` when a second person joins the editor's room, and `presence-api.collaborationEnded` when one is left.
 				 *
 				 * @since 0.6.0
 				 *
