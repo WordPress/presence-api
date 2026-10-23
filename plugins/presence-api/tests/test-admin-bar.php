@@ -330,7 +330,7 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$this->assertSame( 'Secret Draft', $place->title );
 	}
 
-	public function test_unparsable_post_room_is_skipped_and_first_post_room_wins() {
+	public function test_unparsable_post_room_is_skipped_and_newest_post_room_wins() {
 		$this->put_editor_on_post( self::$post_id );
 
 		$second_post_id = self::factory()->post->create(
@@ -339,7 +339,7 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 				'post_status' => 'draft',
 			)
 		);
-		// Rows are read newest first, so a clock tick between the two writes would otherwise let this one win.
+		// Older, so a clock tick between the two writes can't make it the newest.
 		wp_set_presence(
 			wp_presence_post_room( $second_post_id ),
 			'second-' . self::$editor_id,
