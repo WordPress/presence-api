@@ -1212,9 +1212,8 @@ if ( ! function_exists( 'wp_get_presence_room_versions' ) ) {
 		$placeholders      = implode( ', ', array_fill( 0, count( $rooms ), '%s' ) );
 
 		// $placeholders holds only %s tokens generated above, so the interpolation is safe.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$rows = $wpdb->get_results(
-			// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 			$wpdb->prepare(
 				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				"SELECT room, data FROM {$wpdb->presence} WHERE client_id = %s AND room IN ( {$placeholders} )",
@@ -1266,7 +1265,6 @@ if ( ! function_exists( 'wp_presence_bump_room_version' ) ) {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->query(
 			$wpdb->prepare(
-				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				"INSERT INTO {$wpdb->presence} (room, client_id, user_id, data, date_gmt, expires_gmt) VALUES (%s, %s, 0, '1', %s, %s) ON DUPLICATE KEY UPDATE data = data + 1, date_gmt = VALUES(date_gmt), expires_gmt = VALUES(expires_gmt)",
 				$room,
 				wp_presence_version_client_id(),
@@ -1329,7 +1327,7 @@ if ( ! function_exists( 'wp_get_presence_room_next_expiry' ) ) {
 		$placeholders = implode( ', ', array_fill( 0, count( $missing ), '%s' ) );
 
 		// The room_expires index serves the range on expires_gmt within each room.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$rows = $wpdb->get_results(
 			// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 			$wpdb->prepare(
@@ -1945,7 +1943,7 @@ if ( ! function_exists( 'wp_get_presence_summary' ) ) {
 			$placeholders = implode( ', ', array_fill( 0, count( $rooms ), '%s' ) );
 
 			// $placeholders holds only %s tokens generated above, so the interpolation is safe.
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 			$summary['by_prefix'][ $prefix ]['users'] = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(DISTINCT user_id) FROM {$wpdb->presence} WHERE expires_gmt > %s AND date_gmt > %s AND client_id NOT LIKE %s AND room IN ( $placeholders )", array_merge( array( $cutoff, $stale, wp_presence_reserved_client_id_pattern() ), $rooms ) ) );
 		}
 
@@ -2129,7 +2127,7 @@ if ( ! function_exists( 'wp_presence_hydrate_room_users' ) ) {
 			$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 				"SELECT room, user_id
 			FROM {$wpdb->presence}
-			WHERE room IN ($placeholders) AND expires_gmt > %s AND date_gmt > %s AND client_id NOT LIKE %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+			WHERE room IN ($placeholders) AND expires_gmt > %s AND date_gmt > %s AND client_id NOT LIKE %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				array_merge( $room_names, array( $cutoff, $stale, wp_presence_reserved_client_id_pattern() ) )
 			)
 		);
