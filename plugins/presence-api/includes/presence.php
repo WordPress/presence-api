@@ -1423,10 +1423,12 @@ if ( ! function_exists( 'wp_remove_user_presence' ) ) {
 			array( '%d' )
 		);
 
-		// Deletes across every room, so the admin room is always among them.
 		if ( $result > 0 ) {
 			wp_cache_set_last_changed( 'presence' );
-			wp_presence_admin_room_changed();
+
+			if ( in_array( wp_presence_admin_room(), $rooms, true ) ) {
+				wp_presence_admin_room_changed();
+			}
 
 			foreach ( $rooms as $room ) {
 				wp_presence_bump_room_version( $room );
