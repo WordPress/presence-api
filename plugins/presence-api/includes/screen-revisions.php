@@ -41,10 +41,10 @@ if ( ! defined( 'WP_PRESENCE_SCREEN_KEY_LIMIT' ) ) {
  *
  * Only screen keys that don't map to a post, user, term, comment, a known
  * Settings page or a network screen land here; see
- * wp_presence_parse_screen_key_target(). Those
- * write straight to the object they describe instead of this shared option,
- * so a save on one screen doesn't invalidate the cache entry for every other
- * screen in the map.
+ * wp_presence_parse_screen_key_target(). The rest write to the object they
+ * describe, or network screens to a site option, instead of this shared
+ * option, so a save on one screen doesn't invalidate the cache entry for every
+ * other screen in the map.
  *
  * @since 0.1.3
  *
