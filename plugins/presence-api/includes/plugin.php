@@ -147,8 +147,9 @@ function wp_presence_deactivate( $network_wide = false ) {
 /**
  * Adds action links to the plugin list table.
  *
- * The online users link, there while the Users list feature is on, points at the Users list filtered to the users who are
- * currently online. The settings link points at the plugin's own page under Settings.
+ * The online users link, there while the Users list feature is on, points at
+ * the Users list filtered to the users who are currently online. The settings
+ * link points at the plugin's own page under Settings.
  *
  * @since 0.1.12
  *
