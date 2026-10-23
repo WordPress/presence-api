@@ -360,10 +360,7 @@ class WP_Presence_CLI_Command extends WP_CLI_Command {
 		}
 
 		$target = 'on' === $args[1];
-
-		// Stored as '1' or '0'. A boolean false is indistinguishable from an
-		// absent option, so update_option() would discard it as unchanged.
-		$stored = $target ? '1' : '0';
+		$stored = wp_presence_sanitize_checkbox( $target );
 
 		if ( $network ) {
 			update_site_option( $option, $stored );
