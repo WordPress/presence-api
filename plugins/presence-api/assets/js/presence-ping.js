@@ -29,9 +29,14 @@
 			? window.location.search
 			: '';
 
-	// Fired synchronously, ahead of Heartbeat's first tick, so a listener can
-	// tell "presence-api isn't here" apart from "here, no tick yet."
 	if ( editorRoom ) {
+		/**
+		 * Fires once, ahead of Heartbeat's first tick, so a listener can tell "presence-api isn't here" apart from "here, no tick yet".
+		 *
+		 * @since 0.6.0
+		 *
+		 * @param {string} room The editor's room.
+		 */
 		wp.hooks.doAction( 'presence-api.watchingRoom', editorRoom );
 	}
 
@@ -376,6 +381,14 @@
 				}
 
 				hasCollaborators = nowHasCollaborators;
+				/**
+				 * Fires `presence-api.collaborationStarted` when a second person joins the editor's room, and `presence-api.collaborationEnded` when only one is left.
+				 *
+				 * @since 0.6.0
+				 *
+				 * @param {string} room  The editor's room.
+				 * @param {number} count How many people are in the room.
+				 */
 				wp.hooks.doAction(
 					nowHasCollaborators
 						? 'presence-api.collaborationStarted'
