@@ -330,7 +330,7 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 		$this->assertSame( 'Secret Draft', $place->title );
 	}
 
-	public function test_unparsable_post_room_is_skipped_and_first_post_room_wins() {
+	public function test_unparsable_post_room_is_skipped_and_newest_post_room_wins() {
 		$this->put_editor_on_post( self::$post_id );
 
 		$second_post_id = self::factory()->post->create(
@@ -339,7 +339,16 @@ class WP_Test_Presence_Admin_Bar extends WP_Presence_UnitTestCase {
 				'post_status' => 'draft',
 			)
 		);
-		wp_set_presence( wp_presence_post_room( $second_post_id ), 'second-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
+		// Older, so a clock tick between the two writes can't make it the newest.
+		wp_set_presence(
+			wp_presence_post_room( $second_post_id ),
+			'second-' . self::$editor_id,
+			array(),
+			array(
+				'user_id'  => self::$editor_id,
+				'date_gmt' => gmdate( 'Y-m-d H:i:s', time() - 10 ),
+			)
+		);
 
 		$second_user_id = self::factory()->user->create( array( 'role' => 'editor' ) );
 		wp_set_presence( 'postType/bad', 'bad-' . $second_user_id, array(), array( 'user_id' => $second_user_id ) );
