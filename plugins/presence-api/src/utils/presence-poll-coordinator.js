@@ -89,9 +89,6 @@ function createCoordinator( room, fields ) {
 		}
 		coordinator.fetchInProgress = true;
 
-		if ( coordinator.abortController ) {
-			coordinator.abortController.abort();
-		}
 		coordinator.abortController = new AbortController();
 		const { signal } = coordinator.abortController;
 

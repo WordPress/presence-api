@@ -96,11 +96,6 @@
 	const RELAYED_TICK_KEYS = [
 		'presence-online-hash',
 		'presence-online-unchanged',
-		'presence-heartbeat-users',
-		'presence-heartbeat-entries',
-		'presence-heartbeat-query-ms',
-		'presence-heartbeat-ttl',
-		'presence-heartbeat-room-list',
 		'presence-heartbeat-collaborators',
 		'presence-fragments',
 	];

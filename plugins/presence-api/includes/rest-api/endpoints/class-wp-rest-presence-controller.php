@@ -747,7 +747,6 @@ if ( ! class_exists( 'WP_REST_Presence_Controller' ) ) {
 		 * @return WP_REST_Response Response object.
 		 */
 		public function prepare_item_for_response( $item, $request ) {
-			$schema = $this->get_item_schema();
 			$fields = $this->get_fields_for_response( $request );
 
 			$data = array();
