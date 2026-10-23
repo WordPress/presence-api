@@ -240,7 +240,8 @@
 			// window, app switched away) so the existing entries expire via
 			// the default TTL. One early-return suppresses both presence-ping
 			// and presence-editor-ping, since the consolidated handler emits
-			// both.
+			// both. Core's lock refresh goes too, or the post-lock bridge
+			// would keep the hidden tab's lock and editor row alive.
 			if ( document.visibilityState === 'hidden' ) {
 				delete data[ 'wp-refresh-post-lock' ];
 				return;

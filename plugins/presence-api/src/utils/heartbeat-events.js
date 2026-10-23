@@ -1,9 +1,8 @@
 /**
  * Heartbeat event utilities.
  *
- * WordPress core's heartbeat.js currently triggers events via jQuery.
- * These utilities provide a forward-compatible abstraction that works
- * with or without jQuery.
+ * WordPress core's heartbeat.js triggers events via jQuery. These utilities
+ * also listen for a native CustomEvent, which only the unit tests dispatch.
  *
  * @package Presence_API
  */
@@ -35,7 +34,7 @@ export function onHeartbeatTick( callback ) {
 	}
 
 	// Fallback: if jQuery isn't available, listen for native CustomEvent.
-	// This path is used in test environments and future jQuery-free WordPress.
+	// Only the unit tests reach this path, since core's Heartbeat needs jQuery.
 	const nativeCallback = ( event ) => {
 		callback( event.detail );
 	};
