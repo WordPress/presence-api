@@ -88,7 +88,7 @@ class WP_Test_Presence_Plugin_Action_Links extends WP_UnitTestCase {
 		$links = wp_presence_plugin_action_links( array() );
 
 		$this->assertSame( 1, preg_match( '#href="([^"]+)"#', $links[1], $matches ) );
-		$this->assertSame( admin_url( 'options-general.php' ), html_entity_decode( $matches[1] ) );
+		$this->assertSame( admin_url( 'options-general.php?page=presence-api' ), html_entity_decode( $matches[1] ) );
 		$this->assertSame( 'Settings', wp_strip_all_tags( $links[1] ) );
 	}
 

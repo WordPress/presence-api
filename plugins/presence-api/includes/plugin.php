@@ -148,8 +148,7 @@ function wp_presence_deactivate( $network_wide = false ) {
  * Adds action links to the plugin list table.
  *
  * The online users link, there while the Users list feature is on, points at the Users list filtered to the users who are
- * currently online. The plugin has no settings screen of its own, so the
- * settings link points at Settings > General, where the recording switch lives.
+ * currently online. The settings link points at the plugin's own page under Settings.
  *
  * @since 0.1.12
  *
@@ -170,7 +169,7 @@ function wp_presence_plugin_action_links( $links ) {
 
 	$our_links[] = sprintf(
 		'<a href="%1$s">%2$s</a>',
-		esc_url( admin_url( 'options-general.php' ) ),
+		esc_url( admin_url( 'options-general.php?page=presence-api' ) ),
 		esc_html__( 'Settings', 'presence-api' )
 	);
 
@@ -185,8 +184,8 @@ function wp_presence_plugin_action_links( $links ) {
  * The online users link points at the network Users list filtered to the users
  * who are currently online. That filter only applies when the request carries
  * the presence_online_filter nonce, the same way the network Users view builds
- * its link, so the URL is nonced here too. The settings link points at Network
- * Settings.
+ * its link, so the URL is nonced here too. The settings link points at the
+ * plugin's own page under Network Admin > Settings.
  *
  * @since 0.6.0
  *
@@ -208,7 +207,7 @@ function wp_presence_network_plugin_action_links( $links ) {
 
 	$our_links[] = sprintf(
 		'<a href="%1$s">%2$s</a>',
-		esc_url( network_admin_url( 'settings.php' ) ),
+		esc_url( network_admin_url( 'settings.php?page=presence-api' ) ),
 		esc_html__( 'Settings', 'presence-api' )
 	);
 
