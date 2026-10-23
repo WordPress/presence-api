@@ -13,8 +13,8 @@
  * (post.php), user edits (user-edit.php, profile.php), term edits
  * (edit-tags.php), comment edits (comment.php), and on multisite Network
  * Settings and the Edit Site tabs. JS-driven and REST-driven
- * screens can opt in via the `wp_presence_current_screen_key` filter plus a
- * future client-side `markScreenStale()` API.
+ * screens can opt in via the `wp_presence_current_screen_key` filter plus the
+ * client-side `wp.presence.markScreenStale()`.
  *
  * @package Presence_API
  */
@@ -37,10 +37,11 @@ if ( ! defined( 'WP_PRESENCE_SCREEN_KEY_LIMIT' ) ) {
  *
  * Shape: array( '<screen_key>' => array( 'rev' => int, 'actor_id' => int, 'time' => int ) ).
  * The actor's display name and avatar are looked up fresh on each heartbeat
- * tick — not stored — so renames and avatar changes show immediately.
+ * tick rather than stored, so renames and avatar changes show immediately.
  *
- * Only screen keys that don't map to a post, user, term, comment, or a known
- * Settings page land here — see wp_presence_parse_screen_key_target(). Those
+ * Only screen keys that don't map to a post, user, term, comment, a known
+ * Settings page or a network screen land here; see
+ * wp_presence_parse_screen_key_target(). Those
  * write straight to the object they describe instead of this shared option,
  * so a save on one screen doesn't invalidate the cache entry for every other
  * screen in the map.
@@ -187,7 +188,7 @@ function wp_presence_get_screen_revision( $screen_key ) {
 				return null;
 			}
 			// mysql2date( 'U', ... ) adds the site's timezone offset even when
-			// $translate is false — core's own get_post_time() skips that add
+			// $translate is false; core's own get_post_time() skips that add
 			// only for its $gmt branch. post_modified_gmt is already a naive
 			// UTC string, and WordPress forces PHP's default timezone to UTC
 			// at bootstrap, so a plain strtotime() is the correct conversion.

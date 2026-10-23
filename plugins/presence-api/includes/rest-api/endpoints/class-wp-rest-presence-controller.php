@@ -513,7 +513,7 @@ if ( ! class_exists( 'WP_REST_Presence_Controller' ) ) {
 			// 1. The UNIQUE KEY on (room, client_id) prevents duplicate rows.
 			// 2. Heartbeat re-establishes correct ownership within seconds.
 			// 3. Worst case: two users briefly share an entry until the next ping.
-			// 4. Data is ephemeral (150s default TTL) — stale entries self-correct.
+			// 4. Data is ephemeral (150s default TTL), so stale entries self-correct.
 			// Table-level locking is not warranted for ephemeral data.
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$existing_user_id = $wpdb->get_var(
@@ -622,7 +622,7 @@ if ( ! class_exists( 'WP_REST_Presence_Controller' ) ) {
 				)
 			);
 
-			// Entry doesn't exist — allow the delete (it's a no-op).
+			// Entry doesn't exist, so allow the delete, which removes nothing.
 			if ( null === $entry_user_id ) {
 				return true;
 			}
