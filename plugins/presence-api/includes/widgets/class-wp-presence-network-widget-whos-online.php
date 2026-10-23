@@ -178,12 +178,13 @@ class WP_Presence_Network_Widget_Whos_Online {
 	 * tick costs one lookup here, never the capability check or the
 	 * summary query.
 	 *
+	 * Nonce verification is handled by WordPress in wp_ajax_heartbeat().
+	 *
 	 * @since 0.2.0
 	 *
 	 * @param array  $response  The Heartbeat response.
 	 * @param array  $data      The $_POST data sent.
 	 * @param string $screen_id The screen ID.
-	 * Nonce verification is handled by WordPress in wp_ajax_heartbeat().
 	 *
 	 * @return array The Heartbeat response.
 	 */

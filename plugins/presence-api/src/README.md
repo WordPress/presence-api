@@ -80,7 +80,7 @@ Presence room id (e.g. `postType/post:123`). When `null` or `undefined`, no requ
 Returns an object with:
 
 - `isPresent` `boolean` - Whether any users are present in the room.
-- `isLoading` `boolean` - True until the first fetch completes. Use this to avoid flickering empty states.
+- `isLoading` `boolean` - True until the first fetch completes, or false at once with no `room` or no Heartbeat. Use this to avoid flickering empty states.
 - `users` `Array<Object>` - Array of user objects, each containing:
   - `id` `number` - The user ID.
   - `displayName` `string` - The user's display name.
@@ -112,8 +112,7 @@ Example live region pattern:
 
 ### Notes
 
-- The hook automatically subscribes to WordPress Heartbeat's `heartbeat-tick` event to avoid duplicating network traffic.
+- The hook polls on WordPress Heartbeat's `heartbeat-tick`, so it follows Heartbeat's schedule.
 - Deduplicates users by ID.
 - Prevents race conditions: if a heartbeat tick fires while a fetch is in progress, the second request is skipped.
 - Coalesces polling across tabs and instances sharing a room and `fields`: one visible tab per site polls (via Web Locks, where available) and shares results with the rest over `BroadcastChannel`.
-- In development mode, logs warnings and errors to the console for debugging.
