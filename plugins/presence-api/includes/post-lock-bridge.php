@@ -25,12 +25,13 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Fallback path, for a client that refreshes the core lock without sending
  * presence-editor-ping.
  *
+ * Nonce verification is handled by WordPress in wp_ajax_heartbeat().
+ *
  * @since 0.1.1
  *
  * @param array  $response  The Heartbeat response.
  * @param array  $data      The $_POST data sent.
  * @param string $screen_id The screen ID.
- * Nonce verification is handled by WordPress in wp_ajax_heartbeat().
  *
  * @return array The Heartbeat response.
  */

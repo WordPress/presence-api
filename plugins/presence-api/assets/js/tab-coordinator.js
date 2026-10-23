@@ -9,6 +9,10 @@
 	'use strict';
 
 	/**
+	 * Creates a coordinator for one key, shared by the classic scripts and src/.
+	 *
+	 * @private
+	 *
 	 * @param {string}                  key                   Unique lock/channel name.
 	 * @param {Object}                  [options]
 	 * @param {string[]}                [options.relayedKeys] heartbeat-tick response keys to relay from the leader to followers.

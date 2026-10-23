@@ -483,8 +483,8 @@ function wp_presence_network_capability() {
 /**
  * Returns the distinct user IDs online anywhere on the network.
  *
- * Reads the snapshot rather than the summary: the Users list column asks only
- * whether a given row's user is in this set, so resolving a display name and
+ * Reads the snapshot rather than the summary: the Online view, its count and
+ * the admin bar only ask who is in this set, so resolving a display name and
  * an avatar URL for everyone online to answer that would be the whole cost of
  * the read for none of its output.
  *

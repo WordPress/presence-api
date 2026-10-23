@@ -26,7 +26,7 @@
 		return;
 	}
 
-	// Tabs on the same screen send an identical ping — key by screenKey.
+	// Tabs on the same screen send an identical ping, so key by screenKey.
 	const pingContextKey = 'wp-presence-screen-ping:' + screenKey;
 
 	const tabCoordinator = window.wpPresenceCreateTabCoordinator(
@@ -132,7 +132,7 @@
 			avatar.src = info.actor_avatar_url;
 			avatar.width = 24;
 			avatar.height = 24;
-			// Decorative — the actor name is already in the adjacent text.
+			// Decorative, since the actor name is already in the adjacent text.
 			avatar.alt = '';
 			avatar.className = 'wp-presence-stale-avatar';
 			p.appendChild( avatar );

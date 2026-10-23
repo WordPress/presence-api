@@ -15,6 +15,10 @@
  *   wp_presence_recording_enabled()
  *   wp_presence_is_available()
  *   wp_presence_is_agent_user()
+ *   wp_presence_parse_room()
+ *   wp_get_presence_by_room_prefix()
+ *   wp_get_presence_room_versions()
+ *   wp_get_presence_room_next_expiry()
  *
  * @package Presence_API
  */
@@ -378,9 +382,9 @@ if ( ! function_exists( 'wp_presence_recording_enabled' ) ) {
 	 * Whether presence is recorded on this site.
 	 *
 	 * The controller-level switch, checked at the single write path. Nothing new is
-	 * stored while this is false and every surface empties within one
-	 * WP_PRESENCE_DEFAULT_TTL as the rows already there expire, so there is no
-	 * separate teardown to run.
+	 * stored while this is false and every surface empties as the rows already
+	 * there expire, within one TTL for Heartbeat rows and at most
+	 * wp_presence_max_expires_in() for the rest, so there is no teardown to run.
 	 *
 	 * Recording is on by default. Presence is a negative signal, and the post lock
 	 * bridge is where its absence stops two people overwriting each other, so the
@@ -1652,8 +1656,8 @@ if ( ! function_exists( 'wp_presence_is_agent_user' ) ) {
 		/**
 		 * Filters whether a user is an AI agent, for labelling its presence rows.
 		 *
-		 * Every column a presence row's `user_id` might have come from — the
-		 * database, JSON, this function's own callers — reads back as a string,
+		 * Every column a presence row's `user_id` might have come from (the
+		 * database, JSON, this function's own callers) reads back as a string,
 		 * so it is cast to an int before it ever reaches a filter, and a filter
 		 * can compare against a plain int without tripping over the difference.
 		 *
@@ -1737,9 +1741,9 @@ if ( ! function_exists( 'wp_presence_admin_room_entries' ) ) {
 	 *
 	 * An agent runs no Heartbeat and joins no `admin/online` room of its own; it
 	 * writes only the post room it is editing (see the "Agents" section of the
-	 * README). Rather than have it write a second room, Who's Online and the
-	 * admin bar both call this instead of `wp_get_presence( wp_presence_admin_room() )`
-	 * directly, so an agent's row is picked up from wherever it already is.
+	 * README). Rather than have it write a second room, the admin bar calls this
+	 * instead of `wp_get_presence( wp_presence_admin_room() )` directly, so an
+	 * agent's row is picked up from wherever it already is.
 	 *
 	 * An agent user with a row of its own in `admin/online` is left as that row
 	 * reads; only agent users absent from it are backfilled from a post room,
@@ -1794,8 +1798,8 @@ if ( ! function_exists( 'wp_presence_admin_room_entries' ) ) {
 /*
  *
  * The following functions are used by the plugin's widgets, CLI, REST
- * controller, and cron jobs. They are not part of the public API contract
- * and may change or be removed without notice. Do not depend on them.
+ * controller, and cron jobs. Those marked `@access private` are not part of
+ * the public API contract and may change or be removed without notice.
  */
 
 if ( ! function_exists( 'wp_presence_get_timeout' ) ) {
@@ -1953,11 +1957,11 @@ if ( ! function_exists( 'wp_get_presence_summary' ) ) {
 
 if ( ! function_exists( 'wp_delete_expired_presence_data' ) ) {
 	/**
-	 * Deletes stale presence entries older than the default TTL.
+	 * Deletes presence rows past their own expiry.
 	 *
 	 * Runs on the every-minute cron event. Rather than looping without a ceiling
 	 * over the MySQL-only `DELETE ... LIMIT` construct, this selects a bounded
-	 * page of primary keys older than the cutoff and deletes them by key, for a
+	 * page of expired primary keys and deletes them by key, for a
 	 * fixed number of passes per invocation. Any remaining backlog is left for the
 	 * next cron run, so a single request cannot run until `max_execution_time`
 	 * when a site returns from a cron outage with a large backlog. Deleting by
@@ -2178,9 +2182,8 @@ if ( ! function_exists( 'wp_presence_render_agent_badge' ) ) {
 	/**
 	 * Renders the small "Agent" badge shown next to an agent's presence row.
 	 *
-	 * Shared across every surface that lists a presence row by user — Who's
-	 * Online, the admin bar, the Active Posts widget and the post list's
-	 * Editors column — so an agent reads the same way wherever it shows up.
+	 * The admin bar shows it beside each agent's name, while the Active Posts
+	 * widget and the Editors column label agents in plain text.
 	 *
 	 * @access private
 	 *

@@ -13,7 +13,7 @@ if ( ! function_exists( 'wp_presence_editor_state' ) ) {
 	/**
 	 * Builds the state stored on a user's entry in a post room.
 	 *
-	 * Shared so the two writers of that entry cannot drift apart on its shape.
+	 * Shared so the writers of that entry cannot drift apart on its shape.
 	 *
 	 * @access private
 	 *
@@ -337,12 +337,13 @@ if ( ! function_exists( 'wp_presence_admin_heartbeat_received' ) ) {
 	 * This is the API's primary write path. It runs regardless of which dashboard
 	 * widgets are registered.
 	 *
+	 * Nonce verification is handled by WordPress in wp_ajax_heartbeat().
+	 *
 	 * @since 0.1.10
 	 *
 	 * @param array  $response  The Heartbeat response.
 	 * @param array  $data      The $_POST data sent.
 	 * @param string $screen_id The screen ID.
-	 * Nonce verification is handled by WordPress in wp_ajax_heartbeat().
 	 *
 	 * @return array The Heartbeat response.
 	 */

@@ -42,9 +42,8 @@ function wp_presence_enqueue_avatar_stack_style() {
 /**
  * Renders a small avatar stack for a list of users.
  *
- * Shared across every surface that shows an overlapping avatar stack (the
- * dashboard widget's overflow indicator, the network Sites list column, the
- * network dashboard widget) so they all render the stack identically.
+ * Shared by the network Sites list column and the network dashboard widget,
+ * so both render the stack identically.
  *
  * assets/css/avatar-stack.css sizes the avatars; the attributes below only
  * reserve the space until it loads.
