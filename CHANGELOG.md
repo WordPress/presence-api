@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.18.4](https://github.com/WordPress/presence-api/compare/v0.18.3...v0.18.4) (2026-10-23)
+
+
+### Bug Fixes
+
+* clear the cleanup cron event on plugin uninstall ([#872](https://github.com/WordPress/presence-api/issues/872)) ([974fe7f](https://github.com/WordPress/presence-api/commit/974fe7fb86a9d85c2d671c8555da2a7288a0d2ad))
+* store no session hash on a post room's one editor row per person ([#884](https://github.com/WordPress/presence-api/issues/884)) ([83857a2](https://github.com/WordPress/presence-api/commit/83857a2346b07d460f0d85883d9cdd593b953371))
+* write wp presence set as WP-CLI's --user, and three smaller corrections ([#887](https://github.com/WordPress/presence-api/issues/887)) ([2e26f44](https://github.com/WordPress/presence-api/commit/2e26f440e171b3c11a4c7d65943eb13b1b3c9f1e))
+
+
+### Dependencies
+
+* **deps-dev:** bump @playwright/test from 1.63.0 to 1.64.1 ([#877](https://github.com/WordPress/presence-api/issues/877)) ([2302652](https://github.com/WordPress/presence-api/commit/2302652322defaabe58aaf987576b19eca24910e))
+* **deps-dev:** bump @wordpress/scripts from 36.0.0 to 36.1.0 ([#875](https://github.com/WordPress/presence-api/issues/875)) ([2605afc](https://github.com/WordPress/presence-api/commit/2605afc3991678e5d2e9327d02fda4df51f8e811))
+* **deps-dev:** bump html-validate from 11.16.1 to 11.16.2 ([#876](https://github.com/WordPress/presence-api/issues/876)) ([9527cd6](https://github.com/WordPress/presence-api/commit/9527cd6bc5a64e6b97e3776d0cda9ab1956cba02))
+* **deps-dev:** bump vite from 8.3.1 to 8.3.4 ([#879](https://github.com/WordPress/presence-api/issues/879)) ([035335f](https://github.com/WordPress/presence-api/commit/035335fa7a28c8148cd5162f79a66e6bdbed391a))
+* **deps-dev:** bump vitest from 5.0.3 to 5.0.4 ([#878](https://github.com/WordPress/presence-api/issues/878)) ([436b7f5](https://github.com/WordPress/presence-api/commit/436b7f5b1229dce6afa5674c1149cc635c305ac3))
+* **deps-dev:** update phpstan/phpstan requirement from 2.3.0 to 2.3.1 ([#874](https://github.com/WordPress/presence-api/issues/874)) ([541085c](https://github.com/WordPress/presence-api/commit/541085cfc66d889983e886276a610a6d12a743bf))
+* **deps:** bump astral-sh/setup-uv from 10.2.0 to 10.3.0 ([#881](https://github.com/WordPress/presence-api/issues/881)) ([296c4fc](https://github.com/WordPress/presence-api/commit/296c4fcca4251af91e2603b15afe84cf64ab47ea))
+* **deps:** bump shivammathur/setup-php from 2.37.2 to 2.40.0 ([#883](https://github.com/WordPress/presence-api/issues/883)) ([281e85b](https://github.com/WordPress/presence-api/commit/281e85b4e551257bdccd6994945715fa4d7e79b2))
+* **deps:** bump the codeql-action group with 3 updates ([#880](https://github.com/WordPress/presence-api/issues/880)) ([7222885](https://github.com/WordPress/presence-api/commit/722288589dd1c2be4d0ab706b025d563dc7fe404))
+
 ## [0.18.3](https://github.com/WordPress/presence-api/compare/v0.18.2...v0.18.3) (2026-10-20)
 
 
