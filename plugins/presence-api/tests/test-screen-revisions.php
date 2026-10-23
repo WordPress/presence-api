@@ -182,6 +182,7 @@ class WP_Test_Presence_Screen_Revisions extends WP_UnitTestCase {
 		unregister_setting( '', 'presence_ungrouped_setting' );
 
 		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( 'Changed via REST', get_option( 'presence_ungrouped_setting' ) );
 		$this->assertNull( wp_presence_get_screen_revision( 'options/' ) );
 	}
 
