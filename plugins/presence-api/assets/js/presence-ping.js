@@ -31,7 +31,7 @@
 
 	if ( editorRoom ) {
 		/**
-		 * Fires once, ahead of Heartbeat's first tick, so a listener can tell "presence-api isn't here" apart from "here, no tick yet".
+		 * Fires synchronously, ahead of Heartbeat's first tick, so a listener can tell "presence-api isn't here" apart from "here, no tick yet".
 		 *
 		 * @since 0.6.0
 		 *
@@ -387,7 +387,7 @@
 				 * @since 0.6.0
 				 *
 				 * @param {string} room  The editor's room.
-				 * @param {number} count How many people are in the room.
+				 * @param {number} count The room's collaborator count.
 				 */
 				wp.hooks.doAction(
 					nowHasCollaborators

@@ -383,8 +383,8 @@ if ( ! function_exists( 'wp_presence_recording_enabled' ) ) {
 	 *
 	 * The controller-level switch, checked at the single write path. Nothing new is
 	 * stored while this is false and every surface empties as the rows already
-	 * there expire, within one TTL for Heartbeat rows and wp_presence_max_expires_in()
-	 * at most, so there is no separate teardown to run.
+	 * there expire, within one TTL for Heartbeat rows and at most
+	 * wp_presence_max_expires_in() for the rest, so there is no teardown to run.
 	 *
 	 * Recording is on by default. Presence is a negative signal, and the post lock
 	 * bridge is where its absence stops two people overwriting each other, so the
