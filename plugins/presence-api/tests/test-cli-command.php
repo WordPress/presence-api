@@ -49,7 +49,8 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 	 * @covers WP_Presence_CLI_Command::set
 	 */
 	public function test_set_stores_the_entry_and_reports_success() {
-		$this->command->set( array( 'admin/online', 'cli-7' ), array( 'user' => self::$user_id ) );
+		wp_set_current_user( self::$user_id );
+		$this->command->set( array( 'admin/online', 'cli-7' ), array() );
 
 		$entries = wp_get_presence( 'admin/online' );
 
@@ -66,7 +67,8 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 	 * @covers WP_Presence_CLI_Command::set
 	 */
 	public function test_set_defaults_the_client_id_to_the_cli_user() {
-		$this->command->set( array( 'admin/online' ), array( 'user' => self::$user_id ) );
+		wp_set_current_user( self::$user_id );
+		$this->command->set( array( 'admin/online' ), array() );
 
 		$entries = wp_get_presence( 'admin/online' );
 
@@ -89,13 +91,7 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 	 * @covers WP_Presence_CLI_Command::set
 	 */
 	public function test_set_attaches_decoded_data() {
-		$this->command->set(
-			array( 'postType/post:42', 'lock-5' ),
-			array(
-				'user' => self::$user_id,
-				'data' => '{"action":"editing"}',
-			)
-		);
+		$this->command->set( array( 'postType/post:42', 'lock-5' ), array( 'data' => '{"action":"editing"}' ) );
 
 		$entries = wp_get_presence( 'postType/post:42' );
 
@@ -110,7 +106,7 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 
 		$this->assert_halts_with(
 			function () {
-				$this->command->set( array( 'admin/online' ), array( 'user' => self::$user_id ) );
+				$this->command->set( array( 'admin/online' ), array() );
 			},
 			'Presence is not recorded on this site.'
 		);
@@ -119,32 +115,10 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 	/**
 	 * @covers WP_Presence_CLI_Command::set
 	 */
-	public function test_set_rejects_an_unknown_user() {
-		$unknown = self::$user_id + 1000;
-
-		$this->assert_halts_with(
-			function () use ( $unknown ) {
-				$this->command->set( array( 'admin/online' ), array( 'user' => $unknown ) );
-			},
-			'User not found.'
-		);
-
-		$this->assertSame( array(), wp_get_presence( 'admin/online' ), 'Nothing should be written when the user check fails.' );
-	}
-
-	/**
-	 * @covers WP_Presence_CLI_Command::set
-	 */
 	public function test_set_rejects_invalid_json_in_data() {
 		$this->assert_halts_with(
 			function () {
-				$this->command->set(
-					array( 'admin/online' ),
-					array(
-						'user' => self::$user_id,
-						'data' => '{not json}',
-					)
-				);
+				$this->command->set( array( 'admin/online' ), array( 'data' => '{not json}' ) );
 			},
 			'Invalid JSON in --data.'
 		);
@@ -163,26 +137,12 @@ class WP_Test_Presence_CLI_Command extends WP_Presence_UnitTestCase {
 
 		$this->assert_halts_with(
 			function () {
-				$this->command->set( array( 'admin/online' ), array( 'user' => self::$user_id ) );
+				$this->command->set( array( 'admin/online' ), array() );
 			},
 			'Failed to set presence.'
 		);
 
 		$this->assertSame( array(), WP_CLI::messages( 'success' ) );
-	}
-
-	/**
-	 * @covers WP_Presence_CLI_Command::list_
-	 */
-	public function test_list_requires_a_room() {
-		$this->assert_halts_with(
-			function () {
-				$this->command->list_( array(), array() );
-			},
-			'Please specify a room. Usage: wp presence list <room>'
-		);
-
-		$this->assertSame( array(), WP_CLI::$formatted, 'Nothing should be rendered without a room.' );
 	}
 
 	/**

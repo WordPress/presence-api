@@ -605,6 +605,27 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 		$this->assertSame( 0, $fired, 'A no-op removal must not announce a change.' );
 	}
 
+	/**
+	 * @covers ::wp_remove_user_presence
+	 * @covers ::wp_presence_admin_room_changed
+	 */
+	public function test_remove_user_presence_outside_the_admin_room_does_not_announce_a_change() {
+		wp_set_presence( 'postType/post:1', 'tab-1', array(), array( 'user_id' => self::$editor_id ) );
+
+		$fired = 0;
+		add_action(
+			'wp_presence_admin_room_changed',
+			function () use ( &$fired ) {
+				++$fired;
+			}
+		);
+
+		wp_remove_user_presence( self::$editor_id );
+
+		$this->assertCount( 0, $this->presence_for_user( self::$editor_id ) );
+		$this->assertSame( 0, $fired, 'Only a removal from the admin room changes who is online.' );
+	}
+
 
 
 	/**

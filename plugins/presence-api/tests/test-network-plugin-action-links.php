@@ -116,7 +116,7 @@ class WP_Test_Presence_Network_Plugin_Action_Links extends WP_UnitTestCase {
 	public function test_settings_link_points_at_network_settings() {
 		$links = wp_presence_network_plugin_action_links( array() );
 
-		$this->assertSame( network_admin_url( 'settings.php' ), $this->href_of( $links[1] ) );
+		$this->assertSame( network_admin_url( 'settings.php?page=presence-api' ), $this->href_of( $links[1] ) );
 		$this->assertSame( 'Settings', wp_strip_all_tags( $links[1] ) );
 	}
 

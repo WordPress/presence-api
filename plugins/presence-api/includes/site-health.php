@@ -62,7 +62,7 @@ if ( ! function_exists( 'wp_presence_site_health_heartbeat_test' ) ) {
 
 		if ( ! wp_script_is( 'heartbeat', 'registered' ) ) {
 			/* translators: %d: Presence timeout in seconds. */
-			$problem = sprintf( __( 'Heartbeat is turned off, so Who&#8217;s Online misses anyone who has not loaded a page in the last %d seconds.', 'presence-api' ), wp_presence_get_timeout() );
+			$problem = sprintf( __( 'Heartbeat is turned off, so presence misses anyone who has not loaded a page in the last %d seconds.', 'presence-api' ), wp_presence_get_timeout() );
 		} else {
 			// Read what core already filtered for this page, so no callback runs twice.
 			$settings = preg_match( '/var heartbeatSettings = (.*);$/m', (string) wp_scripts()->get_data( 'heartbeat', 'data' ), $matches ) ? json_decode( $matches[1], true ) : array();
@@ -74,7 +74,7 @@ if ( ! function_exists( 'wp_presence_site_health_heartbeat_test' ) ) {
 			}
 
 			/* translators: %d: Longest Heartbeat interval presence tolerates, in seconds. */
-			$problem = sprintf( __( 'Heartbeat runs less often than every %d seconds, so Who&#8217;s Online drops people who stay on one screen.', 'presence-api' ), $limit );
+			$problem = sprintf( __( 'Heartbeat runs less often than every %d seconds, so presence drops people who stay on one screen.', 'presence-api' ), $limit );
 		}
 
 		$result['label']       = __( 'Heartbeat is not keeping presence current', 'presence-api' );
