@@ -42,7 +42,7 @@ if ( ! function_exists( 'wp_presence_on_logout' ) ) {
 	 */
 	function wp_presence_on_logout( $user_id ) {
 		if ( $user_id && wp_can_access_presence_room( wp_presence_admin_room(), $user_id ) ) {
-			wp_remove_user_presence( $user_id );
+			wp_remove_user_presence( $user_id, array( 'skip_reserved' => true ) );
 		}
 	}
 }

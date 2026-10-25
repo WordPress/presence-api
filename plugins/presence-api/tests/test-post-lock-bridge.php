@@ -428,6 +428,28 @@ class WP_Test_Presence_Post_Lock_Bridge extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Logging out on one device must not release a lock held in another session.
+	 *
+	 * @covers ::wp_presence_on_logout
+	 * @covers ::wp_remove_user_presence
+	 */
+	public function test_logout_does_not_release_post_lock() {
+		$post_id = self::factory()->post->create();
+
+		wp_set_current_user( self::$editor_id );
+		wp_set_post_lock( $post_id );
+
+		do_action( 'wp_logout', self::$editor_id );
+
+		wp_set_current_user( self::$other_editor_id );
+		$this->assertSame(
+			self::$editor_id,
+			wp_check_post_lock( $post_id ),
+			'A post lock must survive logout on another device.'
+		);
+	}
+
+	/**
 	 * Counts every row in the presence table, reserved rows included.
 	 *
 	 * @return int The row count.
