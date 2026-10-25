@@ -87,6 +87,25 @@ class WP_Test_Presence_Lifecycle extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * A post lock survives logout so other sessions do not lose their lock prematurely.
+	 *
+	 * @covers ::wp_presence_on_logout
+	 * @covers ::wp_remove_user_presence
+	 */
+	public function test_logout_leaves_post_locks_intact() {
+		$post_id = self::factory()->post->create();
+		wp_set_current_user( self::$editor_id );
+		wp_set_post_lock( $post_id );
+
+		wp_set_current_user( self::$subscriber_id );
+		$this->assertSame( self::$editor_id, wp_check_post_lock( $post_id ) );
+
+		wp_presence_on_logout( self::$editor_id );
+
+		$this->assertSame( self::$editor_id, wp_check_post_lock( $post_id ), 'The post lock should survive the holder logging out elsewhere.' );
+	}
+
+	/**
 	 * @covers ::wp_presence_on_user_removed
 	 */
 	public function test_deleted_user_clears_presence() {

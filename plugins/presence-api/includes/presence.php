@@ -1420,10 +1420,12 @@ if ( ! function_exists( 'wp_remove_user_presence' ) ) {
 		);
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$result = $wpdb->delete(
-			$wpdb->presence,
-			array( 'user_id' => $user_id ),
-			array( '%d' )
+		$result = $wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM {$wpdb->presence} WHERE user_id = %d AND client_id NOT LIKE %s",
+				$user_id,
+				wp_presence_reserved_client_id_pattern()
+			)
 		);
 
 		if ( $result > 0 ) {
