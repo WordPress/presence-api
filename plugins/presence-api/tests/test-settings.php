@@ -94,4 +94,37 @@ class WP_Test_Presence_Settings extends WP_Presence_UnitTestCase {
 
 		$this->assertTrue( (bool) get_site_option( 'wp_presence_network_recording' ) );
 	}
+
+	/**
+	 * Truthy values must sanitize to '1' so the option stores a consistent string.
+	 *
+	 * @covers ::wp_presence_sanitize_checkbox
+	 */
+	public function test_sanitize_checkbox_returns_one_for_truthy_values() {
+		$this->assertSame( '1', wp_presence_sanitize_checkbox( '1' ) );
+		$this->assertSame( '1', wp_presence_sanitize_checkbox( 1 ) );
+		$this->assertSame( '1', wp_presence_sanitize_checkbox( true ) );
+	}
+
+	/**
+	 * Falsy values must sanitize to '0'.
+	 *
+	 * @covers ::wp_presence_sanitize_checkbox
+	 */
+	public function test_sanitize_checkbox_returns_zero_for_falsy_values() {
+		$this->assertSame( '0', wp_presence_sanitize_checkbox( '' ) );
+		$this->assertSame( '0', wp_presence_sanitize_checkbox( false ) );
+		$this->assertSame( '0', wp_presence_sanitize_checkbox( null ) );
+	}
+
+	/**
+	 * The string '0' is falsy in PHP (special-cased unlike other non-empty strings),
+	 * so the hidden input that posts value="0" when the checkbox is unchecked is
+	 * sanitized correctly to '0'.
+	 *
+	 * @covers ::wp_presence_sanitize_checkbox
+	 */
+	public function test_sanitize_checkbox_treats_string_zero_as_falsy() {
+		$this->assertSame( '0', wp_presence_sanitize_checkbox( '0' ) );
+	}
 }

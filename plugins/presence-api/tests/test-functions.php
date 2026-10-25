@@ -796,6 +796,40 @@ class WP_Test_Presence_Functions extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Filtering either limit to below 1 must disable cleanup for that run to
+	 * prevent runaway deletes when a site misconfigures the filters.
+	 *
+	 * @covers ::wp_delete_expired_presence_data
+	 */
+	public function test_cleanup_is_skipped_when_batch_size_is_zero() {
+		global $wpdb;
+
+		wp_set_presence( 'test/room', 'old-client', array(), array( 'user_id' => self::$editor_id ) );
+		$wpdb->update(
+			$wpdb->presence,
+			array(
+				'date_gmt'    => gmdate( 'Y-m-d H:i:s', time() - WP_PRESENCE_DEFAULT_TTL - MINUTE_IN_SECONDS ),
+				'expires_gmt' => gmdate( 'Y-m-d H:i:s', time() - MINUTE_IN_SECONDS ),
+			),
+			array( 'client_id' => 'old-client' ),
+			array( '%s', '%s' ),
+			array( '%s' )
+		);
+
+		$zero = static function () {
+			return 0;
+		};
+		add_filter( 'wp_presence_cleanup_batch_size', $zero );
+
+		wp_delete_expired_presence_data();
+		$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->presence} WHERE client_id = 'old-client'" );
+
+		remove_filter( 'wp_presence_cleanup_batch_size', $zero );
+
+		$this->assertSame( 1, $count, 'Expired rows must survive when batch_size is filtered to 0.' );
+	}
+
+	/**
 	 * @covers ::wp_set_presence
 	 */
 	public function test_multiple_clients_in_room() {
