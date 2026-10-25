@@ -254,7 +254,7 @@ if ( ! function_exists( 'wp_presence_personal_data_eraser' ) ) {
 			return $response;
 		}
 
-		if ( wp_remove_user_presence( $user->ID ) ) {
+		if ( wp_remove_user_presence( $user->ID, true ) ) {
 			$response['items_removed'] = true;
 		} else {
 			$response['items_retained'] = true;

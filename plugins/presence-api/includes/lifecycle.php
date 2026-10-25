@@ -61,6 +61,6 @@ if ( ! function_exists( 'wp_presence_on_user_removed' ) ) {
 	 * @param int $user_id The ID of the user being deleted or removed.
 	 */
 	function wp_presence_on_user_removed( $user_id ) {
-		wp_remove_user_presence( $user_id );
+		wp_remove_user_presence( $user_id, true );
 	}
 }
