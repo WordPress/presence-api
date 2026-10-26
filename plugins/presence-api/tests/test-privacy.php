@@ -294,4 +294,28 @@ class WP_Test_Presence_Privacy extends WP_Presence_UnitTestCase {
 		$this->assertTrue( $response['items_retained'] );
 		$this->assertContains( 'Presence could not be deleted.', $response['messages'] );
 	}
+
+	/**
+	 * A post-lock row is bookkeeping, not participant presence; it must not appear in the export.
+	 *
+	 * @covers ::wp_presence_get_rows_for_user
+	 * @covers ::wp_presence_personal_data_exporter
+	 */
+	public function test_post_lock_row_does_not_appear_in_export() {
+		require_once ABSPATH . 'wp-admin/includes/post.php';
+
+		$post_id = self::factory()->post->create();
+
+		wp_set_current_user( self::$editor_id );
+		wp_set_post_lock( $post_id );
+
+		$export = wp_presence_personal_data_exporter( 'editor@presence.test' );
+		$values = wp_list_pluck( $export['data'][0]['data'], 'value' );
+
+		$this->assertNotContains(
+			'postType/post:' . $post_id,
+			$values,
+			'The raw room name from the _lock bookkeeping row must not reach the export.'
+		);
+	}
 }
