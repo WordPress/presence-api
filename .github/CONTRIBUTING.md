@@ -145,11 +145,11 @@ JavaScript has no `@since` line to sit under, so `@private` on its own is enough
 
 ```js
 /**
- * Builds an avatar stack.
+ * Creates a tab coordinator shared by the classic scripts and src/.
  *
  * @private
  */
-window.wpPresenceBuildAvatarStack = function ( users, max ) {};
+window.wpPresenceCreateTabCoordinator = function ( key, options ) {};
 ```
 
 </details>
@@ -167,7 +167,7 @@ Linking late still counts. Release props are assembled when the release goes out
 
 ## Releases
 
-Releases are automated by [release-please](https://github.com/googleapis/release-please). Use [Conventional Commits](https://www.conventionalcommits.org/) in the pull request title — release-please reads it to decide the next version and to generate the changelog:
+Releases are automated by [release-please](https://github.com/googleapis/release-please). Use [Conventional Commits](https://www.conventionalcommits.org/) in the pull request title, which release-please reads to decide the next version and to generate the changelog:
 
 - `feat: ...` → minor bump
 - `fix: ...` → patch bump

@@ -96,7 +96,7 @@ class WP_Presence_Widget_Active_Posts {
 					break;
 				}
 			}
-			// Only show status when it differs — "Idle" is the signal.
+			// Only show status when it differs, since "Idle" is the signal.
 			// Active is the default state; labeling it adds noise.
 			$status_label = $any_active ? '' : __( 'Idle', 'presence-api' );
 
@@ -134,8 +134,8 @@ class WP_Presence_Widget_Active_Posts {
 
 	/**
 	 * Suffixes a display name to mark it as an agent's, everywhere this widget
-	 * names one in plain text rather than through wp_presence_render_agent_badge()
-	 * — every editor_label string is passed through esc_html(), which would
+	 * names one in plain text rather than through wp_presence_render_agent_badge(),
+	 * since every editor_label string is passed through esc_html(), which would
 	 * strip that badge's markup.
 	 *
 	 * @since 0.9.0

@@ -27,6 +27,7 @@ function wp_presence_uninstall_site() {
 	$wpdb->query( "DROP TABLE IF EXISTS {$table}" );
 
 	delete_option( 'wp_presence_db_version' );
+	delete_option( 'wp_presence_table.lock' );
 	delete_option( 'wp_presence_recording' );
 	delete_option( 'wp_presence_features' );
 	delete_option( 'wp_presence_screen_revisions' );

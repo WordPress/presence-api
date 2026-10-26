@@ -29,9 +29,14 @@
 			? window.location.search
 			: '';
 
-	// Fired synchronously, ahead of Heartbeat's first tick, so a listener can
-	// tell "presence-api isn't here" apart from "here, no tick yet."
 	if ( editorRoom ) {
+		/**
+		 * Fires synchronously, before Heartbeat's first tick, so a listener can tell "presence-api isn't here" from "here, no tick yet".
+		 *
+		 * @since 0.6.0
+		 *
+		 * @param {string} room The editor's room.
+		 */
 		wp.hooks.doAction( 'presence-api.watchingRoom', editorRoom );
 	}
 
@@ -91,11 +96,6 @@
 	const RELAYED_TICK_KEYS = [
 		'presence-online-hash',
 		'presence-online-unchanged',
-		'presence-heartbeat-users',
-		'presence-heartbeat-entries',
-		'presence-heartbeat-query-ms',
-		'presence-heartbeat-ttl',
-		'presence-heartbeat-room-list',
 		'presence-heartbeat-collaborators',
 		'presence-fragments',
 	];
@@ -240,7 +240,8 @@
 			// window, app switched away) so the existing entries expire via
 			// the default TTL. One early-return suppresses both presence-ping
 			// and presence-editor-ping, since the consolidated handler emits
-			// both.
+			// both. Core's lock refresh goes too, or core would keep the hidden
+			// tab's lock alive and the post-lock bridge its editor row.
 			if ( document.visibilityState === 'hidden' ) {
 				delete data[ 'wp-refresh-post-lock' ];
 				return;
@@ -375,6 +376,14 @@
 				}
 
 				hasCollaborators = nowHasCollaborators;
+				/**
+				 * Fires `presence-api.collaborationStarted` when a second person joins the editor's room, and `presence-api.collaborationEnded` when one is left.
+				 *
+				 * @since 0.6.0
+				 *
+				 * @param {string} room  The editor's room.
+				 * @param {number} count How many editors are in the room, you included.
+				 */
 				wp.hooks.doAction(
 					nowHasCollaborators
 						? 'presence-api.collaborationStarted'

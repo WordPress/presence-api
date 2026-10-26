@@ -116,6 +116,23 @@ describe( 'subscribeToPresencePolling', () => {
 		expect( apiFetch ).toHaveBeenCalledTimes( 1 );
 	} );
 
+	it( 'aborts a request still in flight when the last subscriber leaves', async () => {
+		apiFetch.mockReturnValue( new Promise( () => {} ) );
+
+		const unsubscribe = subscribeToPresencePolling(
+			'room-in-flight',
+			'user_id',
+			vi.fn()
+		);
+		await flush();
+
+		const { signal } = apiFetch.mock.calls[ 0 ][ 0 ];
+		expect( signal.aborted ).toBe( false );
+
+		unsubscribe();
+		expect( signal.aborted ).toBe( true );
+	} );
+
 	it( 'does not call apiFetch until this tab wins the Web Lock', async () => {
 		let grantLock;
 		global.navigator.locks = {
