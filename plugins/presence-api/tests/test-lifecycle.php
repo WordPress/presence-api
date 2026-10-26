@@ -87,6 +87,20 @@ class WP_Test_Presence_Lifecycle extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * WordPress fires wp_logout with the user's ID, but a zero falls through the
+	 * guard silently rather than touching rows for user 0 or the current user.
+	 *
+	 * @covers ::wp_presence_on_logout
+	 */
+	public function test_logout_guard_silently_skips_user_id_zero() {
+		wp_set_presence( 'admin/online', 'user-' . self::$editor_id, array(), array( 'user_id' => self::$editor_id ) );
+
+		wp_presence_on_logout( 0 );
+
+		$this->assertCount( 1, $this->presence_for_user( self::$editor_id ), 'A zero user ID must not remove any presence rows.' );
+	}
+
+	/**
 	 * @covers ::wp_presence_on_user_removed
 	 */
 	public function test_deleted_user_clears_presence() {
