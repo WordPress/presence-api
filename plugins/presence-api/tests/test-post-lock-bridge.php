@@ -428,6 +428,45 @@ class WP_Test_Presence_Post_Lock_Bridge extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * Logging out on one device must not release a lock held in another session.
+	 *
+	 * @covers ::wp_presence_on_logout
+	 * @covers ::wp_remove_user_presence
+	 */
+	public function test_logout_does_not_release_post_lock() {
+		$post_id = self::factory()->post->create();
+
+		wp_set_current_user( self::$editor_id );
+		wp_set_post_lock( $post_id );
+
+		do_action( 'wp_logout', self::$editor_id );
+
+		wp_set_current_user( self::$other_editor_id );
+		$this->assertSame(
+			self::$editor_id,
+			wp_check_post_lock( $post_id ),
+			'A post lock must survive logout on another device.'
+		);
+	}
+
+	/**
+	 * Without `skip_reserved`, removing a user still releases their locks, as the eraser and user deletion rely on.
+	 *
+	 * @covers ::wp_remove_user_presence
+	 */
+	public function test_removing_a_user_releases_their_post_lock_by_default() {
+		$post_id = self::factory()->post->create();
+
+		wp_set_current_user( self::$editor_id );
+		wp_set_post_lock( $post_id );
+
+		wp_remove_user_presence( self::$editor_id );
+
+		wp_set_current_user( self::$other_editor_id );
+		$this->assertFalse( wp_check_post_lock( $post_id ) );
+	}
+
+	/**
 	 * Counts every row in the presence table, reserved rows included.
 	 *
 	 * @return int The row count.

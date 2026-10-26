@@ -85,11 +85,14 @@ if ( ! function_exists( 'wp_presence_get_rows_for_user' ) ) {
 		}
 
 		// Presence changes on every heartbeat, so a cached read would be stale.
+		// Bookkeeping rows (client_id starting with the reserved prefix) are internal
+		// infrastructure, not participant presence, so they are excluded from the export.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		return $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT room, session_hash, data, date_gmt FROM {$wpdb->presence} WHERE user_id = %d ORDER BY date_gmt DESC",
-				$user_id
+				"SELECT room, session_hash, data, date_gmt FROM {$wpdb->presence} WHERE user_id = %d AND client_id NOT LIKE %s ORDER BY date_gmt DESC",
+				$user_id,
+				wp_presence_reserved_client_id_pattern()
 			)
 		);
 	}

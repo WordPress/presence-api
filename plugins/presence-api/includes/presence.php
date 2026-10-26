@@ -1398,16 +1398,27 @@ if ( ! function_exists( 'wp_remove_user_presence' ) ) {
 	 * @since 0.15.0 Fires the `removed_user_presence` action.
 	 * @since 0.18.0 Bumps the version of every room it removes a row from.
 	 * @since 0.18.4 Fires `wp_presence_admin_room_changed` only if the user had an admin room row.
+	 * @since 0.18.4 Added the `$args` parameter.
 	 *
-	 * @param int $user_id The user ID.
+	 * @param int          $user_id The user ID.
+	 * @param array|string $args {
+	 *     Optional. Array or string of arguments for the removal.
+	 *
+	 *     @type bool $skip_reserved Whether to leave reserved rows, such as post locks, in place. Default false.
+	 * }
 	 * @return bool True on success, false on failure.
 	 */
-	function wp_remove_user_presence( $user_id ) {
+	function wp_remove_user_presence( $user_id, $args = array() ) {
 		global $wpdb;
 
 		if ( ! wp_presence_has_table() ) {
 			return false;
 		}
+
+		$defaults    = array(
+			'skip_reserved' => false,
+		);
+		$parsed_args = wp_parse_args( $args, $defaults );
 
 		// Read before the delete, which leaves nothing to say which rooms lost a row.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -1419,12 +1430,23 @@ if ( ! function_exists( 'wp_remove_user_presence' ) ) {
 			)
 		);
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$result = $wpdb->delete(
-			$wpdb->presence,
-			array( 'user_id' => $user_id ),
-			array( '%d' )
-		);
+		if ( $parsed_args['skip_reserved'] ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$result = $wpdb->query(
+				$wpdb->prepare(
+					"DELETE FROM {$wpdb->presence} WHERE user_id = %d AND client_id NOT LIKE %s",
+					$user_id,
+					wp_presence_reserved_client_id_pattern()
+				)
+			);
+		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$result = $wpdb->delete(
+				$wpdb->presence,
+				array( 'user_id' => $user_id ),
+				array( '%d' )
+			);
+		}
 
 		if ( $result > 0 ) {
 			wp_cache_set_last_changed( 'presence' );

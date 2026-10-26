@@ -1,9 +1,9 @@
 === Presence API ===
-Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas, aldorza, bejignesh, stfulldev, obenland, moriikuri, ishitaj34, theaminuldev, muneebashraf, mindctrl, zahidui, mitgiselle, jaredrethman, jooahmed, noruzzaman, huzaifaalmesbah, rejaulalomkhan, bosskhj
+Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas, aldorza, bejignesh, stfulldev, obenland, moriikuri, ishitaj34, theaminuldev, muneebashraf, mindctrl, zahidui, mitgiselle, jaredrethman, jooahmed, noruzzaman, huzaifaalmesbah, rejaulalomkhan, bosskhj, hmbashar, devmuhib
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.1
-Stable tag: 0.18.3
+Stable tag: 0.18.4
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -79,6 +79,13 @@ For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/presence-api/blob/main/CHANGELOG.md
 
+= 0.18.4 =
+* Clear the cleanup cron event on plugin uninstall ([#872](https://github.com/WordPress/presence-api/issues/872)).
+* Preserve post locks on logout from another session ([#893](https://github.com/WordPress/presence-api/issues/893)).
+* Exclude reserved rows from personal data export ([#896](https://github.com/WordPress/presence-api/issues/896)).
+* Store no session hash on a post room's one editor row per person ([#884](https://github.com/WordPress/presence-api/issues/884)).
+* Write wp presence set as WP-CLI's --user, and three smaller corrections ([#887](https://github.com/WordPress/presence-api/issues/887)).
+
 = 0.18.3 =
 * Guard the functions in the six files core would ship in separate tickets ([#861](https://github.com/WordPress/presence-api/issues/861)).
 * Leave a presence table from an older schema alone until it is upgraded ([#866](https://github.com/WordPress/presence-api/issues/866)).
@@ -99,9 +106,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 * Return WP_Error with specific refusal codes when presence write fails ([#792](https://github.com/WordPress/presence-api/issues/792)).
 * Tell a second browser from a second tab with a per-room session hash ([#815](https://github.com/WordPress/presence-api/issues/815)).
 * Cap the heartbeat ping's title and screen before storing them ([#816](https://github.com/WordPress/presence-api/issues/816)).
-
-= 0.17.0 =
-* Let a network switch off the network admin screens ([#788](https://github.com/WordPress/presence-api/issues/788)).
-* Let a site switch off the Active Posts dashboard widget ([#774](https://github.com/WordPress/presence-api/issues/774)).
-* Show who else is editing a synced pattern on its block ([#779](https://github.com/WordPress/presence-api/issues/779)).
-* Take an $args array in the presence functions ([#789](https://github.com/WordPress/presence-api/issues/789)).
