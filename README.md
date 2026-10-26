@@ -176,6 +176,9 @@ $expiry   = wp_get_presence_room_next_expiry( $rooms ); // array( $room => 'Y-m-
 // Remove all presence entries for a user across all rooms.
 wp_remove_user_presence( $user_id );
 
+// The same, but keeping their post locks, as logout does.
+wp_remove_user_presence( $user_id, array( 'skip_reserved' => true ) );
+
 // Which browser this request comes from, as seen from one room; see session_hash below.
 $session_hash = wp_presence_session_hash( $room, $client_id = '' );
 
@@ -431,7 +434,7 @@ add_action( 'removed_presence', function( $room, $client_id ) {
 ```
 
 #### `removed_user_presence`
-Fires once after `wp_remove_user_presence()` deletes a user's rows across every room, such as on logout. It does not fire `removed_presence` for each row.
+Fires once after `wp_remove_user_presence()` deletes a user's rows, such as on logout. It does not fire `removed_presence` for each row.
 ```php
 add_action( 'removed_user_presence', function( $user_id ) {
     // Drop anything cached for this user.
