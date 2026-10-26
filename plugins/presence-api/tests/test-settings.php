@@ -92,6 +92,6 @@ class WP_Test_Presence_Settings extends WP_Presence_UnitTestCase {
 
 		wp_presence_save_network_settings();
 
-		$this->assertTrue( (bool) get_site_option( 'wp_presence_network_recording' ) );
+		$this->assertSame( '1', get_site_option( 'wp_presence_network_recording' ), 'A checked box should store the string 1.' );
 	}
 }
