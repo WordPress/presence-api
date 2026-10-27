@@ -475,6 +475,8 @@
 		}
 	} );
 
+	let roomChangedSinceSend = false;
+
 	/**
 	 * Fire `presence-api.roomChanged` to refresh presence now instead of on the next Heartbeat tick, such as when a push transport hears a room change.
 	 *
@@ -482,7 +484,28 @@
 	 *
 	 * @param {string} room The room that changed.
 	 */
-	wp.hooks.addAction( 'presence-api.roomChanged', 'presence-api', tickNow );
+	wp.hooks.addAction(
+		'presence-api.roomChanged',
+		'presence-api',
+		function () {
+			// A hidden tab sends no presence and ticks when it is shown again.
+			if ( document.visibilityState === 'hidden' ) {
+				return;
+			}
+			roomChangedSinceSend = true;
+			tickNow();
+		}
+	);
+
+	// Core drops a connectNow() while a request is in flight, which may have read the room before the change.
+	$( document ).on( 'heartbeat-send', function () {
+		roomChangedSinceSend = false;
+	} );
+	$( document ).on( 'heartbeat-tick', function () {
+		if ( roomChangedSinceSend ) {
+			tickNow();
+		}
+	} );
 
 	window.addEventListener( 'pagehide', function () {
 		leave();
