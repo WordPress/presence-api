@@ -139,6 +139,11 @@ jobs:
         env:
           BROWSER: ${{ matrix.browser }}
 
+      # Every leg tests the development site, so the root config's separate tests environment would only add two containers to boot.
+      - name: Skip the tests environment
+        run: |
+          echo '{ "testsEnvironment": false }' > .wp-env.override.json
+
       # The Playwright config declares a `webServer` that would start wp-env on
       # demand, but starting it here keeps a boot failure in its own step
       # instead of buried in Playwright's server output. `reuseExistingServer`

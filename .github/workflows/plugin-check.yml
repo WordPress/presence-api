@@ -42,7 +42,7 @@ jobs:
       - name: Configure wp-env to mount built plugin
         run: |
           cat > .wp-env.override.json <<'JSON'
-          { "plugins": [ "./build/presence-api" ] }
+          { "plugins": [ "./build/presence-api" ], "testsEnvironment": false }
           JSON
 
       - run: npx wp-env start

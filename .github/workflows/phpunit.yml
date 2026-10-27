@@ -50,6 +50,11 @@ jobs:
       - name: Install Composer dependencies
         if: ${{ inputs.should-run }}
         run: composer install --no-interaction
+      # PHPUnit runs in `cli`, so the separate tests environment would only add two containers to boot.
+      - name: Skip the tests environment
+        if: ${{ inputs.should-run }}
+        run: |
+          echo '{ "testsEnvironment": false }' > .wp-env.override.json
       - name: Start wp-env (retry on transient failures)
         if: ${{ inputs.should-run }}
         run: |
@@ -66,7 +71,7 @@ jobs:
         env:
           WP_ENV_PHP_VERSION: ${{ matrix.php }}
           WP_ENV_CORE: ${{ matrix.core }}
-      - run: npx wp-env run tests-cli --env-cwd='presence-api' -- ./vendor/bin/phpunit ${{ matrix.coverage && '--coverage-clover coverage.xml' || '' }}
+      - run: npx wp-env run cli --env-cwd='presence-api' -- ./vendor/bin/phpunit ${{ matrix.coverage && '--coverage-clover coverage.xml' || '' }}
         if: ${{ inputs.should-run }}
       - name: Upload coverage to Codecov
         if: ${{ inputs.should-run && matrix.coverage }}
@@ -90,7 +95,7 @@ jobs:
       # prints "Running as single site..." and this report adds nothing.
       - name: Run the suite as multisite
         if: ${{ inputs.should-run && matrix.coverage }}
-        run: npx wp-env run tests-cli --env-cwd='presence-api' -- env WP_MULTISITE=1 ./vendor/bin/phpunit --coverage-clover coverage-multisite.xml
+        run: npx wp-env run cli --env-cwd='presence-api' -- env WP_MULTISITE=1 ./vendor/bin/phpunit --coverage-clover coverage-multisite.xml
       - name: Upload multisite coverage to Codecov
         if: ${{ inputs.should-run && matrix.coverage }}
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
@@ -117,6 +122,9 @@ jobs:
         run: composer config --global --auth github-oauth.github.com '${{ secrets.GITHUB_TOKEN }}'
       - name: Install Composer dependencies
         run: composer install --no-interaction
+      - name: Skip the tests environment
+        run: |
+          echo '{ "testsEnvironment": false }' > .wp-env.override.json
       - name: Start wp-env (retry on transient failures)
         run: |
           for attempt in 1 2 3; do
@@ -134,6 +142,6 @@ jobs:
       # Same drop-in setup as the SQLite integration's own wp-setup.sh, which is what Playground runs on.
       - name: Swap the test database for SQLite
         run: |
-          npx wp-env run tests-cli -- wp plugin install sqlite-database-integration
-          npx wp-env run tests-cli -- sh -c "sed -e \"s#'{SQLITE_IMPLEMENTATION_FOLDER_PATH}'#__DIR__ . '/plugins/sqlite-database-integration'#\" -e 's#{SQLITE_PLUGIN}#sqlite-database-integration/load.php#g' wp-content/plugins/sqlite-database-integration/db.copy > wp-content/db.php"
-      - run: npx wp-env run tests-cli --env-cwd='presence-api' -- ./vendor/bin/phpunit
+          npx wp-env run cli -- wp plugin install sqlite-database-integration
+          npx wp-env run cli -- sh -c "sed -e \"s#'{SQLITE_IMPLEMENTATION_FOLDER_PATH}'#__DIR__ . '/plugins/sqlite-database-integration'#\" -e 's#{SQLITE_PLUGIN}#sqlite-database-integration/load.php#g' wp-content/plugins/sqlite-database-integration/db.copy > wp-content/db.php"
+      - run: npx wp-env run cli --env-cwd='presence-api' -- ./vendor/bin/phpunit
