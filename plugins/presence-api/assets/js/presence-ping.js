@@ -488,8 +488,11 @@
 		'presence-api.roomChanged',
 		'presence-api',
 		function () {
-			// A hidden tab sends no presence and ticks when it is shown again.
-			if ( document.visibilityState === 'hidden' ) {
+			// Followers get the leader's answer replayed, and a hidden tab ticks when it is shown again.
+			if (
+				document.visibilityState === 'hidden' ||
+				! tabCoordinator.isLeader()
+			) {
 				return;
 			}
 			roomChangedSinceSend = true;

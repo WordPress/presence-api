@@ -47,11 +47,13 @@ function createHooks() {
 }
 
 /**
- * Loads presence-ping.js against a fake jQuery bus and a leader coordinator.
+ * Loads presence-ping.js against a fake jQuery bus and a tab coordinator.
  *
+ * @param {Object}  options          Options.
+ * @param {boolean} options.isLeader Whether this tab leads. Default true.
  * @return {Object} The hooks instance the script registered against.
  */
-function loadPing() {
+function loadPing( { isLeader = true } = {} ) {
 	listeners = {};
 	const hooks = createHooks();
 
@@ -74,7 +76,9 @@ function loadPing() {
 	};
 	window.pagenow = 'dashboard';
 	window.wpPresenceConfig = {};
-	window.wpPresenceCreateTabCoordinator = () => ( { isLeader: () => true } );
+	window.wpPresenceCreateTabCoordinator = () => ( {
+		isLeader: () => isLeader,
+	} );
 	global.jQuery = $;
 
 	new Function( PRESENCE_PING )();
@@ -207,6 +211,15 @@ describe( 'live surfaces', () => {
 		trigger( 'heartbeat-send', {} );
 		trigger( 'heartbeat-tick', {} );
 		expect( connectNow ).toHaveBeenCalledTimes( 2 );
+	} );
+
+	it( 'leaves roomChanged to the leader tab', () => {
+		const hooks = loadPing( { isLeader: false } );
+		const connectNow = vi.spyOn( global.wp.heartbeat, 'connectNow' );
+
+		hooks.doAction( 'presence-api.roomChanged', 'admin/online' );
+
+		expect( connectNow ).not.toHaveBeenCalled();
 	} );
 
 	it( 'leaves roomChanged to the visibility handler in a hidden tab', () => {
