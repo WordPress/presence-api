@@ -51,9 +51,10 @@ function createHooks() {
  *
  * @param {Object}  options          Options.
  * @param {boolean} options.isLeader Whether this tab leads. Default true.
+ * @param {Object}  options.config   What the page localizes as wpPresenceConfig.
  * @return {Object} The hooks instance the script registered against.
  */
-function loadPing( { isLeader = true } = {} ) {
+function loadPing( { isLeader = true, config = {} } = {} ) {
 	listeners = {};
 	const hooks = createHooks();
 
@@ -75,7 +76,7 @@ function loadPing( { isLeader = true } = {} ) {
 		heartbeat: { interval: () => 15, connectNow() {} },
 	};
 	window.pagenow = 'dashboard';
-	window.wpPresenceConfig = {};
+	window.wpPresenceConfig = config;
 	window.wpPresenceCreateTabCoordinator = () => ( {
 		isLeader: () => isLeader,
 	} );
@@ -101,6 +102,7 @@ function send() {
 describe( 'live surfaces', () => {
 	afterEach( () => {
 		vi.restoreAllMocks();
+		vi.unstubAllGlobals();
 		document.body.innerHTML = '';
 		delete global.wp;
 		delete global.jQuery;
