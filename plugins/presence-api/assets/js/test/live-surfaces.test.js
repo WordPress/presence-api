@@ -28,6 +28,11 @@ function createHooks() {
 	return {
 		addFilter( name, namespace, callback ) {
 			( filters[ name ] = filters[ name ] || [] ).push( callback );
+			this.doAction( 'hookAdded', name );
+		},
+		removeFilter( name ) {
+			delete filters[ name ];
+			this.doAction( 'hookRemoved', name );
 		},
 		addAction( name, namespace, callback ) {
 			( actions[ name ] = actions[ name ] || [] ).push( callback );
@@ -198,6 +203,24 @@ describe( 'live surfaces', () => {
 			post_id: 5,
 			keepalive: false,
 		} );
+		expect( fetch ).not.toHaveBeenCalled();
+	} );
+
+	it( 'skips the unload DELETE when the transport drops before pagehide', () => {
+		const hooks = loadPing( {
+			config: {
+				restUrl: 'https://example.test/wp-json/wp/v2/presence',
+				entries: [ { room: 'admin/online', client_id: 'user-1' } ],
+			},
+		} );
+		const fetch = vi.fn();
+		vi.stubGlobal( 'fetch', fetch );
+		hooks.addFilter( 'presence-api.keepalive', 'test', () => false );
+
+		// Chrome closes the connection first, and the transport removes its filter.
+		hooks.removeFilter( 'presence-api.keepalive', 'test' );
+		window.dispatchEvent( new Event( 'pagehide' ) );
+
 		expect( fetch ).not.toHaveBeenCalled();
 	} );
 

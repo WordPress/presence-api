@@ -168,6 +168,9 @@
 		);
 	}
 
+	// Remembered while the page is alive, since a browser can close a transport's connection before pagehide.
+	let heldByTransport = false;
+
 	function keepsAlive() {
 		/**
 		 * Filters whether this tab keeps its own presence rows alive over Heartbeat.
@@ -178,8 +181,20 @@
 		 *
 		 * @param {boolean} keepalive Whether to keep the rows alive. Default true.
 		 */
-		return wp.hooks.applyFilters( 'presence-api.keepalive', true );
+		const keepalive = wp.hooks.applyFilters(
+			'presence-api.keepalive',
+			true
+		);
+		heldByTransport = ! keepalive;
+		return keepalive;
 	}
+
+	// A transport that connects after the first tick adds its filter then; removal is left to the next tick, since a transport often removes it while the page unloads.
+	wp.hooks.addAction( 'hookAdded', 'presence-api', function ( hookName ) {
+		if ( hookName === 'presence-api.keepalive' ) {
+			keepsAlive();
+		}
+	} );
 
 	const lastFragments = {};
 
@@ -249,6 +264,9 @@
 	// Defer registration to document ready to ensure it runs after WP Core's post.js handler.
 	$( function () {
 		$( document ).on( 'heartbeat-send', function ( event, data ) {
+			// Every tab reads it, hidden or following, so its own unload knows.
+			keepsAlive();
+
 			// Skip while the document is hidden (background tab, minimized
 			// window, app switched away) so the existing entries expire via
 			// the default TTL. One early-return suppresses both presence-ping
@@ -266,13 +284,12 @@
 				return;
 			}
 
-			const keepalive = keepsAlive();
 			const ping = {
 				screen: window.pagenow || 'front',
 				token: config.screenToken || '',
 			};
 			// Both pings still go, since live surfaces, the idle backoff and the collaborator count read the room through them.
-			if ( ! keepalive ) {
+			if ( heldByTransport ) {
 				ping.keepalive = false;
 			}
 			if ( pageContext ) {
@@ -304,7 +321,7 @@
 			const postId = editorPostId || siteEditorPostId();
 			if ( postId ) {
 				data[ 'presence-editor-ping' ] = { post_id: postId };
-				if ( ! keepalive ) {
+				if ( heldByTransport ) {
 					data[ 'presence-editor-ping' ].keepalive = false;
 				}
 			}
@@ -442,7 +459,7 @@
 	} );
 
 	function leave() {
-		if ( hasLeft || ! restUrl || ! entries.length || ! keepsAlive() ) {
+		if ( hasLeft || ! restUrl || ! entries.length || heldByTransport ) {
 			return;
 		}
 		hasLeft = true;
