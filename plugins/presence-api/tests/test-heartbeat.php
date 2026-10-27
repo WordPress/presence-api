@@ -133,8 +133,6 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * jQuery posts a false as the string "false".
-	 *
 	 * @covers ::wp_presence_admin_heartbeat_received
 	 * @covers ::wp_presence_ping_keeps_alive
 	 */
