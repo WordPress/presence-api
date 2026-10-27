@@ -47,12 +47,14 @@ function createHooks() {
 }
 
 /**
- * Loads presence-ping.js against a fake jQuery bus and a leader coordinator.
+ * Loads presence-ping.js against a fake jQuery bus and a tab coordinator.
  *
- * @param {Object} config Optional. What the page localizes as wpPresenceConfig.
+ * @param {Object}  options          Options.
+ * @param {boolean} options.isLeader Whether this tab leads. Default true.
+ * @param {Object}  options.config   What the page localizes as wpPresenceConfig.
  * @return {Object} The hooks instance the script registered against.
  */
-function loadPing( config = {} ) {
+function loadPing( { isLeader = true, config = {} } = {} ) {
 	listeners = {};
 	const hooks = createHooks();
 
@@ -75,7 +77,9 @@ function loadPing( config = {} ) {
 	};
 	window.pagenow = 'dashboard';
 	window.wpPresenceConfig = config;
-	window.wpPresenceCreateTabCoordinator = () => ( { isLeader: () => true } );
+	window.wpPresenceCreateTabCoordinator = () => ( {
+		isLeader: () => isLeader,
+	} );
 	global.jQuery = $;
 
 	new Function( PRESENCE_PING )();
@@ -97,6 +101,7 @@ function send() {
 
 describe( 'live surfaces', () => {
 	afterEach( () => {
+		vi.restoreAllMocks();
 		vi.unstubAllGlobals();
 		document.body.innerHTML = '';
 		delete global.wp;
@@ -172,6 +177,30 @@ describe( 'live surfaces', () => {
 		expect( lengths[ 0 ] ).toBe( lengths[ 1 ] );
 	} );
 
+	it( 'flags both pings and skips the unload DELETE while a transport holds the rows', () => {
+		const hooks = loadPing( {
+			config: {
+				editorPostId: 5,
+				restUrl: 'https://example.test/wp-json/wp/v2/presence',
+				entries: [ { room: 'admin/online', client_id: 'user-1' } ],
+			},
+		} );
+		hooks.addFilter( 'presence-api.keepalive', 'test', () => false );
+		const fetch = vi.fn();
+		vi.stubGlobal( 'fetch', fetch );
+
+		const data = {};
+		trigger( 'heartbeat-send', data );
+		window.dispatchEvent( new Event( 'pagehide' ) );
+
+		expect( data[ 'presence-ping' ].keepalive ).toBe( false );
+		expect( data[ 'presence-editor-ping' ] ).toEqual( {
+			post_id: 5,
+			keepalive: false,
+		} );
+		expect( fetch ).not.toHaveBeenCalled();
+	} );
+
 	it( 'closes the admin bar menu once Tab leaves it, so it refreshes again', () => {
 		document.body.innerHTML =
 			'<ul><li id="wp-admin-bar-presence-online" class="menupop hover"><a class="ab-item" href="#">2 online</a><div class="ab-sub-wrapper"><div class="ab-item" tabindex="0">Ada</div></div></li></ul><button>Help</button>';
@@ -192,27 +221,5 @@ describe( 'live surfaces', () => {
 			},
 		} );
 		expect( node.textContent ).toBe( '3 online' );
-	} );
-
-	it( 'flags both pings and skips the unload DELETE while a transport holds the rows', () => {
-		const hooks = loadPing( {
-			editorPostId: 5,
-			restUrl: 'https://example.test/wp-json/wp/v2/presence',
-			entries: [ { room: 'admin/online', client_id: 'user-1' } ],
-		} );
-		hooks.addFilter( 'presence-api.keepalive', 'test', () => false );
-		const fetch = vi.fn();
-		vi.stubGlobal( 'fetch', fetch );
-
-		const data = {};
-		trigger( 'heartbeat-send', data );
-		window.dispatchEvent( new Event( 'pagehide' ) );
-
-		expect( data[ 'presence-ping' ].keepalive ).toBe( false );
-		expect( data[ 'presence-editor-ping' ] ).toEqual( {
-			post_id: 5,
-			keepalive: false,
-		} );
-		expect( fetch ).not.toHaveBeenCalled();
 	} );
 } );
