@@ -271,7 +271,7 @@
 				screen: window.pagenow || 'front',
 				token: config.screenToken || '',
 			};
-			// The ping still goes, since live surfaces and the collaborator count read the room through it.
+			// Both pings still go, since live surfaces, the idle backoff and the collaborator count read the room through them.
 			if ( ! keepalive ) {
 				ping.keepalive = false;
 			}
