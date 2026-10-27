@@ -505,6 +505,12 @@ add_filter( 'heartbeat_received', function( $response, $data ) {
 }, 10, 2 );
 ```
 
+#### `presence-api.keepalive`
+Whether the tab keeps its own `user-{id}` and `editor-{id}` rows alive over Heartbeat. Return false only while a push transport writes those rows and removes them on disconnect. Heartbeat keeps running for live surfaces, the collaborator count and core's post lock.
+```js
+wp.hooks.addFilter( 'presence-api.keepalive', 'my-plugin', ( keepalive ) => keepalive && ! myTransport.isConnected() );
+```
+
 </details>
 
 ## REST API

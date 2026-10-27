@@ -168,6 +168,19 @@
 		);
 	}
 
+	function keepsAlive() {
+		/**
+		 * Filters whether this tab keeps its own presence rows alive over Heartbeat.
+		 *
+		 * Return false only while a push transport writes and removes those rows itself.
+		 *
+		 * @since 0.19.0
+		 *
+		 * @param {boolean} keepalive Whether to keep the rows alive. Default true.
+		 */
+		return wp.hooks.applyFilters( 'presence-api.keepalive', true );
+	}
+
 	const lastFragments = {};
 
 	// Swapping under the pointer or focus would close a menu, drop a selection or move the caret; the next tick catches up.
@@ -253,10 +266,15 @@
 				return;
 			}
 
+			const keepalive = keepsAlive();
 			const ping = {
 				screen: window.pagenow || 'front',
 				token: config.screenToken || '',
 			};
+			// The ping still goes, since live surfaces and the collaborator count read the room through it.
+			if ( ! keepalive ) {
+				ping.keepalive = false;
+			}
 			if ( pageContext ) {
 				if ( pageContext.title ) {
 					ping.title = pageContext.title;
@@ -286,6 +304,9 @@
 			const postId = editorPostId || siteEditorPostId();
 			if ( postId ) {
 				data[ 'presence-editor-ping' ] = { post_id: postId };
+				if ( ! keepalive ) {
+					data[ 'presence-editor-ping' ].keepalive = false;
+				}
 			}
 		} );
 
@@ -421,7 +442,7 @@
 	} );
 
 	function leave() {
-		if ( hasLeft || ! restUrl || ! entries.length ) {
+		if ( hasLeft || ! restUrl || ! entries.length || ! keepsAlive() ) {
 			return;
 		}
 		hasLeft = true;

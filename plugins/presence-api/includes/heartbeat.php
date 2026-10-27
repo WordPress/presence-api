@@ -330,6 +330,23 @@ if ( ! function_exists( 'wp_presence_register_packages_scripts' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_presence_ping_keeps_alive' ) ) {
+	/**
+	 * Returns whether a Heartbeat ping asks to keep its row alive, which a tab declines while a push transport holds that row.
+	 *
+	 * @since 0.19.0
+	 *
+	 * @access private
+	 *
+	 * @param mixed $ping The ping sent under `presence-ping` or `presence-editor-ping`.
+	 * @return bool Whether to write the row.
+	 */
+	function wp_presence_ping_keeps_alive( $ping ) {
+		// jQuery sends a false as the string "false".
+		return ! is_array( $ping ) || ! isset( $ping['keepalive'] ) || wp_validate_boolean( $ping['keepalive'] );
+	}
+}
+
 if ( ! function_exists( 'wp_presence_admin_heartbeat_received' ) ) {
 	/**
 	 * Records the current user's presence in the admin/online room on every tick.
@@ -352,7 +369,7 @@ if ( ! function_exists( 'wp_presence_admin_heartbeat_received' ) ) {
 			return $response;
 		}
 
-		if ( ! wp_can_access_presence_room( wp_presence_admin_room() ) ) {
+		if ( ! wp_can_access_presence_room( wp_presence_admin_room() ) || ! wp_presence_ping_keeps_alive( $data['presence-ping'] ) ) {
 			return $response;
 		}
 
@@ -485,6 +502,12 @@ if ( ! function_exists( 'wp_presence_editor_heartbeat_received' ) ) {
 		$room = wp_presence_post_room( $post_id );
 
 		if ( ! $room ) {
+			return $response;
+		}
+
+		// A push transport holding this row writes it, so the tick only reads the room for the editor count.
+		if ( ! wp_presence_ping_keeps_alive( $data['presence-editor-ping'] ) ) {
+			$response['presence-heartbeat-collaborators'] = wp_presence_check_collaboration_threshold( $room );
 			return $response;
 		}
 
