@@ -133,6 +133,29 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	}
 
 	/**
+	 * jQuery posts a false as the string "false".
+	 *
+	 * @covers ::wp_presence_admin_heartbeat_received
+	 * @covers ::wp_presence_ping_keeps_alive
+	 */
+	public function test_admin_heartbeat_leaves_the_row_to_a_transport_holding_it() {
+		wp_set_current_user( self::$editor_id );
+
+		wp_presence_admin_heartbeat_received(
+			array(),
+			array(
+				'presence-ping' => array(
+					'screen'    => 'dashboard',
+					'keepalive' => 'false',
+				),
+			),
+			'dashboard'
+		);
+
+		$this->assertCount( 0, wp_get_presence( 'admin/online' ) );
+	}
+
+	/**
 	 * @covers ::wp_presence_admin_heartbeat_received
 	 */
 	public function test_admin_heartbeat_requires_edit_posts() {
@@ -688,6 +711,29 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 		);
 
 		$this->assertSame( 2, $response['presence-heartbeat-collaborators'] );
+	}
+
+	/**
+	 * @covers ::wp_presence_editor_heartbeat_received
+	 */
+	public function test_editor_heartbeat_counts_the_room_without_writing_for_a_transport_holding_the_row() {
+		$post_id  = self::factory()->post->create();
+		$editor_2 = self::factory()->user->create( array( 'role' => 'editor' ) );
+		wp_set_presence( wp_presence_post_room( $post_id ), 'editor-' . $editor_2, array(), array( 'user_id' => $editor_2 ) );
+
+		wp_set_current_user( self::$editor_id );
+		$response = wp_presence_editor_heartbeat_received(
+			array(),
+			array(
+				'presence-editor-ping' => array(
+					'post_id'   => $post_id,
+					'keepalive' => 'false',
+				),
+			),
+			'post'
+		);
+
+		$this->assertSame( 1, $response['presence-heartbeat-collaborators'] );
 	}
 
 	/**

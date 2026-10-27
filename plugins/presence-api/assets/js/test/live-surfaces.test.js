@@ -49,9 +49,10 @@ function createHooks() {
 /**
  * Loads presence-ping.js against a fake jQuery bus and a leader coordinator.
  *
+ * @param {Object} config Optional. What the page localizes as wpPresenceConfig.
  * @return {Object} The hooks instance the script registered against.
  */
-function loadPing() {
+function loadPing( config = {} ) {
 	listeners = {};
 	const hooks = createHooks();
 
@@ -73,7 +74,7 @@ function loadPing() {
 		heartbeat: { interval: () => 15, connectNow() {} },
 	};
 	window.pagenow = 'dashboard';
-	window.wpPresenceConfig = {};
+	window.wpPresenceConfig = config;
 	window.wpPresenceCreateTabCoordinator = () => ( { isLeader: () => true } );
 	global.jQuery = $;
 
@@ -96,6 +97,7 @@ function send() {
 
 describe( 'live surfaces', () => {
 	afterEach( () => {
+		vi.unstubAllGlobals();
 		document.body.innerHTML = '';
 		delete global.wp;
 		delete global.jQuery;
@@ -190,5 +192,27 @@ describe( 'live surfaces', () => {
 			},
 		} );
 		expect( node.textContent ).toBe( '3 online' );
+	} );
+
+	it( 'flags both pings and skips the unload DELETE while a transport holds the rows', () => {
+		const hooks = loadPing( {
+			editorPostId: 5,
+			restUrl: 'https://example.test/wp-json/wp/v2/presence',
+			entries: [ { room: 'admin/online', client_id: 'user-1' } ],
+		} );
+		hooks.addFilter( 'presence-api.keepalive', 'test', () => false );
+		const fetch = vi.fn();
+		vi.stubGlobal( 'fetch', fetch );
+
+		const data = {};
+		trigger( 'heartbeat-send', data );
+		window.dispatchEvent( new Event( 'pagehide' ) );
+
+		expect( data[ 'presence-ping' ].keepalive ).toBe( false );
+		expect( data[ 'presence-editor-ping' ] ).toEqual( {
+			post_id: 5,
+			keepalive: false,
+		} );
+		expect( fetch ).not.toHaveBeenCalled();
 	} );
 } );
