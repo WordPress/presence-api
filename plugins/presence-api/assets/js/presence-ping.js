@@ -475,6 +475,15 @@
 		}
 	} );
 
+	/**
+	 * Fire `presence-api.roomChanged` to refresh presence now instead of on the next Heartbeat tick, such as when a push transport hears a room change.
+	 *
+	 * @since 0.19.0
+	 *
+	 * @param {string} room The room that changed.
+	 */
+	wp.hooks.addAction( 'presence-api.roomChanged', 'presence-api', tickNow );
+
 	window.addEventListener( 'pagehide', function () {
 		leave();
 	} );

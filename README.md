@@ -477,6 +477,12 @@ wp.hooks.addAction( 'presence-api.surfaceUpdated', 'my-plugin', ( key, element )
 } );
 ```
 
+#### `presence-api.roomChanged`
+The one action you fire rather than listen to. It refreshes presence now instead of on the next Heartbeat tick, such as from a push transport that heard `set_presence` or `removed_presence`.
+```js
+wp.hooks.doAction( 'presence-api.roomChanged', room );
+```
+
 ### JS filters
 
 #### `presence-api.liveSurfaces`

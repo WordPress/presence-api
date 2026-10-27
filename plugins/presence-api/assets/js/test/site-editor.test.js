@@ -47,7 +47,11 @@ function loadSiteEditor( search, id, record ) {
 	};
 
 	global.wp = {
-		hooks: { applyFilters: ( name, value ) => value, doAction() {} },
+		hooks: {
+			applyFilters: ( name, value ) => value,
+			addAction() {},
+			doAction() {},
+		},
 		heartbeat: { interval: () => 15, connectNow() {} },
 		data: { select: ( store ) => stores[ store ] },
 	};
