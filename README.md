@@ -443,7 +443,7 @@ add_action( 'removed_user_presence', function( $user_id ) {
 
 ### JS actions
 
-Run through `wp.hooks`, not PHP. The plugin's ping script fires all but `presence-api.roomChanged` and is the only thing that computes them, so a consumer has to listen rather than poll for them.
+Run through `wp.hooks`, not PHP. Only the plugin's ping script computes these, so a consumer listens for them rather than polling, except `presence-api.roomChanged`, which a consumer fires.
 
 #### `presence-api.watchingRoom`
 Fires once, before Heartbeat's first tick, on the edit screen of a post type with `presence` support, so a listener can tell "presence-api isn't here" from "no tick yet."

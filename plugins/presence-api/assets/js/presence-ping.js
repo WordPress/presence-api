@@ -488,7 +488,7 @@
 		'presence-api.roomChanged',
 		'presence-api',
 		function () {
-			// Followers get the leader's answer replayed, and a hidden tab ticks when it is shown again.
+			// Only a visible leader asks; followers get its answer replayed.
 			if (
 				document.visibilityState === 'hidden' ||
 				! tabCoordinator.isLeader()
@@ -500,7 +500,7 @@
 		}
 	);
 
-	// Core drops a connectNow() while a request is in flight, which may have read the room before the change.
+	// Core ignores connectNow() mid-request, and that request may have read the room before the change.
 	$( document ).on( 'heartbeat-send', function () {
 		roomChangedSinceSend = false;
 	} );
