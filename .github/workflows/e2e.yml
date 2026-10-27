@@ -57,11 +57,7 @@ jobs:
         with:
           persist-credentials: false
           show-progress: ${{ runner.debug == '1' && 'true' || 'false' }}
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
+      - uses: ./.github/actions/setup-node
       - run: npm run build
 
       # The browser is in the key so a leg never restores another leg's
