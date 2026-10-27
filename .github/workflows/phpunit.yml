@@ -49,11 +49,11 @@ jobs:
       - name: Install Composer dependencies
         if: ${{ inputs.should-run }}
         run: composer install --no-interaction
-      # PHPUnit runs in `cli`, so the separate tests environment would only add two containers to boot.
+      # PHPUnit runs in `cli` with the tests environment's debug defaults, so that environment would only add two containers to boot.
       - name: Skip the tests environment
         if: ${{ inputs.should-run }}
         run: |
-          echo '{ "testsEnvironment": false }' > .wp-env.override.json
+          echo '{ "testsEnvironment": false, "config": { "WP_DEBUG": false, "SCRIPT_DEBUG": false } }' > .wp-env.override.json
       - name: Start wp-env (retry on transient failures)
         if: ${{ inputs.should-run }}
         run: |
@@ -103,7 +103,7 @@ jobs:
         run: composer install --no-interaction
       - name: Skip the tests environment
         run: |
-          echo '{ "testsEnvironment": false }' > .wp-env.override.json
+          echo '{ "testsEnvironment": false, "config": { "WP_DEBUG": false, "SCRIPT_DEBUG": false } }' > .wp-env.override.json
       - name: Start wp-env (retry on transient failures)
         run: |
           for attempt in 1 2 3; do
