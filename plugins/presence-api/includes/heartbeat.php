@@ -349,7 +349,7 @@ if ( ! function_exists( 'wp_presence_ping_keeps_alive' ) ) {
 
 if ( ! function_exists( 'wp_presence_admin_heartbeat_received' ) ) {
 	/**
-	 * Records the current user's presence in the admin/online room on every tick.
+	 * Records the current user's presence in the admin/online room on every tick that asks to keep it alive.
 	 *
 	 * This is the API's primary write path. It runs regardless of which dashboard
 	 * widgets are registered.
@@ -357,6 +357,7 @@ if ( ! function_exists( 'wp_presence_admin_heartbeat_received' ) ) {
 	 * Nonce verification is handled by WordPress in wp_ajax_heartbeat().
 	 *
 	 * @since 0.1.10
+	 * @since 0.19.0 Skips the write for a ping with `keepalive` off.
 	 *
 	 * @param array  $response  The Heartbeat response.
 	 * @param array  $data      The $_POST data sent.
@@ -481,6 +482,7 @@ if ( ! function_exists( 'wp_presence_editor_heartbeat_received' ) ) {
 	 * a real-time sync loop without polling for it separately.
 	 *
 	 * @since 0.1.1
+	 * @since 0.19.0 Only counts the room for a ping with `keepalive` off.
 	 *
 	 * @param array  $response  The Heartbeat response.
 	 * @param array  $data      The $_POST data sent.
