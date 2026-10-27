@@ -14,6 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Nothing waits on this job, which stays only because the `main` ruleset requires a `gate` check.
   gate:
     runs-on: ubuntu-24.04
     steps:
@@ -29,7 +30,6 @@ jobs:
   # checks expect (e.g. `phpcs / phpcs`), which leaves those checks
   # permanently pending and blocks every release-please PR from merging.
   changes:
-    needs: gate
     runs-on: ubuntu-24.04
     permissions:
       pull-requests: read
@@ -53,6 +53,7 @@ jobs:
               - 'phpunit.xml.dist'
               - 'plugins/presence-api/readme.txt'
               - 'scripts/private-calls.txt'
+              - '.github/actions/**'
               - '.github/workflows/**'
 
   phpcs:
