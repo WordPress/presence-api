@@ -53,6 +53,7 @@ jobs:
               - 'phpunit.xml.dist'
               - 'plugins/presence-api/readme.txt'
               - 'scripts/private-calls.txt'
+              - '.github/actions/**'
               - '.github/workflows/**'
 
   phpcs:
