@@ -185,6 +185,14 @@ pre {
 
 /* Shared pieces */
 
+.split p,
+.feature__text p,
+.hosting__intro p,
+.developers__intro p,
+.involved__intro p {
+	max-width: 65ch;
+}
+
 .buttons {
 	display: flex;
 	flex-wrap: wrap;
