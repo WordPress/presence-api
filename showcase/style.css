@@ -265,6 +265,23 @@ pre {
 	gap: 0 var(--wp--preset--spacing--30);
 }
 
+@media (max-width: 599px) {
+
+	.local-nav {
+		position: static;
+		padding-bottom: var(--wp--preset--spacing--10);
+	}
+
+	/* One row that scrolls, so the links never stack over the page. */
+	.local-nav ul {
+		flex-wrap: nowrap;
+		width: 100%;
+		overflow-x: auto;
+		gap: 0 var(--wp--preset--spacing--20);
+		white-space: nowrap;
+	}
+}
+
 /* Hero */
 
 .hero {
