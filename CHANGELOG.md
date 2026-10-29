@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.19.0](https://github.com/WordPress/presence-api/compare/v0.18.4...v0.19.0) (2026-10-29)
+
+
+### Features
+
+* add a presence-api.keepalive filter so a push transport can hold a tab's rows ([#904](https://github.com/WordPress/presence-api/issues/904)) ([773d4e7](https://github.com/WordPress/presence-api/commit/773d4e7c2fc53ae4345854c619780ad84f2d9a31))
+* add a presence-api.roomChanged action that refreshes presence now ([#903](https://github.com/WordPress/presence-api/issues/903)) ([081b1b2](https://github.com/WordPress/presence-api/commit/081b1b2bb6fe5104d0be93f146593b172bc9b41f))
+
+
+### Dependencies
+
+* **deps-dev:** bump @wordpress/eslint-plugin from 27.1.0 to 28.0.0 ([#906](https://github.com/WordPress/presence-api/issues/906)) ([1877880](https://github.com/WordPress/presence-api/commit/1877880b83717ec9d556f3bb27e9145a1682d746))
+* **deps-dev:** bump @wordpress/scripts from 36.1.0 to 37.0.0 ([#907](https://github.com/WordPress/presence-api/issues/907)) ([e068e4e](https://github.com/WordPress/presence-api/commit/e068e4e465a383cf5c941b4c9d6613107ffaf5ab))
+* **deps-dev:** bump html-validate from 11.16.2 to 11.17.0 ([#909](https://github.com/WordPress/presence-api/issues/909)) ([c785c9e](https://github.com/WordPress/presence-api/commit/c785c9ed97230788e85c4a34f90ce055fe99429d))
+* **deps-dev:** bump vite from 8.3.4 to 8.3.5 ([#908](https://github.com/WordPress/presence-api/issues/908)) ([ffb3e2f](https://github.com/WordPress/presence-api/commit/ffb3e2fcf1e0a6aa06dcb21dbeb68c9d4e39c93b))
+* **deps:** bump astral-sh/setup-uv from 10.3.0 to 10.3.1 ([#911](https://github.com/WordPress/presence-api/issues/911)) ([114b6ee](https://github.com/WordPress/presence-api/commit/114b6ee8ba87eef30e59eaa093b42318edda7020))
+* **deps:** bump the codeql-action group with 3 updates ([#910](https://github.com/WordPress/presence-api/issues/910)) ([17a62a3](https://github.com/WordPress/presence-api/commit/17a62a38c4fb0850ffaf2183ced7136c72b786cf))
+
 ## [0.18.4](https://github.com/WordPress/presence-api/compare/v0.18.3...v0.18.4) (2026-10-26)
 
 
