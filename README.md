@@ -417,6 +417,14 @@ add_action( 'wp_presence_admin_room_changed', function() {
 } );
 ```
 
+#### `wp_presence_room_changed`
+Fires when a room reads differently without a row being written or removed: today, when a post someone is editing changes its title or status, once for the post's room and once for `admin/online`. A transport that refreshes on `set_presence` and `removed_presence` should refresh on this too.
+```php
+add_action( 'wp_presence_room_changed', function( $room ) {
+    // Tell open tabs to fetch the room again.
+} );
+```
+
 #### `set_presence`
 Fires after `wp_set_presence()` writes a row, named like core's `set_transient`. A write skipped because the row was unchanged and recently stamped fires nothing, and neither does a reserved row such as `_lock` or `_collab`. The skip holds on MySQL; SQLite counts an unchanged write as a change, so it fires there.
 ```php
@@ -478,7 +486,7 @@ wp.hooks.addAction( 'presence-api.surfaceUpdated', 'my-plugin', ( key, element )
 ```
 
 #### `presence-api.roomChanged`
-Fire this to refresh presence now instead of on the next Heartbeat tick, such as from a push transport that heard `set_presence` or `removed_presence`. A hidden tab waits until it is shown.
+Fire this to refresh presence now instead of on the next Heartbeat tick, such as from a push transport that heard `set_presence`, `removed_presence` or `wp_presence_room_changed`. A hidden tab waits until it is shown.
 ```js
 wp.hooks.doAction( 'presence-api.roomChanged', room );
 ```
