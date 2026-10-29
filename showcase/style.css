@@ -279,6 +279,11 @@ pre {
 	margin-left: auto;
 }
 
+.hero__buttons {
+	justify-content: center;
+	margin-top: var(--wp--preset--spacing--40);
+}
+
 .hero__lede {
 	margin-top: var(--wp--preset--spacing--30);
 	font-family: var(--wp--preset--font-family--eb-garamond);
