@@ -550,6 +550,7 @@ pre {
 	margin: 0;
 	padding: var(--wp--preset--spacing--20) var(--wp--preset--spacing--30);
 	overflow-x: auto;
+	tab-size: 4;
 	background: var(--wp--preset--color--light-grey-2);
 	color: var(--wp--preset--color--charcoal-1);
 	font-size: var(--wp--preset--font-size--small);
@@ -562,6 +563,16 @@ pre {
 
 .code .comment {
 	color: var(--wp--preset--color--charcoal-4);
+}
+
+@media (max-width: 599px) {
+
+	/* Short enough to wrap, which beats a scroll a phone gives no sign of. */
+	.code {
+		padding: var(--wp--preset--spacing--20);
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+	}
 }
 
 /* Get involved, as on wordpress.org/download */
