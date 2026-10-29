@@ -62,7 +62,7 @@ Presence Scenes plays a [scene](plugins/presence-scenes/README.md) on the Posts 
 1. Browser sends `presence-ping` via Heartbeat
 2. Server upserts into `wp_presence`
 3. Server answers with the admin bar node's markup, the Active Posts list, and a hash of the `admin/online` room
-4. The admin bar swaps its node when the markup changes, unless its menu is open, and Active Posts redraws when its posts change
+4. The admin bar swaps its node when the markup changes, its menu staying open, and Active Posts redraws when its posts change
 5. After a run of ticks with an unchanged hash, the ping widens the Heartbeat interval; a new hash snaps it back
 
 Only Heartbeat refreshes a row between page loads. With its script removed, or its interval too long for the TTL, someone who stays on one screen drops out of the room while still there. Site Health reports both.
@@ -470,7 +470,7 @@ wp.hooks.addAction( 'presence-api.collaborationEnded', 'my-plugin', ( room, coun
 ```
 
 #### `presence-api.surfaceUpdated`
-Fires after a live surface's markup is swapped for a fresh copy from Heartbeat. Swaps wait while the pointer, focus or a checked checkbox is inside the surface.
+Fires after a live surface's markup is swapped for a fresh copy from Heartbeat. Swaps wait while the pointer, focus or a checked checkbox is inside the surface, except that the admin bar menu re-renders while open and waits only for focus inside it.
 ```js
 wp.hooks.addAction( 'presence-api.surfaceUpdated', 'my-plugin', ( key, element ) => {
     // key names the surface, such as 'admin-bar', or one you registered.
@@ -493,6 +493,7 @@ The surfaces the plugin's ping script keeps current. A surface asks Heartbeat fo
 | `key` | Yes | The key sent under `presence-fragments` and answered under the same key. |
 | `target( id )` | Yes | Returns the element to fill, or null when it is not on the page. |
 | `request()` | No | Returns what to send instead of `true`, such as row IDs; a falsy value skips the ask. |
+| `busy( element )` | No | Returns whether to leave the surface alone this tick, instead of the pointer, focus and checked checkbox check. |
 | `apply( element, html )` | No | Swaps the markup in, instead of setting `innerHTML`. |
 
 A response can also be an object of HTML keyed by ID, in which case each entry fills `target( id )`.
