@@ -24,13 +24,13 @@
 		"@testing-library/react": "^16.3.3",
 		"@wordpress/e2e-test-utils-playwright": "^3.0.0",
 		"@wordpress/env": "^11.17.0",
-		"@wordpress/eslint-plugin": "^27.1.0",
-		"@wordpress/scripts": "^36.1.0",
+		"@wordpress/eslint-plugin": "^28.0.0",
+		"@wordpress/scripts": "^37.0.0",
 		"globals": "^17.13.0",
-		"html-validate": "^11.16.2",
+		"html-validate": "^11.17.0",
 		"jquery": "^4.0.0",
 		"jsdom": "^30.1.2",
-		"vite": "^8.3.4",
+		"vite": "^8.3.5",
 		"vitest": "^5.0.4"
 	},
 	"peerDependencies": {

@@ -245,4 +245,42 @@ describe( 'live surfaces', () => {
 		} );
 		expect( node.textContent ).toBe( '3 online' );
 	} );
+
+	it( 'ticks on roomChanged, and again once a request already in flight answers', () => {
+		const hooks = loadPing();
+		const connectNow = vi.spyOn( global.wp.heartbeat, 'connectNow' );
+
+		hooks.doAction( 'presence-api.roomChanged', 'admin/online' );
+		expect( connectNow ).toHaveBeenCalledTimes( 1 );
+
+		// Core sent nothing, so the push came while a request was in flight.
+		trigger( 'heartbeat-tick', {} );
+		expect( connectNow ).toHaveBeenCalledTimes( 2 );
+
+		trigger( 'heartbeat-send', {} );
+		trigger( 'heartbeat-tick', {} );
+		expect( connectNow ).toHaveBeenCalledTimes( 2 );
+	} );
+
+	it( 'leaves roomChanged to the leader tab', () => {
+		const hooks = loadPing( { isLeader: false } );
+		const connectNow = vi.spyOn( global.wp.heartbeat, 'connectNow' );
+
+		hooks.doAction( 'presence-api.roomChanged', 'admin/online' );
+
+		expect( connectNow ).not.toHaveBeenCalled();
+	} );
+
+	it( 'leaves roomChanged to the visibility handler in a hidden tab', () => {
+		const hooks = loadPing();
+		const connectNow = vi.spyOn( global.wp.heartbeat, 'connectNow' );
+		vi.spyOn( document, 'visibilityState', 'get' ).mockReturnValue(
+			'hidden'
+		);
+
+		hooks.doAction( 'presence-api.roomChanged', 'admin/online' );
+		trigger( 'heartbeat-tick', {} );
+
+		expect( connectNow ).not.toHaveBeenCalled();
+	} );
 } );
