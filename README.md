@@ -443,7 +443,7 @@ add_action( 'removed_user_presence', function( $user_id ) {
 
 ### JS actions
 
-Fired through `wp.hooks`, not PHP. The plugin's ping script is the only thing that computes these, so a consumer has to listen rather than poll for them.
+Run through `wp.hooks`, not PHP. Only the plugin's ping script computes these, so a consumer listens for them rather than polling, except `presence-api.roomChanged`, which a consumer fires.
 
 #### `presence-api.watchingRoom`
 Fires once, before Heartbeat's first tick, on the edit screen of a post type with `presence` support, so a listener can tell "presence-api isn't here" from "no tick yet."
@@ -475,6 +475,12 @@ Fires after a live surface's markup is swapped for a fresh copy from Heartbeat. 
 wp.hooks.addAction( 'presence-api.surfaceUpdated', 'my-plugin', ( key, element ) => {
     // key names the surface, such as 'admin-bar', or one you registered.
 } );
+```
+
+#### `presence-api.roomChanged`
+Fire this to refresh presence now instead of on the next Heartbeat tick, such as from a push transport that heard `set_presence` or `removed_presence`. A hidden tab waits until it is shown.
+```js
+wp.hooks.doAction( 'presence-api.roomChanged', room );
 ```
 
 ### JS filters
