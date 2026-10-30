@@ -78,6 +78,10 @@ final class WP_Presence_Scene_Actor {
 	 * @throws RuntimeException When the post cannot be created.
 	 */
 	public function write( $title ) {
+		if ( ! user_can( $this->ID, 'edit_posts' ) ) {
+			throw new RuntimeException( __( 'Their role cannot write posts.', 'presence-scenes' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Printed as text.
+		}
+
 		$post_id = $this->act(
 			function () use ( $title ) {
 				return wp_insert_post(
@@ -233,6 +237,22 @@ final class WP_Presence_Scene_Actor {
 			/* translators: %s: Who holds the lock. */
 			throw new UnexpectedValueException( sprintf( __( '%s holds it.', 'presence-scenes' ), self::name_of( $holder ) ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Printed as text.
 		}
+	}
+
+	/**
+	 * Plays a step another plugin added through the wp_presence_scene_steps filter, with this actor as the current user.
+	 *
+	 * @since 0.20.0
+	 *
+	 * @param callable $callback The step's callback.
+	 * @param array    $fields   The step's fields keyed by name.
+	 */
+	public function perform( $callback, array $fields ) {
+		$this->act(
+			function () use ( $callback, $fields ) {
+				$callback( $this, $fields );
+			}
+		);
 	}
 
 	/**
