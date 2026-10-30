@@ -6,7 +6,7 @@ const assert = require( 'node:assert/strict' );
 const run = require( './sync-milestones.js' );
 const { PACKAGES, findCutoff } = run;
 
-const [ API, SCENES ] = PACKAGES;
+const [ API ] = PACKAGES;
 const context = { repo: { owner: 'WordPress', repo: 'presence-api' } };
 const core = { info: () => {} };
 
@@ -85,10 +85,9 @@ test( 'findCutoff: reads only its own package tags, skipping drafts', () => {
 		},
 	];
 	assert.equal( findCutoff( releases, API ), '2026-10-06T01:00:00Z' );
-	assert.equal( findCutoff( releases, SCENES ), '2026-10-07T00:00:00Z' );
 } );
 
-test( 'creates the release milestone and files each PR under its own package', async () => {
+test( 'creates the release milestone and files every merged PR under it, Presence Scenes ones included', async () => {
 	const { github, writes } = buildGithub( {
 		releases: [
 			published( 'v0.15.0' ),
@@ -96,11 +95,6 @@ test( 'creates the release milestone and files each PR under its own package', a
 		],
 		openPRs: [
 			releasePR( 759, 'presence-api', 'chore(main): release 0.16.0' ),
-			releasePR(
-				761,
-				'presence-scenes',
-				'chore(main): release presence-scenes 0.1.2'
-			),
 		],
 		merged: [
 			mergedPR( 1, [ 'plugins/presence-scenes/library/a.json' ] ),
@@ -123,13 +117,13 @@ test( 'creates the release milestone and files each PR under its own package', a
 		writes
 			.filter( ( [ m ] ) => m === 'createMilestone' )
 			.map( ( [ , p ] ) => p.title ),
-		[ '0.16.0', 'Presence Scenes 0.1.2' ]
+		[ '0.16.0' ]
 	);
 	assert.deepEqual(
 		writes
 			.filter( ( [ m ] ) => m === 'update' )
 			.map( ( [ , p ] ) => p.issue_number ),
-		[ 759, 2, 761, 1 ]
+		[ 759, 1, 2 ]
 	);
 } );
 
