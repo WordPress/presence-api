@@ -1504,7 +1504,7 @@ if ( ! function_exists( 'wp_presence_room_changed' ) ) {
 	/**
 	 * Tells listeners a room reads differently although no row was written or removed.
 	 *
-	 * @since 0.19.0
+	 * @since 0.19.1
 	 *
 	 * @param string $room The room identifier.
 	 */
@@ -1514,7 +1514,7 @@ if ( ! function_exists( 'wp_presence_room_changed' ) ) {
 		 *
 		 * A transport that refreshes on `set_presence` and `removed_presence` should refresh on this too.
 		 *
-		 * @since 0.19.0
+		 * @since 0.19.1
 		 *
 		 * @param string $room The room identifier.
 		 */
@@ -1526,7 +1526,7 @@ if ( ! function_exists( 'wp_presence_on_post_title_or_status_change' ) ) {
 	/**
 	 * Fires `wp_presence_room_changed` for a post's room and the admin room when its title or status changes while its room has rows.
 	 *
-	 * @since 0.19.0
+	 * @since 0.19.1
 	 *
 	 * @param int     $post_id     Post ID.
 	 * @param WP_Post $post_after  Post after update.
