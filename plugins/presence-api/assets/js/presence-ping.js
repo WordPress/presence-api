@@ -163,7 +163,7 @@
 		 * Filters the surfaces kept current over Heartbeat.
 		 *
 		 * @since 0.11.0
-		 * @since 0.19.0 A surface may carry its own `busy()` check.
+		 * @since 0.19.1 A surface may carry its own `busy()` check.
 		 *
 		 * @param {Object[]} surfaces Each with a `key`, a `target()` lookup, and an optional `request()`, `busy()` and `apply()`.
 		 */
