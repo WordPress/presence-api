@@ -1,6 +1,8 @@
 # Post locks
 
-Core's post lock, `_edit_lock`, is stored as the post room's `_lock` row instead of post meta. Core keeps calling the meta API, and filters answer from the row.
+When you open a post someone else is editing, WordPress warns you that it is locked. Presence API keeps that lock in its own table instead of with the post, so renewing it while you edit does not slow down the rest of the site.
+
+## How it works
 
 ```mermaid
 sequenceDiagram
@@ -16,6 +18,8 @@ sequenceDiagram
 	F->>T: Read _lock
 	F-->>C: "time:user"
 ```
+
+Core's post lock, `_edit_lock`, is stored as the post room's `_lock` row instead of post meta. Core keeps calling the meta API, and filters answer from the row.
 
 - `update_post_metadata`, `get_post_metadata` and `delete_post_metadata` filters write, read and remove the row, so `wp_check_post_lock()` and other callers work unchanged.
 - It applies to every post type, including ones without presence support.

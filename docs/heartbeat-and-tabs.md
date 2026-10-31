@@ -1,6 +1,8 @@
 # Heartbeat and tabs
 
-The browser sends presence on core's Heartbeat. One tab per screen sends it, and the server answers with updated markup that every tab applies.
+Open tabs check in with the site through Heartbeat, WordPress's built-in check-in. When you have several tabs on the same screen, one checks in for all of them and shares the answer.
+
+## How it works
 
 ```mermaid
 sequenceDiagram
@@ -15,6 +17,8 @@ sequenceDiagram
 	L-->>F: Relay the answer
 	Note over F: A hidden tab sends nothing,<br/>so its rows lapse
 ```
+
+The browser sends presence on core's Heartbeat. One tab per screen sends it, and the server answers with updated markup that every tab applies.
 
 ## The leader
 

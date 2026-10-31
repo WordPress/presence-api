@@ -1,6 +1,8 @@
 # Real-time collaboration
 
-A plugin that implements the block editor's collaboration storage can keep its awareness rows in `wp_presence`. Its collaborators then appear on admin screens, while its edit history stays in its own storage.
+When several people edit one post at the same time, the editor shows each person's cursor. If the plugin behind that keeps those cursors in Presence API's table, the same people also appear in the admin bar and the post lists.
+
+## How it works
 
 ```mermaid
 flowchart LR
@@ -11,6 +13,8 @@ flowchart LR
 	G -->|edits| S[("Plugin's own storage")]
 	T --> A[Admin bar, Active Posts,<br/>Editors column]
 ```
+
+A plugin that implements the block editor's collaboration storage can keep its awareness rows in `wp_presence`. Its collaborators then appear on admin screens, while its edit history stays in its own storage.
 
 - Both sides name a post's room `postType/{type}:{id}`, the grammar of Gutenberg's sync rooms and of `wp_presence_post_room()`.
 - The plugin writes under its own prefix, such as `gse-` for [gutenberg-sync-engines](https://github.com/WordPress/gutenberg-sync-engines), and reads its rows back with `client_prefix`.

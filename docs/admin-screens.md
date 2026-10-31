@@ -1,6 +1,10 @@
 # Admin screens
 
-Four admin screens show presence. Each reads `admin/online` or the post rooms, and refreshes from markup in the Heartbeat answer.
+These are the places in the WordPress admin where you see who else is around.
+
+![The Posts list, with an Editors column showing who has each post open.](../plugins/presence-api/.wordpress-org/screenshot-2.png)
+
+## How it works
 
 ```mermaid
 flowchart LR
@@ -12,6 +16,8 @@ flowchart LR
 	P --> W[Active Posts widget]
 	P --> E[Editors column]
 ```
+
+Four admin screens show presence. Each reads `admin/online` or the post rooms, and refreshes from markup in the Heartbeat answer.
 
 | Screen | Shows | Refreshes from | Switch |
 | --- | --- | --- | --- |

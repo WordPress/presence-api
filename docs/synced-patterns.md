@@ -1,6 +1,8 @@
 # Synced patterns
 
-In the block editor, a synced pattern shows a notice while someone else edits the pattern itself.
+A synced pattern is a block reused in many posts. While someone edits the pattern itself, anyone using it in a post sees a notice that it is being changed.
+
+## How it works
 
 ```mermaid
 sequenceDiagram
@@ -14,6 +16,8 @@ sequenceDiagram
 	T-->>A: editor-B
 	Note over A: "B is editing this pattern"
 ```
+
+In the block editor, a synced pattern shows a notice while someone else edits the pattern itself.
 
 - A `core/block` block with a `ref` reads the room `postType/wp_block:{ref}` with `usePresenceUsers()`.
 - Every copy of the same pattern in the editor shares one read.

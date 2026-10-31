@@ -1,6 +1,10 @@
 # Stale-screen notices
 
-Each watched admin screen has a revision. When someone else saves it, every open copy shows a notice on its next Heartbeat tick.
+If someone else saves a screen you have open, such as Settings, you see a notice asking you to reload, so you do not overwrite their change.
+
+![The notice someone sees when another person saves the settings screen they have open.](../plugins/presence-api/.wordpress-org/screenshot-4.png)
+
+## How it works
 
 ```mermaid
 sequenceDiagram
@@ -15,6 +19,8 @@ sequenceDiagram
 	S-->>B: New revision, saved by A
 	Note over B: "A updated this screen 1 minute ago."<br/>Reload or Dismiss
 ```
+
+Each watched admin screen has a revision. When someone else saves it, every open copy shows a notice on its next Heartbeat tick.
 
 ## Screen keys
 

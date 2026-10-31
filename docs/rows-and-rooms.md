@@ -1,6 +1,8 @@
 # Rows and rooms
 
-A row is one client in one room. Writing it again renews it, and once its expiry passes, reads leave it out.
+Everything Presence API knows is kept as rows: short notes that say who is where, and until when. A row stays as long as its writer keeps renewing it, and stops counting once its time runs out.
+
+## How it works
 
 ```mermaid
 sequenceDiagram
@@ -15,6 +17,8 @@ sequenceDiagram
 	Note over T: Row counts until its expiry,<br/>then reads skip it
 	C->>T: Delete expired rows, every minute
 ```
+
+A row is one client in one room. Writing it again renews it, and once its expiry passes, reads leave it out.
 
 ## Why a table of its own
 

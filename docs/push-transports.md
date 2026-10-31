@@ -1,6 +1,8 @@
 # Push transports
 
-A push transport, such as a WebSocket relay, writes a tab's rows itself and tells open tabs to refresh, so a change reaches them without waiting for the next Heartbeat tick.
+Normally a change, such as someone arriving, shows up at the next check-in, up to a minute later. A push transport, such as a WebSocket service, sends the change to open tabs right away.
+
+## How it works
 
 ```mermaid
 sequenceDiagram
@@ -16,6 +18,8 @@ sequenceDiagram
 	Tab->>S: presence-api.roomChanged, Heartbeat now
 	S-->>Tab: Fresh markup
 ```
+
+A push transport, such as a WebSocket relay, writes a tab's rows itself and tells open tabs to refresh, so a change reaches them without waiting for the next Heartbeat tick.
 
 ## Holding a tab's rows
 

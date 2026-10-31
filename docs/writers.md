@@ -1,6 +1,8 @@
 # Writers
 
-A writer keeps its rows alive by writing them again, and when it stops, they expire.
+Several things save rows: an open tab checking in, a page loading, someone logging in, an AI agent saving a post. Each keeps its own rows alive by saving them again.
+
+## How it works
 
 ```mermaid
 flowchart LR
@@ -14,6 +16,8 @@ flowchart LR
 	X[Push transport] --> T
 	T -.->|removed by| O[Logout or leaving a page]
 ```
+
+A writer keeps its rows alive by writing them again, and when it stops, they expire.
 
 | Writer | Rows | Hook |
 | --- | --- | --- |

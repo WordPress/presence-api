@@ -1,6 +1,8 @@
 # Readers
 
-A read returns the rows that have not expired, and a room's version tells a reader when what others see has changed.
+The admin bar and the other screens show only rows that have not run out. A room's version number tells code when something visible changed, so it knows when to look again.
+
+## How it works
 
 ```mermaid
 flowchart TB
@@ -11,6 +13,8 @@ flowchart TB
 	Q -->|timestamp only| S[Version stays]
 	E[Row expires] --> N[Nothing fires.<br/>Next expiry says when to read again.]
 ```
+
+A read returns the rows that have not expired, and a room's version tells a reader when what others see has changed.
 
 ## Reading
 

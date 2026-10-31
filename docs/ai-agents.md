@@ -1,6 +1,8 @@
 # AI agents
 
-An agent working over REST, abilities or WP-CLI runs no Heartbeat, so its saves write its row instead.
+An AI agent that edits posts through the API has no browser tab, so it never checks in. Instead, each time it saves a post, Presence API shows it working on that post for the next 75 seconds.
+
+## How it works
 
 ```mermaid
 sequenceDiagram
@@ -14,6 +16,8 @@ sequenceDiagram
 	S->>T: Write agent-{id} in postType/post:42, expires in 75 s
 	Note over T: Admin screens show the agent, labelled,<br/>until the row expires
 ```
+
+An agent working over REST, abilities or WP-CLI runs no Heartbeat, so its saves write its row instead.
 
 - `wp_presence_is_agent_user( $user_id )` decides who is an agent. It is a filter, `false` by default, and the plugin answers it with `wpai_is_agent_user()` when that function exists.
 - A save by a person writes nothing. Neither does saving an auto-draft or trashing a post.
