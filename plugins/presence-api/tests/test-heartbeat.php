@@ -270,7 +270,7 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	}
 
 	/**
-	 * A relay writes rows with no one signed in, so the user it names decides what is stored.
+	 * A relay writes with no one signed in, so the user it names decides what is stored.
 	 *
 	 * @covers ::wp_presence_admin_state
 	 * @covers ::wp_presence_screen_object_id

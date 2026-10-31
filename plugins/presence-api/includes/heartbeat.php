@@ -32,9 +32,7 @@ if ( ! function_exists( 'wp_presence_editor_state' ) ) {
 
 if ( ! function_exists( 'wp_presence_admin_state' ) ) {
 	/**
-	 * Builds the state stored on a user's entry in the admin room.
-	 *
-	 * Shared so the writers of that entry cannot drift apart on its shape.
+	 * Builds the state stored on a user's entry in the admin room, shared so its writers cannot drift apart.
 	 *
 	 * @since 0.20.0
 	 *
@@ -42,7 +40,7 @@ if ( ! function_exists( 'wp_presence_admin_state' ) ) {
 	 * @param array|string $args {
 	 *     Optional. Array or string of arguments.
 	 *
-	 *     @type int    $post_id   The post being edited, whose status is stored, or the post viewed on the front end. Default 0.
+	 *     @type int    $post_id   The post edited, for its status, or viewed on the front end. Default 0.
 	 *     @type string $title     The page title. Default empty.
 	 *     @type int    $object_id The comment, user or term the screen edits. Default 0.
 	 *     @type int    $user_id   The user whose capabilities decide what is stored. Default 0, the current user.
@@ -61,7 +59,7 @@ if ( ! function_exists( 'wp_presence_admin_state' ) ) {
 		$post_id     = (int) $parsed_args['post_id'];
 		$post        = $post_id > 0 ? get_post( $post_id ) : null;
 
-		// Shown to other users, so cap it as the REST route caps its data.
+		// Shown to other users, so capped like the REST route's data.
 		$state = array( 'screen' => substr( sanitize_text_field( $screen ), 0, WP_PRESENCE_MAX_KEY_LENGTH ) );
 
 		if ( $post && post_type_exists( $state['screen'] ) && user_can( $user_id, 'edit_post', $post->ID ) && isset( get_post_stati()[ $post->post_status ] ) ) {
