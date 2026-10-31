@@ -84,6 +84,12 @@
 		"parent": "docs"
 	},
 	{
+		"title": "Project",
+		"slug": "project",
+		"markdown_source": "../docs/project.md",
+		"parent": "docs"
+	},
+	{
 		"title": "Reference",
 		"slug": "reference",
 		"markdown_source": "../docs/reference.md",
