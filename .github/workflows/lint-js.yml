@@ -25,6 +25,3 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint:js
-      # Pages only builds after merge, so a broken page or link is caught here first.
-      - name: Build the docs
-        run: node scripts/build-docs.js

@@ -1,74 +1,80 @@
 [
 	{
-		"title": "Docs",
+		"title": "Presence API docs",
 		"slug": "docs",
 		"markdown_source": "../docs/README.md",
 		"parent": null
 	},
 	{
-		"title": "Learn presence",
-		"slug": "learn",
-		"markdown_source": "../docs/learn/README.md",
+		"title": "Rows and rooms",
+		"slug": "rows-and-rooms",
+		"markdown_source": "../docs/rows-and-rooms.md",
 		"parent": "docs"
-	},
-	{
-		"title": "See it",
-		"slug": "see-it",
-		"markdown_source": "../docs/learn/see-it.md",
-		"parent": "learn"
-	},
-	{
-		"title": "Why a table",
-		"slug": "why-a-table",
-		"markdown_source": "../docs/learn/why-a-table.md",
-		"parent": "learn"
-	},
-	{
-		"title": "The row",
-		"slug": "the-row",
-		"markdown_source": "../docs/learn/the-row.md",
-		"parent": "learn"
-	},
-	{
-		"title": "Rooms and client IDs",
-		"slug": "rooms",
-		"markdown_source": "../docs/learn/rooms.md",
-		"parent": "learn"
 	},
 	{
 		"title": "Writers",
 		"slug": "writers",
-		"markdown_source": "../docs/learn/writers.md",
-		"parent": "learn"
+		"markdown_source": "../docs/writers.md",
+		"parent": "docs"
 	},
 	{
-		"title": "Readers and signals",
+		"title": "Readers",
 		"slug": "readers",
-		"markdown_source": "../docs/learn/readers.md",
-		"parent": "learn"
+		"markdown_source": "../docs/readers.md",
+		"parent": "docs"
 	},
 	{
-		"title": "The browser",
-		"slug": "browser",
-		"markdown_source": "../docs/learn/browser.md",
-		"parent": "learn"
+		"title": "Heartbeat and tabs",
+		"slug": "heartbeat-and-tabs",
+		"markdown_source": "../docs/heartbeat-and-tabs.md",
+		"parent": "docs"
 	},
 	{
-		"title": "Features are consumers",
-		"slug": "features",
-		"markdown_source": "../docs/learn/features.md",
-		"parent": "learn"
+		"title": "Admin screens",
+		"slug": "admin-screens",
+		"markdown_source": "../docs/admin-screens.md",
+		"parent": "docs"
 	},
 	{
-		"title": "Edges",
-		"slug": "edges",
-		"markdown_source": "../docs/learn/edges.md",
-		"parent": "learn"
+		"title": "Post locks",
+		"slug": "post-locks",
+		"markdown_source": "../docs/post-locks.md",
+		"parent": "docs"
 	},
 	{
-		"title": "Capstone",
-		"slug": "capstone",
-		"markdown_source": "../docs/learn/capstone.md",
-		"parent": "learn"
+		"title": "Real-time collaboration",
+		"slug": "real-time-collaboration",
+		"markdown_source": "../docs/real-time-collaboration.md",
+		"parent": "docs"
+	},
+	{
+		"title": "Push transports",
+		"slug": "push-transports",
+		"markdown_source": "../docs/push-transports.md",
+		"parent": "docs"
+	},
+	{
+		"title": "AI agents",
+		"slug": "ai-agents",
+		"markdown_source": "../docs/ai-agents.md",
+		"parent": "docs"
+	},
+	{
+		"title": "Stale-screen notices",
+		"slug": "stale-screen-notices",
+		"markdown_source": "../docs/stale-screen-notices.md",
+		"parent": "docs"
+	},
+	{
+		"title": "Synced patterns",
+		"slug": "synced-patterns",
+		"markdown_source": "../docs/synced-patterns.md",
+		"parent": "docs"
+	},
+	{
+		"title": "Multisite",
+		"slug": "multisite",
+		"markdown_source": "../docs/multisite.md",
+		"parent": "docs"
 	}
 ]

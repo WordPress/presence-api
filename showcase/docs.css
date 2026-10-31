@@ -13,6 +13,18 @@
 .docs h2 {
 	margin-top: var(--wp--preset--spacing--40);
 	font-size: var(--wp--preset--font-size--heading-4);
+	scroll-margin-top: 80px;
+}
+
+.docs__anchor {
+	margin-left: var(--wp--preset--spacing--10);
+	color: var(--wp--preset--color--light-grey-1);
+	text-decoration: none;
+}
+
+.docs__anchor:hover,
+.docs__anchor:focus {
+	color: var(--wp--preset--color--blueberry-1);
 }
 
 .docs p,
@@ -20,7 +32,7 @@
 .docs ol,
 .docs table,
 .docs pre,
-.docs details {
+.docs figure {
 	margin-top: var(--wp--preset--spacing--20);
 }
 
@@ -50,13 +62,14 @@
 	vertical-align: top;
 }
 
-.docs details {
-	padding: var(--wp--preset--spacing--10) var(--wp--preset--spacing--20);
-	background: var(--wp--preset--color--blueberry-4);
+.docs__diagram {
+	overflow-x: auto;
+	text-align: center;
 }
 
-.docs summary {
-	cursor: pointer;
+.docs__diagram svg {
+	max-width: 100%;
+	height: auto;
 }
 
 .docs__pager {
@@ -64,13 +77,32 @@
 	justify-content: space-between;
 	gap: var(--wp--preset--spacing--20);
 	margin-top: var(--wp--preset--spacing--40);
+	padding-top: var(--wp--preset--spacing--20);
+	border-top: 1px solid var(--wp--preset--color--light-grey-1);
+}
+
+.docs__pager a {
+	text-decoration: none;
+}
+
+.docs__pager a:last-child:not(:first-child) {
+	margin-left: auto;
+	text-align: right;
+}
+
+.docs__pager span {
+	display: block;
+	color: var(--wp--preset--color--charcoal-4);
+	font-size: var(--wp--preset--font-size--small);
 }
 
 .docs__edit {
 	font-size: var(--wp--preset--font-size--small);
 }
 
-.docs__position {
-	color: var(--wp--preset--color--charcoal-4);
-	font-size: var(--wp--preset--font-size--small);
+@media (max-width: 600px) {
+
+	.docs__diagram svg {
+		max-width: none;
+	}
 }
