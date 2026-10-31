@@ -2,6 +2,8 @@
 
 Presence API records who is where in WordPress. Every part of it writes or reads rows in one table, `wp_presence`, and a row counts as present until it expires.
 
+These pages describe the plugin's `main` branch. The [Reference](reference.md) gives the version each function and hook arrived in.
+
 ```mermaid
 flowchart TB
 	accTitle: How presence moves through the system
@@ -28,4 +30,4 @@ flowchart TB
 - [Synced patterns](synced-patterns.md): a notice on a synced pattern while someone edits the pattern itself.
 - [Multisite](multisite.md): who is online on each site, collected for Network Admin.
 
-[Presence Scenes in Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint-scenes.json) shows all of this running without an install. The [README](https://github.com/WordPress/presence-api#readme) lists every function, hook, REST route and WP-CLI command.
+[Presence Scenes in Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint-scenes.json) shows all of this running without an install. The [Reference](reference.md) lists every public function and hook, generated from the code.
