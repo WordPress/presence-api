@@ -1,6 +1,8 @@
 # Presence API docs
 
-Presence API records who is where in WordPress. Every part of it writes or reads rows in one table, `wp_presence`, and a row counts as present until it expires.
+Presence API shows who else is working on a WordPress site: who is logged in, which screen they are on, and which posts they have open. New to it? Start with the [Introduction](introduction.md).
+
+Under the hood, everything it knows is a row in one table, `wp_presence`, and a row counts until it expires.
 
 ```mermaid
 flowchart LR
