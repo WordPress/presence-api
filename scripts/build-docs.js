@@ -286,6 +286,13 @@ async function build() {
 
 	const svgs = await drawDiagrams( diagrams );
 
+	// The course's length, counting every page but the reference, which is for looking things up.
+	const courseMinutes = rendered
+		.filter(
+			( page ) => page.entry.parent && page.entry.slug !== 'reference'
+		)
+		.reduce( ( total, page ) => total + page.minutes, 0 );
+
 	rendered.forEach(
 		( { entry, source, dir, description, minutes, body }, index ) => {
 			// The trail from the docs root to this page, as links for people and as BreadcrumbList data for search engines.
@@ -372,7 +379,7 @@ ${ showcaseNav
 		${ breadcrumbs }${
 			entry.parent
 				? `<p class="docs__time">${ minutes } min read</p>\n\t\t`
-				: ''
+				: `<p class="docs__time">Beginner to intermediate · about ${ courseMinutes } minutes</p>\n\t\t`
 		}${ content.trim() }
 			<nav class="docs__pager" aria-label="Previous and next">
 ${ pager }
