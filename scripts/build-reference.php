@@ -123,8 +123,13 @@ ksort( $functions );
 ksort( $hooks );
 ksort( $js_hooks );
 
-$entry = static function ( $heading, $item, $lead ) use ( $blob ) {
-	$out = array( "### `$heading`", '', $lead, '', $item['summary'] );
+// Each entry leads with what it does, and ends on one small line of kind, version and file.
+$entry = static function ( $heading, $item, $signature, $kind ) use ( $blob ) {
+	$out = array( "### `$heading`", '', $item['summary'] );
+	if ( $signature ) {
+		$out[] = '';
+		$out[] = $signature;
+	}
 	if ( $item['params'] ) {
 		$out[] = '';
 		foreach ( $item['params'] as $param ) {
@@ -135,7 +140,8 @@ $entry = static function ( $heading, $item, $lead ) use ( $blob ) {
 		}
 	}
 	$out[] = '';
-	$out[] = trim( ( $item['since'] ? "Since {$item['since']}. " : '' ) . "Source: [`{$item[0]}`]($blob{$item[0]})" );
+	$meta  = array_filter( array( $kind, $item['since'] ? "since {$item['since']}" : '', '[`' . basename( $item[0] ) . "`]($blob{$item[0]})" ) );
+	$out[] = '<sub>' . ucfirst( implode( ' · ', $meta ) ) . '</sub>';
 	$out[] = '';
 	return implode( "\n", $out );
 };
@@ -144,17 +150,17 @@ $doc   = array( '# Reference', '', 'Every public function and documented hook in
 $doc[] = '## PHP functions';
 $doc[] = '';
 foreach ( $functions as $name => $item ) {
-	$doc[] = $entry( "$name()", $item, "`{$item[2]}`" );
+	$doc[] = $entry( "$name()", $item, "`{$item[2]}`", '' );
 }
 $doc[] = '## PHP hooks';
 $doc[] = '';
 foreach ( $hooks as $name => $item ) {
-	$doc[] = $entry( $name, $item, "{$item[2]}." );
+	$doc[] = $entry( $name, $item, '', $item[2] );
 }
 $doc[] = '## JavaScript hooks';
 $doc[] = '';
 foreach ( $js_hooks as $name => $item ) {
-	$doc[] = $entry( $name, $item, "{$item[2]}." );
+	$doc[] = $entry( $name, $item, '', $item[2] );
 }
 $doc[] = 'REST routes and WP-CLI commands are listed in the [README](https://github.com/WordPress/presence-api#rest-api).';
 $markdown = implode( "\n", $doc ) . "\n";
