@@ -32,51 +32,52 @@ function href( fromDir, toDir ) {
 	return ( path.relative( fromDir, toDir ) || '.' ) + '/';
 }
 
-const escape = ( text ) =>
+const escapeHtml = ( text ) =>
 	text.replace( /[&<>"]/g, ( c ) => `&#${ c.charCodeAt( 0 ) };` );
 
 const pages = new Set( manifest.map( sourceOf ) );
+const md = new MarkdownIt( { html: true } );
+
+// Points a link to another page at its built directory, and fails on one the manifest does not list.
+md.renderer.rules.link_open = ( tokens, i, options, env, self ) => {
+	const link = tokens[ i ].attrGet( 'href' );
+	if ( link && /^[^:#]+\.md(#.*)?$/.test( link ) ) {
+		const [ file, hash = '' ] = link.split( '#' );
+		const linked = path.resolve( path.dirname( env.source ), file );
+		if ( ! pages.has( linked ) ) {
+			throw new Error(
+				`${ env.source } links to ${ file }, which docs/manifest.json does not list.`
+			);
+		}
+		tokens[ i ].attrSet(
+			'href',
+			href( env.dir, outputDir( linked ) ) + ( hash && `#${ hash }` )
+		);
+	}
+	return self.renderToken( tokens, i, options );
+};
 
 for ( const entry of manifest ) {
 	const source = sourceOf( entry );
 	const dir = outputDir( source );
-	const md = new MarkdownIt( { html: true } );
 
-	md.renderer.rules.link_open = ( tokens, i, options, env, self ) => {
-		const link = tokens[ i ].attrGet( 'href' );
-		if ( link && /^[^:#]+\.md(#.*)?$/.test( link ) ) {
-			const [ file, hash = '' ] = link.split( '#' );
-			const linked = path.resolve( path.dirname( source ), file );
-			if ( ! pages.has( linked ) ) {
-				throw new Error(
-					`${ source } links to ${ file }, which docs/manifest.json does not list.`
-				);
-			}
-			const target = outputDir( linked );
-			tokens[ i ].attrSet(
-				'href',
-				href( dir, target ) + ( hash && `#${ hash }` )
-			);
-		}
-		return self.renderToken( tokens, i, options );
-	};
-
-	const siblings = manifest.filter(
-		( e ) => e.parent && e.parent === entry.parent
-	);
+	const siblings = entry.parent
+		? manifest.filter( ( e ) => e.parent === entry.parent )
+		: [];
 	const index = siblings.indexOf( entry );
 	const pager = [
 		[ siblings[ index - 1 ], 'Previous' ],
 		[ siblings[ index + 1 ], 'Next' ],
 	]
-		.filter( ( [ sibling ] ) => index !== -1 && sibling )
+		.filter( ( [ sibling ] ) => sibling )
 		.map(
 			( [ sibling, label ] ) =>
-				`<a href="${ href( dir, outputDir( sourceOf( sibling ) ) ) }">${ label }: ${ escape( sibling.title ) }</a>`
+				`<a href="${ href( dir, outputDir( sourceOf( sibling ) ) ) }">${ label }: ${ escapeHtml( sibling.title ) }</a>`
 		)
 		.join( '\n\t\t\t' );
+	const section = manifest.find( ( e ) => e.slug === entry.parent );
 	const nav = pager
-		? `<nav class="docs__pager" aria-label="Lessons">\n\t\t\t${ pager }\n\t\t</nav>\n\t\t`
+		? `<nav class="docs__pager" aria-label="${ escapeHtml( section.title ) }">\n\t\t\t${ pager }\n\t\t</nav>\n\t\t`
 		: '';
 
 	const assets = path.relative( dir, '.' ) || '.';
@@ -86,7 +87,7 @@ for ( const entry of manifest ) {
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>${ escape( entry.title ) } | Presence API</title>
+	<title>${ escapeHtml( entry.title ) } | Presence API</title>
 	<link rel="icon" href="${ assets }/images/icon-256x256.png">
 	<link rel="stylesheet" href="${ assets }/style.css">
 	<link rel="stylesheet" href="${ assets }/docs.css">
@@ -101,7 +102,7 @@ for ( const entry of manifest ) {
 		</ul>
 	</nav>
 	<main id="main" class="docs">
-		${ md.render( fs.readFileSync( source, 'utf8' ) ).trim() }
+		${ md.render( fs.readFileSync( source, 'utf8' ), { source, dir } ).trim() }
 		${ nav }<p class="docs__edit"><a href="https://github.com/WordPress/presence-api/edit/main/${ path.relative( root, source ) }">Edit this page on GitHub</a></p>
 	</main>
 </body>
