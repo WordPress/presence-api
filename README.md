@@ -92,6 +92,47 @@ A leading `_` marks bookkeeping rows, which are not participants: `_collab` hold
 
 This plugin counts a post room's editors by the `editor-` prefix, so anyone else using it inflates the count.
 
+### Custom rooms
+
+A screen for something that isn't a post, such as an order or a form entry kept in its own table, can have a room of its own. Name it under your plugin, like `my-plugin/order:123`, and have the screen's own Heartbeat join it and read it back:
+
+```js
+jQuery( document )
+	.on( 'heartbeat-send', ( event, data ) => {
+		data[ 'my-plugin-order' ] = myPluginOrderId;
+	} )
+	.on( 'heartbeat-tick', ( event, data ) => {
+		if ( data[ 'my-plugin-order' ] ) {
+			myPluginShowViewers( data[ 'my-plugin-order' ] ); // Names, so set them as text.
+		}
+	} );
+```
+```php
+add_filter( 'heartbeat_received', function ( $response, $data ) {
+	$order_id = absint( $data['my-plugin-order'] ?? 0 );
+	if ( ! $order_id || ! current_user_can( 'edit_shop_orders' ) ) { // Your screen's own capability.
+		return $response;
+	}
+
+	$user_id = get_current_user_id();
+	$entries = wp_presence_exchange( "my-plugin/order:{$order_id}", "my-plugin-{$user_id}", array(), array( 'user_id' => $user_id, 'client_prefix' => 'my-plugin-' ) );
+
+	$response['my-plugin-order'] = array();
+	foreach ( $entries as $entry ) {
+		if ( (int) $entry->user_id !== $user_id ) {
+			$response['my-plugin-order'][] = get_the_author_meta( 'display_name', $entry->user_id );
+		}
+	}
+	return $response;
+}, 10, 2 );
+```
+
+Each tick renews the row, and a closed tab's row expires within the TTL, which outlasts the 120 seconds between ticks in a background tab.
+
+Use the screen's own Heartbeat key rather than [`presence-api.liveSurfaces`](#presence-apilivesurfaces). A surface rides this plugin's ping, which only one tab per screen sends, so two tabs on different orders would share one answer.
+
+Anyone who can edit a post type can read a custom room over the [REST API](#rest-api), so keep `$state` free of anything only the screen's own users should see.
+
 ## Agents
 
 An AI agent working over REST or MCP runs no Heartbeat, so the plugin writes its row when it saves a post. That row puts it, labelled, in the admin bar, the Active Posts widget and the post list's Editors column.
