@@ -493,7 +493,6 @@ The surfaces the plugin's ping script keeps current. A surface asks Heartbeat fo
 | `key` | Yes | The key sent under `presence-fragments` and answered under the same key. |
 | `target( id )` | Yes | Returns the element to fill, or null when it is not on the page. |
 | `request()` | No | Returns what to send instead of `true`, such as row IDs; a falsy value skips the ask. |
-| `busy( element )` | No | Returns whether to leave the surface alone this tick, instead of the pointer, focus and checked checkbox check. |
 | `apply( element, html )` | No | Swaps the markup in, instead of setting `innerHTML`. |
 
 A response can also be an object of HTML keyed by ID, in which case each entry fills `target( id )`.

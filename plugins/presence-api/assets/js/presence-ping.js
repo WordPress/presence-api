@@ -163,9 +163,8 @@
 		 * Filters the surfaces kept current over Heartbeat.
 		 *
 		 * @since 0.11.0
-		 * @since 0.19.1 A surface may carry its own `busy()` check.
 		 *
-		 * @param {Object[]} surfaces Each with a `key`, a `target()` lookup, and an optional `request()`, `busy()` and `apply()`.
+		 * @param {Object[]} surfaces Each with a `key`, a `target()` lookup, and an optional `request()` and `apply()`.
 		 */
 		// A copy, since this runs every tick and a callback may push onto what it is given.
 		return wp.hooks.applyFilters(
