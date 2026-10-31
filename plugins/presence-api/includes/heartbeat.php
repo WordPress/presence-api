@@ -428,7 +428,7 @@ if ( ! function_exists( 'wp_presence_admin_heartbeat_received' ) ) {
 		$ping    = $data['presence-ping'];
 		$screen  = $ping['screen'] ?? '';
 
-		// The editor heartbeat includes the post ID in wp-refresh-post-lock.
+		// The front end pings its post ID, and the editor sends it in core's lock refresh.
 		if ( 'front' === $screen ) {
 			$post_id = $ping['post_id'] ?? 0;
 		} elseif ( ! empty( $data['wp-refresh-post-lock']['post_id'] ) ) {

@@ -22,7 +22,6 @@ plugins/presence-api/includes/network-user-list.php wp_presence_get_network_site
 plugins/presence-api/includes/network-user-list.php wp_presence_network_aggregation_enabled()
 plugins/presence-api/includes/network-user-list.php wp_presence_network_capability()
 plugins/presence-api/includes/network-user-list.php wp_presence_online_users_url()
-plugins/presence-api/includes/post-lock-bridge.php wp_presence_editor_state()
 plugins/presence-api/includes/post-lock-bridge.php wp_presence_has_table()
 plugins/presence-api/includes/post-lock-bridge.php wp_presence_room_rows()
 plugins/presence-api/includes/user-list.php wp_presence_fragment_request()
