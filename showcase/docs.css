@@ -1,9 +1,22 @@
 /* Prose for the pages scripts/build-docs.js renders from docs/. */
 
 .docs {
-	max-width: 760px;
+	max-width: 1040px;
 	margin: 0 auto;
 	padding: var(--wp--preset--spacing--40) var(--wp--preset--spacing--edge-space);
+}
+
+/* Text keeps a readable width; tables, diagrams and code use the full one. */
+.docs > * {
+	max-width: 760px;
+	margin-right: auto;
+	margin-left: auto;
+}
+
+.docs > table,
+.docs > figure,
+.docs > pre {
+	max-width: none;
 }
 
 .docs h1 {
@@ -13,6 +26,25 @@
 .docs h2 {
 	margin-top: var(--wp--preset--spacing--40);
 	font-size: var(--wp--preset--font-size--heading-4);
+}
+
+.docs h3 {
+	margin-top: var(--wp--preset--spacing--40);
+	padding-top: var(--wp--preset--spacing--20);
+	border-top: 1px solid var(--wp--preset--color--light-grey-1);
+	font-size: var(--wp--preset--font-size--extra-large);
+}
+
+.docs h2 + h3 {
+	margin-top: var(--wp--preset--spacing--20);
+}
+
+.docs h3 code {
+	font-size: 0.85em;
+}
+
+.docs h2,
+.docs h3 {
 	scroll-margin-top: 80px;
 }
 
@@ -105,4 +137,20 @@
 	.docs__diagram svg {
 		max-width: none;
 	}
+}
+
+.docs__breadcrumbs ol {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0 var(--wp--preset--spacing--10);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	color: var(--wp--preset--color--charcoal-4);
+	font-size: var(--wp--preset--font-size--small);
+}
+
+.docs__breadcrumbs li + li::before {
+	content: "/";
+	margin-right: var(--wp--preset--spacing--10);
 }
