@@ -1,6 +1,6 @@
 # Edges
 
-The same rows and rules, under the conditions that bend them.
+Where the same rows and rules bend.
 
 | Edge | What changes | Read |
 | --- | --- | --- |

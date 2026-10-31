@@ -20,7 +20,7 @@ wp.hooks.doAction( 'presence-api.roomChanged', 'admin/online' );
 
 ## Common mistake
 
-Not every tab pings. Followers on the same screen get the leader's answer replayed, which is why a surface whose request differs per tab currently sees the leader's answer ([#921](https://github.com/WordPress/presence-api/issues/921)).
+Not every tab pings. Followers on the same screen get the leader's answer replayed, so a surface whose request differs per tab sees the leader's answer for now ([#921](https://github.com/WordPress/presence-api/issues/921)).
 
 ## Check yourself
 

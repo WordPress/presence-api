@@ -1,6 +1,6 @@
 # Writers
 
-Every row has one kind of writer that keeps it alive, and knowing which one explains when it appears and when it lapses.
+Each row has one kind of writer keeping it alive, which explains when it appears and when it lapses.
 
 ## Read
 

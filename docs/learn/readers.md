@@ -1,6 +1,6 @@
 # Readers and signals
 
-Reading is cheap and always filtered by expiry, and change is announced in layers, from a counter to a full callback.
+Reads skip expired rows, and change is announced in layers, from a version counter to PHP actions.
 
 ## Read
 

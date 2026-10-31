@@ -10,7 +10,7 @@ Knowing who is where takes a write every time someone moves or a Heartbeat ticks
 
 ## Common mistake
 
-A transient or an option looks simpler, but it lands in the options table, or in the object cache on a host that has one. The plugin cannot count on that cache, and in post meta every write marks cached post queries as stale.
+Post meta or an option looks simpler, but writes that often there clear caches the rest of the site relies on, as #64696 found.
 
 ## Check yourself
 
