@@ -48,13 +48,15 @@
 
 .docs__anchor {
 	margin-left: var(--wp--preset--spacing--10);
-	color: var(--wp--preset--color--light-grey-1);
+	color: var(--wp--preset--color--blueberry-1);
 	text-decoration: none;
+	opacity: 0;
 }
 
-.docs__anchor:hover,
+.docs h2:hover .docs__anchor,
+.docs h3:hover .docs__anchor,
 .docs__anchor:focus {
-	color: var(--wp--preset--color--blueberry-1);
+	opacity: 1;
 }
 
 .docs p,
@@ -84,6 +86,12 @@
 	font-size: var(--wp--preset--font-size--small);
 }
 
+/* Two-column tables share a first-column width, so they line up. */
+.docs th:first-child:nth-last-child(2),
+.docs td:first-child:nth-last-child(2) {
+	width: 30%;
+}
+
 .docs th,
 .docs td {
 	padding: var(--wp--preset--spacing--10);
@@ -94,7 +102,6 @@
 
 .docs__diagram {
 	overflow-x: auto;
-	text-align: center;
 }
 
 .docs__diagram svg {
