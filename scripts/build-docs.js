@@ -51,6 +51,13 @@ const showcaseNav = fs
 	.readFileSync( path.join( root, 'showcase/index.html' ), 'utf8' )
 	.match( /\t<nav class="local-nav"[\s\S]*?<\/nav>/ )[ 0 ];
 const md = new MarkdownIt( { html: true } );
+
+// The sidebar's headings, each placed above the page that starts its group.
+const GROUPS = {
+	'rows-and-rooms': 'How it works',
+	'admin-screens': 'Features',
+	project: 'Next steps',
+};
 const REPO = 'https://github.com/WordPress/presence-api';
 
 // The anchors GitHub gives the README's headings, so a link to one can be checked.
@@ -295,7 +302,7 @@ async function build() {
 
 	rendered.forEach(
 		( { entry, source, dir, description, minutes, body }, index ) => {
-			// The trail from the docs root to this page, as links for people and as BreadcrumbList data for search engines.
+			// The trail from the docs root to this page, as BreadcrumbList data for search engines.
 			const trail = [];
 			for (
 				let crumb = entry;
@@ -306,21 +313,6 @@ async function build() {
 					rendered.find( ( page ) => page.entry === crumb )
 				);
 			}
-			const breadcrumbs =
-				trail.length > 1
-					? `<nav class="docs__breadcrumbs" aria-label="Breadcrumb"><ol>${ trail
-							.map( ( page, n ) =>
-								n === trail.length - 1
-									? `<li aria-current="page">${ escapeHtml(
-											page.entry.title
-										) }</li>`
-									: `<li><a href="${ href(
-											dir,
-											page.dir
-										) }">${ escapeHtml( page.entry.title ) }</a></li>`
-							)
-							.join( '' ) }</ol></nav>\n\t\t`
-					: '';
 			const structured = JSON.stringify( {
 				'@context': 'https://schema.org',
 				'@type': 'BreadcrumbList',
@@ -338,11 +330,26 @@ async function build() {
 				.filter( ( [ page ] ) => page )
 				.map(
 					( [ page, label ] ) =>
-						`<a href="${ href( dir, page.dir ) }"><span>${ label } · ${ page.minutes } min</span> ${ escapeHtml(
+						`<a href="${ href( dir, page.dir ) }"><span>${ label }</span> ${ escapeHtml(
 							page.entry.title
 						) }</a>`
 				)
 				.join( '\n' );
+			const sidebar = rendered
+				.map( ( page ) => {
+					const heading = GROUPS[ page.entry.slug ]
+						? `</ul>\n\t\t\t<h2>${ GROUPS[ page.entry.slug ] }</h2>\n\t\t\t<ul>`
+						: '';
+					const current =
+						page.entry === entry ? ' aria-current="page"' : '';
+					return `${ heading }<li><a href="${ href(
+						dir,
+						page.dir
+					) }"${ current }>${ escapeHtml(
+						page.entry.parent ? page.entry.title : 'Overview'
+					) }</a></li>`;
+				} )
+				.join( '\n\t\t\t\t' );
 			const assets = path.relative( dir, '.' ) || '.';
 			const url = `${ SITE }${ dir }/`;
 			const content = body.replace(
@@ -375,8 +382,18 @@ async function build() {
 ${ showcaseNav
 	.replace( 'href="#main"', `href="${ assets }/"` )
 	.replace( 'href="docs/"', `href="${ href( dir, 'docs' ) }"` ) }
+	<div class="docs-layout">
+	<details class="docs-sidebar" open>
+		<summary>Contents</summary>
+		<nav aria-label="Docs">
+			<ul>
+				${ sidebar }
+			</ul>
+		</nav>
+	</details>
+	<script>if ( matchMedia( '(max-width: 900px)' ).matches ) document.querySelector( '.docs-sidebar' ).open = false;</script>
 	<main id="main" class="docs">
-		${ breadcrumbs }${
+		${
 			entry.parent
 				? `<p class="docs__time">${ minutes } min read</p>\n\t\t`
 				: `<p class="docs__time">Beginner to intermediate · about ${ courseMinutes } minutes</p>\n\t\t`
@@ -389,6 +406,7 @@ ${ pager }
 				source
 			) }">Edit this page on GitHub</a></p>
 	</main>
+	</div>
 </body>
 </html>
 `;
