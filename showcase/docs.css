@@ -9,8 +9,6 @@
 /* Text keeps a readable width; tables, diagrams and code use the full one. */
 .docs > * {
 	max-width: 760px;
-	margin-right: auto;
-	margin-left: auto;
 }
 
 .docs > table,
@@ -132,10 +130,11 @@
 	font-size: var(--wp--preset--font-size--small);
 }
 
+/* On a phone a diagram keeps a legible size and scrolls sideways. */
 @media (max-width: 600px) {
 
 	.docs__diagram svg {
-		max-width: none;
+		min-width: 560px;
 	}
 }
 
