@@ -77,12 +77,12 @@ for ( const [ , heading ] of fs
 	readmeAnchors.add( anchor );
 }
 
-// The public functions the generated reference lists, the only plugin functions a page may name.
-const publicFunctions = new Set(
+// The public functions and hooks the generated reference lists, the only plugin names a page may use.
+const documented = new Set(
 	[
 		...fs
 			.readFileSync( path.join( docs, 'reference.md' ), 'utf8' )
-			.matchAll( /^### `(\w+)\(\)`$/gm ),
+			.matchAll( /^### `([\w.-]+?)(?:\(\))?`$/gm ),
 	].map( ( [ , name ] ) => name )
 );
 
@@ -173,14 +173,17 @@ md.core.ruler.push( 'docs_meta', ( state ) => {
 		for ( const child of token.children || [] ) {
 			const named =
 				child.type === 'code_inline' &&
-				child.content.match( /^(\w*presence\w*)\(/ );
+				child.content.match(
+					/^(\w*presence\w*)\(|^(wp_presence_\w+|presence-api\.\w+)$/
+				);
+			const name = named && ( named[ 1 ] || named[ 2 ] );
 			if (
-				named &&
-				! publicFunctions.has( named[ 1 ] ) &&
+				name &&
+				! documented.has( name ) &&
 				! state.env.source.endsWith( 'reference.md' )
 			) {
 				throw new Error(
-					`${ state.env.source } names ${ named[ 1 ] }(), which is not a public function.`
+					`${ state.env.source } names ${ name }, which docs/reference.md does not list.`
 				);
 			}
 		}
