@@ -45,6 +45,11 @@ const slugify = ( text ) =>
 		.replace( /^-|-$/g, '' );
 
 const pages = new Set( manifest.map( sourceOf ) );
+
+// The showcase's own navigation, so the bar is the same on every page of the site.
+const showcaseNav = fs
+	.readFileSync( path.join( root, 'showcase/index.html' ), 'utf8' )
+	.match( /\t<nav class="local-nav"[\s\S]*?<\/nav>/ )[ 0 ];
 const md = new MarkdownIt( { html: true } );
 const REPO = 'https://github.com/WordPress/presence-api';
 
@@ -247,6 +252,40 @@ async function build() {
 	const svgs = await drawDiagrams( diagrams );
 
 	rendered.forEach( ( { entry, source, dir, description, body }, index ) => {
+		// The trail from the docs root to this page, as links for people and as BreadcrumbList data for search engines.
+		const trail = [];
+		for (
+			let crumb = entry;
+			crumb;
+			crumb = manifest.find( ( e ) => e.slug === crumb.parent )
+		) {
+			trail.unshift( rendered.find( ( page ) => page.entry === crumb ) );
+		}
+		const breadcrumbs =
+			trail.length > 1
+				? `<nav class="docs__breadcrumbs" aria-label="Breadcrumb"><ol>${ trail
+						.map( ( page, n ) =>
+							n === trail.length - 1
+								? `<li aria-current="page">${ escapeHtml(
+										page.entry.title
+									) }</li>`
+								: `<li><a href="${ href(
+										dir,
+										page.dir
+									) }">${ escapeHtml( page.entry.title ) }</a></li>`
+						)
+						.join( '' ) }</ol></nav>\n\t\t`
+				: '';
+		const structured = JSON.stringify( {
+			'@context': 'https://schema.org',
+			'@type': 'BreadcrumbList',
+			itemListElement: trail.map( ( page, n ) => ( {
+				'@type': 'ListItem',
+				position: n + 1,
+				name: page.entry.title,
+				item: `${ SITE }${ page.dir }/`,
+			} ) ),
+		} );
 		const pager = [
 			[ rendered[ index - 1 ], 'Previous' ],
 			[ rendered[ index + 1 ], 'Next' ],
@@ -281,21 +320,19 @@ async function build() {
 	<meta property="og:url" content="${ url }">
 	<meta property="og:image" content="${ SITE }og.png">
 	<meta name="twitter:card" content="summary_large_image">
+	<script type="application/ld+json">${ structured }</script>
 	<link rel="icon" href="${ assets }/images/icon-256x256.png">
 	<link rel="stylesheet" href="${ assets }/style.css">
 	<link rel="stylesheet" href="${ assets }/docs.css">
 </head>
 <body>
 	<a class="skip-link" href="#main">Skip to content</a>
-	<nav class="local-nav" aria-label="Presence API">
-		<a class="local-nav__title" href="${ assets }/">Presence API</a>
-		<ul>
-			<li><a href="${ href( dir, 'docs' ) }">Docs</a></li>
-			<li><a href="https://github.com/WordPress/presence-api">GitHub</a></li>
-		</ul>
-	</nav>
+${ showcaseNav
+	.replace( 'href="#main"', `href="${ assets }/"` )
+	.replace( /href="#/g, `href="${ assets }/#` )
+	.replace( 'href="docs/"', `href="${ href( dir, 'docs' ) }"` ) }
 	<main id="main" class="docs">
-			${ content.trim() }
+		${ breadcrumbs }${ content.trim() }
 			<nav class="docs__pager" aria-label="Previous and next">
 ${ pager }
 			</nav>
