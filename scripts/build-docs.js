@@ -148,7 +148,7 @@ md.renderer.rules.image = ( tokens, i, options, env, self ) => {
 	return self.renderToken( tokens, i, options );
 };
 
-// Gives each h2 and h3 an id to link to, and keeps the first paragraph as the page's description.
+// Gives each h2 and h3 an id to link to, lists the h2s for the page's contents, and keeps the first paragraph as the page's description.
 md.core.ruler.push( 'docs_meta', ( state ) => {
 	const used = new Set();
 	state.tokens.forEach( ( token, i ) => {
@@ -160,6 +160,15 @@ md.core.ruler.push( 'docs_meta', ( state ) => {
 			}
 			used.add( id );
 			token.attrSet( 'id', id );
+			if ( token.tag === 'h2' ) {
+				state.env.headings.push( {
+					id,
+					html: escapeHtml( inline.content ).replace(
+						/`([^`]+)`/g,
+						'<code>$1</code>'
+					),
+				} );
+			}
 		}
 		for ( const child of token.children || [] ) {
 			const named =
@@ -268,7 +277,7 @@ async function build() {
 	const rendered = manifest.map( ( entry ) => {
 		const source = sourceOf( entry );
 		const dir = outputDir( source );
-		const env = { source, dir, diagrams: [] };
+		const env = { source, dir, diagrams: [], headings: [] };
 		const markdown = fs.readFileSync( source, 'utf8' );
 		const body = md.render( markdown, env );
 		// Minutes to read the prose at 200 words a minute, leaving out code and diagrams.
@@ -283,6 +292,7 @@ async function build() {
 			source,
 			dir,
 			description: env.description || '',
+			headings: env.headings,
 			minutes: Math.max( 1, Math.round( words / 200 ) ),
 			body: body.replace(
 				/<!--diagram-(\d+)-->/g,
@@ -301,7 +311,10 @@ async function build() {
 		.reduce( ( total, page ) => total + page.minutes, 0 );
 
 	rendered.forEach(
-		( { entry, source, dir, description, minutes, body }, index ) => {
+		(
+			{ entry, source, dir, description, minutes, headings, body },
+			index
+		) => {
 			// The trail from the docs root to this page, as BreadcrumbList data for search engines.
 			const trail = [];
 			for (
@@ -350,6 +363,22 @@ async function build() {
 					) }</a></li>`;
 				} )
 				.join( '\n\t\t\t\t' );
+			// The page's own sections, left out where there are too few to need a guide.
+			const toc =
+				headings.length >= 3
+					? `<nav class="docs-toc" aria-label="On this page">
+		<h2>On this page</h2>
+		<ul>
+			${ headings
+				.map(
+					( heading ) =>
+						`<li><a href="#${ heading.id }">${ heading.html }</a></li>`
+				)
+				.join( '\n\t\t\t' ) }
+		</ul>
+	</nav>
+	`
+					: '';
 			const assets = path.relative( dir, '.' ) || '.';
 			const url = `${ SITE }${ dir }/`;
 			const content = body.replace(
@@ -376,6 +405,7 @@ async function build() {
 	<link rel="icon" href="${ assets }/images/icon-256x256.png">
 	<link rel="stylesheet" href="${ assets }/style.css">
 	<link rel="stylesheet" href="${ assets }/docs.css">
+	<script src="${ assets }/docs.js" defer></script>
 </head>
 <body>
 	<a class="skip-link" href="#main">Skip to content</a>
@@ -391,7 +421,6 @@ ${ showcaseNav
 			</ul>
 		</nav>
 	</details>
-	<script>if ( matchMedia( '(max-width: 900px)' ).matches ) document.querySelector( '.docs-sidebar' ).open = false;</script>
 	<main id="main" class="docs">
 		${
 			entry.parent
@@ -406,7 +435,7 @@ ${ pager }
 				source
 			) }">Edit this page on GitHub</a></p>
 	</main>
-	</div>
+	${ toc }</div>
 </body>
 </html>
 `;

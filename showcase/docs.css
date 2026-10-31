@@ -2,14 +2,15 @@
 
 .docs-layout {
 	display: grid;
-	grid-template-columns: 220px minmax(0, 1fr);
+	grid-template-columns: 220px minmax(0, 720px) 200px;
+	justify-content: center;
 	gap: var(--wp--preset--spacing--50);
-	max-width: 1280px;
 	margin: 0 auto;
 	padding: var(--wp--preset--spacing--40) var(--wp--preset--spacing--edge-space);
 }
 
-.docs-sidebar {
+.docs-sidebar,
+.docs-toc {
 	position: sticky;
 	top: 90px;
 	align-self: start;
@@ -22,7 +23,8 @@
 	display: none;
 }
 
-.docs-sidebar h2 {
+.docs-sidebar h2,
+.docs-toc h2 {
 	margin: var(--wp--preset--spacing--20) 0 var(--wp--preset--spacing--10);
 	color: var(--wp--preset--color--charcoal-4);
 	font-family: inherit;
@@ -30,7 +32,8 @@
 	font-weight: 600;
 }
 
-.docs-sidebar a {
+.docs-sidebar a,
+.docs-toc a {
 	display: block;
 	padding: 4px 0 4px 12px;
 	border-left: 2px solid var(--wp--preset--color--light-grey-1);
@@ -38,14 +41,28 @@
 	text-decoration: none;
 }
 
-.docs-sidebar a:hover {
+.docs-sidebar a:hover,
+.docs-toc a:hover {
 	color: var(--wp--preset--color--blueberry-1);
 }
 
-.docs-sidebar a[aria-current="page"] {
+.docs-sidebar a[aria-current],
+.docs-toc a[aria-current] {
 	border-left-color: var(--wp--preset--color--blueberry-1);
 	color: var(--wp--preset--color--blueberry-1);
 	font-weight: 600;
+}
+
+/* The page's contents show only where a third column fits. */
+@media (max-width: 1200px) {
+
+	.docs-layout {
+		grid-template-columns: 220px minmax(0, 720px);
+	}
+
+	.docs-toc {
+		display: none;
+	}
 }
 
 /* On narrow screens the sidebar becomes a Contents toggle above the page. */
