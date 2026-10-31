@@ -113,6 +113,34 @@ md.renderer.rules.link_open = ( tokens, i, options, env, self ) => {
 	return self.renderToken( tokens, i, options );
 };
 
+// Shows a WordPress.org screenshot from the copy the site publishes, and fails on one that does not exist.
+const SCREENSHOTS = 'plugins/presence-api/.wordpress-org/';
+md.renderer.rules.image = ( tokens, i, options, env, self ) => {
+	const token = tokens[ i ];
+	const file = path.relative(
+		root,
+		path.resolve( path.dirname( env.source ), token.attrGet( 'src' ) )
+	);
+	if (
+		! file.startsWith( SCREENSHOTS ) ||
+		! fs.existsSync( path.join( root, file ) )
+	) {
+		throw new Error(
+			`${ env.source } shows ${ file }, which is not a WordPress.org screenshot in the repo.`
+		);
+	}
+	token.attrSet(
+		'src',
+		`${ path.relative( env.dir, '.' ) }/images/${ path.basename( file ) }`
+	);
+	token.attrSet(
+		'alt',
+		self.renderInlineAsText( token.children, options, env )
+	);
+	token.attrSet( 'loading', 'lazy' );
+	return self.renderToken( tokens, i, options );
+};
+
 // Gives each h2 and h3 an id to link to, and keeps the first paragraph as the page's description.
 md.core.ruler.push( 'docs_meta', ( state ) => {
 	const used = new Set();
@@ -350,6 +378,10 @@ ${ pager }
 			path.join( out, dir, 'index.md' ),
 			fs
 				.readFileSync( source, 'utf8' )
+				.replace(
+					/\]\((?:\.\.\/)+(plugins\/presence-api\/\.wordpress-org\/[^)]+)\)/g,
+					'](https://raw.githubusercontent.com/WordPress/presence-api/main/$1)'
+				)
 				.replace(
 					/\]\(([^):#]+)\.md(#[^)]*)?\)/g,
 					( match, file, hash = '' ) =>

@@ -160,3 +160,11 @@
 	content: "/";
 	margin-right: var(--wp--preset--spacing--10);
 }
+
+.docs img {
+	display: block;
+	max-width: 100%;
+	height: auto;
+	margin-top: var(--wp--preset--spacing--20);
+	border: 1px solid var(--wp--preset--color--light-grey-1);
+}

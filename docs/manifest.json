@@ -6,6 +6,12 @@
 		"parent": null
 	},
 	{
+		"title": "Introduction",
+		"slug": "introduction",
+		"markdown_source": "../docs/introduction.md",
+		"parent": "docs"
+	},
+	{
 		"title": "Rows and rooms",
 		"slug": "rows-and-rooms",
 		"markdown_source": "../docs/rows-and-rooms.md",
