@@ -1,0 +1,74 @@
+[
+	{
+		"title": "Presence API",
+		"slug": "docs",
+		"markdown_source": "../docs/README.md",
+		"parent": null
+	},
+	{
+		"title": "Learn presence",
+		"slug": "learn",
+		"markdown_source": "../docs/learn/README.md",
+		"parent": "docs"
+	},
+	{
+		"title": "See it",
+		"slug": "see-it",
+		"markdown_source": "../docs/learn/see-it.md",
+		"parent": "learn"
+	},
+	{
+		"title": "Why a table",
+		"slug": "why-a-table",
+		"markdown_source": "../docs/learn/why-a-table.md",
+		"parent": "learn"
+	},
+	{
+		"title": "The row",
+		"slug": "the-row",
+		"markdown_source": "../docs/learn/the-row.md",
+		"parent": "learn"
+	},
+	{
+		"title": "Rooms and client IDs",
+		"slug": "rooms",
+		"markdown_source": "../docs/learn/rooms.md",
+		"parent": "learn"
+	},
+	{
+		"title": "Writers",
+		"slug": "writers",
+		"markdown_source": "../docs/learn/writers.md",
+		"parent": "learn"
+	},
+	{
+		"title": "Readers and signals",
+		"slug": "readers",
+		"markdown_source": "../docs/learn/readers.md",
+		"parent": "learn"
+	},
+	{
+		"title": "The browser",
+		"slug": "browser",
+		"markdown_source": "../docs/learn/browser.md",
+		"parent": "learn"
+	},
+	{
+		"title": "Features are consumers",
+		"slug": "features",
+		"markdown_source": "../docs/learn/features.md",
+		"parent": "learn"
+	},
+	{
+		"title": "Edges",
+		"slug": "edges",
+		"markdown_source": "../docs/learn/edges.md",
+		"parent": "learn"
+	},
+	{
+		"title": "Capstone",
+		"slug": "capstone",
+		"markdown_source": "../docs/learn/capstone.md",
+		"parent": "learn"
+	}
+]

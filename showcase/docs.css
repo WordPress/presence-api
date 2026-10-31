@@ -1,0 +1,71 @@
+/* Prose for the pages scripts/build-docs.js renders from docs/. */
+
+.docs {
+	max-width: 760px;
+	margin: 0 auto;
+	padding: var(--wp--preset--spacing--40) var(--wp--preset--spacing--edge-space);
+}
+
+.docs h1 {
+	font-size: var(--wp--preset--font-size--heading-2);
+}
+
+.docs h2 {
+	margin-top: var(--wp--preset--spacing--40);
+	font-size: var(--wp--preset--font-size--heading-4);
+}
+
+.docs p,
+.docs ul,
+.docs ol,
+.docs table,
+.docs pre,
+.docs details {
+	margin-top: var(--wp--preset--spacing--20);
+}
+
+.docs ul {
+	padding-left: var(--wp--preset--spacing--30);
+	list-style: disc;
+}
+
+.docs pre {
+	padding: var(--wp--preset--spacing--20) var(--wp--preset--spacing--30);
+	overflow-x: auto;
+	background: var(--wp--preset--color--light-grey-2);
+	font-size: var(--wp--preset--font-size--small);
+}
+
+.docs table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: var(--wp--preset--font-size--small);
+}
+
+.docs th,
+.docs td {
+	padding: var(--wp--preset--spacing--10);
+	border-bottom: 1px solid var(--wp--preset--color--light-grey-1);
+	text-align: left;
+	vertical-align: top;
+}
+
+.docs details {
+	padding: var(--wp--preset--spacing--10) var(--wp--preset--spacing--20);
+	background: var(--wp--preset--color--blueberry-4);
+}
+
+.docs summary {
+	cursor: pointer;
+}
+
+.docs__pager {
+	display: flex;
+	justify-content: space-between;
+	gap: var(--wp--preset--spacing--20);
+	margin-top: var(--wp--preset--spacing--40);
+}
+
+.docs__edit {
+	font-size: var(--wp--preset--font-size--small);
+}

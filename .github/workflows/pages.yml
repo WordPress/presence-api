@@ -1,13 +1,16 @@
 name: Pages
 
 # Publishes showcase/ to https://wordpress.github.io/presence-api/, with the
-# plugin's .org screenshots copied in rather than kept twice in the repo.
+# plugin's .org screenshots copied in rather than kept twice in the repo, and
+# docs/ rendered under /docs/.
 
 on:
   push:
     branches: [main]
     paths:
       - 'showcase/**'
+      - 'docs/**'
+      - 'scripts/build-docs.js'
       - 'plugins/presence-api/.wordpress-org/*.png'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
@@ -36,6 +39,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - run: npm ci
 
       - run: npm run build:showcase
 
