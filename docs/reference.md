@@ -521,6 +521,30 @@ Since 0.1.3. Source: [`plugins/presence-api/includes/screen-revisions.php`](http
 
 ## JavaScript hooks
 
+### `presence-api.collaborationEnded`
+
+Action.
+
+Fires `presence-api.collaborationStarted` when a second person joins the editor's room, and `presence-api.collaborationEnded` when one is left.
+
+Since 0.6.0. Source: [`plugins/presence-api/assets/js/presence-ping.js`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/assets/js/presence-ping.js)
+
+### `presence-api.collaborationStarted`
+
+Action.
+
+Fires `presence-api.collaborationStarted` when a second person joins the editor's room, and `presence-api.collaborationEnded` when one is left.
+
+Since 0.6.0. Source: [`plugins/presence-api/assets/js/presence-ping.js`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/assets/js/presence-ping.js)
+
+### `presence-api.keepalive`
+
+Filter.
+
+Filters whether this tab keeps its own presence rows alive over Heartbeat.
+
+Since 0.19.0. Source: [`plugins/presence-api/assets/js/presence-ping.js`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/assets/js/presence-ping.js)
+
 ### `presence-api.liveSurfaces`
 
 Filter.

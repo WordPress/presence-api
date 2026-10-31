@@ -93,19 +93,20 @@ foreach ( $php as $path => $source ) {
 	}
 }
 
-// Documented wp.hooks calls, with any line comments between the docblock and the call.
+// Documented wp.hooks calls, with any line comments between the docblock and the call, whether returned, assigned, or naming one of two hooks by a condition.
 $js_hooks = array();
 foreach ( $js as $path => $source ) {
-	preg_match_all( '#/\*\*((?:(?!\*/).)*)\*/\s*(?://[^\n]*\n\s*)*(?:return\s+)?wp\.hooks\.(doAction|applyFilters|addAction)\(\s*\'(presence-api\.[^\']+)\'#s', $source, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE );
+	preg_match_all( '#/\*\*((?:(?!\*/).)*)\*/\s*(?://[^\n]*\n\s*)*(?:return\s+|(?:const|let|var)\s+\w+\s*=\s*)?wp\.hooks\.(doAction|applyFilters|addAction)\(\s*(?:\w+\s*\?\s*)?\'(presence-api\.[^\']+)\'(?:\s*:\s*\'(presence-api\.[^\']+)\')?#s', $source, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE );
 	foreach ( $matches as $match ) {
-		$name = $match[3][0];
 		$type = array(
 			'doAction'     => 'Action',
 			'applyFilters' => 'Filter',
 			'addAction'    => 'Action to fire',
 		)[ $match[2][0] ];
-		if ( ! isset( $js_hooks[ $name ] ) ) {
-			$js_hooks[ $name ] = array( $path, substr_count( substr( $source, 0, $match[0][1] ), "\n" ) + 1, $type ) + $parse( $match[1][0] );
+		foreach ( array_filter( array( $match[3][0], $match[4][0] ?? '' ) ) as $name ) {
+			if ( ! isset( $js_hooks[ $name ] ) ) {
+				$js_hooks[ $name ] = array( $path, substr_count( substr( $source, 0, $match[0][1] ), "\n" ) + 1, $type ) + $parse( $match[1][0] );
+			}
 		}
 	}
 }
