@@ -52,3 +52,12 @@ A surface is replaced only when its markup changed, and not while the pointer or
 | `presence-api.surfaceUpdated` | Action: runs after a surface is replaced |
 
 Source: [`assets/js/presence-ping.js`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/assets/js/presence-ping.js), [`assets/js/tab-coordinator.js`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/assets/js/tab-coordinator.js)
+
+## Check your understanding
+
+<details>
+<summary>You have three tabs open on the dashboard. How many send <code>presence-ping</code>?</summary>
+
+One, the leader. The other two receive its answer over `BroadcastChannel`.
+
+</details>

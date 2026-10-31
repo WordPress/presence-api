@@ -35,3 +35,12 @@ A read returns the rows that have not expired, and a room's version tells a read
 Reserved rows move no version and fire none of these actions. On multisite, `wp_presence_admin_room_changed` refreshes the [network summary](multisite.md), and a [push transport](push-transports.md) listens to the rest.
 
 Source: [`includes/presence.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/presence.php)
+
+## Check your understanding
+
+<details>
+<summary>A write only renews a row's timestamp. Does the room's version move, and does <code>set_presence</code> fire?</summary>
+
+The version stays, because nothing others see changed. `set_presence` still fires, because the write touched the row.
+
+</details>

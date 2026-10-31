@@ -33,3 +33,12 @@ Each site keeps its own `wp_presence` table. A network-wide summary table collec
 The switch is Network Admin screens, on the network's settings page.
 
 Source: [`includes/network-functions.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/network-functions.php), [`includes/schema.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/schema.php)
+
+## Check your understanding
+
+<details>
+<summary>A site's online users have not changed, and its last push was 30 seconds ago. Does it push again?</summary>
+
+No. A push is skipped while the users are unchanged and the last push is under about 105 seconds old.
+
+</details>

@@ -46,3 +46,12 @@ wp.presence.markScreenStale( 'options/my-plugin-settings' );
 Your own saves never show you a notice, and Dismiss hides it until the next revision. Each key is checked against that screen's own capability, such as `manage_options` for Settings.
 
 Source: [`includes/screen-revisions.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/screen-revisions.php), [`assets/js/stale-screen.js`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/assets/js/stale-screen.js)
+
+## Check your understanding
+
+<details>
+<summary>You save Settings in another tab of your own. Do you see the notice?</summary>
+
+No. Your own saves move the screen's baseline without a notice.
+
+</details>

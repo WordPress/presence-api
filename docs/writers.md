@@ -38,3 +38,12 @@ A writer keeps its rows alive by writing them again, and when it stops, they exp
 A write that changes nothing is skipped while the row was stamped within the last 30 seconds, so frequent ticks do not rewrite an unchanged row.
 
 Source: [`includes/heartbeat.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/heartbeat.php), [`includes/lifecycle.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/lifecycle.php), [`assets/js/presence-ping.js`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/assets/js/presence-ping.js)
+
+## Check your understanding
+
+<details>
+<summary>Which rows does logging out remove, and which does it keep?</summary>
+
+It removes every row the user wrote except `_lock`, so a post lock outlasts the logout.
+
+</details>

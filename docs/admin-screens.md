@@ -31,3 +31,12 @@ Who sees each screen follows [Access](rows-and-rooms.md#access): a post's title 
 The switches are on Settings > Presence API. Turning one off removes the screen and leaves the rows unchanged.
 
 Source: [`includes/admin-bar.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/admin-bar.php), [`includes/widgets/class-wp-presence-widget-active-posts.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/widgets/class-wp-presence-widget-active-posts.php), [`includes/post-list.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/post-list.php), [`includes/user-list.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/user-list.php)
+
+## Check your understanding
+
+<details>
+<summary>You switch off the admin bar on Settings > Presence API. Are you still recorded as online?</summary>
+
+Yes. The switch removes the screen, and Heartbeat still writes your row.
+
+</details>

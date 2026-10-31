@@ -41,6 +41,19 @@ A note counts for 150 seconds. Each check-in renews it, so when you close the ta
 | Writer | Anything that saves rows, such as Heartbeat |
 | Reader | Anything that shows rows, such as the admin bar |
 
+## Try it
+
+[Presence Scenes in Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint-scenes.json) opens a WordPress site in your browser, with nothing to install, and plays two people editing one post. Watch the faces in the admin bar.
+
 ## Where to go next
 
 [Rows and rooms](rows-and-rooms.md) starts the technical explanation, and each page under Systems explains one feature from what you see down to the code.
+
+## Check your understanding
+
+<details>
+<summary>You close your laptop lid with the dashboard open. How long do others still see you online?</summary>
+
+Up to 150 seconds. Your tab stops checking in, so your note is no longer renewed and stops counting when its time runs out.
+
+</details>

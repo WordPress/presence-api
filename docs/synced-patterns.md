@@ -26,3 +26,12 @@ In the block editor, a synced pattern shows a notice while someone else edits th
 - The switch is Synced patterns on Settings > Presence API.
 
 Source: [`includes/synced-patterns.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/synced-patterns.php), [`src/synced-patterns/index.js`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/src/synced-patterns/index.js)
+
+## Check your understanding
+
+<details>
+<summary>Who sees the notice that a synced pattern is being edited?</summary>
+
+Only someone who can edit the pattern, since reading its room requires `edit_post` on it.
+
+</details>

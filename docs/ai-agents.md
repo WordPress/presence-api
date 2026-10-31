@@ -25,3 +25,12 @@ An agent working over REST, abilities or WP-CLI runs no Heartbeat, so its saves 
 - To appear before its first save, or to stay present between saves, an agent writes its own row with a short `expires_in` and renews it. See [Agents](https://github.com/WordPress/presence-api#agents) in the README.
 
 Source: [`includes/presence.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/presence.php)
+
+## Check your understanding
+
+<details>
+<summary>An agent saves a post once and stops. How long does it appear on that post?</summary>
+
+75 seconds, until its `agent-` row expires.
+
+</details>

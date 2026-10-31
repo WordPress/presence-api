@@ -32,3 +32,12 @@ A push transport, such as a WebSocket relay, writes a tab's rows itself and tell
 Listen to `set_presence`, `removed_presence` and `wp_presence_room_changed`, push the room to open tabs, and fire `presence-api.roomChanged` there. A visible leader tab then sends a Heartbeat at once, and the other tabs receive its answer.
 
 Source: [`assets/js/presence-ping.js`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/assets/js/presence-ping.js), [`presence-api.keepalive`](https://github.com/WordPress/presence-api#presence-apikeepalive)
+
+## Check your understanding
+
+<details>
+<summary>A tab returns <code>false</code> from <code>presence-api.keepalive</code> and then closes. What removes its rows?</summary>
+
+Not the tab, which skips its removal on `pagehide` while a transport holds the rows. The transport removes them, or lets a short `expires_in` lapse.
+
+</details>

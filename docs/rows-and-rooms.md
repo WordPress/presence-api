@@ -74,3 +74,12 @@ A client ID starting with `_` is reserved: reads leave it out, and the REST rout
 `wp_can_access_presence_room()` requires `edit_post` for a post room, and for any other room the capability to edit at least one post type shown in the admin. Seeing which screen someone is on also requires `list_users`, through the `view_presence_location` meta capability.
 
 Source: [`includes/schema.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/schema.php), [`includes/presence.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/presence.php)
+
+## Check your understanding
+
+<details>
+<summary>A writer stops renewing a row. When do reads stop returning it, and when is it deleted?</summary>
+
+Reads stop returning it as soon as its `expires_gmt` passes. The cleanup cron deletes it within the next minute.
+
+</details>

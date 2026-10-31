@@ -38,3 +38,12 @@ The last count is kept in the reserved `_collab` row, so the edges hold across r
 `wp.presence.usePresenceUsers( room )`, in the `wp-presence` script, returns the other people in a room. It reads the room over the REST API on each Heartbeat tick, from one tab.
 
 Source: [`includes/heartbeat.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/heartbeat.php), [`src/hooks/use-presence-users.js`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/src/hooks/use-presence-users.js), [Relationship to the block editor](https://github.com/WordPress/presence-api#relationship-to-the-block-editor)
+
+## Check your understanding
+
+<details>
+<summary>A collaboration plugin writes <code>gse-</code> rows in a post room. Do they count toward <code>wp_presence_collaboration_started</code>?</summary>
+
+No. The count uses this plugin's `editor-` rows only.
+
+</details>
