@@ -79,43 +79,64 @@ function wp_presence_scene_places() {
 }
 
 /**
- * Returns the bundled scenes.
+ * Returns the scenes in the bundled library and in any folder another plugin adds.
  *
  * @since 0.1.0
+ * @since 0.20.0 Reads the folders added through the wp_presence_scene_libraries filter.
  *
  * @access private
  *
  * @return array Scenes keyed by name.
  */
 function wp_presence_get_scenes() {
-	static $scenes = null;
+	static $read = array();
 
-	if ( null === $scenes ) {
+	/**
+	 * Filters the folders scenes are read from, so a plugin can play scenes of its own alongside the bundled ones.
+	 *
+	 * @since 0.20.0
+	 *
+	 * @param string[] $folders Absolute paths to folders of scene JSON files, the bundled library first.
+	 */
+	$folders = array_values( array_filter( (array) apply_filters( 'wp_presence_scene_libraries', array( __DIR__ . '/library' ) ), 'is_string' ) );
+	$key     = implode( "\n", $folders );
+
+	if ( ! isset( $read[ $key ] ) ) {
 		$scenes = array();
-		foreach ( (array) glob( __DIR__ . '/library/*.json' ) as $file ) {
-			$scene = wp_presence_scene_prepare( wp_json_file_decode( $file, array( 'associative' => true ) ) );
-			if ( is_wp_error( $scene ) ) {
-				_doing_it_wrong( __FUNCTION__, esc_html( wp_basename( $file ) . ': ' . $scene->get_error_message() ), '0.1.0' );
-				continue;
+		foreach ( $folders as $folder ) {
+			foreach ( (array) glob( trailingslashit( $folder ) . '*.json' ) as $file ) {
+				$scene = wp_presence_scene_prepare( wp_json_file_decode( $file, array( 'associative' => true ) ) );
+				if ( ! is_wp_error( $scene ) && wp_basename( $file, '.json' ) !== $scene['name'] ) {
+					$scene = new WP_Error( 'presence_scene_invalid', __( 'The file must be named after the scene.', 'presence-scenes' ) );
+				}
+				if ( ! is_wp_error( $scene ) && isset( $scenes[ $scene['name'] ] ) ) {
+					$scene = new WP_Error( 'presence_scene_invalid', __( 'An earlier folder already has a scene of this name.', 'presence-scenes' ) );
+				}
+				if ( is_wp_error( $scene ) ) {
+					_doing_it_wrong( __FUNCTION__, esc_html( $file . ': ' . $scene->get_error_message() ), '0.1.0' );
+					continue;
+				}
+				$scenes[ $scene['name'] ] = $scene;
 			}
-			$scenes[ $scene['name'] ] = $scene;
 		}
+		$read[ $key ] = $scenes;
 	}
 
-	return $scenes;
+	return $read[ $key ];
 }
 
 /**
- * Steps a scene can take, each with the WP_Presence_Scene_Actor method that plays it, the fields it needs, whether the whole cast can take it and how it is narrated.
+ * Steps a scene can take, each with the WP_Presence_Scene_Actor method or plugin callback that plays it, the fields it needs, whether the whole cast can take it and how it is narrated.
  *
  * @since 0.1.0
+ * @since 0.20.0 Adds the steps from the wp_presence_scene_steps filter.
  *
  * @access private
  *
  * @return array[] Steps keyed by name.
  */
 function wp_presence_scene_actions() {
-	return array(
+	$actions = array(
 		'visit'         => array(
 			'method' => 'visit',
 			'fields' => array( 'place' ),
@@ -203,6 +224,50 @@ function wp_presence_scene_actions() {
 			'label'  => __( '%1$s finds “%2$s” free', 'presence-scenes' ),
 		),
 	);
+
+	/**
+	 * Filters the steps other plugins add to scenes, each played by a callback that runs as the actor and throws to fail the step.
+	 *
+	 * @since 0.20.0
+	 *
+	 * @param array[] $steps {
+	 *     Steps keyed by a camelCase name the bundled steps don't use. Default empty array.
+	 *
+	 *     @type callable $callback Receives the WP_Presence_Scene_Actor, who is the current user while it runs, and the step's fields keyed by name.
+	 *     @type string[] $fields   Optional. Fields the step takes: `post` is a post an earlier write step created, passed as its ID, `place` a place from wp_presence_scene_places(), and any other short plain text. Default empty array.
+	 *     @type bool     $cast     Optional. Whether the whole cast can take it at once. Default false.
+	 *     @type string   $label    How the report narrates it, with %1$s for the actor and %2$s for its post or place, or else its first field.
+	 * }
+	 */
+	$added = apply_filters( 'wp_presence_scene_steps', array() );
+
+	foreach ( is_array( $added ) ? $added : array() as $name => $step ) {
+		$fields = $step['fields'] ?? array();
+		if (
+			! is_string( $name ) ||
+			isset( $actions[ $name ] ) ||
+			! preg_match( '/^[a-z][a-zA-Z0-9]*$/', $name ) ||
+			! is_callable( $step['callback'] ?? null ) ||
+			! is_string( $step['label'] ?? null ) ||
+			! is_array( $fields ) ||
+			! wp_is_numeric_array( $fields ) ||
+			array_filter( $fields, 'is_string' ) !== $fields ||
+			array_intersect( $fields, array( 'at', 'actor', 'step', 'label' ) )
+		) {
+			/* translators: %s: Step name. */
+			_doing_it_wrong( __FUNCTION__, esc_html( sprintf( __( 'The step %s needs a camelCase name of its own, a callback, a label and a list of field names.', 'presence-scenes' ), (string) $name ) ), '0.20.0' );
+			continue;
+		}
+
+		$actions[ $name ] = array(
+			'callback' => $step['callback'],
+			'fields'   => array_values( array_unique( $fields ) ),
+			'cast'     => ! empty( $step['cast'] ),
+			'label'    => $step['label'],
+		);
+	}
+
+	return $actions;
 }
 
 /**
@@ -219,7 +284,7 @@ function wp_presence_scene_prepare( $scene ) {
 	$actions = wp_presence_scene_actions();
 	$places  = wp_presence_scene_places();
 	$limits  = wp_presence_scene_limits();
-	$roles   = array( 'contributor', 'author', 'editor' );
+	$roles   = array( 'subscriber', 'contributor', 'author', 'editor' );
 	$invalid = function ( $message, $n = null ) {
 		/* translators: 1: Step number, 2: What is wrong with it. */
 		return new WP_Error( 'presence_scene_invalid', null === $n ? $message : sprintf( __( 'Step %1$d: %2$s', 'presence-scenes' ), $n + 1, $message ) );
@@ -322,6 +387,8 @@ function wp_presence_scene_prepare( $scene ) {
 					/* translators: 1: Field name, 2: Maximum number of characters. */
 					return $invalid( sprintf( __( '%1$s must be text of up to %2$s characters.', 'presence-scenes' ), $field, number_format_i18n( $limits['text'] ) ), $n );
 				}
+				// A step's first field names what it acts on, unless a place or post already did.
+				$object = '' === $object ? $clean[ $field ] : $object;
 			}
 		}
 
@@ -428,18 +495,28 @@ function wp_presence_scene_note( array &$run, $level, $message ) {
  * @param array                     $step A prepared step.
  * @param WP_Presence_Scene_Actor[] $cast The cast.
  * @param array                     $run  The running scene.
+ *
+ * @throws RuntimeException When no plugin adds the step any more.
  */
 function wp_presence_scene_perform( array $step, array $cast, array $run ) {
-	$action = wp_presence_scene_actions()[ $step['step'] ];
-	$method = $action['method'];
+	$action = wp_presence_scene_actions()[ $step['step'] ] ?? null;
 	$args   = array();
 
+	if ( ! $action ) {
+		/* translators: %s: Step name. */
+		throw new RuntimeException( sprintf( __( 'No plugin adds the step %s any more.', 'presence-scenes' ), $step['step'] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Printed as text.
+	}
+
 	foreach ( $action['fields'] as $field ) {
-		$args[] = 'post' === $field ? (int) ( $run['posts'][ $step['post'] ] ?? 0 ) : $step[ $field ];
+		$args[ $field ] = 'post' === $field ? (int) ( $run['posts'][ $step['post'] ] ?? 0 ) : $step[ $field ];
 	}
 
 	foreach ( 'cast' === $step['actor'] ? $cast : array( $cast[ $step['actor'] - 1 ] ) as $actor ) {
-		$actor->$method( ...$args );
+		if ( isset( $action['callback'] ) ) {
+			$actor->perform( $action['callback'], $args );
+		} else {
+			$actor->{$action['method']}( ...array_values( $args ) );
+		}
 	}
 }
 
