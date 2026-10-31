@@ -10,24 +10,26 @@ flowchart LR
 	T -->|rows not yet expired| R["<b>Readers</b><br/>admin screens<br/>REST API<br/>hooks"]
 ```
 
-## What you will learn
+## Learning pathways
 
-- What presence shows in WordPress, and how it knows.
-- How a row is written, renewed and expires, and how rooms group rows.
-- How each feature, from post locks to AI agents, is built on those rows.
-- Where to find every public function and hook.
+| Pathway | For | Read |
+| --- | --- | --- |
+| Use it | Site owners and editors | [Introduction](introduction.md), [Admin screens](admin-screens.md), [Stale-screen notices](stale-screen-notices.md) and [Post locks](post-locks.md) |
+| Build with it | Developers who know WordPress hooks and the REST API | Every chapter in order, then the [Project](project.md) |
 
-## Who this is for
-
-Site owners and editors need only the first chapter. Developers building on Presence API should read the chapters in order; they assume familiarity with WordPress hooks and the REST API. Each page ends with one question to check your understanding.
+Each page ends with one question to check your understanding.
 
 ## 1. Start here
+
+Understand what presence shows in WordPress, and how it knows.
 
 | Page | Covers |
 | --- | --- |
 | [Introduction](introduction.md) | What you see in WordPress, how it knows, and the words these docs use |
 
 ## 2. How it works
+
+Understand how rows are written, renewed, grouped and read.
 
 | Page | Covers |
 | --- | --- |
@@ -37,6 +39,8 @@ Site owners and editors need only the first chapter. Developers building on Pres
 | [Heartbeat and tabs](heartbeat-and-tabs.md) | How the browser sends presence and receives updated markup |
 
 ## 3. Systems
+
+Understand how each feature is built from those rows.
 
 | Page | Covers |
 | --- | --- |
@@ -49,7 +53,15 @@ Site owners and editors need only the first chapter. Developers building on Pres
 | [Synced patterns](synced-patterns.md) | A notice on a synced pattern while someone edits the pattern itself |
 | [Multisite](multisite.md) | Who is online on each site, collected for Network Admin |
 
-## 4. Reference
+## 4. Project
+
+Apply what you learned by building on presence, or by contributing to it.
+
+| Page | Covers |
+| --- | --- |
+| [Project](project.md) | Three briefs, a custom room, a push transport and a contribution, each with a list to check against |
+
+## 5. Reference
 
 | Page | Covers |
 | --- | --- |
