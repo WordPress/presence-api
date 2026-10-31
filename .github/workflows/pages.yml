@@ -2,8 +2,9 @@ name: Pages
 
 # Publishes showcase/ to https://wordpress.github.io/presence-api/, with the
 # plugin's .org screenshots copied in rather than kept twice in the repo, and
-# docs/ rendered under /docs/. A pull request that touches them builds the
-# site without publishing it.
+# docs/ rendered under /docs/. A pull request that touches them, or the plugin
+# and README they describe, builds the site without publishing it, so a page
+# that drifts from the code fails there.
 
 on:
   push:
@@ -20,6 +21,9 @@ on:
       - 'showcase/**'
       - 'docs/**'
       - 'scripts/build-docs.js'
+      - 'scripts/build-reference.php'
+      - 'plugins/presence-api/**'
+      - 'README.md'
       - 'plugins/presence-api/.wordpress-org/*.png'
       - 'package-lock.json'
       - '.github/workflows/pages.yml'
