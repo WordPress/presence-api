@@ -123,7 +123,7 @@ md.renderer.rules.link_open = ( tokens, i, options, env, self ) => {
 	return self.renderToken( tokens, i, options );
 };
 
-// Shows a WordPress.org screenshot from the copy the site publishes, and fails on one that does not exist.
+// Shows a WordPress.org screenshot from the copy the site publishes, linked to its full size, and fails on one that does not exist.
 const SCREENSHOTS = 'plugins/presence-api/.wordpress-org/';
 md.renderer.rules.image = ( tokens, i, options, env, self ) => {
 	const token = tokens[ i ];
@@ -148,7 +148,11 @@ md.renderer.rules.image = ( tokens, i, options, env, self ) => {
 		self.renderInlineAsText( token.children, options, env )
 	);
 	token.attrSet( 'loading', 'lazy' );
-	return self.renderToken( tokens, i, options );
+	return `<a href="${ token.attrGet( 'src' ) }">${ self.renderToken(
+		tokens,
+		i,
+		options
+	) }</a>`;
 };
 
 // Keeps each heading's id for links to check, lists the h2s for the page's contents, and keeps the first paragraph as the page's description.
@@ -248,6 +252,7 @@ async function drawDiagrams( diagrams ) {
 				actorBorder: '#3858e9',
 				noteBkgColor: '#f6f6f6',
 				noteBorderColor: '#d9d9d9',
+				edgeLabelBackground: '#ffffff',
 			},
 		} );
 	} );
