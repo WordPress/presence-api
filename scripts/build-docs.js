@@ -329,7 +329,6 @@ async function build() {
 	<a class="skip-link" href="#main">Skip to content</a>
 ${ showcaseNav
 	.replace( 'href="#main"', `href="${ assets }/"` )
-	.replace( /href="#/g, `href="${ assets }/#` )
 	.replace( 'href="docs/"', `href="${ href( dir, 'docs' ) }"` ) }
 	<main id="main" class="docs">
 		${ breadcrumbs }${ content.trim() }
