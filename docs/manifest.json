@@ -76,5 +76,11 @@
 		"slug": "multisite",
 		"markdown_source": "../docs/multisite.md",
 		"parent": "docs"
+	},
+	{
+		"title": "Reference",
+		"slug": "reference",
+		"markdown_source": "../docs/reference.md",
+		"parent": "docs"
 	}
 ]

@@ -49,6 +49,8 @@ jobs:
 
       - run: npm ci
 
+      - run: php scripts/build-reference.php --check
+
       # Draws each docs diagram as a static SVG.
       - run: npx playwright install --with-deps chromium
 
