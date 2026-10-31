@@ -209,6 +209,7 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers ::wp_presence_admin_heartbeat_received
+	 * @covers ::wp_presence_admin_state
 	 */
 	public function test_admin_heartbeat_records_front_end_context() {
 		$post_id = self::factory()->post->create();
