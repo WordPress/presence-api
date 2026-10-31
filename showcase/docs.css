@@ -69,3 +69,8 @@
 .docs__edit {
 	font-size: var(--wp--preset--font-size--small);
 }
+
+.docs__position {
+	color: var(--wp--preset--color--charcoal-4);
+	font-size: var(--wp--preset--font-size--small);
+}

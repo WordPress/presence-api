@@ -76,6 +76,10 @@ for ( const entry of manifest ) {
 		)
 		.join( '\n\t\t\t' );
 	const section = manifest.find( ( e ) => e.slug === entry.parent );
+	const position =
+		siblings.length > 1
+			? `<p class="docs__position">${ escapeHtml( section.title ) }, ${ index + 1 } of ${ siblings.length }</p>\n\t\t`
+			: '';
 	const nav = pager
 		? `<nav class="docs__pager" aria-label="${ escapeHtml( section.title ) }">\n\t\t\t${ pager }\n\t\t</nav>\n\t\t`
 		: '';
@@ -102,7 +106,7 @@ for ( const entry of manifest ) {
 		</ul>
 	</nav>
 	<main id="main" class="docs">
-		${ md.render( fs.readFileSync( source, 'utf8' ), { source, dir } ).trim() }
+		${ position }${ md.render( fs.readFileSync( source, 'utf8' ), { source, dir } ).trim() }
 		${ nav }<p class="docs__edit"><a href="https://github.com/WordPress/presence-api/edit/main/${ path.relative( root, source ) }">Edit this page on GitHub</a></p>
 	</main>
 </body>

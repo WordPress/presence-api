@@ -19,6 +19,8 @@ npx wp-env run cli wp presence summary
 
 Click the heart in the admin bar, the debugger, to see every row in the rooms you are in.
 
+No local site? [Presence Scenes in Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint-scenes.json) plays the same scene on the Posts screen, with the debugger's heart in the admin bar.
+
 ## Common mistake
 
 Presence is not a live connection to each person. The faces are rows that someone wrote recently, and the next lessons are about who writes them and when they stop counting.
