@@ -246,6 +246,47 @@ describe( 'live surfaces', () => {
 		expect( node.textContent ).toBe( '3 online' );
 	} );
 
+	it( 'keeps the admin bar menu current while it is open', async () => {
+		document.body.innerHTML =
+			'<ul><li id="wp-admin-bar-presence-online" class="menupop hover"><a class="ab-item" href="#">2 online</a><div class="ab-sub-wrapper"><div class="ab-item" tabindex="0">Ada</div></div></li></ul>';
+		loadPing();
+		const node = document.getElementById( 'wp-admin-bar-presence-online' );
+
+		trigger( 'heartbeat-tick', {
+			'presence-fragments': {
+				'admin-bar':
+					'<li id="wp-admin-bar-presence-online" class="menupop"><a class="ab-item" href="#">3 online</a><div class="ab-sub-wrapper"><div class="ab-item" tabindex="0">Ada</div><div class="ab-item" tabindex="0">Grace</div></div></li>',
+			},
+		} );
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+
+		expect( node.textContent ).toBe( '3 onlineAdaGrace' );
+		expect( node.classList.contains( 'hover' ) ).toBe( true );
+		expect(
+			node.querySelector( 'a' ).getAttribute( 'aria-expanded' )
+		).toBe( 'true' );
+	} );
+
+	it( 'leaves the admin bar menu alone while focus is inside it', () => {
+		document.body.innerHTML =
+			'<ul><li id="wp-admin-bar-presence-online" class="menupop hover"><a class="ab-item" href="#">2 online</a><div class="ab-sub-wrapper"><div class="ab-item" tabindex="0">Ada</div></div></li></ul>';
+		loadPing();
+		const node = document.getElementById( 'wp-admin-bar-presence-online' );
+
+		node.querySelector( 'div.ab-item' ).focus();
+		trigger( 'heartbeat-tick', {
+			'presence-fragments': {
+				'admin-bar':
+					'<li id="wp-admin-bar-presence-online" class="menupop"><a class="ab-item" href="#">3 online</a></li>',
+			},
+		} );
+
+		expect( node.textContent ).toBe( '2 onlineAda' );
+		expect( document.activeElement ).toBe(
+			node.querySelector( 'div.ab-item' )
+		);
+	} );
+
 	it( 'ticks on roomChanged, and again once a request already in flight answers', () => {
 		const hooks = loadPing();
 		const connectNow = vi.spyOn( global.wp.heartbeat, 'connectNow' );

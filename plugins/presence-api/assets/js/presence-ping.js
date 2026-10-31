@@ -111,15 +111,20 @@
 			key: 'admin-bar',
 			target: () =>
 				document.getElementById( 'wp-admin-bar-presence-online' ),
-			// Keep the list item itself, which core's admin-bar.js bound its hover and Enter handlers to.
+			// An open menu re-renders in place; only a swap under the keyboard's focus would throw it out.
+			busy: ( node ) => node.contains( document.activeElement ),
+			// Keep the list item itself, which core's admin-bar.js bound its hover and Enter handlers to, and its open state.
 			apply( node, html ) {
 				const template = document.createElement( 'template' );
 				template.innerHTML = html.trim();
 				const fresh = template.content.firstElementChild;
-				if ( fresh ) {
-					node.className = fresh.className;
-					node.innerHTML = fresh.innerHTML;
+				if ( ! fresh ) {
+					return;
 				}
+				const open = node.classList.contains( 'hover' );
+				node.className = fresh.className;
+				node.innerHTML = fresh.innerHTML;
+				node.classList.toggle( 'hover', open );
 			},
 		},
 		{
@@ -198,7 +203,7 @@
 
 	const lastFragments = {};
 
-	// Swapping under the pointer or focus would close a menu, drop a selection or move the caret; the next tick catches up.
+	// Swapping under the pointer or focus would drop a selection or move the caret; the next tick catches up.
 	function isBusy( element ) {
 		return (
 			element.matches( ':hover' ) ||
@@ -212,7 +217,7 @@
 		if (
 			! element ||
 			lastFragments[ slot ] === html ||
-			isBusy( element )
+			( surface.busy || isBusy )( element )
 		) {
 			return;
 		}
