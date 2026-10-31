@@ -209,6 +209,7 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 
 	/**
 	 * @covers ::wp_presence_admin_heartbeat_received
+	 * @covers ::wp_presence_admin_state
 	 */
 	public function test_admin_heartbeat_records_front_end_context() {
 		$post_id = self::factory()->post->create();
@@ -267,6 +268,55 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 			'user-edit'
 		);
 		$this->assertArrayNotHasKey( 'object_id', wp_get_presence( 'admin/online' )[0]->data );
+	}
+
+	/**
+	 * A relay writes with no one signed in, so the user it names decides what is stored.
+	 *
+	 * @covers ::wp_presence_admin_state
+	 * @covers ::wp_presence_screen_object_id
+	 */
+	public function test_admin_state_stores_what_the_named_user_can_see() {
+		$post_id    = self::factory()->post->create( array( 'post_status' => 'draft' ) );
+		$comment_id = self::factory()->comment->create();
+		wp_set_current_user( 0 );
+
+		$this->assertSame(
+			array(
+				'screen'      => 'post',
+				'post_status' => 'draft',
+			),
+			wp_presence_admin_state(
+				'post',
+				array(
+					'post_id' => $post_id,
+					'user_id' => self::$editor_id,
+				)
+			)
+		);
+		$this->assertSame(
+			array(
+				'screen'    => 'comment',
+				'object_id' => $comment_id,
+			),
+			wp_presence_admin_state(
+				'comment',
+				array(
+					'object_id' => $comment_id,
+					'user_id'   => self::$editor_id,
+				)
+			)
+		);
+		$this->assertSame(
+			array( 'screen' => 'post' ),
+			wp_presence_admin_state(
+				'post',
+				array(
+					'post_id' => $post_id,
+					'user_id' => self::$subscriber_id,
+				)
+			)
+		);
 	}
 
 	/**
@@ -939,6 +989,7 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	 * re-deriving postType/{type}:{id} client-side.
 	 *
 	 * @covers ::wp_presence_enqueue_heartbeat_ping
+	 * @covers ::wp_presence_admin_state
 	 */
 	public function test_ping_config_carries_editor_room() {
 		global $post;
@@ -961,6 +1012,7 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 		$config = $this->get_ping_config();
 
 		$this->assertSame( wp_presence_post_room( $post_id ), $config['editorRoom'] );
+		$this->assertSame( 'publish', wp_get_presence( 'admin/online' )[0]->data['post_status'], 'The page-render write stores what a tick would.' );
 	}
 
 	/**

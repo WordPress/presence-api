@@ -237,6 +237,11 @@ $parts = wp_presence_parse_room( $room );
 // Return the site-wide room, 'admin/online'.
 $room = wp_presence_admin_room();
 
+// Build the state Heartbeat stores on 'user-{id}' in the admin room and
+// 'editor-{id}' in a post room, for a relay writing those rows itself.
+$state = wp_presence_admin_state( $screen, array( 'post_id' => 0, 'title' => '', 'object_id' => 0, 'user_id' => 0 ) );
+$state = wp_presence_editor_state( $screen_id, $locked );
+
 // Whether a user is an AI agent; see Agents.
 wp_presence_is_agent_user( $user_id );
 
@@ -561,7 +566,7 @@ add_filter( 'heartbeat_received', function( $response, $data ) {
 ```
 
 #### `presence-api.keepalive`
-Whether the tab keeps its `user-{id}` and `editor-{id}` rows alive over Heartbeat. Return false only while a push transport writes them, and since each is one per person, remove them when the user's last connection closes. Heartbeat still runs for live surfaces, the collaborator count and core's post lock.
+Whether the tab keeps its `user-{id}` and `editor-{id}` rows alive over Heartbeat. Return false only while a push transport writes them, building their state with `wp_presence_admin_state()` and `wp_presence_editor_state()`, and since each is one per person, remove them when the user's last connection closes. Heartbeat still runs for live surfaces, the collaborator count and core's post lock.
 ```js
 wp.hooks.addFilter( 'presence-api.keepalive', 'my-plugin', ( keepalive ) => keepalive && ! myTransport.isConnected() );
 ```
