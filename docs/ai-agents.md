@@ -22,7 +22,7 @@ sequenceDiagram
 - The admin bar, Active Posts and the Editors column label the agent. The editor count behind `wp_presence_collaboration_started` leaves it out.
 - To appear before its first save, or to stay present between saves, an agent writes its own row with a short `expires_in` and renews it. See [Agents](https://github.com/WordPress/presence-api#agents) in the README.
 
-Source: [`includes/presence.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/presence.php)
+<sub>Source: [`presence.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/presence.php)</sub>
 
 ## Check your understanding
 

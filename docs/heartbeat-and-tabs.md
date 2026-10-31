@@ -49,7 +49,7 @@ A surface is replaced only when its markup changed, and not while the pointer or
 | `presence-api.liveSurfaces` | Filter: add a surface |
 | `presence-api.surfaceUpdated` | Action: runs after a surface is replaced |
 
-Source: [`assets/js/presence-ping.js`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/assets/js/presence-ping.js), [`assets/js/tab-coordinator.js`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/assets/js/tab-coordinator.js)
+<sub>Source: [`presence-ping.js`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/assets/js/presence-ping.js) · [`tab-coordinator.js`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/assets/js/tab-coordinator.js)</sub>
 
 ## Check your understanding
 

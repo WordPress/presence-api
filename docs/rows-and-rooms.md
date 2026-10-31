@@ -58,7 +58,7 @@ Within a room, each client has its own ID: `user-{user_id}` or `editor-{user_id}
 
 `wp_can_access_presence_room()` requires `edit_post` for a post room, and for any other room the capability to edit at least one post type shown in the admin. Seeing which screen someone is on also requires `list_users`, through the `view_presence_location` meta capability.
 
-Source: [`includes/schema.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/schema.php), [`includes/presence.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/presence.php)
+<sub>Source: [`schema.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/schema.php) · [`presence.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/presence.php)</sub>
 
 ## Check your understanding
 

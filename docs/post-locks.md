@@ -27,7 +27,7 @@ sequenceDiagram
 
 Moving locks out of post meta stops each lock refresh from bumping the posts `last_changed` value. On a synthetic large site with a Redis object cache, [#836](https://github.com/WordPress/presence-api/issues/836) measured the post query cache miss rate at about 10% with locks in post meta and about 5% with locks in `wp_presence`.
 
-Source: [`includes/post-lock-bridge.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/post-lock-bridge.php)
+<sub>Source: [`post-lock-bridge.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/post-lock-bridge.php)</sub>
 
 ## Check your understanding
 

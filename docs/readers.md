@@ -32,7 +32,7 @@ flowchart TB
 
 Reserved rows move no version and fire none of these actions. On multisite, `wp_presence_admin_room_changed` refreshes the [network summary](multisite.md), and a [push transport](push-transports.md) listens to the rest.
 
-Source: [`includes/presence.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/presence.php)
+<sub>Source: [`presence.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/presence.php)</sub>
 
 ## Check your understanding
 

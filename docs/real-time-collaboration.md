@@ -35,7 +35,7 @@ The last count is kept in the reserved `_collab` row, so the edges hold across r
 
 `wp.presence.usePresenceUsers( room )`, in the `wp-presence` script, returns the other people in a room. It reads the room over the REST API on each Heartbeat tick, from one tab.
 
-Source: [`includes/heartbeat.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/heartbeat.php), [`src/hooks/use-presence-users.js`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/src/hooks/use-presence-users.js), [Relationship to the block editor](https://github.com/WordPress/presence-api#relationship-to-the-block-editor)
+<sub>Source: [`heartbeat.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/heartbeat.php) · [`use-presence-users.js`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/src/hooks/use-presence-users.js) · [Relationship to the block editor](https://github.com/WordPress/presence-api#relationship-to-the-block-editor)</sub>
 
 ## Check your understanding
 

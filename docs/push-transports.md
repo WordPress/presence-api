@@ -29,7 +29,7 @@ sequenceDiagram
 
 Listen to `set_presence`, `removed_presence` and `wp_presence_room_changed`, push the room to open tabs, and fire `presence-api.roomChanged` there. A visible leader tab then sends a Heartbeat at once, and the other tabs receive its answer.
 
-Source: [`assets/js/presence-ping.js`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/assets/js/presence-ping.js), [`presence-api.keepalive`](https://github.com/WordPress/presence-api#presence-apikeepalive)
+<sub>Source: [`presence-ping.js`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/assets/js/presence-ping.js) · [`presence-api.keepalive`](https://github.com/WordPress/presence-api#presence-apikeepalive)</sub>
 
 ## Check your understanding
 

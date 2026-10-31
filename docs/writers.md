@@ -26,7 +26,7 @@ Rows are also removed when a tab leaves its page, when the user is deleted, and 
 
 A write that changes nothing is skipped while the row was stamped within the last 30 seconds, so frequent ticks do not rewrite an unchanged row.
 
-Source: [`includes/heartbeat.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/heartbeat.php), [`includes/lifecycle.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/lifecycle.php), [`assets/js/presence-ping.js`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/assets/js/presence-ping.js)
+<sub>Source: [`heartbeat.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/heartbeat.php) · [`lifecycle.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/lifecycle.php) · [`presence-ping.js`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/assets/js/presence-ping.js)</sub>
 
 ## Check your understanding
 

@@ -21,9 +21,9 @@ sequenceDiagram
 - Every copy of the same pattern in the editor shares one read.
 - The person editing the pattern writes their `editor-` row from the pattern's own edit screen or the Site Editor.
 - Reading the room requires `edit_post` on the pattern, and the notice cannot be dismissed while they are there.
-- The switch is Synced patterns on Settings > Presence API.
+- Turn it off with Synced patterns on Settings > Presence API.
 
-Source: [`includes/synced-patterns.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/synced-patterns.php), [`src/synced-patterns/index.js`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/src/synced-patterns/index.js)
+<sub>Source: [`synced-patterns.php`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/includes/synced-patterns.php) · [`index.js`](https://github.com/WordPress/presence-api/blob/main/plugins/presence-api/src/synced-patterns/index.js)</sub>
 
 ## Check your understanding
 
