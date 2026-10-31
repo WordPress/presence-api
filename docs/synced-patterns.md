@@ -17,8 +17,6 @@ sequenceDiagram
 	Note over A: "B is editing this pattern"
 ```
 
-In the block editor, a synced pattern shows a notice while someone else edits the pattern itself.
-
 - A `core/block` block with a `ref` reads the room `postType/wp_block:{ref}` with `usePresenceUsers()`.
 - Every copy of the same pattern in the editor shares one read.
 - The person editing the pattern writes their `editor-` row from the pattern's own edit screen or the Site Editor.

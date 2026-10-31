@@ -26,9 +26,7 @@ sequenceDiagram
 	Note over Site: A note not renewed within<br/>150 seconds stops counting
 ```
 
-WordPress already has a built-in check-in called Heartbeat: about once a minute, each open tab sends a small request to the site. Presence API adds which screen you are on. The site saves that as a short note, and replies with who else is around.
-
-A note counts for 150 seconds. Each check-in renews it, so when you close the tab or your connection drops, you disappear from everyone else's screen shortly after, without logging out.
+The check-in is Heartbeat, which WordPress already sends from each open tab about once a minute. Each one renews your note, so when you close the tab you disappear from other screens within 150 seconds, without logging out.
 
 ## Words used in these docs
 
@@ -36,7 +34,6 @@ A note counts for 150 seconds. Each check-in renews it, so when you close the ta
 | --- | --- |
 | Row | One saved note: this person is in this place, until this time |
 | Room | A place people can be, such as the whole admin or one post |
-| Heartbeat | WordPress's built-in check-in from each open tab |
 | TTL | How long a row counts without being renewed, 150 seconds by default |
 | Writer | Anything that saves rows, such as Heartbeat |
 | Reader | Anything that shows rows, such as the admin bar |
@@ -44,10 +41,6 @@ A note counts for 150 seconds. Each check-in renews it, so when you close the ta
 ## Try it
 
 [Presence Scenes in Playground](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint-scenes.json) opens a WordPress site in your browser, with nothing to install, and plays two people editing one post. Watch the faces in the admin bar.
-
-## Where to go next
-
-[Rows and rooms](rows-and-rooms.md) starts the technical explanation, and each page under Systems explains one feature from what you see down to the code.
 
 ## Check your understanding
 

@@ -18,8 +18,6 @@ sequenceDiagram
 	Note over F: A hidden tab sends nothing,<br/>so its rows lapse
 ```
 
-The browser sends presence on core's Heartbeat. One tab per screen sends it, and the server answers with updated markup that every tab applies.
-
 ## The leader
 
 Tabs showing the same screen elect one leader with `navigator.locks` and share its answers over `BroadcastChannel`. When the leader is hidden or closed, another visible tab takes over.

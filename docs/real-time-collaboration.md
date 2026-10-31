@@ -14,8 +14,6 @@ flowchart LR
 	T --> A[Admin bar, Active Posts,<br/>Editors column]
 ```
 
-A plugin that implements the block editor's collaboration storage can keep its awareness rows in `wp_presence`. Its collaborators then appear on admin screens, while its edit history stays in its own storage.
-
 - Both sides name a post's room `postType/{type}:{id}`, the grammar of Gutenberg's sync rooms and of `wp_presence_post_room()`.
 - The plugin writes under its own prefix, such as `gse-` for [gutenberg-sync-engines](https://github.com/WordPress/gutenberg-sync-engines), and reads its rows back with `client_prefix`.
 - `wp_set_presence()` accepts `date_gmt` and `expires_in`, so a relay can keep each client's own timestamp and lifetime.

@@ -19,8 +19,6 @@ sequenceDiagram
 	S-->>Tab: Fresh markup
 ```
 
-A push transport, such as a WebSocket relay, writes a tab's rows itself and tells open tabs to refresh, so a change reaches them without waiting for the next Heartbeat tick.
-
 ## Holding a tab's rows
 
 1. Return `false` from the `presence-api.keepalive` JS filter while connected. Heartbeat keeps running for markup and post locks but stops writing `user-{id}` and `editor-{id}`.

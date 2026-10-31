@@ -19,8 +19,6 @@ sequenceDiagram
 	F-->>C: "time:user"
 ```
 
-Core's post lock, `_edit_lock`, is stored as the post room's `_lock` row instead of post meta. Core keeps calling the meta API, and filters answer from the row.
-
 - `update_post_metadata`, `get_post_metadata` and `delete_post_metadata` filters write, read and remove the row, so `wp_check_post_lock()` and other callers work unchanged.
 - It applies to every post type, including ones without presence support.
 - The row expires after `wp_check_post_lock_window`, 150 seconds by default, as the meta lock would.

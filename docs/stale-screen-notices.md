@@ -20,8 +20,6 @@ sequenceDiagram
 	Note over B: "A updated this screen 1 minute ago."<br/>Reload or Dismiss
 ```
 
-Each watched admin screen has a revision. When someone else saves it, every open copy shows a notice on its next Heartbeat tick.
-
 ## Screen keys
 
 | Screen | Key |

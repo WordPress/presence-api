@@ -1,6 +1,6 @@
 # Rows and rooms
 
-Everything Presence API knows is kept as rows: short notes that say who is where, and until when. A row stays as long as its writer keeps renewing it, and stops counting once its time runs out.
+Everything Presence API knows is kept as rows: short notes that say one client is in one room, until a given time. A row stays as long as its writer keeps renewing it, and stops counting once its time runs out.
 
 ## How it works
 
@@ -17,8 +17,6 @@ sequenceDiagram
 	Note over T: Row counts until its expiry,<br/>then reads skip it
 	C->>T: Delete expired rows, every minute
 ```
-
-A row is one client in one room. Writing it again renews it, and once its expiry passes, reads leave it out.
 
 ## Why a table of its own
 
@@ -40,13 +38,9 @@ A unique key on `room` and `client_id` makes `wp_set_presence()` an upsert.
 
 ## Expiry
 
-| Value | Default |
-| --- | --- |
-| TTL | 150 seconds, `WP_PRESENCE_DEFAULT_TTL`, filtered by `wp_presence_default_ttl` |
-| `expires_in` passed to `wp_set_presence()` | Up to one hour, capped by `wp_presence_max_expires_in` |
-| Cleanup cron, `wp_delete_expired_presence_data` | Every minute |
-
-The TTL outlasts the 120 seconds core's Heartbeat waits in a tab without focus, so a ticking tab's row never lapses between ticks. Reads filter on `expires_gmt`, so the cron only removes rows reads already skip.
+- A row counts for 150 seconds by default, longer than the 120 seconds Heartbeat waits in a background tab, so a ticking tab's row never lapses. The `wp_presence_default_ttl` filter changes it.
+- A writer can pass `expires_in` to `wp_set_presence()`, up to one hour.
+- Reads skip expired rows, and a cron event deletes them every minute.
 
 ## Rooms
 
@@ -58,16 +52,7 @@ The TTL outlasts the 120 seconds core's Heartbeat waits in a tab without focus, 
 
 ## Client IDs
 
-| Client ID | Written by |
-| --- | --- |
-| `user-{user_id}` | This plugin, one per person in `admin/online` |
-| `editor-{user_id}` | This plugin, one per person in a post room |
-| `agent-{user_id}` | An AI agent's save |
-| `cli-{user_id}` | `wp presence set` without a client ID |
-| `_lock`, `_collab`, `_version` | This plugin, as bookkeeping |
-| Any other prefix, such as `gse-` | Another plugin, reading its rows back with `client_prefix` |
-
-A client ID starting with `_` is reserved: reads leave it out, and the REST routes refuse to write or delete it.
+Within a room, each client has its own ID: `user-{user_id}` or `editor-{user_id}` for a person, `agent-{user_id}` for an AI agent, or a plugin's own prefix, such as `gse-`, read back with `client_prefix`. An ID starting with `_`, such as `_lock`, is reserved: reads leave it out, and the REST routes refuse to write or delete it.
 
 ## Access
 

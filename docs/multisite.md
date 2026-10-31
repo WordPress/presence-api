@@ -17,8 +17,6 @@ flowchart LR
 	N --> R[REST network routes]
 ```
 
-Each site keeps its own `wp_presence` table. A network-wide summary table collects who is online on each site, for Network Admin.
-
 - A write to a site's `admin/online` room fires `wp_presence_admin_room_changed`, which pushes that site's online users to `{base_prefix}presence_network_summary`.
 - A push is skipped while the site's online users are unchanged and the last push is recent, about 105 seconds.
 - Reads count a site only if its summary was updated within the TTL.

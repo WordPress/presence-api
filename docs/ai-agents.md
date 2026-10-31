@@ -17,8 +17,6 @@ sequenceDiagram
 	Note over T: Admin screens show the agent, labelled,<br/>until the row expires
 ```
 
-An agent working over REST, abilities or WP-CLI runs no Heartbeat, so its saves write its row instead.
-
 - `wp_presence_is_agent_user( $user_id )` decides who is an agent. It is a filter, `false` by default, and the plugin answers it with `wpai_is_agent_user()` when that function exists.
 - A save by a person writes nothing. Neither does saving an auto-draft or trashing a post.
 - The admin bar, Active Posts and the Editors column label the agent. The editor count behind `wp_presence_collaboration_started` leaves it out.
