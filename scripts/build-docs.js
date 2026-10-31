@@ -5,6 +5,8 @@
 const fs = require( 'node:fs' );
 const path = require( 'node:path' );
 const MarkdownIt = require( 'markdown-it' );
+const anchor = require( 'markdown-it-anchor' );
+const GithubSlugger = require( 'github-slugger' ).default;
 const { chromium } = require( '@playwright/test' );
 
 const SITE = 'https://wordpress.github.io/presence-api/';
@@ -37,20 +39,24 @@ function href( fromDir, toDir ) {
 const escapeHtml = ( text ) =>
 	text.replace( /[&<>"]/g, ( c ) => `&#${ c.charCodeAt( 0 ) };` );
 
-const slugify = ( text ) =>
-	text
-		.toLowerCase()
-		.replace( /`/g, '' )
-		.replace( /[^a-z0-9]+/g, '-' )
-		.replace( /^-|-$/g, '' );
-
 const pages = new Set( manifest.map( sourceOf ) );
 
 // The showcase's own navigation, so the bar is the same on every page of the site.
 const showcaseNav = fs
 	.readFileSync( path.join( root, 'showcase/index.html' ), 'utf8' )
 	.match( /\t<nav class="local-nav"[\s\S]*?<\/nav>/ )[ 0 ];
-const md = new MarkdownIt( { html: true } );
+// Heading ids as GitHub makes them, so an anchor works on the site and on GitHub alike.
+const md = new MarkdownIt( { html: true } ).use( anchor, {
+	level: [ 2, 3 ],
+	slugify: ( text ) => new GithubSlugger().slug( text ),
+	uniqueSlugStartIndex: 1,
+	permalink: anchor.permalink.linkInsideHeader( {
+		class: 'docs__anchor',
+		symbol: '#',
+		placement: 'after',
+		renderAttrs: () => ( { 'aria-label': 'Link to this section' } ),
+	} ),
+} );
 
 // The sidebar's headings, each placed above the page that starts its group.
 const GROUPS = {
@@ -62,19 +68,12 @@ const REPO = 'https://github.com/WordPress/presence-api';
 
 // The anchors GitHub gives the README's headings, so a link to one can be checked.
 // GitHub's own #readme jumps to the README itself.
+const readmeSlugger = new GithubSlugger();
 const readmeAnchors = new Set( [ 'readme' ] );
 for ( const [ , heading ] of fs
 	.readFileSync( path.join( root, 'README.md' ), 'utf8' )
 	.matchAll( /^#{1,6} (.+)$/gm ) ) {
-	const base = heading
-		.toLowerCase()
-		.replace( /[^\w\- ]/g, '' )
-		.replace( / /g, '-' );
-	let anchor = base;
-	for ( let n = 1; readmeAnchors.has( anchor ); n++ ) {
-		anchor = `${ base }-${ n }`;
-	}
-	readmeAnchors.add( anchor );
+	readmeAnchors.add( readmeSlugger.slug( heading ) );
 }
 
 // The public functions and hooks the generated reference lists, the only plugin names a page may use.
@@ -112,6 +111,9 @@ md.renderer.rules.link_open = ( tokens, i, options, env, self ) => {
 				`${ env.source } links to ${ file }, which docs/manifest.json does not list.`
 			);
 		}
+		if ( hash ) {
+			env.anchors.push( { page: linked, hash } );
+		}
 		tokens[ i ].attrSet(
 			'href',
 			href( env.dir, outputDir( linked ) ) + ( hash && `#${ hash }` )
@@ -148,18 +150,13 @@ md.renderer.rules.image = ( tokens, i, options, env, self ) => {
 	return self.renderToken( tokens, i, options );
 };
 
-// Gives each h2 and h3 an id to link to, lists the h2s for the page's contents, and keeps the first paragraph as the page's description.
+// Keeps each heading's id for links to check, lists the h2s for the page's contents, and keeps the first paragraph as the page's description.
 md.core.ruler.push( 'docs_meta', ( state ) => {
-	const used = new Set();
 	state.tokens.forEach( ( token, i ) => {
 		const inline = state.tokens[ i + 1 ];
-		if ( token.type === 'heading_open' && /^h[23]$/.test( token.tag ) ) {
-			let id = slugify( inline.content );
-			for ( let n = 2; used.has( id ); n++ ) {
-				id = `${ slugify( inline.content ) }-${ n }`;
-			}
-			used.add( id );
-			token.attrSet( 'id', id );
+		const id = token.type === 'heading_open' && token.attrGet( 'id' );
+		if ( id ) {
+			state.env.ids.push( id );
 			if ( token.tag === 'h2' ) {
 				state.env.headings.push( {
 					id,
@@ -194,14 +191,6 @@ md.core.ruler.push( 'docs_meta', ( state ) => {
 		}
 	} );
 } );
-
-md.renderer.rules.heading_close = ( tokens, i, options, env, self ) => {
-	const id = tokens[ i - 2 ].attrGet( 'id' );
-	const anchor = id
-		? `<a class="docs__anchor" href="#${ id }" aria-label="Link to this section">#</a>`
-		: '';
-	return anchor + self.renderToken( tokens, i, options );
-};
 
 // Leaves a placeholder for each diagram, drawn once every page is parsed.
 const fence = md.renderer.rules.fence;
@@ -280,7 +269,14 @@ async function build() {
 	const rendered = manifest.map( ( entry ) => {
 		const source = sourceOf( entry );
 		const dir = outputDir( source );
-		const env = { source, dir, diagrams: [], headings: [] };
+		const env = {
+			source,
+			dir,
+			diagrams: [],
+			headings: [],
+			ids: [],
+			anchors: [],
+		};
 		const markdown = fs.readFileSync( source, 'utf8' );
 		const body = md.render( markdown, env );
 		// Minutes to read the prose at 200 words a minute, leaving out code and diagrams.
@@ -296,6 +292,8 @@ async function build() {
 			dir,
 			description: env.description || '',
 			headings: env.headings,
+			ids: env.ids,
+			anchors: env.anchors,
 			minutes: Math.max( 1, Math.round( words / 200 ) ),
 			body: body.replace(
 				/<!--diagram-(\d+)-->/g,
@@ -303,6 +301,23 @@ async function build() {
 			),
 		};
 	} );
+
+	// Fails on a link to a heading another page no longer has.
+	for ( const page of rendered ) {
+		for ( const { page: linked, hash } of page.anchors ) {
+			const target = rendered.find(
+				( other ) => other.source === linked
+			);
+			if ( ! target.ids.includes( hash ) ) {
+				throw new Error(
+					`${ page.source } links to #${ hash }, which ${ path.relative(
+						root,
+						linked
+					) } has no heading for.`
+				);
+			}
+		}
+	}
 
 	const svgs = await drawDiagrams( diagrams );
 
