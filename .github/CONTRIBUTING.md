@@ -174,7 +174,7 @@ Releases are automated by [release-please](https://github.com/googleapis/release
 - `feat!: ...` or a `BREAKING CHANGE:` footer → major bump (or, pre-1.0, a minor bump)
 - `chore:`, `docs:`, `refactor:`, `test:`, `ci:`, `build:`, `style:` → no version bump
 
-Merging the release PR tags Presence API `vX.Y.Z`, attaches its zip to the GitHub Release and ships it to WordPress.org.
+Merging the release PR tags Presence API `vX.Y.Z`, attaches its zip to the GitHub Release and ships it to WordPress.org. The same Release carries `presence-scenes.zip`, built from `main` at that tag, so another plugin's tests can install Presence Scenes by URL.
 
 <details>
 <summary>Adding a plugin</summary>
