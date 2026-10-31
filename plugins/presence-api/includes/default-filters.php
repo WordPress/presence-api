@@ -35,6 +35,7 @@ add_filter( 'heartbeat_received', 'wp_presence_editor_heartbeat_received', 10, 3
 add_filter( 'site_status_tests', 'wp_presence_site_status_tests' );
 
 add_action( 'wp_after_insert_post', 'wp_presence_on_agent_post_saved', 10, 2 );
+add_action( 'post_updated', 'wp_presence_on_post_title_or_status_change', 10, 3 );
 
 // Outside the switch: presence-ping.js needs the token on every admin page, faces or not.
 add_filter( 'wp_refresh_nonces', 'wp_presence_refresh_screen_token', 10, 3 );

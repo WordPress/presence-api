@@ -1500,6 +1500,52 @@ if ( ! function_exists( 'wp_presence_admin_room_changed' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_presence_room_changed' ) ) {
+	/**
+	 * Tells listeners a room reads differently although no row was written or removed.
+	 *
+	 * @since 0.20.0
+	 *
+	 * @param string $room The room identifier.
+	 */
+	function wp_presence_room_changed( $room ) {
+		/**
+		 * Fires when a room reads differently without a row being written or removed, such as when a post someone is editing changes its title or status.
+		 *
+		 * A transport that refreshes on `set_presence` and `removed_presence` should refresh on this too.
+		 *
+		 * @since 0.20.0
+		 *
+		 * @param string $room The room identifier.
+		 */
+		do_action( 'wp_presence_room_changed', $room );
+	}
+}
+
+if ( ! function_exists( 'wp_presence_on_post_title_or_status_change' ) ) {
+	/**
+	 * Fires `wp_presence_room_changed` for a post's room and the admin room when its title or status changes while its room has rows.
+	 *
+	 * @since 0.20.0
+	 *
+	 * @param int     $post_id     Post ID.
+	 * @param WP_Post $post_after  Post after update.
+	 * @param WP_Post $post_before Post before update.
+	 */
+	function wp_presence_on_post_title_or_status_change( $post_id, $post_after, $post_before ) {
+		unset( $post_id );
+		if ( $post_after->post_title === $post_before->post_title && $post_after->post_status === $post_before->post_status ) {
+			return;
+		}
+		$room = wp_presence_post_room( $post_after );
+		if ( ! $room || ! wp_get_presence( $room ) ) {
+			return;
+		}
+		wp_presence_room_changed( $room );
+		wp_presence_room_changed( wp_presence_admin_room() );
+	}
+}
+
 if ( ! function_exists( 'wp_presence_parse_room' ) ) {
 	/**
 	 * Parses a post room identifier.
