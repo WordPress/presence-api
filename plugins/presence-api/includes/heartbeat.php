@@ -15,8 +15,6 @@ if ( ! function_exists( 'wp_presence_editor_state' ) ) {
 	 *
 	 * Shared so the writers of that entry cannot drift apart on its shape.
 	 *
-	 * @access private
-	 *
 	 * @since 0.1.20
 	 *
 	 * @param string $screen_id The screen ID.
@@ -32,33 +30,91 @@ if ( ! function_exists( 'wp_presence_editor_state' ) ) {
 	}
 }
 
+if ( ! function_exists( 'wp_presence_admin_state' ) ) {
+	/**
+	 * Builds the state stored on a user's entry in the admin room.
+	 *
+	 * Shared so the writers of that entry cannot drift apart on its shape.
+	 *
+	 * @since 0.20.0
+	 *
+	 * @param string       $screen The screen ID, or 'front' on the front end.
+	 * @param array|string $args {
+	 *     Optional. Array or string of arguments.
+	 *
+	 *     @type int    $post_id   The post being edited, whose status is stored, or the post viewed on the front end. Default 0.
+	 *     @type string $title     The page title. Default empty.
+	 *     @type int    $object_id The comment, user or term the screen edits. Default 0.
+	 *     @type int    $user_id   The user whose capabilities decide what is stored. Default 0, the current user.
+	 * }
+	 * @return array The state to store.
+	 */
+	function wp_presence_admin_state( $screen, $args = array() ) {
+		$defaults    = array(
+			'post_id'   => 0,
+			'title'     => '',
+			'object_id' => 0,
+			'user_id'   => 0,
+		);
+		$parsed_args = wp_parse_args( $args, $defaults );
+		$user_id     = $parsed_args['user_id'] ? (int) $parsed_args['user_id'] : get_current_user_id();
+		$post_id     = (int) $parsed_args['post_id'];
+		$post        = $post_id > 0 ? get_post( $post_id ) : null;
+
+		// Shown to other users, so cap it as the REST route caps its data.
+		$state = array( 'screen' => substr( sanitize_text_field( $screen ), 0, WP_PRESENCE_MAX_KEY_LENGTH ) );
+
+		if ( $post && post_type_exists( $state['screen'] ) && user_can( $user_id, 'edit_post', $post->ID ) && isset( get_post_stati()[ $post->post_status ] ) ) {
+			$state['post_status'] = $post->post_status;
+		}
+
+		if ( ! empty( $parsed_args['title'] ) ) {
+			$state['title'] = wp_html_excerpt( sanitize_text_field( $parsed_args['title'] ), 200 );
+		}
+
+		$object_id = wp_presence_screen_object_id( $state['screen'], $parsed_args['object_id'], $user_id );
+		if ( $object_id ) {
+			$state['object_id'] = $object_id;
+		}
+
+		if ( $post && 'front' === $state['screen'] && user_can( $user_id, 'read_post', $post->ID ) ) {
+			$state['post_id'] = $post->ID;
+		}
+
+		return $state;
+	}
+}
+
 if ( ! function_exists( 'wp_presence_screen_object_id' ) ) {
 	/**
-	 * Returns the comment, user or term an admin screen edits, when the current user can edit it.
+	 * Returns the comment, user or term an admin screen edits, when the user can edit it.
 	 *
 	 * @access private
 	 *
 	 * @since 0.10.0
+	 * @since 0.20.0 Added the `$user_id` parameter.
 	 *
 	 * @param string $screen    The screen ID.
 	 * @param mixed  $object_id The object ID to check.
+	 * @param int    $user_id   Optional. The user ID. Default 0, the current user.
 	 * @return int The object ID, or 0.
 	 */
-	function wp_presence_screen_object_id( $screen, $object_id ) {
+	function wp_presence_screen_object_id( $screen, $object_id, $user_id = 0 ) {
 		$object_id = is_numeric( $object_id ) ? (int) $object_id : 0;
 		$taxonomy  = 0 === strpos( $screen, 'edit-' ) ? substr( $screen, 5 ) : '';
+		$user_id   = $user_id ? (int) $user_id : get_current_user_id();
 
 		if ( $object_id <= 0 ) {
 			return 0;
 		}
 		if ( 'comment' === $screen ) {
-			return current_user_can( 'edit_comment', $object_id ) ? $object_id : 0;
+			return user_can( $user_id, 'edit_comment', $object_id ) ? $object_id : 0;
 		}
 		if ( 'user-edit' === $screen || 'user-edit-network' === $screen ) {
-			return get_userdata( $object_id ) && current_user_can( 'edit_user', $object_id ) ? $object_id : 0;
+			return get_userdata( $object_id ) && user_can( $user_id, 'edit_user', $object_id ) ? $object_id : 0;
 		}
 		if ( taxonomy_exists( $taxonomy ) ) {
-			return get_term( $object_id, $taxonomy ) instanceof WP_Term && current_user_can( 'edit_term', $object_id ) ? $object_id : 0;
+			return get_term( $object_id, $taxonomy ) instanceof WP_Term && user_can( $user_id, 'edit_term', $object_id ) ? $object_id : 0;
 		}
 
 		return 0;
@@ -216,18 +272,15 @@ if ( ! function_exists( 'wp_presence_enqueue_heartbeat_ping' ) ) {
 			}
 		}
 
-		$admin_state = array( 'screen' => $screen_id );
-		if ( $page_context ) {
-			if ( ! empty( $page_context['title'] ) ) {
-				$admin_state['title'] = $page_context['title'];
-			}
-			if ( ! empty( $page_context['post_id'] ) ) {
-				$admin_state['post_id'] = $page_context['post_id'];
-			}
-			if ( ! empty( $page_context['object_id'] ) ) {
-				$admin_state['object_id'] = $page_context['object_id'];
-			}
-		}
+		$admin_state = wp_presence_admin_state(
+			$screen_id,
+			array(
+				'post_id'   => $editor_post_id ? $editor_post_id : ( $page_context['post_id'] ?? 0 ),
+				'title'     => $page_context['title'],
+				'object_id' => $page_context['object_id'] ?? 0,
+				'user_id'   => $user_id,
+			)
+		);
 		wp_set_presence( wp_presence_admin_room(), 'user-' . $user_id, $admin_state, array( 'user_id' => $user_id ) );
 
 		$initial_collaborator_count = 0;
@@ -375,50 +428,27 @@ if ( ! function_exists( 'wp_presence_admin_heartbeat_received' ) ) {
 		}
 
 		$user_id = get_current_user_id();
-		// The ping is client-supplied and shown to other users, so cap it as the REST route caps its data.
-		$screen = isset( $data['presence-ping']['screen'] ) ? substr( sanitize_text_field( $data['presence-ping']['screen'] ), 0, WP_PRESENCE_MAX_KEY_LENGTH ) : '';
+		$ping    = $data['presence-ping'];
+		$screen  = $ping['screen'] ?? '';
 
-		// Enrich post-editing screens with the post status.
-		$post_status = '';
-		if ( post_type_exists( $screen ) ) {
-			// The editor heartbeat includes the post ID in wp-refresh-post-lock.
-			$post_id = 0;
-			if ( ! empty( $data['wp-refresh-post-lock']['post_id'] ) ) {
-				$post_id = absint( $data['wp-refresh-post-lock']['post_id'] );
-			} elseif ( ! empty( $data['presence-editor-ping']['post_id'] ) ) {
-				$post_id = absint( $data['presence-editor-ping']['post_id'] );
-			}
-			if ( $post_id ) {
-				$post = get_post( $post_id );
-				if ( $post && current_user_can( 'edit_post', $post_id ) && isset( get_post_stati()[ $post->post_status ] ) ) {
-					$post_status = $post->post_status;
-				}
-			}
-		}
-
-		$state = array( 'screen' => $screen );
-		if ( $post_status ) {
-			$state['post_status'] = $post_status;
-		}
-
-		if ( ! empty( $data['presence-ping']['title'] ) ) {
-			$state['title'] = wp_html_excerpt( sanitize_text_field( $data['presence-ping']['title'] ), 200 );
-		}
-
-		$object_id = wp_presence_screen_object_id( $screen, $data['presence-ping']['object_id'] ?? 0 );
-		if ( $object_id ) {
-			$state['object_id'] = $object_id;
-		}
-
+		// The editor heartbeat includes the post ID in wp-refresh-post-lock.
 		if ( 'front' === $screen ) {
-			$post_id = (int) ( $data['presence-ping']['post_id'] ?? 0 );
-			if ( $post_id > 0 ) {
-				$front_post = get_post( $post_id );
-				if ( $front_post && current_user_can( 'read_post', $front_post->ID ) ) {
-					$state['post_id'] = $front_post->ID;
-				}
-			}
+			$post_id = $ping['post_id'] ?? 0;
+		} elseif ( ! empty( $data['wp-refresh-post-lock']['post_id'] ) ) {
+			$post_id = $data['wp-refresh-post-lock']['post_id'];
+		} else {
+			$post_id = $data['presence-editor-ping']['post_id'] ?? 0;
 		}
+
+		$state = wp_presence_admin_state(
+			$screen,
+			array(
+				'post_id'   => $post_id,
+				'title'     => $ping['title'] ?? '',
+				'object_id' => $ping['object_id'] ?? 0,
+				'user_id'   => $user_id,
+			)
+		);
 
 		wp_set_presence( wp_presence_admin_room(), 'user-' . $user_id, $state, array( 'user_id' => $user_id ) );
 

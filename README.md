@@ -237,6 +237,13 @@ $parts = wp_presence_parse_room( $room );
 // Return the site-wide room, 'admin/online'.
 $room = wp_presence_admin_room();
 
+// Build the state this plugin stores on a person's 'user-{id}' row in the admin
+// room and 'editor-{id}' row in a post room, for a writer such as a relay that
+// keeps those rows itself. 'user_id' (default the current user) decides which
+// fields the user may see stored.
+$state = wp_presence_admin_state( $screen, array( 'post_id' => 0, 'title' => '', 'object_id' => 0, 'user_id' => 0 ) );
+$state = wp_presence_editor_state( $screen_id, $locked );
+
 // Whether a user is an AI agent; see Agents.
 wp_presence_is_agent_user( $user_id );
 
