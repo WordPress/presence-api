@@ -262,7 +262,13 @@ async function build() {
 		const source = sourceOf( entry );
 		const dir = outputDir( source );
 		const env = { source, dir, diagrams: [] };
-		const body = md.render( fs.readFileSync( source, 'utf8' ), env );
+		const markdown = fs.readFileSync( source, 'utf8' );
+		const body = md.render( markdown, env );
+		// Minutes to read the prose at 200 words a minute, leaving out code and diagrams.
+		const words = markdown
+			.replace( /```[\s\S]*?```/g, '' )
+			.split( /\s+/ )
+			.filter( Boolean ).length;
 		const offset = diagrams.length;
 		diagrams.push( ...env.diagrams );
 		return {
@@ -270,6 +276,7 @@ async function build() {
 			source,
 			dir,
 			description: env.description || '',
+			minutes: Math.max( 1, Math.round( words / 200 ) ),
 			body: body.replace(
 				/<!--diagram-(\d+)-->/g,
 				( match, n ) => `<!--diagram-${ offset + Number( n ) }-->`
@@ -279,61 +286,64 @@ async function build() {
 
 	const svgs = await drawDiagrams( diagrams );
 
-	rendered.forEach( ( { entry, source, dir, description, body }, index ) => {
-		// The trail from the docs root to this page, as links for people and as BreadcrumbList data for search engines.
-		const trail = [];
-		for (
-			let crumb = entry;
-			crumb;
-			crumb = manifest.find( ( e ) => e.slug === crumb.parent )
-		) {
-			trail.unshift( rendered.find( ( page ) => page.entry === crumb ) );
-		}
-		const breadcrumbs =
-			trail.length > 1
-				? `<nav class="docs__breadcrumbs" aria-label="Breadcrumb"><ol>${ trail
-						.map( ( page, n ) =>
-							n === trail.length - 1
-								? `<li aria-current="page">${ escapeHtml(
-										page.entry.title
-									) }</li>`
-								: `<li><a href="${ href(
-										dir,
-										page.dir
-									) }">${ escapeHtml( page.entry.title ) }</a></li>`
-						)
-						.join( '' ) }</ol></nav>\n\t\t`
-				: '';
-		const structured = JSON.stringify( {
-			'@context': 'https://schema.org',
-			'@type': 'BreadcrumbList',
-			itemListElement: trail.map( ( page, n ) => ( {
-				'@type': 'ListItem',
-				position: n + 1,
-				name: page.entry.title,
-				item: `${ SITE }${ page.dir }/`,
-			} ) ),
-		} );
-		const pager = [
-			[ rendered[ index - 1 ], 'Previous' ],
-			[ rendered[ index + 1 ], 'Next' ],
-		]
-			.filter( ( [ page ] ) => page )
-			.map(
-				( [ page, label ] ) =>
-					`<a href="${ href( dir, page.dir ) }"><span>${ label }</span> ${ escapeHtml(
-						page.entry.title
-					) }</a>`
-			)
-			.join( '\n' );
-		const assets = path.relative( dir, '.' ) || '.';
-		const url = `${ SITE }${ dir }/`;
-		const content = body.replace(
-			/<!--diagram-(\d+)-->/g,
-			( match, n ) =>
-				`<figure class="docs__diagram">${ svgs[ Number( n ) ] }</figure>`
-		);
-		const html = `<!doctype html>
+	rendered.forEach(
+		( { entry, source, dir, description, minutes, body }, index ) => {
+			// The trail from the docs root to this page, as links for people and as BreadcrumbList data for search engines.
+			const trail = [];
+			for (
+				let crumb = entry;
+				crumb;
+				crumb = manifest.find( ( e ) => e.slug === crumb.parent )
+			) {
+				trail.unshift(
+					rendered.find( ( page ) => page.entry === crumb )
+				);
+			}
+			const breadcrumbs =
+				trail.length > 1
+					? `<nav class="docs__breadcrumbs" aria-label="Breadcrumb"><ol>${ trail
+							.map( ( page, n ) =>
+								n === trail.length - 1
+									? `<li aria-current="page">${ escapeHtml(
+											page.entry.title
+										) }</li>`
+									: `<li><a href="${ href(
+											dir,
+											page.dir
+										) }">${ escapeHtml( page.entry.title ) }</a></li>`
+							)
+							.join( '' ) }</ol></nav>\n\t\t`
+					: '';
+			const structured = JSON.stringify( {
+				'@context': 'https://schema.org',
+				'@type': 'BreadcrumbList',
+				itemListElement: trail.map( ( page, n ) => ( {
+					'@type': 'ListItem',
+					position: n + 1,
+					name: page.entry.title,
+					item: `${ SITE }${ page.dir }/`,
+				} ) ),
+			} );
+			const pager = [
+				[ rendered[ index - 1 ], 'Previous' ],
+				[ rendered[ index + 1 ], 'Next' ],
+			]
+				.filter( ( [ page ] ) => page )
+				.map(
+					( [ page, label ] ) =>
+						`<a href="${ href( dir, page.dir ) }"><span>${ label } · ${ page.minutes } min</span> ${ escapeHtml(
+							page.entry.title
+						) }</a>`
+				)
+				.join( '\n' );
+			const assets = path.relative( dir, '.' ) || '.';
+			const url = `${ SITE }${ dir }/`;
+			const content = body.replace(
+				/<!--diagram-(\d+)-->/g,
+				( match, n ) =>
+					`<figure class="docs__diagram">${ svgs[ Number( n ) ] }</figure>`
+			);
+			const html = `<!doctype html>
 <html lang="en">
 <head>
 	<meta charset="utf-8">
@@ -359,7 +369,11 @@ ${ showcaseNav
 	.replace( 'href="#main"', `href="${ assets }/"` )
 	.replace( 'href="docs/"', `href="${ href( dir, 'docs' ) }"` ) }
 	<main id="main" class="docs">
-		${ breadcrumbs }${ content.trim() }
+		${ breadcrumbs }${
+			entry.parent
+				? `<p class="docs__time">${ minutes } min read</p>\n\t\t`
+				: ''
+		}${ content.trim() }
 			<nav class="docs__pager" aria-label="Previous and next">
 ${ pager }
 			</nav>
@@ -371,29 +385,30 @@ ${ pager }
 </body>
 </html>
 `;
-		fs.mkdirSync( path.join( out, dir ), { recursive: true } );
-		fs.writeFileSync( path.join( out, dir, 'index.html' ), html );
-		// The markdown copy links to the other copies by full URL, so it reads correctly wherever it is fetched from.
-		fs.writeFileSync(
-			path.join( out, dir, 'index.md' ),
-			fs
-				.readFileSync( source, 'utf8' )
-				.replace(
-					/\]\((?:\.\.\/)+(plugins\/presence-api\/\.wordpress-org\/[^)]+)\)/g,
-					'](https://raw.githubusercontent.com/WordPress/presence-api/main/$1)'
-				)
-				.replace(
-					/\]\(([^):#]+)\.md(#[^)]*)?\)/g,
-					( match, file, hash = '' ) =>
-						`](${ SITE }${ outputDir(
-							path.resolve(
-								path.dirname( source ),
-								`${ file }.md`
-							)
-						) }/index.md${ hash })`
-				)
-		);
-	} );
+			fs.mkdirSync( path.join( out, dir ), { recursive: true } );
+			fs.writeFileSync( path.join( out, dir, 'index.html' ), html );
+			// The markdown copy links to the other copies by full URL, so it reads correctly wherever it is fetched from.
+			fs.writeFileSync(
+				path.join( out, dir, 'index.md' ),
+				fs
+					.readFileSync( source, 'utf8' )
+					.replace(
+						/\]\((?:\.\.\/)+(plugins\/presence-api\/\.wordpress-org\/[^)]+)\)/g,
+						'](https://raw.githubusercontent.com/WordPress/presence-api/main/$1)'
+					)
+					.replace(
+						/\]\(([^):#]+)\.md(#[^)]*)?\)/g,
+						( match, file, hash = '' ) =>
+							`](${ SITE }${ outputDir(
+								path.resolve(
+									path.dirname( source ),
+									`${ file }.md`
+								)
+							) }/index.md${ hash })`
+					)
+			);
+		}
+	);
 
 	// An index for language models, in the llms.txt format, pointing at each page's markdown.
 	const [ home, ...rest ] = rendered;
