@@ -50,6 +50,7 @@ const md = new MarkdownIt( { html: true } ).use( anchor, {
 	level: [ 2, 3 ],
 	slugify: ( text ) => new GithubSlugger().slug( text ),
 	uniqueSlugStartIndex: 1,
+	tabIndex: false,
 	permalink: anchor.permalink.linkInsideHeader( {
 		class: 'docs__anchor',
 		symbol: '#',
