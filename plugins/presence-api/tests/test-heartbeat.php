@@ -988,6 +988,7 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 	 * re-deriving postType/{type}:{id} client-side.
 	 *
 	 * @covers ::wp_presence_enqueue_heartbeat_ping
+	 * @covers ::wp_presence_admin_state
 	 */
 	public function test_ping_config_carries_editor_room() {
 		global $post;
@@ -1010,6 +1011,7 @@ class WP_Test_Presence_Heartbeat extends WP_Presence_UnitTestCase {
 		$config = $this->get_ping_config();
 
 		$this->assertSame( wp_presence_post_room( $post_id ), $config['editorRoom'] );
+		$this->assertSame( 'publish', wp_get_presence( 'admin/online' )[0]->data['post_status'], 'The page-render write stores what a tick would.' );
 	}
 
 	/**
