@@ -3,7 +3,7 @@ Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas,
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.1
-Stable tag: 0.19.0
+Stable tag: 0.20.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -79,6 +79,10 @@ For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/presence-api/blob/main/CHANGELOG.md
 
+= 0.20.0 =
+* Fire `wp_presence_room_changed` when an edited post's title or status changes ([#915](https://github.com/WordPress/presence-api/issues/915)).
+* Keep the admin bar's presence menu current while it is open ([#914](https://github.com/WordPress/presence-api/issues/914)).
+
 = 0.19.0 =
 * Add a presence-api.keepalive filter so a push transport can hold a tab's rows ([#904](https://github.com/WordPress/presence-api/issues/904)).
 * Add a presence-api.roomChanged action that refreshes presence now ([#903](https://github.com/WordPress/presence-api/issues/903)).
@@ -98,6 +102,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 
 = 0.18.2 =
 * Make the presence screens readable with only a keyboard ([#841](https://github.com/WordPress/presence-api/issues/841)).
-
-= 0.18.1 =
-* Show the admin bar presence node on phones and spell out hover-only names on touch ([#830](https://github.com/WordPress/presence-api/issues/830)).
