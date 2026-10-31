@@ -17,7 +17,7 @@ flowchart LR
 
 | Writer | Rows | Hook |
 | --- | --- | --- |
-| Page load | `user-{id}`, and `editor-{id}` on a post's edit screen | `wp_presence_enqueue_heartbeat_ping()` |
+| Page load | `user-{id}`, and `editor-{id}` on a post's edit screen | `admin_enqueue_scripts`, `wp_enqueue_scripts` |
 | Heartbeat tick | The same rows, on each tick that keeps them alive | `heartbeat_received` |
 | Login | `user-{id}`, with the screen `login` | `wp_login` |
 | Post lock | `_lock` in the post room | `update_post_metadata` |

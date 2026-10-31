@@ -46,10 +46,52 @@ const slugify = ( text ) =>
 
 const pages = new Set( manifest.map( sourceOf ) );
 const md = new MarkdownIt( { html: true } );
+const REPO = 'https://github.com/WordPress/presence-api';
+
+// The anchors GitHub gives the README's headings, so a link to one can be checked.
+// GitHub's own #readme jumps to the README itself.
+const readmeAnchors = new Set( [ 'readme' ] );
+for ( const [ , heading ] of fs
+	.readFileSync( path.join( root, 'README.md' ), 'utf8' )
+	.matchAll( /^#{1,6} (.+)$/gm ) ) {
+	const base = heading
+		.toLowerCase()
+		.replace( /[^\w\- ]/g, '' )
+		.replace( / /g, '-' );
+	let anchor = base;
+	for ( let n = 1; readmeAnchors.has( anchor ); n++ ) {
+		anchor = `${ base }-${ n }`;
+	}
+	readmeAnchors.add( anchor );
+}
+
+// The public functions the generated reference lists, the only plugin functions a page may name.
+const publicFunctions = new Set(
+	[
+		...fs
+			.readFileSync( path.join( docs, 'reference.md' ), 'utf8' )
+			.matchAll( /^### `(\w+)\(\)`$/gm ),
+	].map( ( [ , name ] ) => name )
+);
 
 // Points a link to another page at its built directory, and fails on one the manifest does not list.
 md.renderer.rules.link_open = ( tokens, i, options, env, self ) => {
 	const link = tokens[ i ].attrGet( 'href' );
+	const fail = ( why ) => {
+		throw new Error( `${ env.source } links to ${ link }, ${ why }.` );
+	};
+	if ( link?.startsWith( `${ REPO }/blob/main/` ) ) {
+		const file = link
+			.slice( `${ REPO }/blob/main/`.length )
+			.split( '#' )[ 0 ];
+		if ( ! fs.existsSync( path.join( root, file ) ) ) {
+			fail( 'a file that does not exist' );
+		}
+	} else if ( link?.startsWith( `${ REPO }#` ) ) {
+		if ( ! readmeAnchors.has( link.slice( REPO.length + 1 ) ) ) {
+			fail( 'a README heading that does not exist' );
+		}
+	}
 	if ( link && /^[^:#]+\.md(#.*)?$/.test( link ) ) {
 		const [ file, hash = '' ] = link.split( '#' );
 		const linked = path.resolve( path.dirname( env.source ), file );
@@ -78,6 +120,20 @@ md.core.ruler.push( 'docs_meta', ( state ) => {
 			}
 			used.add( id );
 			token.attrSet( 'id', id );
+		}
+		for ( const child of token.children || [] ) {
+			const named =
+				child.type === 'code_inline' &&
+				child.content.match( /^(\w*presence\w*)\(/ );
+			if (
+				named &&
+				! publicFunctions.has( named[ 1 ] ) &&
+				! state.env.source.endsWith( 'reference.md' )
+			) {
+				throw new Error(
+					`${ state.env.source } names ${ named[ 1 ] }(), which is not a public function.`
+				);
+			}
 		}
 		if ( token.type === 'paragraph_open' && ! state.env.description ) {
 			state.env.description = inline.content
