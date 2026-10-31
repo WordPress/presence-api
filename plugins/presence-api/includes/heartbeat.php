@@ -275,10 +275,9 @@ if ( ! function_exists( 'wp_presence_enqueue_heartbeat_ping' ) ) {
 		$admin_state = wp_presence_admin_state(
 			$screen_id,
 			array(
-				'post_id'   => $editor_post_id ? $editor_post_id : ( $page_context['post_id'] ?? 0 ),
+				'post_id'   => $page_context['post_id'] ?? $editor_post_id,
 				'title'     => $page_context['title'],
 				'object_id' => $page_context['object_id'] ?? 0,
-				'user_id'   => $user_id,
 			)
 		);
 		wp_set_presence( wp_presence_admin_room(), 'user-' . $user_id, $admin_state, array( 'user_id' => $user_id ) );
@@ -446,7 +445,6 @@ if ( ! function_exists( 'wp_presence_admin_heartbeat_received' ) ) {
 				'post_id'   => $post_id,
 				'title'     => $ping['title'] ?? '',
 				'object_id' => $ping['object_id'] ?? 0,
-				'user_id'   => $user_id,
 			)
 		);
 
