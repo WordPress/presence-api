@@ -20,7 +20,7 @@ flowchart LR
 | Editors column | Who is editing each post in a post list | `editors` surface, answered with core's lock check | Posts list |
 | Users list | An Online view and count | `users-list` and `users-online-count` surfaces | Users list |
 
-Every screen requires the capability to edit at least one post type shown in the admin. A post's title appears only to someone who can edit that post, and another person's screen only to someone with `list_users`. Someone idle for 75 seconds is marked idle.
+Who sees each screen follows [Access](rows-and-rooms.md#access): a post's title only shows to someone who can edit the post, and another person's screen only to someone with `list_users`. A person whose row has not been written for 75 seconds is shown as idle.
 
 The switches are on Settings > Presence API. Turning one off removes the screen and leaves the rows unchanged.
 

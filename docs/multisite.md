@@ -16,7 +16,7 @@ flowchart LR
 - A write to a site's `admin/online` room fires `wp_presence_admin_room_changed`, which pushes that site's online users to `{base_prefix}presence_network_summary`.
 - A push is skipped while the site's online users are unchanged and the last push is recent, about 105 seconds.
 - Reads count a site only if its summary was updated within the TTL.
-- Collection is on by default and off on a large network, filtered by `wp_presence_network_aggregation_enabled`.
+- Collection is on unless `wp_is_large_network()` is true, and `wp_presence_network_aggregation_enabled` overrides that.
 - Network screens and routes require `manage_network` by default.
 
 | Route | Returns |
