@@ -10,14 +10,14 @@ Open the dashboard at `localhost:8888/wp-admin/` in one tab and play a scene in 
 npx wp-env run cli wp presence scene run editing-together
 ```
 
-Two actors arrive, open the same post and leave. Watch the faces in the admin bar and the Active Posts widget, then list the rows behind them:
+For about fifty seconds an author and an editor work in the same post, then leave. Watch the faces in the admin bar and the Active Posts widget, and list the rows behind them from a second terminal while it plays:
 
 ```
 npx wp-env run cli wp presence list admin/online
 npx wp-env run cli wp presence summary
 ```
 
-Open the Presence Debugger from the admin bar to see each room's rows as the scene plays.
+Click the heart in the admin bar, the debugger, to see every row in the rooms you are in.
 
 ## Common mistake
 

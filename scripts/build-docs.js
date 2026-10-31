@@ -35,6 +35,8 @@ function href( fromDir, toDir ) {
 const escape = ( text ) =>
 	text.replace( /[&<>"]/g, ( c ) => `&#${ c.charCodeAt( 0 ) };` );
 
+const pages = new Set( manifest.map( sourceOf ) );
+
 for ( const entry of manifest ) {
 	const source = sourceOf( entry );
 	const dir = outputDir( source );
@@ -44,9 +46,13 @@ for ( const entry of manifest ) {
 		const link = tokens[ i ].attrGet( 'href' );
 		if ( link && /^[^:#]+\.md(#.*)?$/.test( link ) ) {
 			const [ file, hash = '' ] = link.split( '#' );
-			const target = outputDir(
-				path.resolve( path.dirname( source ), file )
-			);
+			const linked = path.resolve( path.dirname( source ), file );
+			if ( ! pages.has( linked ) ) {
+				throw new Error(
+					`${ source } links to ${ file }, which docs/manifest.json does not list.`
+				);
+			}
+			const target = outputDir( linked );
 			tokens[ i ].attrSet(
 				'href',
 				href( dir, target ) + ( hash && `#${ hash }` )
