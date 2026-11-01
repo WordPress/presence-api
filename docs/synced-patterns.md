@@ -2,6 +2,8 @@
 
 A synced pattern is a block reused in many posts. While someone edits the pattern itself, anyone using it in a post sees a notice that it is being changed.
 
+![Priya Raman opens a synced pattern in another browser, and a post using it shows a notice until she closes it.](media/synced-patterns.mp4)
+
 ## How it works
 
 ```mermaid
