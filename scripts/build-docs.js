@@ -154,6 +154,7 @@ md.renderer.rules.image = ( tokens, i, options, env, self ) => {
 			`${ env.source } shows ${ file }, which is not a WordPress.org screenshot in the repo.`
 		);
 	}
+	env.screenshot ??= file;
 	token.attrSet(
 		'src',
 		`${ path.relative( env.dir, '.' ) }/images/${ path.basename( file ) }`
@@ -282,6 +283,49 @@ async function drawDiagrams( diagrams ) {
 	return svgs;
 }
 
+// A 1200 by 630 link preview for each page in og.png's layout, beside the page's first screenshot, or else its first diagram.
+async function drawCards( rendered, svgs ) {
+	const font = ( file ) =>
+		fs
+			.readFileSync( path.join( root, 'showcase/fonts', file ) )
+			.toString( 'base64' );
+	const logo = showcaseNav.match( /<svg[\s\S]*?<\/svg>/ )[ 0 ];
+	const browser = await chromium.launch();
+	const page = await browser.newPage( {
+		viewport: { width: 1200, height: 630 },
+	} );
+	for ( const { entry, dir, description, screenshot, diagram } of rendered ) {
+		let image = '';
+		if ( screenshot ) {
+			image = `<img src="data:image/png;base64,${ fs
+				.readFileSync( path.join( root, screenshot ) )
+				.toString( 'base64' ) }" alt="">`;
+		} else if ( diagram !== undefined ) {
+			image = `<div class="diagram">${ svgs[ diagram ] }</div>`;
+		}
+		await page.setContent( `<style>
+			@font-face { font-family: Inter; src: url(data:font/woff2;base64,${ font( 'Inter-latin.woff2' ) }); }
+			@font-face { font-family: Garamond; src: url(data:font/woff2;base64,${ font( 'EBGaramond-latin.woff2' ) }); }
+			body { margin: 0; width: 1200px; height: 630px; overflow: hidden; background: #fff; color: #1e1e1e; font-family: Garamond, serif; }
+			.text { position: absolute; top: 0; bottom: 0; left: 72px; width: ${ image ? 460 : 1000 }px; display: flex; flex-direction: column; justify-content: center; }
+			.site { display: flex; gap: 12px; align-items: center; font: 24px Inter, sans-serif; color: #757575; }
+			.site svg { width: 30px; height: 30px; }
+			.text h1 { margin: 24px 0 0; font-size: ${ image ? 68 : 84 }px; font-weight: 400; line-height: 1.05; }
+			.text p { margin: 24px 0 0; font-size: 30px; line-height: 1.35; color: #3c434a; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
+			img { position: absolute; left: 600px; top: 72px; width: 760px; border: 1px solid #ddd; }
+			.diagram { position: absolute; left: 600px; right: 72px; top: 72px; bottom: 72px; display: flex; align-items: center; justify-content: center; }
+			.diagram svg { width: 100%; height: 100%; max-width: none !important; }
+		</style>
+		<div class="text"><div class="site">${ logo }Presence API</div><h1>${ escapeHtml(
+			entry.parent ? entry.title : 'Docs'
+		) }</h1><p>${ escapeHtml( description ) }</p></div>${ image }` );
+		await page.evaluate( () => document.fonts.ready );
+		fs.mkdirSync( path.join( out, dir ), { recursive: true } );
+		await page.screenshot( { path: path.join( out, dir, 'og.png' ) } );
+	}
+	await browser.close();
+}
+
 async function build() {
 	const diagrams = [];
 	const rendered = manifest.map( ( entry ) => {
@@ -307,6 +351,8 @@ async function build() {
 			headings: env.headings,
 			ids: env.ids,
 			anchors: env.anchors,
+			screenshot: env.screenshot,
+			diagram: env.diagrams.length ? offset : undefined,
 			body: body.replace(
 				/<!--diagram-(\d+)-->/g,
 				( match, n ) => `<!--diagram-${ offset + Number( n ) }-->`
@@ -332,6 +378,7 @@ async function build() {
 	}
 
 	const svgs = await drawDiagrams( diagrams );
+	await drawCards( rendered, svgs );
 	fs.cpSync( path.join( docs, 'media' ), path.join( out, 'docs', 'media' ), {
 		recursive: true,
 	} );
@@ -422,7 +469,12 @@ async function build() {
 	<meta property="og:title" content="${ escapeHtml( entry.title ) }">
 	<meta property="og:description" content="${ escapeHtml( description ) }">
 	<meta property="og:url" content="${ url }">
-	<meta property="og:image" content="${ SITE }og.png">
+	<meta property="og:image" content="${ url }og.png">
+	<meta property="og:image:width" content="1200">
+	<meta property="og:image:height" content="630">
+	<meta property="og:image:alt" content="${ escapeHtml(
+		`${ entry.title }, from the Presence API docs: ${ description }`
+	) }">
 	<meta name="twitter:card" content="summary_large_image">
 	<script type="application/ld+json">${ structured }</script>
 	<link rel="icon" href="${ assets }/images/icon-256x256.png">
