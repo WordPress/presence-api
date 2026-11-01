@@ -254,11 +254,6 @@
 	vertical-align: baseline;
 }
 
-.docs__time {
-	color: var(--wp--preset--color--charcoal-4);
-	font-size: var(--wp--preset--font-size--small);
-}
-
 .docs details {
 	margin-top: var(--wp--preset--spacing--20);
 	padding: var(--wp--preset--spacing--10) var(--wp--preset--spacing--20);

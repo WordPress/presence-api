@@ -297,11 +297,6 @@ async function build() {
 		};
 		const markdown = fs.readFileSync( source, 'utf8' );
 		const body = md.render( markdown, env );
-		// Minutes to read the prose at 200 words a minute, leaving out code and diagrams.
-		const words = markdown
-			.replace( /```[\s\S]*?```/g, '' )
-			.split( /\s+/ )
-			.filter( Boolean ).length;
 		const offset = diagrams.length;
 		diagrams.push( ...env.diagrams );
 		return {
@@ -312,7 +307,6 @@ async function build() {
 			headings: env.headings,
 			ids: env.ids,
 			anchors: env.anchors,
-			minutes: Math.max( 1, Math.round( words / 200 ) ),
 			body: body.replace(
 				/<!--diagram-(\d+)-->/g,
 				( match, n ) => `<!--diagram-${ offset + Number( n ) }-->`
@@ -343,10 +337,7 @@ async function build() {
 	} );
 
 	rendered.forEach(
-		(
-			{ entry, source, dir, description, minutes, headings, body },
-			index
-		) => {
+		( { entry, source, dir, description, headings, body }, index ) => {
 			// The trail from the docs root to this page, as BreadcrumbList data for search engines.
 			const trail = [];
 			for (
@@ -454,11 +445,7 @@ ${ showcaseNav
 		</nav>
 	</details>
 	<main id="main" class="docs">
-		${
-			entry.parent
-				? `<p class="docs__time">${ minutes } min read</p>\n\t\t`
-				: ''
-		}${ content.trim() }
+		${ content.trim() }
 			<nav class="docs__pager" aria-label="Previous and next">
 ${ pager }
 			</nav>
