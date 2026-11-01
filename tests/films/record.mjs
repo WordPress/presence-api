@@ -113,6 +113,80 @@ const SHOTS = {
 			await sleep( 12000 );
 		},
 	},
+	// The block editor, so Classic Editor is off for the take; the pattern sits below the debugger's menu so its notice shows.
+	'synced-patterns': {
+		left: ( { post } ) => `/wp-admin/post.php?post=${ post }&action=edit`,
+		rooms: 'postType/wp_block',
+		focus: '.interface-interface-skeleton__footer',
+		canvasCss:
+			'.is-root-container { max-width: 400px !important; margin-left: 32px !important; }',
+		adminHeight: 560,
+		dbHeight: 150,
+		setup: async ( { person } ) => {
+			wp( 'plugin', 'deactivate', 'classic-editor' );
+			const prefs = JSON.stringify( {
+				core: {
+					fullscreenMode: false,
+					isComplementaryAreaVisible: false,
+				},
+				'core/edit-post': { welcomeGuide: false },
+			} );
+			const pattern =
+				wp(
+					'post',
+					'list',
+					'--post_type=wp_block',
+					'--title=Event details',
+					'--format=ids'
+				) ||
+				wp(
+					'post',
+					'create',
+					'--post_type=wp_block',
+					'--post_status=publish',
+					'--post_title=Event details',
+					'--post_content=<!-- wp:paragraph --><p>Doors open at 6pm in the community hall.</p><!-- /wp:paragraph -->',
+					'--porcelain'
+				);
+			const post =
+				wp(
+					'post',
+					'list',
+					'--title=Fall open house',
+					'--post_status=any',
+					'--format=ids'
+				) ||
+				wp(
+					'post',
+					'create',
+					'--post_status=draft',
+					'--post_title=Fall open house',
+					`--post_content=<!-- wp:paragraph --><p>Everyone is welcome.</p><!-- /wp:paragraph --><!-- wp:paragraph --><p>Here is what to know before you come.</p><!-- /wp:paragraph --><!-- wp:block {"ref":${ pattern }} /-->`,
+					'--porcelain'
+				);
+			wp(
+				'user',
+				'meta',
+				'update',
+				'1',
+				'wp_persisted_preferences',
+				prefs,
+				'--format=json'
+			);
+			const priya = await person( 'Priya Raman', 'editor', { prefs } );
+			return { pattern, post, priya };
+		},
+		play: async ( { priya, pattern } ) => {
+			await sleep( 2000 );
+			await priya.page.goto(
+				`${ BASE }/wp-admin/post.php?post=${ pattern }&action=edit`
+			);
+			await sleep( 14000 );
+			await priya.page.close();
+			await sleep( 6000 );
+		},
+		teardown: () => wp( 'plugin', 'activate', 'classic-editor' ),
+	},
 };
 
 // Installs the dressing as a must-use plugin for the take, so no environment needs to know about films.
@@ -171,7 +245,11 @@ async function film( name ) {
 	};
 
 	// Another person, in a browser of their own that is not filmed, removed when the take ends.
-	const person = async ( displayName, role, { agent = false } = {} ) => {
+	const person = async (
+		displayName,
+		role,
+		{ agent = false, prefs } = {}
+	) => {
 		const login_ = `films-${ displayName.toLowerCase().replace( /\W+/g, '-' ) }`;
 		const id = wp(
 			'user',
@@ -184,6 +262,17 @@ async function film( name ) {
 			'--porcelain'
 		);
 		people.push( id );
+		if ( prefs ) {
+			wp(
+				'user',
+				'meta',
+				'update',
+				id,
+				'wp_persisted_preferences',
+				prefs,
+				'--format=json'
+			);
+		}
 		if ( agent ) {
 			wp( 'user', 'meta', 'update', id, '_presence_films_agent', '1' );
 			return { id };
@@ -202,6 +291,8 @@ async function film( name ) {
 		);
 		const page = await login( context, 'admin', 'password' );
 		const state = shot.setup ? await shot.setup( { person } ) : {};
+		const left =
+			typeof shot.left === 'function' ? shot.left( state ) : shot.left;
 
 		// The DB viewer's nonce belongs to this login, so it comes from the debugger's own link.
 		await page.goto( `${ BASE }/wp-admin/` );
@@ -220,7 +311,7 @@ async function film( name ) {
 					iframe { border: 0; width: 100%; background: #fff; }
 					#admin { height: ${ ADMIN }px; } #db { flex: 1; }
 				</style>
-				<iframe id="admin" src="${ BASE }${ shot.left }"></iframe>
+				<iframe id="admin" src="${ BASE }${ left }"></iframe>
 				<iframe id="db" src="${ db }"></iframe>`,
 			} )
 		);
@@ -246,7 +337,16 @@ async function film( name ) {
 				);
 			} );
 			// Gives the admin focus, or Heartbeat treats it as a tab in the background.
-			await admin.click( '#wpbody-content h1' );
+			await admin.click( shot.focus || '#wpbody-content h1' );
+			if ( shot.canvasCss ) {
+				const canvas = await (
+					await admin.waitForSelector(
+						'iframe[name="editor-canvas"]'
+					)
+				).contentFrame();
+				await canvas.waitForSelector( '.is-root-container' );
+				await canvas.addStyleTag( { content: shot.canvasCss } );
+			}
 			await page.mouse.move( W - 1, H - 1 );
 		};
 		await dressAdmin();
@@ -379,7 +479,7 @@ async function film( name ) {
 				) {
 					await sleep( 200 );
 				}
-				await admin.goto( `${ BASE }${ shot.left }` );
+				await admin.goto( `${ BASE }${ left }` );
 				await dressAdmin();
 			},
 		} );
@@ -427,6 +527,7 @@ async function film( name ) {
 		);
 	} finally {
 		await browser.close();
+		shot.teardown?.();
 		for ( const id of people ) {
 			wp( 'user', 'delete', id, '--yes', '--reassign=1' );
 		}
@@ -442,6 +543,14 @@ for ( const name of names ) {
 			`Unknown shot ${ name }; one of ${ Object.keys( SHOTS ).join( ', ' ) }.`
 		);
 	}
+}
+// Without the built scripts the block editor pieces never load, and a film would show them doing nothing.
+if (
+	php( 'echo is_dir( WP_PRESENCE_PLUGIN_DIR . "build" ) ? 1 : 0;' ) !== '1'
+) {
+	throw new Error(
+		'The plugin has no build/ directory; run npm run build first.'
+	);
 }
 dress();
 try {
