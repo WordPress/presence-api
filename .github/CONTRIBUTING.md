@@ -10,7 +10,7 @@ npx wp-env start
 
 Dashboard: [localhost:8888/wp-admin/](http://localhost:8888/wp-admin/) (admin / password)
 
-The site at [wordpress.github.io/presence-api](https://wordpress.github.io/presence-api/) is `showcase/` plus the markdown in `docs/`, in the order `docs/manifest.json` lists. `npm run build:showcase` renders both into `build/showcase/`. With `npm run env:start` running and ffmpeg installed, `npm run films` re-shoots the films in `docs/media/`, or one with `npm run films -- post-locks`, after a change to a screen they show.
+The site at [wordpress.github.io/presence-api](https://wordpress.github.io/presence-api/) is `showcase/` plus the markdown in `docs/`, in the order `docs/manifest.json` lists. `npm run build:showcase` renders both into `build/showcase/`. With `npm run env:start` running and ffmpeg installed, `npm run films` re-shoots the films in `docs/media/`, or one with `npm run films -- post-locks`, after a change to a screen they show, and fails when one stops showing what its checks expect, as CI does on every plugin change.
 
 ### Debugging
 

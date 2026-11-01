@@ -10,7 +10,10 @@ const ROOT = path.resolve(
 	path.dirname( new URL( import.meta.url ).pathname ),
 	'../..'
 );
-const MEDIA = path.join( ROOT, 'docs/media' );
+// FILMS_DIR sends the films elsewhere, such as a CI artifact, instead of replacing the committed ones.
+const MEDIA = process.env.FILMS_DIR
+	? path.resolve( process.env.FILMS_DIR )
+	: path.join( ROOT, 'docs/media' );
 const WORK = path.join( ROOT, 'artifacts/films' );
 const W = 960;
 
@@ -28,8 +31,8 @@ const setUserMeta = ( id, meta ) =>
 	);
 const sleep = ( ms ) => new Promise( ( resolve ) => setTimeout( resolve, ms ) );
 
-// WordPress as anyone sees it: only the developer tools and notices about this environment are hidden.
-const HIDDEN = `#wp-admin-bar-presence-debug, .notice:not(.wp-presence-stale-notice) { display: none !important; }`;
+// WordPress as anyone sees it, hiding only the developer tools, this environment's notices, and screen-reader regions, which keep a notice's text after it goes.
+const HIDDEN = `#wp-admin-bar-presence-debug, .notice:not(.wp-presence-stale-notice), .a11y-speak-region { display: none !important; }`;
 
 // Trims the Posts list and the Dashboard through Screen Options, the way a person would.
 const SCREEN_OPTIONS = {
@@ -46,6 +49,7 @@ const SCREEN_OPTIONS = {
 
 /**
  * Each shot opens `left` as the admin, shows the rows of rooms starting with `rooms`, runs `setup` before filming, and runs `play` while it films.
+ * `play` checks what the admin sees with `see`, `gone` and `row`, or anything else with `verify`; a check given `todo` names a known bug, and fails the run once it passes.
  */
 const SHOTS = {
 	'post-locks': {
@@ -57,9 +61,12 @@ const SHOTS = {
 			'Office move checklist',
 		],
 		dbHeight: 270,
-		play: async ( { scene, reloadWhenPost } ) => {
+		play: async ( { scene, reloadWhenPost, see, row } ) => {
 			const run = scene( 'coming-back' );
 			await reloadWhenPost( 'Product launch plan' );
+			await see( 'Maya Chen is currently editing' );
+			await row( '_lock' );
+			await see( 'Theo Okafor is currently editing', { within: 20000 } );
 			await run;
 		},
 	},
@@ -68,7 +75,13 @@ const SHOTS = {
 		rooms: '',
 		adminHeight: 420,
 		dbHeight: 380,
-		play: ( { scene } ) => scene( 'editing-together' ),
+		play: async ( { scene, see } ) => {
+			await see( 'All quiet.' );
+			const run = scene( 'editing-together' );
+			await see( 'Maya Chen is currently editing', { within: 20000 } );
+			await see( '1 other', { within: 30000 } );
+			await run;
+		},
 	},
 	// The Editors column names an agent only in a tooltip, so this films Active Posts, which names it in text.
 	'ai-agents': {
@@ -89,7 +102,7 @@ const SHOTS = {
 				'--format=ids'
 			),
 		} ),
-		play: async ( { agent, post } ) => {
+		play: async ( { agent, post, see, row } ) => {
 			wp(
 				'post',
 				'update',
@@ -97,7 +110,9 @@ const SHOTS = {
 				'--post_content=Added alt text findings for the gallery pages.',
 				`--user=${ agent.id }`
 			);
-			await sleep( 14000 );
+			await see( 'Writing Assistant (agent)' );
+			await row( 'agent-' );
+			await sleep( 10000 );
 		},
 	},
 	'stale-screen-notices': {
@@ -108,15 +123,35 @@ const SHOTS = {
 			wp( 'option', 'update', 'blogdescription', '' );
 			return { theo: await person( 'Theo Okafor', 'administrator' ) };
 		},
-		play: async ( { theo } ) => {
+		play: async ( { theo, see, gone, verify } ) => {
 			await theo.page.goto( `${ BASE }/wp-admin/options-general.php` );
-			await sleep( 5000 );
+			await see( '2 online' );
+			await sleep( 2000 );
 			await theo.page.fill(
 				'#blogdescription',
 				'Notes from the volunteer team'
 			);
-			await theo.page.click( '#submit' );
-			await sleep( 12000 );
+			// The browser sends the leave DELETE while it unloads, where Playwright misses it, so the server's own record of removed rows is checked.
+			php( 'delete_option( "presence_films_removed" );' );
+			await Promise.all( [
+				theo.page.waitForNavigation(),
+				theo.page.click( '#submit' ),
+			] );
+			await sleep( 2000 );
+			verify(
+				'keeps Theo present while his save reloads the screen',
+				! php(
+					'echo implode( "\\n", get_option( "presence_films_removed", array() ) );'
+				).includes( `admin/online user-${ theo.id }` ),
+				{
+					todo: '#927, saving a form sends the leave DELETE on pagehide, and it can land after the next page has written the person back',
+				}
+			);
+			await see( 'Theo Okafor updated this screen' );
+			await gone( 'updated this screen 1 second ago', {
+				within: 20000,
+				todo: '#926, the notice keeps the time ago from its first Heartbeat answer',
+			} );
 		},
 	},
 	// The block editor, so Classic Editor is off for the take.
@@ -166,14 +201,16 @@ const SHOTS = {
 			const priya = await person( 'Priya Raman', 'editor', { prefs } );
 			return { pattern, post, priya };
 		},
-		play: async ( { priya, pattern } ) => {
+		play: async ( { priya, pattern, see, gone } ) => {
 			await sleep( 2000 );
 			await priya.page.goto(
 				`${ BASE }/wp-admin/post.php?post=${ pattern }&action=edit`
 			);
-			await sleep( 14000 );
-			await priya.page.close();
+			await see( 'Priya Raman is editing this pattern.' );
 			await sleep( 6000 );
+			await priya.page.close();
+			await gone( 'Priya Raman is editing this pattern.' );
+			await sleep( 3000 );
 		},
 		teardown: () => wp( 'plugin', 'activate', 'classic-editor' ),
 	},
@@ -189,6 +226,9 @@ const dress = () =>
 	);
 const undress = () =>
 	php( 'wp_delete_file( WPMU_PLUGIN_DIR . "/presence-films.php" );' );
+
+// Every check's outcome, reported after the last take.
+const results = [];
 
 async function film( name ) {
 	const shot = SHOTS[ name ];
@@ -417,8 +457,54 @@ async function film( name ) {
 		} );
 		await sleep( 2000 );
 
+		// Everything the admin can read, including frames inside it such as the block editor's canvas.
+		const textOf = async ( frame ) =>
+			[
+				await frame
+					.evaluate( () => document.body?.innerText || '' )
+					.catch( () => '' ),
+				...( await Promise.all( frame.childFrames().map( textOf ) ) ),
+			].join( '\n' );
+		const check = async ( label, test, { within = 10000, todo } = {} ) => {
+			const until = Date.now() + within;
+			let ok = await test();
+			while ( ! ok && Date.now() < until ) {
+				await sleep( 250 );
+				ok = await test();
+			}
+			results.push( { name, label, ok, todo } );
+		};
+		const shows = async ( text ) =>
+			( await textOf( admin ) ).includes( text );
+
 		await shot.play( {
 			...state,
+			see: ( text, options ) =>
+				check( `shows "${ text }"`, () => shows( text ), options ),
+			gone: ( text, options ) =>
+				check(
+					`stops showing "${ text }"`,
+					async () => ! ( await shows( text ) ),
+					options
+				),
+			verify: ( label, ok, { todo } = {} ) =>
+				results.push( { name, label, ok, todo } ),
+			row: ( client, options ) =>
+				check(
+					`lists the ${ client } row`,
+					() =>
+						viewer
+							.$$eval(
+								'tr[data-ts] td:nth-child(3)',
+								( cells, prefix ) =>
+									cells.some( ( cell ) =>
+										cell.textContent.startsWith( prefix )
+									),
+								client
+							)
+							.catch( () => false ),
+					options
+				),
 			scene: ( scene ) =>
 				new Promise( ( resolve ) =>
 					spawn(
@@ -493,7 +579,7 @@ async function film( name ) {
 			path.join( MEDIA, `${ name }.mp4` ),
 		] );
 		process.stdout.write(
-			`${ name }: ${ frames.length } frames, docs/media/${ name }.mp4\n`
+			`${ name }: ${ frames.length } frames, ${ path.join( MEDIA, `${ name }.mp4` ) }\n`
 		);
 	} finally {
 		await browser.close();
@@ -529,4 +615,18 @@ try {
 	}
 } finally {
 	undress();
+}
+
+// A failed check fails the run, and so does a todo check that passes, so its bug's fix also removes the todo.
+for ( const { name, label, ok, todo } of results ) {
+	let mark = ok ? 'pass' : 'FAIL';
+	if ( todo ) {
+		mark = ok ? 'FIXED, remove its todo' : 'known bug';
+	}
+	process.stdout.write(
+		`${ mark }: ${ name } ${ label }${ todo ? ` (${ todo })` : '' }\n`
+	);
+	if ( ok === !! todo ) {
+		process.exitCode = 1;
+	}
 }
