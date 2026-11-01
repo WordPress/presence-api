@@ -2,7 +2,7 @@
 
 If someone else saves a screen you have open, such as Settings, you see a notice asking you to reload, so you do not overwrite their change.
 
-![Theo Okafor saves General Settings in another browser, and the copy filmed here shows a notice that he updated the screen, with a Reload button.](media/stale-screen-notices.mp4)
+![Theo Okafor saves General Settings in another browser, and this copy shows a notice to reload.](media/stale-screen-notices.mp4)
 
 ## How it works
 

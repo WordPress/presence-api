@@ -2,7 +2,7 @@
 
 These are the places in the WordPress admin where you see who else is around.
 
-![Active Posts on the Dashboard goes from all quiet to Maya Chen editing a post, then a second person joining her, while their rows appear in the table below.](media/admin-screens.mp4)
+![Active Posts goes from all quiet to Maya Chen editing a post, then Theo Okafor joining her, as their rows appear below.](media/admin-screens.mp4)
 
 ## How it works
 

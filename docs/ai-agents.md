@@ -2,7 +2,7 @@
 
 An AI agent that edits posts through the API has no browser tab, so it never checks in. Instead, each time it saves a post, Presence API shows it working on that post for the next 75 seconds.
 
-![An agent saves a post, and Active Posts lists it as Writing Assistant (agent) while its agent row counts down in the table below.](media/ai-agents.mp4)
+![An agent saves a post, and Active Posts lists Writing Assistant (agent) while its row counts down below.](media/ai-agents.mp4)
 
 ## How it works
 
