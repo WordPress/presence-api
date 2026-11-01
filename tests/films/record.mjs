@@ -144,13 +144,13 @@ const SHOTS = {
 					'echo implode( "\\n", get_option( "presence_films_removed", array() ) );'
 				).includes( `admin/online user-${ theo.id }` ),
 				{
-					todo: 'saving a form sends the leave DELETE on pagehide, and it can land after the next page has written the person back',
+					todo: '#927, saving a form sends the leave DELETE on pagehide, and it can land after the next page has written the person back',
 				}
 			);
 			await see( 'Theo Okafor updated this screen' );
 			await gone( 'updated this screen 1 second ago', {
 				within: 20000,
-				todo: 'the notice keeps the time ago from its first Heartbeat answer',
+				todo: '#926, the notice keeps the time ago from its first Heartbeat answer',
 			} );
 		},
 	},
