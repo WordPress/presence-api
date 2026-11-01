@@ -2,6 +2,8 @@
 
 When you open a post someone else is editing, WordPress warns you that it is locked. Presence API keeps that lock in its own table instead of with the post, so renewing it while you edit does not slow down the rest of the site.
 
+![Three people take turns on one post: each finds it locked while another has it open, and the post's _lock row below changes owner as the lock passes.](media/post-locks.mp4)
+
 ## How it works
 
 ```mermaid
