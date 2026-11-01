@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.20.0](https://github.com/WordPress/presence-api/compare/v0.19.0...v0.20.0) (2026-11-01)
+
+
+### Features
+
+* add wp_presence_admin_state() so a relay can write the rows Heartbeat writes ([#924](https://github.com/WordPress/presence-api/issues/924)) ([a5b0753](https://github.com/WordPress/presence-api/commit/a5b0753e0ef008e17dbd4c4211add859746e7e59))
+* fire `wp_presence_room_changed` when an edited post's title or status changes ([#915](https://github.com/WordPress/presence-api/issues/915)) ([10f8547](https://github.com/WordPress/presence-api/commit/10f854783ae9fd92c0e1779edcfb118230b4110e))
+
+
+### Bug Fixes
+
+* keep the admin bar's presence menu current while it is open ([#914](https://github.com/WordPress/presence-api/issues/914)) ([ac5c205](https://github.com/WordPress/presence-api/commit/ac5c205babc2b689b378bdf76d1eb4bf96b89d4d))
+
 ## [0.19.0](https://github.com/WordPress/presence-api/compare/v0.18.4...v0.19.0) (2026-10-29)
 
 
