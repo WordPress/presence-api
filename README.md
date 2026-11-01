@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/WordPress/presence-api/actions/workflows/ci.yml/badge.svg)](https://github.com/WordPress/presence-api/actions/workflows/ci.yml)
 
-A feature plugin for system-wide presence and awareness in WordPress.
+A feature plugin for system-wide presence and awareness in WordPress. The [docs](https://wordpress.github.io/presence-api/docs/) explain how it works, with a diagram for each part.
 
 > [!IMPORTANT]
 > **Built for the lowest common denominator of environments.** No object cache, no WebSockets, no extra services: a dedicated table with a TTL is the only moving part. Anything a managed host offers on top is a bonus, never a dependency.

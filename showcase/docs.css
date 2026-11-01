@@ -1,0 +1,265 @@
+/* Prose for the pages scripts/build-docs.js renders from docs/. */
+
+.docs-layout {
+	display: grid;
+	grid-template-columns: 220px minmax(0, 720px) 200px;
+	justify-content: center;
+	gap: var(--wp--preset--spacing--50);
+	margin: 0 auto;
+	padding: var(--wp--preset--spacing--40) var(--wp--preset--spacing--edge-space);
+}
+
+.docs-sidebar,
+.docs-toc {
+	position: sticky;
+	top: 90px;
+	align-self: start;
+	max-height: calc(100vh - 110px);
+	overflow-y: auto;
+	font-size: var(--wp--preset--font-size--small);
+}
+
+.docs-sidebar summary {
+	display: none;
+}
+
+.docs-sidebar h2,
+.docs-toc h2 {
+	margin: var(--wp--preset--spacing--20) 0 var(--wp--preset--spacing--10);
+	color: var(--wp--preset--color--charcoal-4);
+	font-family: inherit;
+	font-size: var(--wp--preset--font-size--small);
+	font-weight: 600;
+}
+
+.docs-sidebar a,
+.docs-toc a {
+	display: block;
+	padding: 4px 0 4px 12px;
+	border-left: 2px solid var(--wp--preset--color--light-grey-1);
+	color: inherit;
+	text-decoration: none;
+}
+
+.docs-sidebar a:hover,
+.docs-toc a:hover {
+	color: var(--wp--preset--color--blueberry-1);
+}
+
+.docs-sidebar a[aria-current],
+.docs-toc a[aria-current] {
+	border-left-color: var(--wp--preset--color--blueberry-1);
+	color: var(--wp--preset--color--blueberry-1);
+	font-weight: 600;
+}
+
+/* The page's contents show only where a third column fits. */
+@media (max-width: 1200px) {
+
+	.docs-layout {
+		grid-template-columns: 220px minmax(0, 720px);
+	}
+
+	.docs-toc {
+		display: none;
+	}
+}
+
+/* On narrow screens the sidebar becomes a Contents toggle above the page. */
+@media (max-width: 900px) {
+
+	.docs-layout {
+		grid-template-columns: minmax(0, 1fr);
+		gap: var(--wp--preset--spacing--20);
+	}
+
+	.docs-sidebar {
+		position: static;
+		max-height: none;
+		padding: var(--wp--preset--spacing--10) var(--wp--preset--spacing--20);
+		background: var(--wp--preset--color--light-grey-2);
+	}
+
+	.docs-sidebar summary {
+		display: list-item;
+		cursor: pointer;
+		font-weight: 600;
+	}
+}
+
+.docs > * {
+	max-width: 720px;
+}
+
+.docs h1 {
+	margin-top: 0;
+	font-size: var(--wp--preset--font-size--heading-2);
+}
+
+.docs h2 {
+	margin-top: var(--wp--preset--spacing--40);
+	font-size: var(--wp--preset--font-size--heading-4);
+}
+
+.docs h3 {
+	margin-top: var(--wp--preset--spacing--30);
+	padding-top: var(--wp--preset--spacing--20);
+	border-top: 1px solid var(--wp--preset--color--light-grey-1);
+	font-size: var(--wp--preset--font-size--normal);
+}
+
+.docs h2 + h3 {
+	margin-top: var(--wp--preset--spacing--20);
+}
+
+.docs h3 code {
+	font-size: 1em;
+	font-weight: 600;
+}
+
+.docs h2,
+.docs h3 {
+	scroll-margin-top: 80px;
+}
+
+.docs__anchor {
+	margin-left: var(--wp--preset--spacing--10);
+	color: var(--wp--preset--color--blueberry-1);
+	text-decoration: none;
+	opacity: 0;
+}
+
+.docs h2:hover .docs__anchor,
+.docs h3:hover .docs__anchor,
+.docs__anchor:focus {
+	opacity: 1;
+}
+
+.docs p,
+.docs ul,
+.docs ol,
+.docs table,
+.docs pre,
+.docs figure {
+	margin-top: var(--wp--preset--spacing--20);
+}
+
+.docs ul {
+	padding-left: var(--wp--preset--spacing--30);
+	list-style: disc;
+}
+
+.docs li > ul {
+	margin-top: 0;
+}
+
+.docs pre {
+	padding: var(--wp--preset--spacing--20) var(--wp--preset--spacing--30);
+	overflow-x: auto;
+	background: var(--wp--preset--color--light-grey-2);
+	font-size: var(--wp--preset--font-size--small);
+}
+
+.docs table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: var(--wp--preset--font-size--small);
+}
+
+/* Two-column tables share a first-column width, so they line up. */
+.docs th:first-child:nth-last-child(2),
+.docs td:first-child:nth-last-child(2) {
+	width: 30%;
+}
+
+.docs td code {
+	white-space: nowrap;
+}
+
+.docs th,
+.docs td {
+	padding: var(--wp--preset--spacing--10);
+	border-bottom: 1px solid var(--wp--preset--color--light-grey-1);
+	text-align: left;
+	vertical-align: top;
+}
+
+.docs__diagram {
+	overflow-x: auto;
+}
+
+.docs__diagram svg {
+	max-width: 100%;
+	height: auto;
+}
+
+.docs__pager {
+	display: flex;
+	justify-content: space-between;
+	gap: var(--wp--preset--spacing--20);
+	margin-top: var(--wp--preset--spacing--40);
+	padding-top: var(--wp--preset--spacing--20);
+	border-top: 1px solid var(--wp--preset--color--light-grey-1);
+}
+
+.docs__pager a {
+	text-decoration: none;
+}
+
+.docs__pager a:last-child:not(:first-child) {
+	margin-left: auto;
+	text-align: right;
+}
+
+.docs__pager span {
+	display: block;
+	color: var(--wp--preset--color--charcoal-4);
+	font-size: var(--wp--preset--font-size--small);
+}
+
+.docs__edit {
+	font-size: var(--wp--preset--font-size--small);
+}
+
+/* On a phone diagrams scroll sideways, and long names wrap. */
+@media (max-width: 600px) {
+
+	.docs code {
+		overflow-wrap: anywhere;
+	}
+
+	.docs td code {
+		white-space: normal;
+	}
+
+	.docs__diagram svg {
+		min-width: 560px;
+	}
+}
+
+.docs__film,
+.docs img {
+	display: block;
+	max-width: 100%;
+	height: auto;
+	margin-top: var(--wp--preset--spacing--20);
+	border: 1px solid var(--wp--preset--color--light-grey-1);
+}
+
+/* A line of only <sub>, such as a reference entry's kind and version. */
+.docs p > sub:only-child {
+	display: block;
+	color: var(--wp--preset--color--charcoal-4);
+	font-size: var(--wp--preset--font-size--small);
+	vertical-align: baseline;
+}
+
+.docs details {
+	margin-top: var(--wp--preset--spacing--20);
+	padding: var(--wp--preset--spacing--10) var(--wp--preset--spacing--20);
+	background: var(--wp--preset--color--blueberry-4);
+}
+
+.docs summary {
+	cursor: pointer;
+}

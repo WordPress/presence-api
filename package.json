@@ -3,7 +3,7 @@
 	"private": true,
 	"scripts": {
 		"build": "wp-scripts build",
-		"build:showcase": "rm -rf build/showcase && mkdir -p build/showcase/images && cp -R showcase/. build/showcase/ && cp plugins/presence-api/.wordpress-org/*.png build/showcase/images/",
+		"build:showcase": "rm -rf build/showcase && mkdir -p build/showcase/images && cp -R showcase/. build/showcase/ && cp plugins/presence-api/.wordpress-org/*.png build/showcase/images/ && node scripts/build-docs.js",
 		"check": "bash scripts/check.sh",
 		"env:start": "wp-env start",
 		"env:start:multisite": "bash scripts/start-multisite-env.sh",
@@ -15,6 +15,7 @@
 		"test": "wp-env run tests-cli --env-cwd='presence-api' -- ./vendor/bin/phpunit --testdox",
 		"test:multisite": "wp-env run tests-cli --env-cwd='presence-api' -- env WP_MULTISITE=1 ./vendor/bin/phpunit --testdox",
 		"test:e2e": "playwright test --config tests/e2e/playwright.config.js",
+		"films": "node tests/films/record.mjs",
 		"test:scenes": "playwright test --config tests/scenes/playwright.config.js",
 		"test:scripts": "node --test .github/scripts/*.test.js",
 		"test:unit": "wp-scripts test-unit-js"
@@ -26,10 +27,14 @@
 		"@wordpress/env": "^11.17.0",
 		"@wordpress/eslint-plugin": "^28.0.0",
 		"@wordpress/scripts": "^37.0.0",
+		"github-slugger": "^2.0.0",
 		"globals": "^17.13.0",
 		"html-validate": "^11.17.0",
 		"jquery": "^4.0.0",
 		"jsdom": "^30.1.2",
+		"markdown-it": "^14.3.3",
+		"markdown-it-anchor": "^10.0.0",
+		"mermaid": "^11.17.2",
 		"vite": "^8.3.5",
 		"vitest": "^5.0.4"
 	},

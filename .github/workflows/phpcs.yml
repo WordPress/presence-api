@@ -26,6 +26,8 @@ jobs:
           tools: composer
       - name: Check features add no private calls
         run: php scripts/check-private-calls.php
+      - name: Check docs/reference.md matches the docblocks
+        run: php scripts/build-reference.php --check
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.composer/cache
