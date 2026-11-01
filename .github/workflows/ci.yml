@@ -53,6 +53,7 @@ jobs:
               - 'phpunit.xml.dist'
               - 'plugins/presence-api/readme.txt'
               - 'scripts/private-calls.txt'
+              - 'tests/films/**'
               - '.github/actions/**'
               - '.github/workflows/**'
 
@@ -79,6 +80,12 @@ jobs:
   e2e:
     needs: changes
     uses: ./.github/workflows/e2e.yml
+    with:
+      should-run: ${{ needs.changes.outputs.release-please != 'true' && needs.changes.outputs.code == 'true' }}
+
+  films:
+    needs: changes
+    uses: ./.github/workflows/films.yml
     with:
       should-run: ${{ needs.changes.outputs.release-please != 'true' && needs.changes.outputs.code == 'true' }}
 

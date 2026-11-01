@@ -1,0 +1,143 @@
+name: Films
+
+# Re-shoots each docs film with `npm run films` and fails on a check that
+# breaks. The films are attached to the run for review; the committed ones in
+# docs/media/ change only when someone re-shoots them on purpose.
+
+on:
+  workflow_call:
+    inputs:
+      should-run:
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  shot:
+    if: ${{ inputs.should-run }}
+    name: Film (${{ matrix.shot }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shot: [ post-locks, admin-screens, ai-agents, stale-screen-notices, synced-patterns ]
+        browser: [ chromium ]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          show-progress: ${{ runner.debug == '1' && 'true' || 'false' }}
+      - uses: ./.github/actions/setup-node
+      - run: npm run build
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ matrix.browser }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: ${{ runner.os }}-playwright-${{ matrix.browser }}-
+
+      # The Ubuntu mirror throttles the packages install-deps downloads often
+      # enough to stall a job for minutes, so they are cached the way Gutenberg's
+      # .github/setup-playwright action caches them.
+      - name: Prepare the package cache
+        id: apt-prepare
+        env:
+          BROWSER: ${{ matrix.browser }}
+        run: |
+          VERSION="$(node -p "require('playwright/package.json').version")"
+          IMAGE="${ImageOS:-unknown}-${ImageVersion:-unknown}"
+          # Broadest first, so each restore fallback is a prefix of the key.
+          ANY="playwright-apt--os-${RUNNER_OS}--arch-${RUNNER_ARCH}--"
+          {
+            echo "ANY_PREFIX=${ANY}"
+            echo "BROWSER_PREFIX=${ANY}browsers-${BROWSER}--"
+            echo "PREFIX=${ANY}browsers-${BROWSER}--img-${IMAGE}--pw-${VERSION}--fingerprint-"
+          } >> "$GITHUB_OUTPUT"
+          echo 'APT::Keep-Downloaded-Packages "true";' | sudo tee /etc/apt/apt.conf.d/99keep-downloaded-packages > /dev/null
+          mkdir -p "$HOME/apt-cache"
+
+      # The key carries a fingerprint of the packages, so `key` never matches on
+      # its own and the prefix search restores the newest entry, falling back to
+      # another image or Playwright version, since both roll over without warning.
+      - name: Restore the cached packages
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/apt-cache
+          key: ${{ steps.apt-prepare.outputs.PREFIX }}
+          restore-keys: |
+            ${{ steps.apt-prepare.outputs.PREFIX }}
+            ${{ steps.apt-prepare.outputs.BROWSER_PREFIX }}
+            ${{ steps.apt-prepare.outputs.ANY_PREFIX }}
+
+      - name: Install Playwright system dependencies
+        id: apt-install
+        timeout-minutes: 5
+        env:
+          BROWSER: ${{ matrix.browser }}
+        run: |
+          fingerprint() {
+            find "$HOME/apt-cache" -maxdepth 1 -name '*.deb' -printf '%f\n' | LC_ALL=C sort | sha256sum | cut -c1-16
+          }
+          BEFORE="$(fingerprint)"
+
+          # apt re-downloads any package whose size does not match its index, so
+          # a stale one here is never used.
+          sudo cp -r --update=none "$HOME/apt-cache/." /var/cache/apt/archives/
+
+          npx playwright install-deps "$BROWSER"
+
+          sudo find /var/cache/apt/archives -maxdepth 1 -name '*.deb' -exec cp --update=none -t "$HOME/apt-cache" {} +
+          sudo chown -R "$(id -u):$(id -g)" "$HOME/apt-cache"
+
+          AFTER="$(fingerprint)"
+          echo "FINGERPRINT=$AFTER" >> "$GITHUB_OUTPUT"
+          echo "CHANGED=$( [ "$BEFORE" != "$AFTER" ] && echo true || echo false )" >> "$GITHUB_OUTPUT"
+
+      - name: Save the packages
+        if: ${{ steps.apt-install.outputs.CHANGED == 'true' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/apt-cache
+          key: ${{ steps.apt-prepare.outputs.PREFIX }}${{ steps.apt-install.outputs.FINGERPRINT }}
+
+      - run: npx playwright install "$BROWSER"
+        if: ${{ steps.playwright-cache.outputs.cache-hit != 'true' }}
+        env:
+          BROWSER: ${{ matrix.browser }}
+
+      # Every leg tests the development site, so the root config's separate tests environment would only add two containers to boot.
+      - run: sudo apt-get install --yes --no-install-recommends ffmpeg
+
+      - name: Skip the tests environment
+        run: |
+          echo '{ "testsEnvironment": false }' > .wp-env.override.json
+
+      - run: npx wp-env start
+
+      - run: npm run films -- "$SHOT"
+        env:
+          SHOT: ${{ matrix.shot }}
+          FILMS_DIR: artifacts/films-out
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ !cancelled() }}
+        with:
+          name: film-${{ matrix.shot }}
+          path: artifacts/films-out/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  films:
+    if: ${{ inputs.should-run && !cancelled() }}
+    name: Films
+    needs: shot
+    runs-on: ubuntu-24.04
+    steps:
+      - run: test "$RESULT" = success
+        env:
+          RESULT: ${{ needs.shot.result }}
