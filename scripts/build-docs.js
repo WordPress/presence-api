@@ -123,14 +123,29 @@ md.renderer.rules.link_open = ( tokens, i, options, env, self ) => {
 	return self.renderToken( tokens, i, options );
 };
 
-// Shows a WordPress.org screenshot from the copy the site publishes, linked to its full size, and fails on one that does not exist.
+// Shows a WordPress.org screenshot from the copy the site publishes, linked to its full size, or a film from docs/media/, and fails on either that does not exist.
 const SCREENSHOTS = 'plugins/presence-api/.wordpress-org/';
+const MEDIA = 'docs/media/';
 md.renderer.rules.image = ( tokens, i, options, env, self ) => {
 	const token = tokens[ i ];
 	const file = path.relative(
 		root,
 		path.resolve( path.dirname( env.source ), token.attrGet( 'src' ) )
 	);
+	const alt = self.renderInlineAsText( token.children, options, env );
+	if ( file.startsWith( MEDIA ) && file.endsWith( '.mp4' ) ) {
+		if ( ! fs.existsSync( path.join( root, file ) ) ) {
+			throw new Error(
+				`${ env.source } plays ${ file }, which does not exist.`
+			);
+		}
+		return `<video class="docs__film" src="${ path.relative(
+			env.dir,
+			'docs/media'
+		) }/${ path.basename(
+			file
+		) }" aria-label="${ escapeHtml( alt ) }" controls muted loop playsinline preload="metadata"></video>`;
+	}
 	if (
 		! file.startsWith( SCREENSHOTS ) ||
 		! fs.existsSync( path.join( root, file ) )
@@ -143,10 +158,7 @@ md.renderer.rules.image = ( tokens, i, options, env, self ) => {
 		'src',
 		`${ path.relative( env.dir, '.' ) }/images/${ path.basename( file ) }`
 	);
-	token.attrSet(
-		'alt',
-		self.renderInlineAsText( token.children, options, env )
-	);
+	token.attrSet( 'alt', alt );
 	token.attrSet( 'loading', 'lazy' );
 	return `<a href="${ token.attrGet( 'src' ) }">${ self.renderToken(
 		tokens,
@@ -326,6 +338,9 @@ async function build() {
 	}
 
 	const svgs = await drawDiagrams( diagrams );
+	fs.cpSync( path.join( docs, 'media' ), path.join( out, 'docs', 'media' ), {
+		recursive: true,
+	} );
 
 	rendered.forEach(
 		(
@@ -466,6 +481,10 @@ ${ pager }
 					.replace(
 						/\]\((?:\.\.\/)+(plugins\/presence-api\/\.wordpress-org\/[^)]+)\)/g,
 						'](https://raw.githubusercontent.com/WordPress/presence-api/main/$1)'
+					)
+					.replace(
+						/\]\((?:\.\.\/)*(?:docs\/)?(media\/[^)]+\.mp4)\)/g,
+						'](https://raw.githubusercontent.com/WordPress/presence-api/main/docs/$1)'
 					)
 					.replace(
 						/\]\(([^):#]+)\.md(#[^)]*)?\)/g,
