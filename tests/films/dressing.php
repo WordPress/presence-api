@@ -1,6 +1,6 @@
 <?php
 /**
- * Dressing tests/films/record.mjs installs while it films: realistic names, initials avatars, and agents marked by user meta.
+ * Dressing tests/films/record.mjs installs while it films: realistic names, initials avatars, agents marked by user meta, and a record of removed rows for its checks.
  */
 
 const PRESENCE_FILMS_NAMES = array( 1 => 'Maya Chen', 2 => 'Theo Okafor', 3 => 'Priya Raman' );
@@ -54,6 +54,17 @@ add_filter(
 	'wp_presence_is_agent_user',
 	function ( $is_agent, $user_id ) {
 		return $is_agent || (bool) get_user_meta( $user_id, '_presence_films_agent', true );
+	},
+	10,
+	2
+);
+
+add_action(
+	'removed_presence',
+	function ( $room, $client_id ) {
+		$removed   = get_option( 'presence_films_removed', array() );
+		$removed[] = "$room $client_id";
+		update_option( 'presence_films_removed', $removed, false );
 	},
 	10,
 	2
