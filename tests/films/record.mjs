@@ -1,4 +1,4 @@
-// Films each feature for docs/media/: the admin on top with the debugger pinned, the presence table's rows below.
+// Films each feature for docs/media/: WordPress as anyone sees it on top, the presence table's rows below.
 //   npm run films [-- <shot> ...]
 import { chromium } from '@playwright/test';
 import { execFileSync, spawn } from 'node:child_process';
@@ -21,19 +21,28 @@ const wp = ( ...args ) =>
 		.toString()
 		.trim();
 const php = ( code ) => wp( 'eval', code );
+// Sets user meta from an object through update_user_meta(), which, unlike wp user meta update, accepts a value that is already set.
+const setUserMeta = ( id, meta ) =>
+	php(
+		`foreach ( json_decode( base64_decode( "${ Buffer.from( JSON.stringify( meta ) ).toString( 'base64' ) }" ), true ) as $key => $value ) { update_user_meta( ${ id }, $key, $value ); }`
+	);
 const sleep = ( ms ) => new Promise( ( resolve ) => setTimeout( resolve, ms ) );
 
-// Hides what is not part of any story.
-const DECLUTTER = `
-	#wp-admin-bar-my-account, #wp-admin-bar-updates, #wp-admin-bar-comments, #wp-admin-bar-new-content,
-	#wp-admin-bar-command-palette, #screen-meta-links, .update-plugins, .notice:not(.wp-presence-stale-notice),
-	#footer-thankyou, #footer-upgrade, #welcome-panel, .column-categories, .column-tags, .column-comments,
-	.column-date, .column-author, .check-column, .tablenav, .subsubsub, .search-box, .wp-list-table tfoot,
-	#wp-admin-bar-presence-debug-scene, #wp-admin-bar-presence-debug-scene-step { display: none !important; }
-`;
-const ACTIVE_POSTS = `#dashboard-widgets .postbox:not(#presence_active_posts), #dashboard-widgets .empty-container { display: none !important; }
-	#dashboard-widgets-wrap { max-width: 440px; }`;
-const NARROW_LIST = '#wpbody-content .wrap { max-width: 440px; }';
+// WordPress as anyone sees it: only the developer tools and notices about this environment are hidden.
+const HIDDEN = `#wp-admin-bar-presence-debug, .notice:not(.wp-presence-stale-notice) { display: none !important; }`;
+
+// Trims the Posts list and the Dashboard through Screen Options, the way a person would.
+const SCREEN_OPTIONS = {
+	show_welcome_panel: 0,
+	'manageedit-postcolumnshidden': [ 'categories', 'tags', 'comments' ],
+	metaboxhidden_dashboard: [
+		'dashboard_site_health',
+		'dashboard_right_now',
+		'dashboard_activity',
+		'dashboard_quick_press',
+		'dashboard_primary',
+	],
+};
 
 /**
  * Each shot opens `left` as the admin, shows the rows of rooms starting with `rooms`, runs `setup` before filming, and runs `play` while it films.
@@ -42,7 +51,6 @@ const SHOTS = {
 	'post-locks': {
 		left: '/wp-admin/edit.php',
 		rooms: 'postType/',
-		css: NARROW_LIST,
 		posts: [
 			'Spring volunteer schedule',
 			'Accessibility audit notes',
@@ -58,7 +66,6 @@ const SHOTS = {
 	'admin-screens': {
 		left: '/wp-admin/',
 		rooms: '',
-		css: ACTIVE_POSTS,
 		adminHeight: 420,
 		dbHeight: 380,
 		play: ( { scene } ) => scene( 'editing-together' ),
@@ -67,8 +74,8 @@ const SHOTS = {
 	'ai-agents': {
 		left: '/wp-admin/',
 		rooms: 'postType/',
-		css: ACTIVE_POSTS,
 		posts: [ 'Accessibility audit notes' ],
+		adminHeight: 300,
 		dbHeight: 160,
 		setup: async ( { person } ) => ( {
 			agent: await person( 'Writing Assistant', 'editor', {
@@ -96,7 +103,6 @@ const SHOTS = {
 	'stale-screen-notices': {
 		left: '/wp-admin/options-general.php',
 		rooms: 'admin/online',
-		css: '.form-table tr:nth-child(n+4), p.submit { display: none !important; } #wpbody-content .wrap { max-width: 440px; }',
 		dbHeight: 160,
 		setup: async ( { person } ) => {
 			wp( 'option', 'update', 'blogdescription', '' );
@@ -113,24 +119,16 @@ const SHOTS = {
 			await sleep( 12000 );
 		},
 	},
-	// The block editor, so Classic Editor is off for the take; the pattern sits below the debugger's menu so its notice shows.
+	// The block editor, so Classic Editor is off for the take.
 	'synced-patterns': {
 		left: ( { post } ) => `/wp-admin/post.php?post=${ post }&action=edit`,
 		rooms: 'postType/wp_block',
 		focus: '.interface-interface-skeleton__footer',
-		canvasCss:
-			'.is-root-container { max-width: 400px !important; margin-left: 32px !important; }',
-		adminHeight: 560,
+		adminHeight: 480,
 		dbHeight: 150,
 		setup: async ( { person } ) => {
 			wp( 'plugin', 'deactivate', 'classic-editor' );
-			const prefs = JSON.stringify( {
-				core: {
-					fullscreenMode: false,
-					isComplementaryAreaVisible: false,
-				},
-				'core/edit-post': { welcomeGuide: false },
-			} );
+			const prefs = { 'core/edit-post': { welcomeGuide: false } };
 			const pattern =
 				wp(
 					'post',
@@ -164,15 +162,7 @@ const SHOTS = {
 					`--post_content=<!-- wp:paragraph --><p>Everyone is welcome.</p><!-- /wp:paragraph --><!-- wp:paragraph --><p>Here is what to know before you come.</p><!-- /wp:paragraph --><!-- wp:block {"ref":${ pattern }} /-->`,
 					'--porcelain'
 				);
-			wp(
-				'user',
-				'meta',
-				'update',
-				'1',
-				'wp_persisted_preferences',
-				prefs,
-				'--format=json'
-			);
+			setUserMeta( 1, { wp_persisted_preferences: prefs } );
 			const priya = await person( 'Priya Raman', 'editor', { prefs } );
 			return { pattern, post, priya };
 		},
@@ -208,6 +198,7 @@ async function film( name ) {
 
 	wp( 'presence', 'scene', 'stop' );
 	php( 'global $wpdb; $wpdb->query( "DELETE FROM {$wpdb->presence}" );' );
+	setUserMeta( 1, SCREEN_OPTIONS );
 	for ( const title of shot.posts || [] ) {
 		if (
 			! wp(
@@ -263,18 +254,10 @@ async function film( name ) {
 		);
 		people.push( id );
 		if ( prefs ) {
-			wp(
-				'user',
-				'meta',
-				'update',
-				id,
-				'wp_persisted_preferences',
-				prefs,
-				'--format=json'
-			);
+			setUserMeta( id, { wp_persisted_preferences: prefs } );
 		}
 		if ( agent ) {
-			wp( 'user', 'meta', 'update', id, '_presence_films_agent', '1' );
+			setUserMeta( id, { _presence_films_agent: 1 } );
 			return { id };
 		}
 		const context = await browser.newContext();
@@ -286,15 +269,12 @@ async function film( name ) {
 			viewport: { width: W, height: H },
 			deviceScaleFactor: 2,
 		} );
-		await context.addInitScript( () =>
-			localStorage.setItem( 'presence-debug-pinned', '1' )
-		);
 		const page = await login( context, 'admin', 'password' );
 		const state = shot.setup ? await shot.setup( { person } ) : {};
 		const left =
 			typeof shot.left === 'function' ? shot.left( state ) : shot.left;
 
-		// The DB viewer's nonce belongs to this login, so it comes from the debugger's own link.
+		// The DB viewer's nonce belongs to this login, so it comes from the debugger's own link, hidden from the film.
 		await page.goto( `${ BASE }/wp-admin/` );
 		const db = await page.$eval( 'a.presence-debug-table', ( a ) => {
 			const url = new URL( a.href );
@@ -323,11 +303,10 @@ async function film( name ) {
 
 		const dressAdmin = async () => {
 			await admin.addStyleTag( {
-				content: DECLUTTER + ( shot.css || '' ),
+				content: HIDDEN,
 			} );
-			// Folds the menu, and asks for a fresh answer every two seconds through the plugin's own action instead of waiting for a Heartbeat tick.
+			// Asks for a fresh answer every two seconds through the plugin's own action instead of waiting for a Heartbeat tick.
 			await admin.evaluate( () => {
-				document.body.classList.add( 'folded' );
 				setInterval(
 					() =>
 						window.wp?.hooks?.doAction(
@@ -338,15 +317,6 @@ async function film( name ) {
 			} );
 			// Gives the admin focus, or Heartbeat treats it as a tab in the background.
 			await admin.click( shot.focus || '#wpbody-content h1' );
-			if ( shot.canvasCss ) {
-				const canvas = await (
-					await admin.waitForSelector(
-						'iframe[name="editor-canvas"]'
-					)
-				).contentFrame();
-				await canvas.waitForSelector( '.is-root-container' );
-				await canvas.addStyleTag( { content: shot.canvasCss } );
-			}
 			await page.mouse.move( W - 1, H - 1 );
 		};
 		await dressAdmin();
