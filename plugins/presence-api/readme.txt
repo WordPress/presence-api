@@ -3,7 +3,7 @@ Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas,
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.1
-Stable tag: 0.18.4
+Stable tag: 0.20.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -79,6 +79,15 @@ For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/presence-api/blob/main/CHANGELOG.md
 
+= 0.20.0 =
+* Add wp_presence_admin_state() so a relay can write the rows Heartbeat writes ([#924](https://github.com/WordPress/presence-api/issues/924)).
+* Fire `wp_presence_room_changed` when an edited post's title or status changes ([#915](https://github.com/WordPress/presence-api/issues/915)).
+* Keep the admin bar's presence menu current while it is open ([#914](https://github.com/WordPress/presence-api/issues/914)).
+
+= 0.19.0 =
+* Add a presence-api.keepalive filter so a push transport can hold a tab's rows ([#904](https://github.com/WordPress/presence-api/issues/904)).
+* Add a presence-api.roomChanged action that refreshes presence now ([#903](https://github.com/WordPress/presence-api/issues/903)).
+
 = 0.18.4 =
 * Clear the cleanup cron event on plugin uninstall ([#872](https://github.com/WordPress/presence-api/issues/872)).
 * Preserve post locks on logout from another session ([#893](https://github.com/WordPress/presence-api/issues/893)).
@@ -94,15 +103,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 
 = 0.18.2 =
 * Make the presence screens readable with only a keyboard ([#841](https://github.com/WordPress/presence-api/issues/841)).
-
-= 0.18.1 =
-* Show the admin bar presence node on phones and spell out hover-only names on touch ([#830](https://github.com/WordPress/presence-api/issues/830)).
-
-= 0.18.0 =
-* Let a reader tell a room changed without reading every row ([#791](https://github.com/WordPress/presence-api/issues/791)).
-* Let core's copy of a presence function or class win when it already exists ([#805](https://github.com/WordPress/presence-api/issues/805)).
-* Raise a deprecation notice for positional presence arguments ([#800](https://github.com/WordPress/presence-api/issues/800)).
-* Register each switchable piece with the callback that adds its hooks ([#814](https://github.com/WordPress/presence-api/issues/814)).
-* Return WP_Error with specific refusal codes when presence write fails ([#792](https://github.com/WordPress/presence-api/issues/792)).
-* Tell a second browser from a second tab with a per-room session hash ([#815](https://github.com/WordPress/presence-api/issues/815)).
-* Cap the heartbeat ping's title and screen before storing them ([#816](https://github.com/WordPress/presence-api/issues/816)).

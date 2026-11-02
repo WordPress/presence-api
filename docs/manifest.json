@@ -1,0 +1,98 @@
+[
+	{
+		"title": "Presence API docs",
+		"slug": "docs",
+		"markdown_source": "../docs/README.md",
+		"parent": null
+	},
+	{
+		"title": "Introduction",
+		"slug": "introduction",
+		"markdown_source": "../docs/introduction.md",
+		"parent": "docs"
+	},
+	{
+		"title": "Rows and rooms",
+		"slug": "rows-and-rooms",
+		"markdown_source": "../docs/rows-and-rooms.md",
+		"parent": "docs"
+	},
+	{
+		"title": "Writers",
+		"slug": "writers",
+		"markdown_source": "../docs/writers.md",
+		"parent": "docs"
+	},
+	{
+		"title": "Readers",
+		"slug": "readers",
+		"markdown_source": "../docs/readers.md",
+		"parent": "docs"
+	},
+	{
+		"title": "Heartbeat and tabs",
+		"slug": "heartbeat-and-tabs",
+		"markdown_source": "../docs/heartbeat-and-tabs.md",
+		"parent": "docs"
+	},
+	{
+		"title": "Admin screens",
+		"slug": "admin-screens",
+		"markdown_source": "../docs/admin-screens.md",
+		"parent": "docs"
+	},
+	{
+		"title": "Post locks",
+		"slug": "post-locks",
+		"markdown_source": "../docs/post-locks.md",
+		"parent": "docs"
+	},
+	{
+		"title": "Real-time collaboration",
+		"slug": "real-time-collaboration",
+		"markdown_source": "../docs/real-time-collaboration.md",
+		"parent": "docs"
+	},
+	{
+		"title": "Push transports",
+		"slug": "push-transports",
+		"markdown_source": "../docs/push-transports.md",
+		"parent": "docs"
+	},
+	{
+		"title": "AI agents",
+		"slug": "ai-agents",
+		"markdown_source": "../docs/ai-agents.md",
+		"parent": "docs"
+	},
+	{
+		"title": "Stale-screen notices",
+		"slug": "stale-screen-notices",
+		"markdown_source": "../docs/stale-screen-notices.md",
+		"parent": "docs"
+	},
+	{
+		"title": "Synced patterns",
+		"slug": "synced-patterns",
+		"markdown_source": "../docs/synced-patterns.md",
+		"parent": "docs"
+	},
+	{
+		"title": "Multisite",
+		"slug": "multisite",
+		"markdown_source": "../docs/multisite.md",
+		"parent": "docs"
+	},
+	{
+		"title": "Project",
+		"slug": "project",
+		"markdown_source": "../docs/project.md",
+		"parent": "docs"
+	},
+	{
+		"title": "Reference",
+		"slug": "reference",
+		"markdown_source": "../docs/reference.md",
+		"parent": "docs"
+	}
+]

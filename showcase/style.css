@@ -185,6 +185,14 @@ pre {
 
 /* Shared pieces */
 
+.split p,
+.feature__text p,
+.hosting__intro p,
+.developers__intro p,
+.involved__intro p {
+	max-width: 65ch;
+}
+
 .buttons {
 	display: flex;
 	flex-wrap: wrap;
@@ -265,6 +273,23 @@ pre {
 	gap: 0 var(--wp--preset--spacing--30);
 }
 
+@media (max-width: 599px) {
+
+	.local-nav {
+		position: static;
+		padding-bottom: var(--wp--preset--spacing--10);
+	}
+
+	/* One row that scrolls, so the links never stack over the page. */
+	.local-nav ul {
+		flex-wrap: nowrap;
+		width: 100%;
+		overflow-x: auto;
+		gap: 0 var(--wp--preset--spacing--20);
+		white-space: nowrap;
+	}
+}
+
 /* Hero */
 
 .hero {
@@ -277,6 +302,11 @@ pre {
 	max-width: var(--wp--style--global--content-size);
 	margin-right: auto;
 	margin-left: auto;
+}
+
+.hero__buttons {
+	justify-content: center;
+	margin-top: var(--wp--preset--spacing--40);
 }
 
 .hero__lede {
@@ -449,11 +479,6 @@ pre {
 	margin: var(--wp--preset--spacing--50) auto 0;
 }
 
-.details__grid img {
-	margin-bottom: var(--wp--preset--spacing--20);
-	border: 1px solid var(--wp--preset--color--light-grey-1);
-}
-
 .details__grid h3 {
 	font-family: var(--wp--preset--font-family--inter);
 	font-size: var(--wp--preset--font-size--normal);
@@ -462,34 +487,17 @@ pre {
 }
 
 .details__grid p {
+	margin-top: var(--wp--preset--spacing--10);
 	font-size: var(--wp--preset--font-size--small);
 	line-height: 1.714;
-}
-
-.details__grid p + h3 {
-	margin-top: var(--wp--preset--spacing--30);
 }
 
 @media (min-width: 782px) {
 
 	.details__grid {
-		grid-template-columns: 1fr 1fr;
+		grid-template-columns: repeat(3, 1fr);
 		gap: var(--wp--preset--spacing--60);
 	}
-}
-
-/* Block editor */
-
-.editor {
-	max-width: calc(var(--wp--style--global--content-size) + 2 * var(--wp--preset--spacing--edge-space));
-	margin: 0 auto;
-	padding: var(--wp--preset--spacing--80) var(--wp--preset--spacing--edge-space) 0;
-	text-align: center;
-}
-
-.editor p {
-	margin-top: var(--wp--preset--spacing--30);
-	color: var(--wp--preset--color--charcoal-3);
 }
 
 /* Hosting */
@@ -550,6 +558,7 @@ pre {
 	margin: 0;
 	padding: var(--wp--preset--spacing--20) var(--wp--preset--spacing--30);
 	overflow-x: auto;
+	tab-size: 4;
 	background: var(--wp--preset--color--light-grey-2);
 	color: var(--wp--preset--color--charcoal-1);
 	font-size: var(--wp--preset--font-size--small);
@@ -562,6 +571,16 @@ pre {
 
 .code .comment {
 	color: var(--wp--preset--color--charcoal-4);
+}
+
+@media (max-width: 599px) {
+
+	/* Short enough to wrap, which beats a scroll a phone gives no sign of. */
+	.code {
+		padding: var(--wp--preset--spacing--20);
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+	}
 }
 
 /* Get involved, as on wordpress.org/download */

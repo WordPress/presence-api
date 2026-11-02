@@ -33,6 +33,10 @@ line followed by a bulleted "- #12" both leave the issue open.
 If this Pull Request should not close an issue, use "Related: #12" instead.
 -->
 
+<!--
+📚 If this changes behavior a page in docs/ describes, update that page here too.
+-->
+
 <details>
 <summary>Use of AI Tools</summary>
 

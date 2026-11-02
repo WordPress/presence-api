@@ -15,46 +15,45 @@ permissions:
 
 jobs:
   phpunit:
-    name: PHP ${{ matrix.php }}
+    name: PHP ${{ matrix.php }}${{ matrix.multisite && ' multisite' || '' }}
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
-        php: [ '7.4', '8.3' ]
         include:
           # The oldest PHP runs against the oldest WordPress the plugin supports, so the floor in the readme is tested.
           - php: '7.4'
             core: 'https://wordpress.org/wordpress-7.0.zip'
           - php: '8.3'
             coverage: true
+          # The only multisite run in CI, kept in its own leg so it runs beside the single-site suite rather than after it.
+          - php: '8.3'
+            coverage: true
+            multisite: true
     steps:
-      # A job-level `if:` would skip before the matrix expands, collapsing
-      # both PHP versions into one unexpanded `phpunit / PHP ${{ matrix.php
-      # }}` check instead of the two named ones required checks expect. Every
-      # step below is gated instead, so the matrix still expands and the job
-      # reports success under each version's own name.
+      # Each step is gated because a job-level `if:` skips before the matrix expands, leaving one unexpanded check in place of the per-leg names required checks expect.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: ${{ inputs.should-run }}
         with:
           persist-credentials: false
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - uses: ./.github/actions/setup-node
         if: ${{ inputs.should-run }}
-        with:
-          node-version: 22
-          cache: npm
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         if: ${{ inputs.should-run }}
         with:
           php-version: ${{ matrix.php }}
           tools: composer
-      - run: npm ci
-        if: ${{ inputs.should-run }}
       - name: Authenticate composer to GitHub
         if: ${{ inputs.should-run }}
         run: composer config --global --auth github-oauth.github.com '${{ secrets.GITHUB_TOKEN }}'
       - name: Install Composer dependencies
         if: ${{ inputs.should-run }}
         run: composer install --no-interaction
+      # PHPUnit runs in `cli` with the tests environment's debug defaults, so that environment would only add two containers to boot.
+      - name: Skip the tests environment
+        if: ${{ inputs.should-run }}
+        run: |
+          echo '{ "testsEnvironment": false, "config": { "WP_DEBUG": false, "SCRIPT_DEBUG": false } }' > .wp-env.override.json
       - name: Start wp-env (retry on transient failures)
         if: ${{ inputs.should-run }}
         run: |
@@ -71,38 +70,18 @@ jobs:
         env:
           WP_ENV_PHP_VERSION: ${{ matrix.php }}
           WP_ENV_CORE: ${{ matrix.core }}
-      - run: npx wp-env run tests-cli --env-cwd='presence-api' -- ./vendor/bin/phpunit ${{ matrix.coverage && '--coverage-clover coverage.xml' || '' }}
+      # WP_MULTISITE=1 is what puts the test bootstrap into network mode, since it installs its own database and never reads wp-config.php.
+      - run: npx wp-env run cli --env-cwd='presence-api' -- env WP_MULTISITE="$WP_MULTISITE" ./vendor/bin/phpunit ${{ matrix.coverage && '--coverage-clover coverage.xml' || '' }}
         if: ${{ inputs.should-run }}
+        env:
+          WP_MULTISITE: ${{ matrix.multisite && '1' || '0' }}
       - name: Upload coverage to Codecov
         if: ${{ inputs.should-run && matrix.coverage }}
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.xml
-          flags: phpunit
-      # This is the only multisite run in CI. It lives here rather than in its
-      # own workflow because the run above skips every is_multisite() test, so
-      # the network provisioning paths in includes/plugin.php reported as uncovered
-      # no matter how well tested they were. Reusing this job's environment
-      # costs seconds, and Codecov merges the two reports for the commit.
-      #
-      # Keep the multisite suite running if this job's coverage matrix ever
-      # changes, otherwise network behaviour stops being tested at all.
-      #
-      # WP_MULTISITE=1 is what puts the test bootstrap into network mode. The
-      # bootstrap installs its own test database and never reads wp-config.php,
-      # so no `multisite-convert` is needed here. Without the variable the suite
-      # prints "Running as single site..." and this report adds nothing.
-      - name: Run the suite as multisite
-        if: ${{ inputs.should-run && matrix.coverage }}
-        run: npx wp-env run tests-cli --env-cwd='presence-api' -- env WP_MULTISITE=1 ./vendor/bin/phpunit --coverage-clover coverage-multisite.xml
-      - name: Upload multisite coverage to Codecov
-        if: ${{ inputs.should-run && matrix.coverage }}
-        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage-multisite.xml
-          flags: multisite
+          flags: ${{ matrix.multisite && 'multisite' || 'phpunit' }}
 
   # Single site only, since the multisite fixtures rely on MySQL keeping DDL and auto-increment counters outside the per-test rollback.
   sqlite:
@@ -113,19 +92,18 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 22
-          cache: npm
+      - uses: ./.github/actions/setup-node
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: '8.3'
           tools: composer
-      - run: npm ci
       - name: Authenticate composer to GitHub
         run: composer config --global --auth github-oauth.github.com '${{ secrets.GITHUB_TOKEN }}'
       - name: Install Composer dependencies
         run: composer install --no-interaction
+      - name: Skip the tests environment
+        run: |
+          echo '{ "testsEnvironment": false, "config": { "WP_DEBUG": false, "SCRIPT_DEBUG": false } }' > .wp-env.override.json
       - name: Start wp-env (retry on transient failures)
         run: |
           for attempt in 1 2 3; do
@@ -143,6 +121,6 @@ jobs:
       # Same drop-in setup as the SQLite integration's own wp-setup.sh, which is what Playground runs on.
       - name: Swap the test database for SQLite
         run: |
-          npx wp-env run tests-cli -- wp plugin install sqlite-database-integration
-          npx wp-env run tests-cli -- sh -c "sed -e \"s#'{SQLITE_IMPLEMENTATION_FOLDER_PATH}'#__DIR__ . '/plugins/sqlite-database-integration'#\" -e 's#{SQLITE_PLUGIN}#sqlite-database-integration/load.php#g' wp-content/plugins/sqlite-database-integration/db.copy > wp-content/db.php"
-      - run: npx wp-env run tests-cli --env-cwd='presence-api' -- ./vendor/bin/phpunit
+          npx wp-env run cli -- wp plugin install sqlite-database-integration
+          npx wp-env run cli -- sh -c "sed -e \"s#'{SQLITE_IMPLEMENTATION_FOLDER_PATH}'#__DIR__ . '/plugins/sqlite-database-integration'#\" -e 's#{SQLITE_PLUGIN}#sqlite-database-integration/load.php#g' wp-content/plugins/sqlite-database-integration/db.copy > wp-content/db.php"
+      - run: npx wp-env run cli --env-cwd='presence-api' -- ./vendor/bin/phpunit

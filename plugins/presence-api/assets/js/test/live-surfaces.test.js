@@ -28,6 +28,11 @@ function createHooks() {
 	return {
 		addFilter( name, namespace, callback ) {
 			( filters[ name ] = filters[ name ] || [] ).push( callback );
+			this.doAction( 'hookAdded', name );
+		},
+		removeFilter( name ) {
+			delete filters[ name ];
+			this.doAction( 'hookRemoved', name );
 		},
 		addAction( name, namespace, callback ) {
 			( actions[ name ] = actions[ name ] || [] ).push( callback );
@@ -47,11 +52,14 @@ function createHooks() {
 }
 
 /**
- * Loads presence-ping.js against a fake jQuery bus and a leader coordinator.
+ * Loads presence-ping.js against a fake jQuery bus and a tab coordinator.
  *
+ * @param {Object}  options          Options.
+ * @param {boolean} options.isLeader Whether this tab leads. Default true.
+ * @param {Object}  options.config   What the page localizes as wpPresenceConfig.
  * @return {Object} The hooks instance the script registered against.
  */
-function loadPing() {
+function loadPing( { isLeader = true, config = {} } = {} ) {
 	listeners = {};
 	const hooks = createHooks();
 
@@ -73,8 +81,10 @@ function loadPing() {
 		heartbeat: { interval: () => 15, connectNow() {} },
 	};
 	window.pagenow = 'dashboard';
-	window.wpPresenceConfig = {};
-	window.wpPresenceCreateTabCoordinator = () => ( { isLeader: () => true } );
+	window.wpPresenceConfig = config;
+	window.wpPresenceCreateTabCoordinator = () => ( {
+		isLeader: () => isLeader,
+	} );
 	global.jQuery = $;
 
 	new Function( PRESENCE_PING )();
@@ -96,6 +106,8 @@ function send() {
 
 describe( 'live surfaces', () => {
 	afterEach( () => {
+		vi.restoreAllMocks();
+		vi.unstubAllGlobals();
 		document.body.innerHTML = '';
 		delete global.wp;
 		delete global.jQuery;
@@ -170,6 +182,48 @@ describe( 'live surfaces', () => {
 		expect( lengths[ 0 ] ).toBe( lengths[ 1 ] );
 	} );
 
+	it( 'flags both pings and skips the unload DELETE while a transport holds the rows', () => {
+		const hooks = loadPing( {
+			config: {
+				editorPostId: 5,
+				restUrl: 'https://example.test/wp-json/wp/v2/presence',
+				entries: [ { room: 'admin/online', client_id: 'user-1' } ],
+			},
+		} );
+		hooks.addFilter( 'presence-api.keepalive', 'test', () => false );
+		const fetch = vi.fn();
+		vi.stubGlobal( 'fetch', fetch );
+
+		const data = {};
+		trigger( 'heartbeat-send', data );
+		window.dispatchEvent( new Event( 'pagehide' ) );
+
+		expect( data[ 'presence-ping' ].keepalive ).toBe( false );
+		expect( data[ 'presence-editor-ping' ] ).toEqual( {
+			post_id: 5,
+			keepalive: false,
+		} );
+		expect( fetch ).not.toHaveBeenCalled();
+	} );
+
+	it( 'skips the unload DELETE when the transport drops before pagehide', () => {
+		const hooks = loadPing( {
+			config: {
+				restUrl: 'https://example.test/wp-json/wp/v2/presence',
+				entries: [ { room: 'admin/online', client_id: 'user-1' } ],
+			},
+		} );
+		const fetch = vi.fn();
+		vi.stubGlobal( 'fetch', fetch );
+		hooks.addFilter( 'presence-api.keepalive', 'test', () => false );
+
+		// Chrome closes the connection first, and the transport removes its filter.
+		hooks.removeFilter( 'presence-api.keepalive', 'test' );
+		window.dispatchEvent( new Event( 'pagehide' ) );
+
+		expect( fetch ).not.toHaveBeenCalled();
+	} );
+
 	it( 'closes the admin bar menu once Tab leaves it, so it refreshes again', () => {
 		document.body.innerHTML =
 			'<ul><li id="wp-admin-bar-presence-online" class="menupop hover"><a class="ab-item" href="#">2 online</a><div class="ab-sub-wrapper"><div class="ab-item" tabindex="0">Ada</div></div></li></ul><button>Help</button>';
@@ -190,5 +244,84 @@ describe( 'live surfaces', () => {
 			},
 		} );
 		expect( node.textContent ).toBe( '3 online' );
+	} );
+
+	it( 'keeps the admin bar menu current while it is open', async () => {
+		document.body.innerHTML =
+			'<ul><li id="wp-admin-bar-presence-online" class="menupop hover"><a class="ab-item" href="#">2 online</a><div class="ab-sub-wrapper"><div class="ab-item" tabindex="0">Ada</div></div></li></ul>';
+		loadPing();
+		const node = document.getElementById( 'wp-admin-bar-presence-online' );
+
+		trigger( 'heartbeat-tick', {
+			'presence-fragments': {
+				'admin-bar':
+					'<li id="wp-admin-bar-presence-online" class="menupop"><a class="ab-item" href="#">3 online</a><div class="ab-sub-wrapper"><div class="ab-item" tabindex="0">Ada</div><div class="ab-item" tabindex="0">Grace</div></div></li>',
+			},
+		} );
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+
+		expect( node.textContent ).toBe( '3 onlineAdaGrace' );
+		expect( node.classList.contains( 'hover' ) ).toBe( true );
+		expect(
+			node.querySelector( 'a' ).getAttribute( 'aria-expanded' )
+		).toBe( 'true' );
+	} );
+
+	it( 'leaves the admin bar menu alone while focus is inside it', () => {
+		document.body.innerHTML =
+			'<ul><li id="wp-admin-bar-presence-online" class="menupop hover"><a class="ab-item" href="#">2 online</a><div class="ab-sub-wrapper"><div class="ab-item" tabindex="0">Ada</div></div></li></ul>';
+		loadPing();
+		const node = document.getElementById( 'wp-admin-bar-presence-online' );
+
+		node.querySelector( 'div.ab-item' ).focus();
+		trigger( 'heartbeat-tick', {
+			'presence-fragments': {
+				'admin-bar':
+					'<li id="wp-admin-bar-presence-online" class="menupop"><a class="ab-item" href="#">3 online</a></li>',
+			},
+		} );
+
+		expect( node.textContent ).toBe( '2 onlineAda' );
+		expect( document.activeElement ).toBe(
+			node.querySelector( 'div.ab-item' )
+		);
+	} );
+
+	it( 'ticks on roomChanged, and again once a request already in flight answers', () => {
+		const hooks = loadPing();
+		const connectNow = vi.spyOn( global.wp.heartbeat, 'connectNow' );
+
+		hooks.doAction( 'presence-api.roomChanged', 'admin/online' );
+		expect( connectNow ).toHaveBeenCalledTimes( 1 );
+
+		// Core sent nothing, so the push came while a request was in flight.
+		trigger( 'heartbeat-tick', {} );
+		expect( connectNow ).toHaveBeenCalledTimes( 2 );
+
+		trigger( 'heartbeat-send', {} );
+		trigger( 'heartbeat-tick', {} );
+		expect( connectNow ).toHaveBeenCalledTimes( 2 );
+	} );
+
+	it( 'leaves roomChanged to the leader tab', () => {
+		const hooks = loadPing( { isLeader: false } );
+		const connectNow = vi.spyOn( global.wp.heartbeat, 'connectNow' );
+
+		hooks.doAction( 'presence-api.roomChanged', 'admin/online' );
+
+		expect( connectNow ).not.toHaveBeenCalled();
+	} );
+
+	it( 'leaves roomChanged to the visibility handler in a hidden tab', () => {
+		const hooks = loadPing();
+		const connectNow = vi.spyOn( global.wp.heartbeat, 'connectNow' );
+		vi.spyOn( document, 'visibilityState', 'get' ).mockReturnValue(
+			'hidden'
+		);
+
+		hooks.doAction( 'presence-api.roomChanged', 'admin/online' );
+		trigger( 'heartbeat-tick', {} );
+
+		expect( connectNow ).not.toHaveBeenCalled();
 	} );
 } );

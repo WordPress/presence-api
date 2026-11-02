@@ -1,24 +1,14 @@
 'use strict';
 
 const RELEASE_BRANCH = 'release-please--branches--main--components--';
-const SCENES_PATH = 'plugins/presence-scenes/';
 const NEXT = 'n.e.x.t';
 
-// A pull request counts toward Presence Scenes only when every file it touches is under that plugin, mirroring Presence API's `exclude-paths`.
+// Presence Scenes ships inside each Presence API release, so every merged pull request counts toward Presence API's milestone.
 const PACKAGES = [
 	{
 		component: 'presence-api',
 		milestone: '',
 		tag: 'v',
-		owns: ( files ) => files.some( ( f ) => ! f.startsWith( SCENES_PATH ) ),
-	},
-	{
-		component: 'presence-scenes',
-		milestone: 'Presence Scenes ',
-		tag: 'presence-scenes-v',
-		owns: ( files ) =>
-			files.length > 0 &&
-			files.every( ( f ) => f.startsWith( SCENES_PATH ) ),
 	},
 ];
 
@@ -55,7 +45,6 @@ const MERGED_QUERY = `
 					mergedAt
 					headRefName
 					milestone { title }
-					files( first: 100 ) { nodes { path } }
 					closingIssuesReferences( first: 20 ) {
 						nodes { number milestone { title } }
 					}
@@ -65,8 +54,8 @@ const MERGED_QUERY = `
 	}
 `;
 
-// This package's pull requests merged since the cutoff, and the issues they closed.
-async function releaseItems( { github, owner, repo, pkg, cutoff } ) {
+// Pull requests merged since the cutoff, and the issues they closed.
+async function releaseItems( { github, owner, repo, cutoff } ) {
 	const { repository } = await github.graphql( MERGED_QUERY, {
 		owner,
 		repo,
@@ -75,8 +64,7 @@ async function releaseItems( { github, owner, repo, pkg, cutoff } ) {
 		.filter(
 			( pr ) =>
 				pr.mergedAt >= cutoff &&
-				! pr.headRefName.startsWith( RELEASE_BRANCH ) &&
-				pkg.owns( pr.files.nodes.map( ( f ) => f.path ) )
+				! pr.headRefName.startsWith( RELEASE_BRANCH )
 		)
 		.flatMap( ( pr ) => [ pr, ...pr.closingIssuesReferences.nodes ] );
 }
@@ -162,7 +150,7 @@ async function run( { github, context, core } ) {
 		const items = [
 			releasePR,
 			...( cutoff
-				? await releaseItems( { github, owner, repo, pkg, cutoff } )
+				? await releaseItems( { github, owner, repo, cutoff } )
 				: [] ),
 		];
 

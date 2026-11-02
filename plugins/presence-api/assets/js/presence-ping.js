@@ -111,15 +111,20 @@
 			key: 'admin-bar',
 			target: () =>
 				document.getElementById( 'wp-admin-bar-presence-online' ),
-			// Keep the list item itself, which core's admin-bar.js bound its hover and Enter handlers to.
+			// An open menu re-renders in place; only a swap under the keyboard's focus would throw it out.
+			busy: ( node ) => node.contains( document.activeElement ),
+			// Keep the list item itself, which core's admin-bar.js bound its hover and Enter handlers to, and its open state.
 			apply( node, html ) {
 				const template = document.createElement( 'template' );
 				template.innerHTML = html.trim();
 				const fresh = template.content.firstElementChild;
-				if ( fresh ) {
-					node.className = fresh.className;
-					node.innerHTML = fresh.innerHTML;
+				if ( ! fresh ) {
+					return;
 				}
+				const open = node.classList.contains( 'hover' );
+				node.className = fresh.className;
+				node.innerHTML = fresh.innerHTML;
+				node.classList.toggle( 'hover', open );
 			},
 		},
 		{
@@ -168,9 +173,37 @@
 		);
 	}
 
+	// Remembered while the page is alive, since a browser can close a transport's connection before pagehide.
+	let heldByTransport = false;
+
+	function keepsAlive() {
+		/**
+		 * Filters whether this tab keeps its own presence rows alive over Heartbeat.
+		 *
+		 * Return false only while a push transport writes and removes those rows itself.
+		 *
+		 * @since 0.19.0
+		 *
+		 * @param {boolean} keepalive Whether to keep the rows alive. Default true.
+		 */
+		const keepalive = wp.hooks.applyFilters(
+			'presence-api.keepalive',
+			true
+		);
+		heldByTransport = ! keepalive;
+		return keepalive;
+	}
+
+	// A transport that connects after the first tick adds its filter then; removal is left to the next tick, since a transport often removes it while the page unloads.
+	wp.hooks.addAction( 'hookAdded', 'presence-api', function ( hookName ) {
+		if ( hookName === 'presence-api.keepalive' ) {
+			keepsAlive();
+		}
+	} );
+
 	const lastFragments = {};
 
-	// Swapping under the pointer or focus would close a menu, drop a selection or move the caret; the next tick catches up.
+	// Swapping under the pointer or focus would drop a selection or move the caret; the next tick catches up.
 	function isBusy( element ) {
 		return (
 			element.matches( ':hover' ) ||
@@ -184,7 +217,7 @@
 		if (
 			! element ||
 			lastFragments[ slot ] === html ||
-			isBusy( element )
+			( surface.busy || isBusy )( element )
 		) {
 			return;
 		}
@@ -236,6 +269,9 @@
 	// Defer registration to document ready to ensure it runs after WP Core's post.js handler.
 	$( function () {
 		$( document ).on( 'heartbeat-send', function ( event, data ) {
+			// Every tab reads it, hidden or following, so its own unload knows.
+			keepsAlive();
+
 			// Skip while the document is hidden (background tab, minimized
 			// window, app switched away) so the existing entries expire via
 			// the default TTL. One early-return suppresses both presence-ping
@@ -257,6 +293,10 @@
 				screen: window.pagenow || 'front',
 				token: config.screenToken || '',
 			};
+			// Both pings still go, since live surfaces, the idle backoff and the collaborator count read the room through them.
+			if ( heldByTransport ) {
+				ping.keepalive = false;
+			}
 			if ( pageContext ) {
 				if ( pageContext.title ) {
 					ping.title = pageContext.title;
@@ -286,6 +326,9 @@
 			const postId = editorPostId || siteEditorPostId();
 			if ( postId ) {
 				data[ 'presence-editor-ping' ] = { post_id: postId };
+				if ( heldByTransport ) {
+					data[ 'presence-editor-ping' ].keepalive = false;
+				}
 			}
 		} );
 
@@ -421,7 +464,7 @@
 	} );
 
 	function leave() {
-		if ( hasLeft || ! restUrl || ! entries.length ) {
+		if ( hasLeft || ! restUrl || ! entries.length || heldByTransport ) {
 			return;
 		}
 		hasLeft = true;
@@ -471,6 +514,41 @@
 	document.addEventListener( 'visibilitychange', function () {
 		if ( document.visibilityState === 'visible' ) {
 			resetBackoff();
+			tickNow();
+		}
+	} );
+
+	let roomChangedSinceSend = false;
+
+	/**
+	 * Fire `presence-api.roomChanged` to refresh presence now instead of on the next Heartbeat tick, such as when a push transport hears a room change.
+	 *
+	 * @since 0.19.0
+	 *
+	 * @param {string} room The room that changed.
+	 */
+	wp.hooks.addAction(
+		'presence-api.roomChanged',
+		'presence-api',
+		function () {
+			// Only a visible leader asks; followers get its answer replayed.
+			if (
+				document.visibilityState === 'hidden' ||
+				! tabCoordinator.isLeader()
+			) {
+				return;
+			}
+			roomChangedSinceSend = true;
+			tickNow();
+		}
+	);
+
+	// Core ignores connectNow() mid-request, and that request may have read the room before the change.
+	$( document ).on( 'heartbeat-send', function () {
+		roomChangedSinceSend = false;
+	} );
+	$( document ).on( 'heartbeat-tick', function () {
+		if ( roomChangedSinceSend ) {
 			tickNow();
 		}
 	} );

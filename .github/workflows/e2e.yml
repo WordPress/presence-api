@@ -35,10 +35,16 @@ jobs:
             browser: chromium
             start: npx wp-env start
             env-dir: .
-          # A second instance rather than a flag on the first one, for the
-          # reason given in scripts/start-multisite-env.sh. This one seeds its
-          # fixture network too.
+          # Its own seeded instance for the reason in scripts/start-multisite-env.sh, sharded because it was the slowest leg.
           - project: chromium-multisite
+            shard: 1
+            shards: 2
+            browser: chromium
+            start: npm run env:start:multisite
+            env-dir: tests/e2e/multisite
+          - project: chromium-multisite
+            shard: 2
+            shards: 2
             browser: chromium
             start: npm run env:start:multisite
             env-dir: tests/e2e/multisite
@@ -57,11 +63,7 @@ jobs:
         with:
           persist-credentials: false
           show-progress: ${{ runner.debug == '1' && 'true' || 'false' }}
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
+      - uses: ./.github/actions/setup-node
       - run: npm run build
 
       # The browser is in the key so a leg never restores another leg's
@@ -142,6 +144,11 @@ jobs:
         if: ${{ steps.playwright-cache.outputs.cache-hit != 'true' }}
         env:
           BROWSER: ${{ matrix.browser }}
+
+      # Every leg tests the development site, so the root config's separate tests environment would only add two containers to boot.
+      - name: Skip the tests environment
+        run: |
+          echo '{ "testsEnvironment": false }' > .wp-env.override.json
 
       # The Playwright config declares a `webServer` that would start wp-env on
       # demand, but starting it here keeps a boot failure in its own step

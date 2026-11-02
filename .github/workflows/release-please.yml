@@ -183,6 +183,18 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.plugin.outputs.tag }}
           SLUG: ${{ steps.plugin.outputs.slug }}
+      # Presence Scenes has no releases of its own, so each Presence API release carries it, for another plugin's tests to install by URL.
+      - name: Build and upload the Presence Scenes zip
+        if: ${{ matrix.path == '.' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.plugin.outputs.tag }}
+        run: |
+          mkdir -p build/presence-scenes
+          rsync -a --exclude-from=plugins/presence-scenes/.distignore plugins/presence-scenes/ build/presence-scenes/
+          cp LICENSE build/presence-scenes/
+          (cd build && zip -r presence-scenes.zip presence-scenes/)
+          gh release upload --clobber "$TAG" build/presence-scenes.zip
 
   deploy-to-wporg:
     needs: [release-please, build-release-asset]

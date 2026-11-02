@@ -29,7 +29,7 @@ wp presence scene run editing-together
 wp presence scene stop
 ```
 
-A run creates a user for each part in the cast, plays each step at its time, then deletes those users and everything they wrote. Runs refuse to overlap, a run whose command died is soon replaced, and actors cannot log in. Only the scenes in `library/` can be played.
+A run creates a user for each part in the cast, plays each step at its time, then deletes those users and everything they wrote. Runs refuse to overlap, a run whose command died is soon replaced, and actors cannot log in. Only the scenes in `library/`, and in folders a plugin adds, can be played.
 
 `npm run test:scenes` plays every scene and saves a screenshot of the screen each step happened on to `artifacts/screenshots/scenes/`.
 
@@ -54,7 +54,7 @@ A run creates a user for each part in the cast, plays each step at its time, the
 |---|---|
 | `name` | Lowercase letters, numbers and dashes, matching the file name |
 | `title` | Plain text |
-| `cast` | Roles, each `contributor`, `author` or `editor`; `actor` 1 plays the first |
+| `cast` | Roles, each `subscriber`, `contributor`, `author` or `editor`; `actor` 1 plays the first |
 | `steps` | The steps, in the order they play |
 | `at` | Seconds from the start, never earlier than the step before |
 | `actor` | A part in the cast, or `"cast"` for every part on the steps marked below |
@@ -80,3 +80,27 @@ Step `title` and `text` are plain text too, and `wp_presence_scene_limits()` cap
 ## Adding a scene
 
 Add a JSON file to `library/` named after its `name`; `npm test` checks every file there, so a new scene needs no test changes.
+
+## Steps and scenes from another plugin
+
+A plugin that keeps presence through its own PHP rather than Heartbeat can play its users through scenes too. It adds a folder of scenes with `wp_presence_scene_libraries`, and steps with `wp_presence_scene_steps`, each played by a callback that runs as the actor and throws to fail the step:
+
+```php
+add_filter( 'wp_presence_scene_libraries', function ( $folders ) {
+	$folders[] = __DIR__ . '/scenes';
+	return $folders;
+} );
+
+add_filter( 'wp_presence_scene_steps', function ( $steps ) {
+	$steps['startListening'] = array(
+		'callback' => function ( WP_Presence_Scene_Actor $actor, array $fields ) {
+			my_plugin_share( $fields['text'] ); // $actor is the current user here.
+		},
+		'fields'   => array( 'text' ),
+		'label'    => '%1$s starts listening to %2$s',
+	);
+	return $steps;
+} );
+```
+
+A step's name is camelCase and can't replace a bundled one. A field named `post` or `place` means what it does on the bundled steps, and any other field is plain text held to the same limits. A scene file is skipped when it isn't named after its scene, or when an earlier folder already has a scene of that name.

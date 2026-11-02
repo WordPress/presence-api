@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/WordPress/presence-api/actions/workflows/ci.yml/badge.svg)](https://github.com/WordPress/presence-api/actions/workflows/ci.yml)
 
-A feature plugin for system-wide presence and awareness in WordPress.
+A feature plugin for system-wide presence and awareness in WordPress. The [docs](https://wordpress.github.io/presence-api/docs/) explain how it works, with a diagram for each part.
 
 > [!IMPORTANT]
 > **Built for the lowest common denominator of environments.** No object cache, no WebSockets, no extra services: a dedicated table with a TTL is the only moving part. Anything a managed host offers on top is a bonus, never a dependency.
@@ -62,7 +62,7 @@ Presence Scenes plays a [scene](plugins/presence-scenes/README.md) on the Posts 
 1. Browser sends `presence-ping` via Heartbeat
 2. Server upserts into `wp_presence`
 3. Server answers with the admin bar node's markup, the Active Posts list, and a hash of the `admin/online` room
-4. The admin bar swaps its node when the markup changes, unless its menu is open, and Active Posts redraws when its posts change
+4. The admin bar swaps its node when the markup changes, its menu staying open, and Active Posts redraws when its posts change
 5. After a run of ticks with an unchanged hash, the ping widens the Heartbeat interval; a new hash snaps it back
 
 Only Heartbeat refreshes a row between page loads. With its script removed, or its interval too long for the TTL, someone who stays on one screen drops out of the room while still there. Site Health reports both.
@@ -91,6 +91,47 @@ Anything else writing to a room, such as a plugin relaying awareness or a REST c
 A leading `_` marks bookkeeping rows, which are not participants: `_collab` holds a post room's last editor count for the collaboration actions, `_lock` holds the post's `_edit_lock`, and `_version` holds the room's version counter. `wp_get_presence()` and the REST collection leave them out, and the REST write and delete routes reject them. `wp_set_presence()` writes one even with recording off, which is how a post lock outlasts the switch.
 
 This plugin counts a post room's editors by the `editor-` prefix, so anyone else using it inflates the count.
+
+### Custom rooms
+
+A screen for something that isn't a post, such as an order or a form entry kept in its own table, can have a room of its own. Name it under your plugin, like `my-plugin/order:123`, and have the screen's own Heartbeat join it and read it back:
+
+```js
+jQuery( document )
+	.on( 'heartbeat-send', ( event, data ) => {
+		data[ 'my-plugin-order' ] = myPluginOrderId;
+	} )
+	.on( 'heartbeat-tick', ( event, data ) => {
+		if ( data[ 'my-plugin-order' ] ) {
+			myPluginShowViewers( data[ 'my-plugin-order' ] ); // Names, so set them as text.
+		}
+	} );
+```
+```php
+add_filter( 'heartbeat_received', function ( $response, $data ) {
+	$order_id = absint( $data['my-plugin-order'] ?? 0 );
+	if ( ! $order_id || ! current_user_can( 'edit_shop_orders' ) ) { // Your screen's own capability.
+		return $response;
+	}
+
+	$user_id = get_current_user_id();
+	$entries = wp_presence_exchange( "my-plugin/order:{$order_id}", "my-plugin-{$user_id}", array(), array( 'user_id' => $user_id, 'client_prefix' => 'my-plugin-' ) );
+
+	$response['my-plugin-order'] = array();
+	foreach ( $entries as $entry ) {
+		if ( (int) $entry->user_id !== $user_id ) {
+			$response['my-plugin-order'][] = get_the_author_meta( 'display_name', $entry->user_id );
+		}
+	}
+	return $response;
+}, 10, 2 );
+```
+
+Each tick renews the row, and a closed tab's row expires within the TTL, which outlasts the 120 seconds between ticks in a background tab.
+
+Use the screen's own Heartbeat key rather than [`presence-api.liveSurfaces`](#presence-apilivesurfaces). A surface rides this plugin's ping, which only one tab per screen sends, so two tabs on different orders would share one answer.
+
+Anyone who can edit a post type can read a custom room over the [REST API](#rest-api), so keep `$state` free of anything only the screen's own users should see.
 
 ## Agents
 
@@ -195,6 +236,11 @@ $parts = wp_presence_parse_room( $room );
 
 // Return the site-wide room, 'admin/online'.
 $room = wp_presence_admin_room();
+
+// Build the state Heartbeat stores on 'user-{id}' in the admin room and
+// 'editor-{id}' in a post room, for a relay writing those rows itself.
+$state = wp_presence_admin_state( $screen, array( 'post_id' => 0, 'title' => '', 'object_id' => 0, 'user_id' => 0 ) );
+$state = wp_presence_editor_state( $screen_id, $locked );
 
 // Whether a user is an AI agent; see Agents.
 wp_presence_is_agent_user( $user_id );
@@ -417,6 +463,14 @@ add_action( 'wp_presence_admin_room_changed', function() {
 } );
 ```
 
+#### `wp_presence_room_changed`
+Fires when a room reads differently without a row being written or removed: today, when a post someone is editing changes its title or status, once for the post's room and once for `admin/online`. A transport that refreshes on `set_presence` and `removed_presence` should refresh on this too.
+```php
+add_action( 'wp_presence_room_changed', function( $room ) {
+    // Tell open tabs to fetch the room again.
+} );
+```
+
 #### `set_presence`
 Fires after `wp_set_presence()` writes a row, named like core's `set_transient`. A write skipped because the row was unchanged and recently stamped fires nothing, and neither does a reserved row such as `_lock` or `_collab`. The skip holds on MySQL; SQLite counts an unchanged write as a change, so it fires there.
 ```php
@@ -443,7 +497,7 @@ add_action( 'removed_user_presence', function( $user_id ) {
 
 ### JS actions
 
-Fired through `wp.hooks`, not PHP. The plugin's ping script is the only thing that computes these, so a consumer has to listen rather than poll for them.
+Run through `wp.hooks`, not PHP. Only the plugin's ping script computes these, so a consumer listens for them rather than polling, except `presence-api.roomChanged`, which a consumer fires.
 
 #### `presence-api.watchingRoom`
 Fires once, before Heartbeat's first tick, on the edit screen of a post type with `presence` support, so a listener can tell "presence-api isn't here" from "no tick yet."
@@ -470,11 +524,17 @@ wp.hooks.addAction( 'presence-api.collaborationEnded', 'my-plugin', ( room, coun
 ```
 
 #### `presence-api.surfaceUpdated`
-Fires after a live surface's markup is swapped for a fresh copy from Heartbeat. Swaps wait while the pointer, focus or a checked checkbox is inside the surface.
+Fires after a live surface's markup is swapped for a fresh copy from Heartbeat. Swaps wait while the pointer, focus or a checked checkbox is inside the surface, except that the admin bar menu re-renders while open and waits only for focus inside it.
 ```js
 wp.hooks.addAction( 'presence-api.surfaceUpdated', 'my-plugin', ( key, element ) => {
     // key names the surface, such as 'admin-bar', or one you registered.
 } );
+```
+
+#### `presence-api.roomChanged`
+Fire this to refresh presence now instead of on the next Heartbeat tick, such as from a push transport that heard `set_presence`, `removed_presence` or `wp_presence_room_changed`. A hidden tab waits until it is shown.
+```js
+wp.hooks.doAction( 'presence-api.roomChanged', room );
 ```
 
 ### JS filters
@@ -503,6 +563,12 @@ add_filter( 'heartbeat_received', function( $response, $data ) {
     }
     return $response;
 }, 10, 2 );
+```
+
+#### `presence-api.keepalive`
+Whether the tab keeps its `user-{id}` and `editor-{id}` rows alive over Heartbeat. Return false only while a push transport writes them, building their state with `wp_presence_admin_state()` and `wp_presence_editor_state()`, and since each is one per person, remove them when the user's last connection closes. Heartbeat still runs for live surfaces, the collaborator count and core's post lock.
+```js
+wp.hooks.addFilter( 'presence-api.keepalive', 'my-plugin', ( keepalive ) => keepalive && ! myTransport.isConnected() );
 ```
 
 </details>
