@@ -123,7 +123,7 @@ const SHOTS = {
 			wp( 'option', 'update', 'blogdescription', '' );
 			return { theo: await person( 'Theo Okafor', 'administrator' ) };
 		},
-		play: async ( { theo, see, gone, verify } ) => {
+		play: async ( { theo, admin, see, gone, verify } ) => {
 			await theo.page.goto( `${ BASE }/wp-admin/options-general.php` );
 			await see( '2 online' );
 			await sleep( 2000 );
@@ -145,7 +145,11 @@ const SHOTS = {
 				).includes( `admin/online user-${ theo.id }` )
 			);
 			await see( 'Theo Okafor updated this screen' );
-			await gone( 'updated this screen 1 second ago', {
+			// Capture the actual first answer's time, which depends on when Heartbeat arrives.
+			const initialNotice = await admin
+				.locator( '.wp-presence-stale-text' )
+				.textContent();
+			await gone( initialNotice, {
 				within: 20000,
 				todo: '#926, the notice keeps the time ago from its first Heartbeat answer',
 			} );
@@ -476,6 +480,7 @@ async function film( name ) {
 
 		await shot.play( {
 			...state,
+			admin,
 			see: ( text, options ) =>
 				check( `shows "${ text }"`, () => shows( text ), options ),
 			gone: ( text, options ) =>
