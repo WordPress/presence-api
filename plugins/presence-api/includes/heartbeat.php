@@ -251,8 +251,7 @@ if ( ! function_exists( 'wp_presence_enqueue_heartbeat_ping' ) ) {
 			}
 		}
 
-		// Write presence server-side during this request so the new page closes the
-		// gap between the old page's pagehide DELETE and the next heartbeat tick.
+		// Write presence server-side during this request so the person shows on this page before its first heartbeat tick.
 		$screen_id = is_admin() && function_exists( 'get_current_screen' ) && get_current_screen()
 			? get_current_screen()->id
 			: 'front';
@@ -311,6 +310,21 @@ if ( ! function_exists( 'wp_presence_enqueue_heartbeat_ping' ) ) {
 			'idleInterval'             => wp_presence_get_heartbeat_idle_interval(),
 			'ttl'                      => wp_presence_get_timeout(),
 			'ttlMargin'                => wp_presence_ttl_margin(),
+			// Pages of this site that load this script write the same rows, so leaving for one hands it the cleanup.
+			'handoffUrls'              => array_values(
+				array_filter(
+					array(
+						admin_url(),
+						_get_admin_bar_pref( 'front', $user_id ) ? home_url( '/' ) : '',
+					)
+				)
+			),
+			'handoffSkipUrls'          => array(
+				content_url( '/' ),
+				includes_url(),
+				trailingslashit( wp_upload_dir( null, false )['baseurl'] ),
+				site_url( 'wp-login.php' ),
+			),
 		);
 
 		wp_presence_enqueue_ping_script( $config );

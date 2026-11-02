@@ -142,10 +142,7 @@ const SHOTS = {
 				'keeps Theo present while his save reloads the screen',
 				! php(
 					'echo implode( "\\n", get_option( "presence_films_removed", array() ) );'
-				).includes( `admin/online user-${ theo.id }` ),
-				{
-					todo: '#927, saving a form sends the leave DELETE on pagehide, and it can land after the next page has written the person back',
-				}
+				).includes( `admin/online user-${ theo.id }` )
 			);
 			await see( 'Theo Okafor updated this screen' );
 			await gone( 'updated this screen 1 second ago', {
