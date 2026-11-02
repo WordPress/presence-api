@@ -565,7 +565,7 @@
 		}
 		// Another site in the network keeps nothing, since this page wrote its rows somewhere else.
 		const kept = handoff.restUrl === restUrl ? entries : [];
-		// Known gap: reopening the page just left can write its row before these DELETEs land, which only a conditional delete on the server would close.
+		// Known gap: reopening the page just left can write its row before these DELETE requests land, which only a conditional delete on the server would close.
 		removeEntries(
 			handoff.restUrl,
 			handoff.entries.filter( function ( entry ) {
