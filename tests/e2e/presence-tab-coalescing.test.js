@@ -134,6 +134,53 @@ test.describe( 'Presence Tab Coalescing @firefox @webkit', () => {
 		await sibling.close();
 	} );
 
+	test( 'has a sibling tab ask for its own surfaces with a request(), and only those', async ( {
+		page,
+	} ) => {
+		/**
+		 * Registers a surface whose request() says which tab asked.
+		 *
+		 * @param {import('@playwright/test').Page} tab
+		 * @param {string}                          ask
+		 */
+		const addSurface = ( tab, ask ) =>
+			tab.evaluate( ( value ) => {
+				wp.hooks.addFilter(
+					'presence-api.liveSurfaces',
+					'e2e',
+					( surfaces ) => [
+						...surfaces,
+						{
+							key: 'e2e-own',
+							target: () => null,
+							request: () => value,
+						},
+					]
+				);
+			}, ask );
+
+		await page.goto( '/wp-admin/' );
+		await waitForHeartbeat( page );
+		await addSurface( page, 'leader' );
+		const leaderData = await waitForLeaderPing( page );
+		expect( leaderData[ 'presence-fragments' ][ 'e2e-own' ] ).toBe(
+			'leader'
+		);
+
+		const sibling = await page.context().newPage();
+		await sibling.goto( '/wp-admin/' );
+		await waitForHeartbeat( sibling );
+		await addSurface( sibling, 'sibling' );
+
+		const siblingData = await captureHeartbeatSend( sibling );
+		expect( siblingData[ 'presence-ping' ] ).toBeUndefined();
+		expect( siblingData[ 'presence-fragments' ] ).toEqual( {
+			'e2e-own': 'sibling',
+		} );
+
+		await sibling.close();
+	} );
+
 	test( 'promotes the sibling tab once the leader tab closes', async ( {
 		page,
 	} ) => {
