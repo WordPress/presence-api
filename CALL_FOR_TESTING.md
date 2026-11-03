@@ -26,7 +26,7 @@ This instance runs the companion `presence-scenes` tool, which simulates real-ti
 ### Option B: Playground with Demo Data
 This instance comes pre-seeded with 100 demo users and a few demo posts, along with a **Demo** bar to simulate saves from other users:
 👉 **[Launch Playground with Demo Data](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json)**
-*(Note: Because Playground stores site state locally in your browser storage, opening two separate browser windows or an incognito tab creates independent Playground sites. To test multi-user actions, please use the simulated collaborators in Option A or the helper button in Option B).*
+*(Note: Because Playground stores site state locally in your browser storage, opening two separate browser windows or an incognito tab creates independent Playground sites. To test multi-user actions, please use the simulated collaborators in Option A or the Demo bar in Option B).*
 
 ---
 
