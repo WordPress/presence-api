@@ -21,9 +21,10 @@ You can test directly in your browser using **WordPress Playground** without any
 ### Option A: Interactive Testing with Simulated Collaborators (Recommended)
 This instance runs the companion `presence-scenes` tool, which simulates real-time virtual users editing posts and navigating the admin:
 👉 **[Launch Playground with Simulated Collaborators](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint-scenes.json)**
+*(The scene lasts under a minute. To replay it, open `/wp-admin/edit.php?presence_scene=editing-together`.)*
 
 ### Option B: Playground with Demo Data
-This instance comes pre-seeded with 100 demo posts and users, along with a demo helper button in the admin to simulate saves from other users:
+This instance comes pre-seeded with 100 demo users and a few demo posts, along with a **Demo** bar to simulate saves from other users:
 👉 **[Launch Playground with Demo Data](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/WordPress/presence-api/main/blueprint.json)**
 *(Note: Because Playground stores site state locally in your browser storage, opening two separate browser windows or an incognito tab creates independent Playground sites. To test multi-user actions, please use the simulated collaborators in Option A or the helper button in Option B).*
 
@@ -34,18 +35,18 @@ This instance comes pre-seeded with 100 demo posts and users, along with a demo 
 ### Task 1: Admin Bar Real-Time Presence
 *Use Option A (Simulated Collaborators).*
 
-1. Open `wp-admin` and look at the presence/heart icon in the top toolbar.
+1. Open `wp-admin` and find the faces and "N online" count next to **Howdy** in the toolbar.
 2. Observe the counter updating as simulated collaborators move across screens.
 3. Hover or use keyboard navigation (Tab) to open the presence menu.
 4. **What to verify**:
-   - The toolbar shows other active users (your own user is intentionally excluded from the count).
+   - The faces and menu show other people (not you), and the "N online" count includes you.
    - User avatars and names are legible, tooltips render correctly, and keyboard focus works properly.
 
 ### Task 2: Posts List & "Editors" Column
 *Use Option A with the "Editing together" scene (`/wp-admin/edit.php?presence_scene=editing-together`).*
 
-1. Navigate to **Posts > All Posts**.
-2. Locate posts that simulated collaborators are actively editing.
+1. A few seconds after the scene starts, reload **Posts > All Posts**.
+2. Find **Launch checklist**, the post the collaborators are editing.
 3. **What to verify**:
    - The **Editors** column shows an avatar stack indicating active editors.
    - Hovering or navigating into the row with a keyboard reveals collaborator names.
@@ -59,13 +60,13 @@ This instance comes pre-seeded with 100 demo posts and users, along with a demo 
 3. Click **Take over**.
 4. **What to verify**:
    - The lock dialog indicates that another user is currently editing the post.
-   - Taking over grants you editing access smoothly, transferring the lock row in `wp_presence`.
+   - Taking over closes the dialog and lets you edit the post.
 
 ### Task 4: Stale Screen Notification
 *Use Option B (Demo Data).*
 
-1. Navigate to **Settings > General** (or open an existing post in the editor).
-2. Click the floating **Pretend another user saved** helper button (or save the setting via a second tab).
+1. Navigate to **Settings > General**.
+2. In the **Demo** bar at the top, click a **Save as {name}** button.
 3. **What to verify**:
    - A yellow stale-screen notification appears indicating that someone else has saved changes to this screen.
    - When dismissing the notice, keyboard focus smoothly moves to the screen heading.
@@ -90,7 +91,7 @@ This instance comes pre-seeded with 100 demo posts and users, along with a demo 
 
 ## How to Report Feedback
 
-Please share your testing report following the [Make/Test Reporting format](https://make.wordpress.org/test/handbook/call-for-testing/#testing-reports):
+Please share your testing report following the [Make/Test reporting format](https://make.wordpress.org/test/handbook/call-for-testing/#how-to-report):
 
 1. **Environment**: Device, OS, Browser & version.
 2. **Tasks Tested**: Which scenarios you walked through.
@@ -99,4 +100,4 @@ Please share your testing report following the [Make/Test Reporting format](http
 
 You can post feedback:
 - As comments on the Make/Test post, or
-- Directly on the [Presence API GitHub Issues](https://github.com/WordPress/presence-api/issues) tracker with the `#needs-testing` tag.
+- Directly on the [Presence API GitHub Issues](https://github.com/WordPress/presence-api/issues) tracker.
