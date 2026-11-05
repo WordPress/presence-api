@@ -22,7 +22,7 @@
 	let baselineRev = parseInt( config.baselineRev, 10 ) || 0;
 	let bannerShown = false;
 	let bannerText = null;
-	let bannerActor = '';
+	let bannerRev = 0;
 
 	if ( ! screenKey ) {
 		return;
@@ -97,7 +97,7 @@
 			return;
 		}
 		if ( bannerShown ) {
-			updateBanner( info );
+			updateBanner( info, rev );
 			return;
 		}
 		showBanner( info, rev );
@@ -145,7 +145,7 @@
 		text.className = 'wp-presence-stale-text';
 		text.textContent = formatMessage( info );
 		bannerText = text;
-		bannerActor = info.actor_name || '';
+		bannerRev = rev;
 		p.appendChild( text );
 
 		const reload = document.createElement( 'button' );
@@ -189,16 +189,14 @@
 	 * Refreshes the notice's relative time from a later Heartbeat answer.
 	 *
 	 * @param {Object} info The `presence-screen-rev` payload.
+	 * @param {number} rev  The revision that answer reports.
 	 */
-	function updateBanner( info ) {
-		if ( ! bannerText || ! info.time_ago ) {
+	function updateBanner( info, rev ) {
+		// A newer save's time belongs to its own actor, so only the revision on show refreshes.
+		if ( ! bannerText || rev !== bannerRev || ! info.time_ago ) {
 			return;
 		}
-		// Keep naming the actor the banner first showed, and refresh only the time.
-		bannerText.textContent = formatMessage( {
-			actor_name: bannerActor,
-			time_ago: info.time_ago,
-		} );
+		bannerText.textContent = formatMessage( info );
 	}
 
 	function formatMessage( info ) {
