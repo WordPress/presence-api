@@ -162,6 +162,29 @@ describe( 'stale screen', () => {
 		expect( notices() ).toHaveLength( 1 );
 	} );
 
+	it( 'keeps the time in the notice current', () => {
+		loadStaleScreen();
+
+		tick( 101, { actor_name: 'Ada', time_ago: '1 second ago' } );
+		tick( 101, { actor_name: 'Ada', time_ago: '1 minute ago' } );
+
+		expect( notices() ).toHaveLength( 1 );
+		expect( notices()[ 0 ].textContent ).toContain(
+			'Ada updated this screen 1 minute ago.'
+		);
+	} );
+
+	it( 'keeps the first actor and time when a newer change arrives', () => {
+		loadStaleScreen();
+
+		tick( 101, { actor_name: 'Ada', time_ago: '1 minute ago' } );
+		tick( 102, { actor_name: 'Bob', time_ago: '1 second ago' } );
+
+		expect( notices()[ 0 ].textContent ).toContain(
+			'Ada updated this screen 1 minute ago.'
+		);
+	} );
+
 	it( 'stays dismissed until a newer change arrives', () => {
 		loadStaleScreen();
 

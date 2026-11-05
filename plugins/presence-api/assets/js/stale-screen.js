@@ -21,6 +21,8 @@
 	const { __, sprintf } = wp.i18n;
 	let baselineRev = parseInt( config.baselineRev, 10 ) || 0;
 	let bannerShown = false;
+	let bannerText = null;
+	let bannerRev = 0;
 
 	if ( ! screenKey ) {
 		return;
@@ -95,6 +97,7 @@
 			return;
 		}
 		if ( bannerShown ) {
+			updateBanner( info, rev );
 			return;
 		}
 		showBanner( info, rev );
@@ -141,6 +144,8 @@
 		const text = document.createElement( 'span' );
 		text.className = 'wp-presence-stale-text';
 		text.textContent = formatMessage( info );
+		bannerText = text;
+		bannerRev = rev;
 		p.appendChild( text );
 
 		const reload = document.createElement( 'button' );
@@ -169,6 +174,7 @@
 			}
 			landing.focus();
 			bannerShown = false;
+			bannerText = null;
 			// Dismissal acknowledges this revision, not the screen. The tick
 			// handler only compares against baselineRev, so clearing the flag
 			// without advancing it brings the same banner back one tick later.
@@ -177,6 +183,20 @@
 		notice.appendChild( dismiss );
 
 		target.insertBefore( notice, before );
+	}
+
+	/**
+	 * Refreshes the notice's relative time from a later Heartbeat answer.
+	 *
+	 * @param {Object} info The `presence-screen-rev` payload.
+	 * @param {number} rev  The revision that answer reports.
+	 */
+	function updateBanner( info, rev ) {
+		// A newer save's time belongs to its own actor, so only the revision on show refreshes.
+		if ( ! bannerText || rev !== bannerRev || ! info.time_ago ) {
+			return;
+		}
+		bannerText.textContent = formatMessage( info );
 	}
 
 	function formatMessage( info ) {

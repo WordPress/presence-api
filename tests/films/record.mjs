@@ -149,10 +149,7 @@ const SHOTS = {
 			const initialNotice = await admin
 				.locator( '.wp-presence-stale-text' )
 				.textContent();
-			await gone( initialNotice, {
-				within: 20000,
-				todo: '#926, the notice keeps the time ago from its first Heartbeat answer',
-			} );
+			await gone( initialNotice, { within: 20000 } );
 		},
 	},
 	// The block editor, so Classic Editor is off for the take.

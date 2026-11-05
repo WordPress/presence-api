@@ -15,6 +15,7 @@ const PRESENCE_PING = readFileSync(
 );
 
 let listeners;
+let coordinatorOptions;
 
 /**
  * Builds the slice of wp.hooks presence-ping.js uses.
@@ -73,6 +74,11 @@ function loadPing( { isLeader = true, config = {} } = {} ) {
 				listeners[ eventName ] = listeners[ eventName ] || [];
 				listeners[ eventName ].push( handler );
 			},
+			trigger( eventName, args ) {
+				( listeners[ eventName ] || [] ).forEach( ( handler ) =>
+					handler( { type: eventName }, ...args )
+				);
+			},
 		};
 	};
 
@@ -82,9 +88,10 @@ function loadPing( { isLeader = true, config = {} } = {} ) {
 	};
 	window.pagenow = 'dashboard';
 	window.wpPresenceConfig = config;
-	window.wpPresenceCreateTabCoordinator = () => ( {
-		isLeader: () => isLeader,
-	} );
+	window.wpPresenceCreateTabCoordinator = ( key, options ) => {
+		coordinatorOptions = options;
+		return { isLeader: () => isLeader };
+	};
 	global.jQuery = $;
 
 	new Function( PRESENCE_PING )();
@@ -102,6 +109,32 @@ function send() {
 	const data = {};
 	trigger( 'heartbeat-send', data );
 	return data[ 'presence-fragments' ];
+}
+
+/**
+ * Replays an answer the way the tab coordinator hands a follower the leader's.
+ *
+ * @param {Object} data The relayed Heartbeat response.
+ */
+function replay( data ) {
+	coordinatorOptions.onMessage( data );
+}
+
+/**
+ * Registers a surface that asks for something only this tab knows.
+ *
+ * @param {Object} hooks The hooks instance from loadPing().
+ * @param {number} ask   What request() returns.
+ */
+function addRequestSurface( hooks, ask ) {
+	hooks.addFilter( 'presence-api.liveSurfaces', 'test', ( surfaces ) => [
+		...surfaces,
+		{
+			key: 'mine',
+			target: () => document.getElementById( 'mine' ),
+			request: () => ask,
+		},
+	] );
 }
 
 describe( 'live surfaces', () => {
@@ -165,6 +198,52 @@ describe( 'live surfaces', () => {
 		expect( document.getElementById( 'elsewhere' ).innerHTML ).toBe(
 			'3 online'
 		);
+	} );
+
+	it( 'has a follower ask only for surfaces with a request(), without the ping', () => {
+		document.body.innerHTML =
+			'<div id="presence-active-posts-list"></div><span id="mine"></span>';
+		const hooks = loadPing( { isLeader: false } );
+		addRequestSurface( hooks, 2 );
+
+		const data = {};
+		trigger( 'heartbeat-send', data );
+
+		expect( data[ 'presence-fragments' ] ).toEqual( { mine: 2 } );
+		expect( data[ 'presence-ping' ] ).toBeUndefined();
+	} );
+
+	it( 'keeps a follower’s own answer when the leader’s replays, and fills the rest from it', () => {
+		document.body.innerHTML =
+			'<div id="presence-active-posts-list"></div><span id="mine"></span>';
+		const hooks = loadPing( { isLeader: false } );
+		addRequestSurface( hooks, 2 );
+
+		trigger( 'heartbeat-tick', {
+			'presence-fragments': { mine: 'answer for 2' },
+		} );
+		replay( {
+			'presence-fragments': {
+				mine: 'answer for 1',
+				'active-posts': '<p>From the leader</p>',
+			},
+		} );
+
+		expect( document.getElementById( 'mine' ).innerHTML ).toBe(
+			'answer for 2'
+		);
+		expect(
+			document.getElementById( 'presence-active-posts-list' ).innerHTML
+		).toBe( '<p>From the leader</p>' );
+	} );
+
+	it( 'still has the leader ask for every surface', () => {
+		document.body.innerHTML =
+			'<div id="presence-active-posts-list"></div><span id="mine"></span>';
+		const hooks = loadPing();
+		addRequestSurface( hooks, 1 );
+
+		expect( send() ).toEqual( { 'active-posts': true, mine: 1 } );
 	} );
 
 	it( 'hands each filter run a fresh list, so a callback that pushes does not pile up', () => {
