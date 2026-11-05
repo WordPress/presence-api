@@ -148,10 +148,7 @@ const SHOTS = {
 				}
 			);
 			await see( 'Theo Okafor updated this screen' );
-			await gone( 'updated this screen 1 second ago', {
-				within: 20000,
-				todo: '#926, the notice keeps the time ago from its first Heartbeat answer',
-			} );
+			await gone( 'updated this screen 1 second ago', { within: 20000 } );
 		},
 	},
 	// The block editor, so Classic Editor is off for the take.
