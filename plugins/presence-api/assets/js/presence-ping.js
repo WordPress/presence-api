@@ -100,9 +100,22 @@
 		'presence-fragments',
 	];
 
+	// True while the leader's answer replays, which the tick handler reads to keep each tab's own surface answers.
+	let replaying = false;
+
 	const tabCoordinator = window.wpPresenceCreateTabCoordinator(
 		pingContextKey,
-		{ relayedKeys: RELAYED_TICK_KEYS }
+		{
+			relayedKeys: RELAYED_TICK_KEYS,
+			onMessage( data ) {
+				replaying = true;
+				try {
+					$( document ).trigger( 'heartbeat-tick', [ data ] );
+				} finally {
+					replaying = false;
+				}
+			},
+		}
 	);
 
 	// Each surface the server keeps current, by the key its Heartbeat feed answers under.
@@ -171,6 +184,30 @@
 			'presence-api.liveSurfaces',
 			SURFACES.slice()
 		);
+	}
+
+	/**
+	 * Adds this tab's surface asks to an outgoing Heartbeat, or only those with a `request()` when another tab leads.
+	 *
+	 * @param {Object}  data        The outgoing Heartbeat data.
+	 * @param {boolean} requestOnly Whether to skip surfaces without a `request()`.
+	 */
+	function addSurfaceAsks( data, requestOnly ) {
+		const asks = {};
+		liveSurfaces().forEach( function ( surface ) {
+			if ( requestOnly && ! surface.request ) {
+				return;
+			}
+			const ask = surface.request
+				? surface.request()
+				: !! surface.target();
+			if ( ask ) {
+				asks[ surface.key ] = ask;
+			}
+		} );
+		if ( Object.keys( asks ).length ) {
+			data[ 'presence-fragments' ] = asks;
+		}
 	}
 
 	// Remembered while the page is alive, since a browser can close a transport's connection before pagehide.
@@ -285,7 +322,9 @@
 
 			hasLeft = false;
 
+			// A follower still asks for the surfaces whose request() may differ from the leader's.
 			if ( ! tabCoordinator.isLeader() ) {
+				addSurfaceAsks( data, true );
 				return;
 			}
 
@@ -310,18 +349,7 @@
 			}
 			data[ 'presence-ping' ] = ping;
 
-			const asks = {};
-			liveSurfaces().forEach( function ( surface ) {
-				const ask = surface.request
-					? surface.request()
-					: !! surface.target();
-				if ( ask ) {
-					asks[ surface.key ] = ask;
-				}
-			} );
-			if ( Object.keys( asks ).length ) {
-				data[ 'presence-fragments' ] = asks;
-			}
+			addSurfaceAsks( data, false );
 
 			const postId = editorPostId || siteEditorPostId();
 			if ( postId ) {
@@ -343,6 +371,10 @@
 				return;
 			}
 			liveSurfaces().forEach( function ( surface ) {
+				// Every tab asks for these itself, so the leader's replayed answer is for its own page.
+				if ( replaying && surface.request ) {
+					return;
+				}
 				const value = fragments[ surface.key ];
 				if ( typeof value === 'string' ) {
 					swapFragment(

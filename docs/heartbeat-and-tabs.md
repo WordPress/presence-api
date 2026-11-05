@@ -22,6 +22,8 @@ sequenceDiagram
 
 Tabs showing the same screen elect one leader with `navigator.locks` and share its answers over `BroadcastChannel`. When the leader is hidden or closed, another visible tab takes over.
 
+The other tabs still ask for any surface with a `request()` themselves, since what they ask for, such as their own rows, can differ from the leader's.
+
 ## The interval
 
 The plugin uses core's Heartbeat interval. After five ticks with an unchanged online hash it widens the interval, staying under the TTL, and a new hash, a key press or the tab becoming visible narrows it again.
