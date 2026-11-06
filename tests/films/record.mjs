@@ -123,7 +123,7 @@ const SHOTS = {
 			wp( 'option', 'update', 'blogdescription', '' );
 			return { theo: await person( 'Theo Okafor', 'administrator' ) };
 		},
-		play: async ( { theo, see, gone, verify } ) => {
+		play: async ( { theo, admin, see, gone, verify } ) => {
 			await theo.page.goto( `${ BASE }/wp-admin/options-general.php` );
 			await see( '2 online' );
 			await sleep( 2000 );
@@ -142,13 +142,14 @@ const SHOTS = {
 				'keeps Theo present while his save reloads the screen',
 				! php(
 					'echo implode( "\\n", get_option( "presence_films_removed", array() ) );'
-				).includes( `admin/online user-${ theo.id }` ),
-				{
-					todo: '#927, saving a form sends the leave DELETE on pagehide, and it can land after the next page has written the person back',
-				}
+				).includes( `admin/online user-${ theo.id }` )
 			);
 			await see( 'Theo Okafor updated this screen' );
-			await gone( 'updated this screen 1 second ago', { within: 20000 } );
+			// Capture the actual first answer's time, which depends on when Heartbeat arrives.
+			const initialNotice = await admin
+				.locator( '.wp-presence-stale-text' )
+				.textContent();
+			await gone( initialNotice, { within: 20000 } );
 		},
 	},
 	// The block editor, so Classic Editor is off for the take.
@@ -476,6 +477,7 @@ async function film( name ) {
 
 		await shot.play( {
 			...state,
+			admin,
 			see: ( text, options ) =>
 				check( `shows "${ text }"`, () => shows( text ), options ),
 			gone: ( text, options ) =>

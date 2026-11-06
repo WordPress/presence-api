@@ -16,6 +16,12 @@
 		parseInt( config.initialCollaboratorCount, 10 ) || 0;
 	const restUrl = config.restUrl || '';
 	const nonce = config.nonce || '';
+	const handoffUrls = Array.isArray( config.handoffUrls )
+		? config.handoffUrls
+		: [];
+	const handoffSkipUrls = Array.isArray( config.handoffSkipUrls )
+		? config.handoffSkipUrls
+		: [];
 	const idleTicks = parseInt( config.idleTicks, 10 ) || 0;
 	const idleInterval = parseInt( config.idleInterval, 10 ) || 0;
 	const ttl = parseInt( config.ttl, 10 ) || 150;
@@ -495,26 +501,21 @@
 		}
 	} );
 
-	function leave() {
-		if ( hasLeft || ! restUrl || ! entries.length || heldByTransport ) {
-			return;
-		}
-		hasLeft = true;
-
+	function removeEntries( url, list ) {
 		// keepalive lets the DELETE outlive the unload; sendBeacon is POST-only.
-		if ( typeof window.fetch !== 'function' ) {
+		if ( ! url || typeof window.fetch !== 'function' ) {
 			return;
 		}
 
-		entries.forEach( function ( entry ) {
+		list.forEach( function ( entry ) {
 			if ( ! entry || ! entry.room || ! entry.client_id ) {
 				return;
 			}
-			const url = new URL( restUrl );
-			url.searchParams.set( 'room', entry.room );
-			url.searchParams.set( 'client_id', entry.client_id );
+			const request = new URL( url );
+			request.searchParams.set( 'room', entry.room );
+			request.searchParams.set( 'client_id', entry.client_id );
 			try {
-				window.fetch( url, {
+				window.fetch( request, {
 					method: 'DELETE',
 					credentials: 'same-origin',
 					keepalive: true,
@@ -526,8 +527,106 @@
 		} );
 	}
 
-	// Re-establish presence on every page load so in-admin navigation doesn't
-	// leave a gap between the unload DELETE and the heartbeat's first tick.
+	// The next page in this tab removes what it does not write itself, since a DELETE from here can land after it writes the same row (#927).
+	const HANDOFF_KEY = 'wpPresenceHandoff';
+	let handedOff = false;
+
+	function handOff() {
+		if ( ! restUrl || ! entries.length || heldByTransport ) {
+			return;
+		}
+		try {
+			window.sessionStorage.setItem(
+				HANDOFF_KEY,
+				JSON.stringify( { restUrl, entries, at: Date.now() } )
+			);
+			handedOff = true;
+		} catch {
+			// No storage, so the unload DELETE stays.
+		}
+	}
+
+	// Anywhere else, such as a file in uploads, nothing would take the handoff, so the rows go on the way out.
+	function loadsThisScript( url ) {
+		const starts = function ( prefix ) {
+			return url.startsWith( prefix );
+		};
+		return handoffUrls.some( starts ) && ! handoffSkipUrls.some( starts );
+	}
+
+	// Written when the navigation starts, because the old page's pagehide can run after the new page has loaded.
+	if ( typeof window.navigation?.addEventListener === 'function' ) {
+		window.navigation.addEventListener( 'navigate', function ( event ) {
+			if (
+				event.hashChange ||
+				event.downloadRequest ||
+				event.destination.sameDocument ||
+				! loadsThisScript( event.destination.url )
+			) {
+				return;
+			}
+			handOff();
+			// Stopped, or replaced by a later navigation that hands off its own.
+			event.signal?.addEventListener( 'abort', function () {
+				handedOff = false;
+				try {
+					window.sessionStorage.removeItem( HANDOFF_KEY );
+				} catch {
+					// No storage, so nothing was handed off.
+				}
+			} );
+		} );
+	}
+
+	function takeHandoff() {
+		let handoff = null;
+		try {
+			handoff = JSON.parse(
+				window.sessionStorage.getItem( HANDOFF_KEY ) || 'null'
+			);
+			window.sessionStorage.removeItem( HANDOFF_KEY );
+		} catch {
+			return;
+		}
+		if (
+			! handoff ||
+			! Array.isArray( handoff.entries ) ||
+			Date.now() - handoff.at > ttl * 1000
+		) {
+			return;
+		}
+		// Another site in the network keeps nothing, since this page wrote its rows somewhere else.
+		const kept = handoff.restUrl === restUrl ? entries : [];
+		// Known gap: reopening the page just left can write its row before these DELETE requests land, which only a conditional delete on the server would close.
+		removeEntries(
+			handoff.restUrl,
+			handoff.entries.filter( function ( entry ) {
+				return ! kept.some( function ( own ) {
+					return (
+						own.room === entry?.room &&
+						own.client_id === entry?.client_id
+					);
+				} );
+			} )
+		);
+	}
+	takeHandoff();
+
+	function leave() {
+		if (
+			hasLeft ||
+			handedOff ||
+			! restUrl ||
+			! entries.length ||
+			heldByTransport
+		) {
+			return;
+		}
+		hasLeft = true;
+		removeEntries( restUrl, entries );
+	}
+
+	// Re-establish presence on every page load, so an unload DELETE that no handoff covered, such as a reload's, is repaired now rather than on the first scheduled tick.
 	function tickNow() {
 		if ( typeof wp?.heartbeat?.connectNow === 'function' ) {
 			wp.heartbeat.connectNow();
@@ -537,6 +636,9 @@
 	// bfcache restore: DOMContentLoaded won't fire.
 	window.addEventListener( 'pageshow', function ( event ) {
 		if ( event.persisted ) {
+			handedOff = false;
+			// The script does not run again, so the page left for this one is cleaned up here.
+			takeHandoff();
 			tickNow();
 		}
 	} );
