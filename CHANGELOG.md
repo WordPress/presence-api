@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.20.1](https://github.com/WordPress/presence-api/compare/v0.20.0...v0.20.1) (2026-11-06)
+
+
+### Bug Fixes
+
+* keep presence during in-site navigation ([#931](https://github.com/WordPress/presence-api/issues/931)) ([6587e93](https://github.com/WordPress/presence-api/commit/6587e93871506eb7f330e7dd51dd10c4c6597879))
+* keep the stale-screen notice's time current ([#930](https://github.com/WordPress/presence-api/issues/930)) ([cdc393d](https://github.com/WordPress/presence-api/commit/cdc393d01b767dd2140458350c7e1c026d3b5ea6))
+* let follower tabs ask for live surfaces that have a request() ([#932](https://github.com/WordPress/presence-api/issues/932)) ([fd2f1ba](https://github.com/WordPress/presence-api/commit/fd2f1bad770336245c0c970ed84ebb78d705007f))
+
+
+### Dependencies
+
+* **deps-dev:** bump @wordpress/env from 11.17.0 to 12.0.0 ([#935](https://github.com/WordPress/presence-api/issues/935)) ([4bb8ee0](https://github.com/WordPress/presence-api/commit/4bb8ee0c895c4364e1a2459e0e9d9dd2779864d6))
+* **deps-dev:** bump jsdom from 30.1.2 to 30.1.3 ([#936](https://github.com/WordPress/presence-api/issues/936)) ([3ddd3ac](https://github.com/WordPress/presence-api/commit/3ddd3ac2bf69a32898c35dbe25eed5ba54fe88b7))
+* **deps-dev:** bump markdown-it from 14.3.3 to 15.0.3 ([#934](https://github.com/WordPress/presence-api/issues/934)) ([818461f](https://github.com/WordPress/presence-api/commit/818461f366bb04c7e7fa29b6cdfbb7fce97e99eb))
+* **deps-dev:** bump mermaid from 11.17.2 to 12.2.0 ([#937](https://github.com/WordPress/presence-api/issues/937)) ([f52b4f7](https://github.com/WordPress/presence-api/commit/f52b4f70e353a47b8ed37eaf63b89b2b1e0274c2))
+* **deps-dev:** update phpstan/phpstan requirement from 2.3.1 to 2.3.3 ([#933](https://github.com/WordPress/presence-api/issues/933)) ([619bea4](https://github.com/WordPress/presence-api/commit/619bea4bafa4385e0ce999cc55e238f4f1d09686))
+* **deps:** bump astral-sh/setup-uv from 10.3.1 to 10.3.3 ([#938](https://github.com/WordPress/presence-api/issues/938)) ([0f8fa0a](https://github.com/WordPress/presence-api/commit/0f8fa0a387e8a4683af35bd9e952178ac9e75a69))
+
 ## [0.20.0](https://github.com/WordPress/presence-api/compare/v0.19.0...v0.20.0) (2026-11-01)
 
 
