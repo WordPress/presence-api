@@ -2,14 +2,14 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Presence API 0.20.0\n"
+"Project-Id-Version: Presence API 0.20.1\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/presence-api\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-01T02:01:21+00:00\n"
+"POT-Creation-Date: 2026-11-06T21:31:25+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: presence-api\n"
@@ -676,22 +676,22 @@ msgstr ""
 msgid "Presence API: The presence table is already registered by WordPress or another plugin."
 msgstr ""
 
-#: assets/js/stale-screen.js:149
+#: assets/js/stale-screen.js:154
 msgid "Reload"
 msgstr ""
 
-#: assets/js/stale-screen.js:161
+#: assets/js/stale-screen.js:166
 msgid "Dismiss this notice."
 msgstr ""
 
 #. translators: 1: display name, 2: relative time like "2 minutes ago".
-#: assets/js/stale-screen.js:187
+#: assets/js/stale-screen.js:207
 #, js-format
 msgid "%1$s updated this screen %2$s."
 msgstr ""
 
 #. translators: %s: relative time like "2 minutes ago".
-#: assets/js/stale-screen.js:194
+#: assets/js/stale-screen.js:214
 #, js-format
 msgid "This screen was updated %s."
 msgstr ""

@@ -1,9 +1,9 @@
 === Presence API ===
-Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas, aldorza, bejignesh, stfulldev, obenland, moriikuri, ishitaj34, theaminuldev, muneebashraf, mindctrl, zahidui, mitgiselle, jaredrethman, jooahmed, noruzzaman, huzaifaalmesbah, rejaulalomkhan, bosskhj, hmbashar, devmuhib
+Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas, aldorza, bejignesh, stfulldev, obenland, moriikuri, ishitaj34, theaminuldev, muneebashraf, mindctrl, zahidui, mitgiselle, jaredrethman, jooahmed, noruzzaman, huzaifaalmesbah, rejaulalomkhan, bosskhj, hmbashar, devmuhib, khushalsains
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.1
-Stable tag: 0.20.0
+Stable tag: 0.20.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -79,6 +79,11 @@ For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/presence-api/blob/main/CHANGELOG.md
 
+= 0.20.1 =
+* Keep presence during in-site navigation ([#931](https://github.com/WordPress/presence-api/issues/931)).
+* Keep the stale-screen notice's time current ([#930](https://github.com/WordPress/presence-api/issues/930)).
+* Let follower tabs ask for live surfaces that have a request() ([#932](https://github.com/WordPress/presence-api/issues/932)).
+
 = 0.20.0 =
 * Add wp_presence_admin_state() so a relay can write the rows Heartbeat writes ([#924](https://github.com/WordPress/presence-api/issues/924)).
 * Fire `wp_presence_room_changed` when an edited post's title or status changes ([#915](https://github.com/WordPress/presence-api/issues/915)).
@@ -100,6 +105,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 * Leave a presence table from an older schema alone until it is upgraded ([#866](https://github.com/WordPress/presence-api/issues/866)).
 * Store no session hash on the admin room's one row per person ([#867](https://github.com/WordPress/presence-api/issues/867)).
 * Warn an open screen when a REST request saves what it shows ([#868](https://github.com/WordPress/presence-api/issues/868)).
-
-= 0.18.2 =
-* Make the presence screens readable with only a keyboard ([#841](https://github.com/WordPress/presence-api/issues/841)).
