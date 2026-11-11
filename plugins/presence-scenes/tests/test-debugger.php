@@ -38,4 +38,20 @@ class WP_Test_Presence_Scene_Debugger extends WP_Presence_UnitTestCase {
 		$this->assertStringContainsString( '2 / 3', $markup );
 		$this->assertStringContainsString( 'Actor 2 opens', $markup );
 	}
+
+	/**
+	 * @covers ::wp_presence_scene_register_icons
+	 */
+	public function test_registers_the_clapperboard_where_wordpress_has_icons() {
+		$has_icons = function_exists( 'wp_register_icon' );
+		// The plugin registers on init, which has already fired.
+		if ( $has_icons ) {
+			wp_unregister_icon( 'presence-scenes/clapperboard' );
+			wp_unregister_icon_collection( 'presence-scenes' );
+		}
+
+		wp_presence_scene_register_icons();
+
+		$this->assertSame( $has_icons, $has_icons && '' !== wp_get_icon( 'presence-scenes/clapperboard' ) );
+	}
 }

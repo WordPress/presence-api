@@ -160,4 +160,20 @@ class WP_Test_Presence_Debugger_Admin_Bar extends WP_Presence_UnitTestCase {
 		$this->assertStringContainsString( 'Extra row', $markup, 'Rows added through the action should refresh with the menu.' );
 		$this->assertStringContainsString( 'dashicons-controls-play" title="Playing"', $markup );
 	}
+
+	/**
+	 * @covers ::wp_presence_debugger_register_icons
+	 * @covers ::wp_presence_debugger_icon
+	 * @covers ::wp_presence_debugger_admin_bar_node
+	 */
+	public function test_draws_svg_icons_only_where_wordpress_styles_them() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$styled = function_exists( 'wp_is_valid_icon_name' );
+
+		$markup = wp_presence_debugger_admin_bar_markup();
+
+		$this->assertSame( $styled, false !== strpos( $markup, 'ab-icon svg-icon' ), 'The heart should be an SVG from WordPress 7.2 on.' );
+		$this->assertSame( $styled, false !== strpos( $markup, 'presence-debug-pin' ), 'The pin should be an SVG from WordPress 7.2 on.' );
+		$this->assertSame( '', wp_presence_debugger_icon( 'dashicons-controls-play' ), 'A Dashicons class has no SVG.' );
+	}
 }

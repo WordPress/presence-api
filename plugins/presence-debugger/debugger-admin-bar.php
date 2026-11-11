@@ -10,6 +10,44 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Registers the debugger's heart, which WordPress has no icon for.
+ *
+ * @since 0.20.2
+ */
+function wp_presence_debugger_register_icons() {
+	// WordPress 7.0 has no icon functions.
+	if ( ! function_exists( 'wp_register_icon' ) || WP_Icons_Registry::get_instance()->is_registered( 'presence-debugger/heart' ) ) {
+		return;
+	}
+
+	wp_register_icon_collection(
+		'presence-debugger',
+		// WordPress 7.1 rejects the key that keeps the heart out of the REST API on 7.2.
+		array( 'label' => __( 'Presence API Debugger', 'presence-api' ) ) + ( function_exists( 'wp_is_valid_icon_name' ) ? array( 'public' => false ) : array() )
+	);
+	wp_register_icon(
+		'presence-debugger/heart',
+		array(
+			'label'     => __( 'Heart', 'presence-api' ),
+			'file_path' => __DIR__ . '/icons/heart.svg',
+		)
+	);
+}
+
+/**
+ * Returns an icon's SVG, or an empty string on WordPress before 7.2, whose admin bar has no styles for one.
+ *
+ * @since 0.20.2
+ *
+ * @param string $name Icon name such as `core-admin/pin`, or a Dashicons class, which has no SVG.
+ * @param int    $size Width and height in pixels.
+ * @return string The SVG markup, empty where the Dashicon should stay or for a name that is not registered.
+ */
+function wp_presence_debugger_icon( $name, $size = 20 ) {
+	return function_exists( 'wp_is_valid_icon_name' ) ? wp_get_icon( $name, array( 'size' => $size ) ) : '';
+}
+
+/**
  * Adds the debugger node to the admin bar.
  *
  * @since 0.12.0
@@ -30,22 +68,30 @@ function wp_presence_debugger_admin_bar_node( $wp_admin_bar ) {
 	 * @param array[] $indicators {
 	 *     Indicators to show, none by default.
 	 *
-	 *     @type string $icon  Dashicons class, such as `dashicons-controls-play`.
+	 *     @type string $icon  Icon name such as `core-admin/next`, or a Dashicons class for WordPress before 7.2.
 	 *     @type string $label What the icon means, for its tooltip and screen readers.
 	 * }
 	 */
 	foreach ( (array) apply_filters( 'wp_presence_debugger_indicators', array() ) as $indicator ) {
-		$indicators .= '<span class="presence-debug-indicator dashicons ' . esc_attr( $indicator['icon'] ) . '" title="' . esc_attr( $indicator['label'] ) . '"><span class="screen-reader-text">' . esc_html( $indicator['label'] ) . '</span></span>';
+		$svg         = wp_presence_debugger_icon( $indicator['icon'] );
+		$indicators .= '<span class="presence-debug-indicator' . ( $svg ? '' : ' dashicons ' . esc_attr( $indicator['icon'] ) ) . '" title="' . esc_attr( $indicator['label'] ) . '">' . $svg . '<span class="screen-reader-text">' . esc_html( $indicator['label'] ) . '</span></span>';
 	}
+
+	// Registering here gives every render of the node the heart, the Heartbeat answer's included.
+	wp_presence_debugger_register_icons();
+	$pin = wp_presence_debugger_icon( 'core-admin/pin' );
 
 	$wp_admin_bar->add_node(
 		array(
 			'parent' => 'top-secondary',
 			'id'     => 'presence-debug',
+			// WordPress 7.2 draws this in place of the Dashicon in the empty span.
+			'icon'   => 'presence-debugger/heart',
 			'title'  => '<span class="ab-icon" aria-hidden="true"></span>'
 				. '<span class="presence-debug-countdown" aria-hidden="true"></span>'
 				. '<span class="screen-reader-text">' . esc_html__( 'Presence API Debugger', 'presence-api' ) . '</span>'
-				. '<span class="presence-debug-indicators">' . $indicators . '</span>',
+				. '<span class="presence-debug-indicators">' . $indicators . '</span>'
+				. ( $pin ? '<span class="presence-debug-pin">' . $pin . '</span>' : '' ),
 			'meta'   => array(
 				'class'    => 'menupop',
 				'tabindex' => 0,
@@ -138,7 +184,7 @@ function wp_presence_debugger_admin_bar_node( $wp_admin_bar ) {
 				'title'  => '<code>' . esc_html( $room ) . '</code><span class="presence-debug-value">' . esc_html( number_format_i18n( count( $rows ) ) ) . '</span>',
 				'meta'   => array(
 					'class' => 'presence-debug-room',
-					'html'  => file_exists( __DIR__ . '/db-viewer.php' ) ? '<a class="presence-debug-table" role="menuitem" href="' . esc_url( wp_nonce_url( add_query_arg( 'room', rawurlencode( $room ), home_url( '/?presence-db=1' ) ), 'wp_presence_db_viewer' ) ) . '" target="_blank" title="' . esc_attr__( 'View in the presence table', 'presence-api' ) . '"><span class="screen-reader-text">' . esc_html__( 'View in the presence table', 'presence-api' ) . ' ' . esc_html__( '(opens in a new window)', 'presence-api' ) . '</span></a>' : '',
+					'html'  => file_exists( __DIR__ . '/db-viewer.php' ) ? '<a class="presence-debug-table" role="menuitem" href="' . esc_url( wp_nonce_url( add_query_arg( 'room', rawurlencode( $room ), home_url( '/?presence-db=1' ) ), 'wp_presence_db_viewer' ) ) . '" target="_blank" title="' . esc_attr__( 'View in the presence table', 'presence-api' ) . '">' . wp_presence_debugger_icon( 'core-admin/table', 16 ) . '<span class="screen-reader-text">' . esc_html__( 'View in the presence table', 'presence-api' ) . ' ' . esc_html__( '(opens in a new window)', 'presence-api' ) . '</span></a>' : '',
 				),
 			)
 		);
@@ -245,10 +291,12 @@ function wp_presence_debugger_admin_bar_assets() {
 		#wp-admin-bar-presence-debug .ab-icon { margin: 0 !important; }
 		#wpadminbar #wp-admin-bar-presence-debug .ab-icon::before { content: "\\f487"; top: 2px; }
 		#wpadminbar #wp-admin-bar-presence-debug.is-pinned > .ab-item { color: var(--presence-debug-open-color); background: var(--presence-debug-open-background); }
-		#wpadminbar #wp-admin-bar-presence-debug.is-pinned .ab-icon::before { color: inherit; }
-		#wpadminbar #wp-admin-bar-presence-debug.is-lost .ab-icon::before { color: #dba617; }
-		#wpadminbar #wp-admin-bar-presence-debug.is-pinned > .ab-item::after { content: "\\f537"; font: 16px/32px dashicons; margin-inline-start: 6px; vertical-align: top; }
-		.admin-color-light #wpadminbar #wp-admin-bar-presence-debug.is-lost .ab-icon::before { color: #996800; }
+		#wpadminbar #wp-admin-bar-presence-debug.is-pinned .ab-icon, #wpadminbar #wp-admin-bar-presence-debug.is-pinned .ab-icon::before { color: inherit; }
+		#wpadminbar #wp-admin-bar-presence-debug.is-lost .ab-icon, #wpadminbar #wp-admin-bar-presence-debug.is-lost .ab-icon::before { color: #dba617; }
+		#wpadminbar #wp-admin-bar-presence-debug.is-pinned > .ab-item:not(:has(.presence-debug-pin))::after { content: "\\f537"; font: 16px/32px dashicons; margin-inline-start: 6px; vertical-align: top; }
+		#wp-admin-bar-presence-debug:not(.is-pinned) .presence-debug-pin { display: none; }
+		#wp-admin-bar-presence-debug :is(.presence-debug-pin, .presence-debug-indicator):has(svg) { display: flex; }
+		.admin-color-light #wpadminbar #wp-admin-bar-presence-debug.is-lost .ab-icon, .admin-color-light #wpadminbar #wp-admin-bar-presence-debug.is-lost .ab-icon::before { color: #996800; }
 		#wp-admin-bar-presence-debug .presence-debug-countdown { min-width: 2.5em; font-variant-numeric: tabular-nums; }
 		#wp-admin-bar-presence-debug .presence-debug-indicators { display: contents; }
 		#wpadminbar #wp-admin-bar-presence-debug .presence-debug-indicator::before { font: 16px/32px dashicons; }
@@ -267,7 +315,7 @@ function wp_presence_debugger_admin_bar_assets() {
 		#wpadminbar #wp-admin-bar-presence-debug .presence-debug-room > .ab-item { flex: 1; }
 		#wpadminbar #wp-admin-bar-presence-debug .presence-debug-room:has(.presence-debug-table) > .ab-item { padding-inline-start: 0; }
 		#wpadminbar #wp-admin-bar-presence-debug .presence-debug-table { display: flex; order: -1; align-items: center; padding-inline: 10px 8px; color: inherit; }
-		#wpadminbar #wp-admin-bar-presence-debug .presence-debug-table::before { content: "\\f17e"; font: 16px/1 dashicons; }
+		#wpadminbar #wp-admin-bar-presence-debug .presence-debug-table:not(:has(svg))::before { content: "\\f17e"; font: 16px/1 dashicons; }
 		#wpadminbar #wp-admin-bar-presence-debug .presence-debug-table:is(:hover, :focus) { color: var(--wp-admin-theme-color, #72aee6); }
 		#wp-admin-bar-presence-debug code { padding: 0; background: none; color: inherit; font-size: 12px; font-weight: inherit; line-height: inherit; }
 		#wp-admin-bar-presence-debug .presence-debug-room > .ab-item { font-weight: 600; cursor: default; }

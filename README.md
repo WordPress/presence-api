@@ -409,7 +409,7 @@ The capability needed to see network-wide presence. Default: `manage_network`. A
 How stale a site's row in the network summary may get, in seconds, before a write refreshes it. It can only be lowered, since the default is the longest that keeps rows inside the TTL.
 
 #### `wp_presence_debugger_indicators`
-Filters the icons beside the admin bar debugger's countdown, which refresh with each Heartbeat. The debugger is a separate development plugin, `presence-debugger`, that loads only under `WP_DEBUG`.
+Filters the icons beside the admin bar debugger's countdown, which refresh with each Heartbeat. The debugger is a separate development plugin, `presence-debugger`, that loads only under `WP_DEBUG`. From WordPress 7.2, `icon` also takes a registered icon name such as `core-admin/next`.
 ```php
 add_filter( 'wp_presence_debugger_indicators', function( $indicators ) {
     $indicators[] = array( 'icon' => 'dashicons-controls-play', 'label' => __( 'Import running', 'my-plugin' ) );

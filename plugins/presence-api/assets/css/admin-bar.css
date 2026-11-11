@@ -56,7 +56,8 @@
 	}
 }
 
-#wp-admin-bar-presence-online :is(.presence-bar-number, .presence-bar-names) {
+#wp-admin-bar-presence-online :is(.presence-bar-number, .presence-bar-names),
+#wpadminbar #wp-admin-bar-presence-online > .ab-item > .svg-icon {
 	display: none;
 }
 
@@ -94,6 +95,12 @@
 		padding: 0 12px 0 6px;
 	}
 
+	#wpadminbar #wp-admin-bar-presence-online > .ab-item > .svg-icon {
+		display: flex;
+		width: 32px;
+	}
+
+	/* WordPress before 7.2 has no SVG icon, and 7.2 hides this beside one. */
 	#wpadminbar #wp-admin-bar-presence-online > .ab-item::before {
 		content: "\f307";
 		top: 0;
