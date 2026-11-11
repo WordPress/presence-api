@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.20.2](https://github.com/WordPress/presence-api/compare/v0.20.1...v0.20.2) (2026-11-11)
+
+
+### Bug Fixes
+
+* draw the admin bar icons as WordPress 7.2 SVG icons ([#940](https://github.com/WordPress/presence-api/issues/940)) ([198894d](https://github.com/WordPress/presence-api/commit/198894d5297659216aba2daeddb8fbf0230997b6))
+
+
+### Dependencies
+
+* **deps-dev:** bump @wordpress/e2e-test-utils-playwright ([#948](https://github.com/WordPress/presence-api/issues/948)) ([0e3672e](https://github.com/WordPress/presence-api/commit/0e3672effff66b7547ff3af2998a87ac20047d00))
+* **deps-dev:** bump globals from 17.13.0 to 17.14.0 ([#946](https://github.com/WordPress/presence-api/issues/946)) ([b946075](https://github.com/WordPress/presence-api/commit/b946075b10b75770c17aabbd3d91883b398d3b5e))
+* **deps-dev:** bump html-validate from 11.17.0 to 11.18.0 ([#943](https://github.com/WordPress/presence-api/issues/943)) ([bc33e68](https://github.com/WordPress/presence-api/commit/bc33e6807db7e46829b95b6176c4bdc92df9f99d))
+* **deps-dev:** bump html-validate from 11.17.0 to 11.18.0 ([#943](https://github.com/WordPress/presence-api/issues/943)) ([49ecab9](https://github.com/WordPress/presence-api/commit/49ecab96c8692b740745bdda5bed7ffd44b89bbf))
+* **deps-dev:** bump mermaid from 12.2.0 to 12.3.0 ([#942](https://github.com/WordPress/presence-api/issues/942)) ([403feff](https://github.com/WordPress/presence-api/commit/403feff3c99e35543f25200636a4c16efc3d48d5))
+* **deps-dev:** bump vitest from 5.0.5 to 5.1.0 ([#945](https://github.com/WordPress/presence-api/issues/945)) ([b090fcf](https://github.com/WordPress/presence-api/commit/b090fcf59b0de25cae010abab4d08e6aa219f1c4))
+* **deps-dev:** update phpstan/phpstan requirement from 2.3.3 to 2.3.5 ([#941](https://github.com/WordPress/presence-api/issues/941)) ([4a37b4e](https://github.com/WordPress/presence-api/commit/4a37b4e97f548b6fdea44e0d25717a33bf071a85))
+* **deps:** bump crate-ci/typos from 1.51.1 to 1.52.0 ([#947](https://github.com/WordPress/presence-api/issues/947)) ([3afa152](https://github.com/WordPress/presence-api/commit/3afa1524f078e4625d312bf0df8275d87f44c0cd))
+* **deps:** bump the codeql-action group with 3 updates ([#944](https://github.com/WordPress/presence-api/issues/944)) ([61cda57](https://github.com/WordPress/presence-api/commit/61cda57a50f9245863972c82403e79fb4fc9de42))
+
 ## [0.20.1](https://github.com/WordPress/presence-api/compare/v0.20.0...v0.20.1) (2026-11-06)
 
 
