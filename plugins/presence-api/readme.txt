@@ -3,7 +3,7 @@ Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas,
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.1
-Stable tag: 0.20.1
+Stable tag: 0.20.2
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -79,6 +79,9 @@ For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/presence-api/blob/main/CHANGELOG.md
 
+= 0.20.2 =
+* Draw the admin bar icons as WordPress 7.2 SVG icons ([#940](https://github.com/WordPress/presence-api/issues/940)).
+
 = 0.20.1 =
 * Keep presence during in-site navigation ([#931](https://github.com/WordPress/presence-api/issues/931)).
 * Keep the stale-screen notice's time current ([#930](https://github.com/WordPress/presence-api/issues/930)).
@@ -99,9 +102,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 * Exclude reserved rows from personal data export ([#896](https://github.com/WordPress/presence-api/issues/896)).
 * Store no session hash on a post room's one editor row per person ([#884](https://github.com/WordPress/presence-api/issues/884)).
 * Write wp presence set as WP-CLI's --user, and three smaller corrections ([#887](https://github.com/WordPress/presence-api/issues/887)).
-
-= 0.18.3 =
-* Guard the functions in the six files core would ship in separate tickets ([#861](https://github.com/WordPress/presence-api/issues/861)).
-* Leave a presence table from an older schema alone until it is upgraded ([#866](https://github.com/WordPress/presence-api/issues/866)).
-* Store no session hash on the admin room's one row per person ([#867](https://github.com/WordPress/presence-api/issues/867)).
-* Warn an open screen when a REST request saves what it shows ([#868](https://github.com/WordPress/presence-api/issues/868)).
