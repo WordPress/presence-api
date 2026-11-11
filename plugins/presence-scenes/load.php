@@ -25,6 +25,7 @@ add_action(
 		add_action( 'wp_presence_scene_sweep', 'wp_presence_scene_sweep' );
 		add_filter( 'wp_authenticate_user', 'wp_presence_scene_authenticate' );
 
+		add_action( 'init', 'wp_presence_scene_register_icons' );
 		add_filter( 'wp_presence_debugger_indicators', 'wp_presence_scene_debugger_indicators' );
 		add_action( 'wp_presence_debugger_menu', 'wp_presence_scene_debugger_menu' );
 		foreach ( array( 'admin_enqueue_scripts', 'wp_enqueue_scripts' ) as $hook ) {

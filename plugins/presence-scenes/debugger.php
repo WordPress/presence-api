@@ -10,6 +10,35 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Registers the ticket that marks a running scene, which WordPress has no icon for.
+ *
+ * @since 0.20.2
+ *
+ * @access private
+ */
+function wp_presence_scene_register_icons() {
+	// WordPress before 7.2 has no admin bar styles for an SVG icon, so the Dashicon stays there.
+	if ( ! function_exists( 'wp_is_valid_icon_name' ) ) {
+		return;
+	}
+
+	wp_register_icon_collection(
+		'presence-scenes',
+		array(
+			'label'  => __( 'Presence Scenes', 'presence-scenes' ),
+			'public' => false,
+		)
+	);
+	wp_register_icon(
+		'presence-scenes/ticket',
+		array(
+			'label'     => __( 'Ticket', 'presence-scenes' ),
+			'file_path' => __DIR__ . '/icons/ticket.svg',
+		)
+	);
+}
+
+/**
  * Adds a ticket icon beside the debugger's countdown while a scene runs.
  *
  * @since 0.1.0
@@ -22,7 +51,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 function wp_presence_scene_debugger_indicators( $indicators ) {
 	if ( is_array( get_option( 'wp_presence_scene' ) ) ) {
 		$indicators[] = array(
-			'icon'  => 'dashicons-tickets-alt',
+			'icon'  => function_exists( 'wp_is_valid_icon_name' ) ? 'presence-scenes/ticket' : 'dashicons-tickets-alt',
 			'label' => __( 'Scene playing', 'presence-scenes' ),
 		);
 	}
@@ -52,7 +81,7 @@ function wp_presence_scene_debugger_menu( $wp_admin_bar ) {
 		array(
 			'parent' => 'presence-debug',
 			'id'     => 'presence-debug-scene',
-			'title'  => '<span><span class="screen-reader-text">' . esc_html__( 'Scene:', 'presence-scenes' ) . ' </span>' . esc_html( $run['title'] ) . '</span>'
+			'title'  => wp_presence_debugger_icon( 'presence-scenes/ticket', 16 ) . '<span><span class="screen-reader-text">' . esc_html__( 'Scene:', 'presence-scenes' ) . ' </span>' . esc_html( $run['title'] ) . '</span>'
 				/* translators: 1: Steps played, 2: Steps in the scene. */
 				. '<span class="presence-debug-value">' . esc_html( sprintf( __( '%1$s / %2$s', 'presence-scenes' ), number_format_i18n( count( $done ) ), number_format_i18n( count( $steps ) ) ) ) . '</span>',
 			'meta'   => array( 'class' => 'presence-debug-row presence-debug-scene' ),
@@ -88,7 +117,7 @@ function wp_presence_scene_debugger_assets() {
 	wp_add_inline_style(
 		'presence-debugger-admin-bar',
 		'
-		#wpadminbar #wp-admin-bar-presence-debug .presence-debug-scene > .ab-item::before { content: "\\f524"; position: static; padding: 0; font: 12px/1 dashicons; color: inherit; }
+		#wpadminbar #wp-admin-bar-presence-debug .presence-debug-scene > .ab-item:not(:has(> svg))::before { content: "\\f524"; position: static; padding: 0; font: 12px/1 dashicons; color: inherit; }
 		#wpadminbar #wp-admin-bar-presence-debug .presence-debug-scene > .ab-item { gap: 6px; }
 		#wpadminbar #wp-admin-bar-presence-debug .presence-debug-scene > .ab-item > .presence-debug-value { margin-inline-start: auto; }
 		#wpadminbar #wp-admin-bar-presence-debug .presence-debug-step > .ab-item { min-height: 0; padding-inline-start: 34px; padding-bottom: 4px; font-size: 12px; }

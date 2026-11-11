@@ -273,6 +273,8 @@ function wp_presence_admin_bar_node( $wp_admin_bar, $screen = null ) {
 			// Just inside My Account, which core adds later at 9991; top-secondary renders in DOM order.
 			'parent' => 'top-secondary',
 			'id'     => 'presence-online',
+			// WordPress 7.2 draws this on a phone's bar, and earlier versions ignore it and keep the Dashicon.
+			'icon'   => 'core-admin/people',
 			'title'  => $stack_html . '<span class="presence-bar-count" aria-hidden="true">' . esc_html( $label ) . '</span><span class="presence-bar-number" aria-hidden="true">' . esc_html( number_format_i18n( $online_count ) ) . '</span><span class="screen-reader-text">' . esc_html( $sr_label ) . '</span>',
 			'href'   => $users_url,
 			'meta'   => $users_url ? array( 'class' => 'presence-bar-node menupop' ) : array(
