@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Registers the ticket that marks a running scene, which WordPress has no icon for.
+ * Registers the clapperboard that marks a running scene, which WordPress has no icon for.
  *
  * @since 0.20.2
  *
@@ -30,16 +30,16 @@ function wp_presence_scene_register_icons() {
 		)
 	);
 	wp_register_icon(
-		'presence-scenes/ticket',
+		'presence-scenes/clapperboard',
 		array(
-			'label'     => __( 'Ticket', 'presence-scenes' ),
-			'file_path' => __DIR__ . '/icons/ticket.svg',
+			'label'     => __( 'Clapperboard', 'presence-scenes' ),
+			'file_path' => __DIR__ . '/icons/clapperboard.svg',
 		)
 	);
 }
 
 /**
- * Adds a ticket icon beside the debugger's countdown while a scene runs.
+ * Adds a clapperboard beside the debugger's countdown while a scene runs, or a ticket Dashicon on WordPress before 7.2.
  *
  * @since 0.1.0
  *
@@ -51,7 +51,7 @@ function wp_presence_scene_register_icons() {
 function wp_presence_scene_debugger_indicators( $indicators ) {
 	if ( is_array( get_option( 'wp_presence_scene' ) ) ) {
 		$indicators[] = array(
-			'icon'  => function_exists( 'wp_is_valid_icon_name' ) ? 'presence-scenes/ticket' : 'dashicons-tickets-alt',
+			'icon'  => function_exists( 'wp_is_valid_icon_name' ) ? 'presence-scenes/clapperboard' : 'dashicons-tickets-alt',
 			'label' => __( 'Scene playing', 'presence-scenes' ),
 		);
 	}
@@ -81,7 +81,7 @@ function wp_presence_scene_debugger_menu( $wp_admin_bar ) {
 		array(
 			'parent' => 'presence-debug',
 			'id'     => 'presence-debug-scene',
-			'title'  => wp_presence_debugger_icon( 'presence-scenes/ticket', 16 ) . '<span><span class="screen-reader-text">' . esc_html__( 'Scene:', 'presence-scenes' ) . ' </span>' . esc_html( $run['title'] ) . '</span>'
+			'title'  => wp_presence_debugger_icon( 'presence-scenes/clapperboard', 16 ) . '<span><span class="screen-reader-text">' . esc_html__( 'Scene:', 'presence-scenes' ) . ' </span>' . esc_html( $run['title'] ) . '</span>'
 				/* translators: 1: Steps played, 2: Steps in the scene. */
 				. '<span class="presence-debug-value">' . esc_html( sprintf( __( '%1$s / %2$s', 'presence-scenes' ), number_format_i18n( count( $done ) ), number_format_i18n( count( $steps ) ) ) ) . '</span>',
 			'meta'   => array( 'class' => 'presence-debug-row presence-debug-scene' ),

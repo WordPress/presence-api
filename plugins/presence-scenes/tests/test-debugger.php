@@ -42,16 +42,16 @@ class WP_Test_Presence_Scene_Debugger extends WP_Presence_UnitTestCase {
 	/**
 	 * @covers ::wp_presence_scene_register_icons
 	 */
-	public function test_registers_the_ticket_only_where_wordpress_styles_it() {
+	public function test_registers_the_clapperboard_only_where_wordpress_styles_it() {
 		$styled = function_exists( 'wp_is_valid_icon_name' );
 		// The plugin registers on init, which has already fired.
 		if ( $styled ) {
-			wp_unregister_icon( 'presence-scenes/ticket' );
+			wp_unregister_icon( 'presence-scenes/clapperboard' );
 			wp_unregister_icon_collection( 'presence-scenes' );
 		}
 
 		wp_presence_scene_register_icons();
 
-		$this->assertSame( $styled, '' !== wp_presence_debugger_icon( 'presence-scenes/ticket' ) );
+		$this->assertSame( $styled, '' !== wp_presence_debugger_icon( 'presence-scenes/clapperboard' ) );
 	}
 }
