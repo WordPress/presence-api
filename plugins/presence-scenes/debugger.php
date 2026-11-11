@@ -17,17 +17,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @access private
  */
 function wp_presence_scene_register_icons() {
-	// WordPress before 7.2 has no admin bar styles for an SVG icon, so the Dashicon stays there.
-	if ( ! function_exists( 'wp_is_valid_icon_name' ) ) {
+	// WordPress 7.0 has no icon functions.
+	if ( ! function_exists( 'wp_register_icon' ) ) {
 		return;
 	}
 
 	wp_register_icon_collection(
 		'presence-scenes',
-		array(
-			'label'  => __( 'Presence Scenes', 'presence-scenes' ),
-			'public' => false,
-		)
+		// WordPress 7.1 rejects the key that keeps the clapperboard out of the REST API on 7.2.
+		array( 'label' => __( 'Presence Scenes', 'presence-scenes' ) ) + ( function_exists( 'wp_is_valid_icon_name' ) ? array( 'public' => false ) : array() )
 	);
 	wp_register_icon(
 		'presence-scenes/clapperboard',

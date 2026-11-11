@@ -15,17 +15,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @since 0.20.2
  */
 function wp_presence_debugger_register_icons() {
-	// WordPress before 7.2 has no admin bar styles for an SVG icon, so the Dashicon stays there.
-	if ( ! function_exists( 'wp_is_valid_icon_name' ) || WP_Icons_Registry::get_instance()->is_registered( 'presence-debugger/heart' ) ) {
+	// WordPress 7.0 has no icon functions.
+	if ( ! function_exists( 'wp_register_icon' ) || WP_Icons_Registry::get_instance()->is_registered( 'presence-debugger/heart' ) ) {
 		return;
 	}
 
 	wp_register_icon_collection(
 		'presence-debugger',
-		array(
-			'label'  => __( 'Presence API Debugger', 'presence-api' ),
-			'public' => false,
-		)
+		// WordPress 7.1 rejects the key that keeps the heart out of the REST API on 7.2.
+		array( 'label' => __( 'Presence API Debugger', 'presence-api' ) ) + ( function_exists( 'wp_is_valid_icon_name' ) ? array( 'public' => false ) : array() )
 	);
 	wp_register_icon(
 		'presence-debugger/heart',
@@ -37,13 +35,13 @@ function wp_presence_debugger_register_icons() {
 }
 
 /**
- * Returns an icon's SVG, or an empty string where the Dashicon should stay.
+ * Returns an icon's SVG, or an empty string on WordPress before 7.2, whose admin bar has no styles for one.
  *
  * @since 0.20.2
  *
  * @param string $name Icon name such as `core-admin/pin`, or a Dashicons class, which has no SVG.
  * @param int    $size Width and height in pixels.
- * @return string The SVG markup, empty on WordPress before 7.2 or for a name that is not registered.
+ * @return string The SVG markup, empty where the Dashicon should stay or for a name that is not registered.
  */
 function wp_presence_debugger_icon( $name, $size = 20 ) {
 	return function_exists( 'wp_is_valid_icon_name' ) ? wp_get_icon( $name, array( 'size' => $size ) ) : '';
