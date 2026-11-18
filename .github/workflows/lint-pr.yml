@@ -1,8 +1,7 @@
 name: Lint Pull Request
 
 on:
-  # It never checks out the pull request's code, and a fork's pull request only gets the `statuses: write` the action needs on this trigger.
-  pull_request_target: # zizmor: ignore[dangerous-triggers]
+  pull_request:
     types:
       - opened
       - edited
@@ -19,13 +18,8 @@ jobs:
     name: Validate pull request title
     runs-on: ubuntu-24.04
     timeout-minutes: 5
-    # The action reports its result as a commit status, which needs
-    # `statuses: write`. The default token does not have it on
-    # `pull_request_target`, and without it the action fails with
-    # "Resource not accessible by integration" even for a valid title.
     permissions:
       pull-requests: read
-      statuses: write
     steps:
       - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
         env:
