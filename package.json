@@ -26,7 +26,7 @@
 		"@wordpress/e2e-test-utils-playwright": "^3.2.0",
 		"@wordpress/env": "^12.0.0",
 		"@wordpress/eslint-plugin": "^28.0.0",
-		"@wordpress/scripts": "^37.0.0",
+		"@wordpress/scripts": "^37.1.0",
 		"github-slugger": "^2.0.0",
 		"globals": "^17.14.0",
 		"html-validate": "^11.18.0",
