@@ -1,33 +1,61 @@
 name: Playground Preview Cleanup
 
-# Deletes the per-PR preview branch when a PR is closed.
+# Deletes the per-PR preview branches of closed PRs.
 #
-# Uses `pull_request_target` so cleanup also fires for PRs from forks
-# (the token from `pull_request: closed` is read-only on forks). This
-# workflow never checks out PR code and only calls the git ref API
-# with values from the GitHub event payload, so `pull_request_target`
-# is safe here.
+# Sweeps on a schedule instead of reacting to `pull_request_target: closed`,
+# which GitHub blocks by default in public repositories, while
+# `pull_request: closed` gets a read-only token on forks. Nothing reads a
+# `preview-pr-*` branch once its PR is closed, so a few hours' delay is harmless.
 
 on:
-  pull_request_target: # zizmor: ignore[dangerous-triggers]
-    types: [closed]
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
 
-permissions:
-  contents: write
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 jobs:
   cleanup:
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: read
     steps:
-      - name: Delete preview branch
+      - name: Delete previews of closed pull requests
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
-          NAME="preview-pr-${PR_NUMBER}"
-          # Tolerate "not found": the build may never have run. The release
-          # delete is for PRs opened before previews moved off Releases.
-          gh api --method DELETE "repos/${GH_REPO}/git/refs/heads/${NAME}" --silent 2>/dev/null || true
-          gh release delete "$NAME" --yes --cleanup-tag 2>/dev/null || true
+
+          # Previews moved off Releases, but PRs from before that can still have a release and tag.
+          branches="$(gh api "repos/${GH_REPO}/git/matching-refs/heads/preview-pr-" --paginate --jq '.[].ref | ltrimstr("refs/heads/")')"
+          tags="$(gh api "repos/${GH_REPO}/git/matching-refs/tags/preview-pr-" --paginate --jq '.[].ref | ltrimstr("refs/tags/")')"
+
+          printf '%s\n%s\n' "$branches" "$tags" | sort -u | while read -r name; do
+            pr="${name#preview-pr-}"
+            if [[ ! "$pr" =~ ^[1-9][0-9]*$ ]]; then
+              continue
+            fi
+
+            state="$(gh api "repos/${GH_REPO}/pulls/${pr}" --jq '.state')"
+            if [ "$state" != 'closed' ]; then
+              continue
+            fi
+
+            if grep -qxF "$name" <<< "$branches"; then
+              echo "Deleting branch ${name}."
+              gh api --method DELETE "repos/${GH_REPO}/git/refs/heads/${name}" --silent
+            fi
+
+            if grep -qxF "$name" <<< "$tags"; then
+              echo "Deleting release and tag ${name}."
+              gh release delete "$name" --yes --cleanup-tag 2>/dev/null \
+                || gh api --method DELETE "repos/${GH_REPO}/git/refs/tags/${name}" --silent
+            fi
+          done
