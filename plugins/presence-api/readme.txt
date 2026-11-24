@@ -2,7 +2,7 @@
 Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas, aldorza, bejignesh, stfulldev, obenland, moriikuri, ishitaj34, theaminuldev, muneebashraf, mindctrl, zahidui, mitgiselle, jaredrethman, jooahmed, noruzzaman, huzaifaalmesbah, rejaulalomkhan, bosskhj, hmbashar, devmuhib, khushalsains
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
-Tested up to: 7.1
+Tested up to: 7.2
 Stable tag: 0.20.2
 Requires PHP: 7.4
 License: GPLv2 or later
