@@ -185,16 +185,10 @@ jobs:
           BLUEPRINT=$(transform "$PLUGIN_URL" "$DEBUGGER_URL" "$SEEDER_URL" "$HELPER_URL" blueprint.json)
           BLUEPRINT_MS=$(transform "$PLUGIN_URL" "$DEBUGGER_URL" "$SEEDER_URL" "$HELPER_URL" blueprint-multisite.json)
           BLUEPRINT_RTC=$(transform "$PLUGIN_URL" "$DEBUGGER_URL" "$SEEDER_URL" "$HELPER_URL" blueprint-rtc.json)
-          BLUEPRINT_MS_RTC=$(transform "$PLUGIN_URL" "$DEBUGGER_URL" "$SEEDER_URL" "$HELPER_URL" blueprint-multisite-rtc.json)
 
-          # The settings buttons are the post-locks sites, landing on the plugin's own settings page instead of the post list.
-          BLUEPRINT_SETTINGS=$(jq '.landingPage = "/wp-admin/options-general.php?page=presence-api"' <<< "$BLUEPRINT")
-          BLUEPRINT_MS_SETTINGS=$(jq '.landingPage = "/wp-admin/network/settings.php?page=presence-api"' <<< "$BLUEPRINT_MS")
-
-          # The synced pattern buttons are the post-locks sites with someone editing a pattern, opened on a post that uses it.
+          # The synced pattern button is the single site with someone editing a pattern, opened on a post that uses it.
           PATTERN_STEP=$(jq -n '{ step: "runPHP", code: "<?php require \"/wordpress/wp-load.php\"; require \"/wordpress/wp-content/plugins/presence-api/demo-seeder.php\"; global $wpdb; update_option( \"presence_demo_pattern\", wp_presence_demo_seed_pattern_editor() ); update_user_meta( 1, $wpdb->get_blog_prefix() . \"persisted_preferences\", array( \"core\" => array( \"welcomeGuide\" => false ), \"core/edit-post\" => array( \"welcomeGuide\" => false ), \"_modified\" => gmdate( \"c\" ) ) ); ?>" }')
           BLUEPRINT_PATTERN=$(jq --argjson step "$PATTERN_STEP" '.landingPage = "/wp-admin/?presence_demo=pattern" | .steps += [ $step ]' <<< "$BLUEPRINT")
-          BLUEPRINT_MS_PATTERN=$(jq --argjson step "$PATTERN_STEP" '.landingPage = "/wp-admin/?presence_demo=pattern" | .steps += [ $step ]' <<< "$BLUEPRINT_MS")
 
           encode() { printf '%s' "$1" | base64 -w0; }
 
@@ -202,11 +196,7 @@ jobs:
             echo "url=https://playground.wordpress.net/#$(encode "$BLUEPRINT")"
             echo "url_multisite=https://playground.wordpress.net/#$(encode "$BLUEPRINT_MS")"
             echo "url_rtc=https://playground.wordpress.net/#$(encode "$BLUEPRINT_RTC")"
-            echo "url_multisite_rtc=https://playground.wordpress.net/#$(encode "$BLUEPRINT_MS_RTC")"
-            echo "url_settings=https://playground.wordpress.net/#$(encode "$BLUEPRINT_SETTINGS")"
-            echo "url_multisite_settings=https://playground.wordpress.net/#$(encode "$BLUEPRINT_MS_SETTINGS")"
             echo "url_pattern=https://playground.wordpress.net/#$(encode "$BLUEPRINT_PATTERN")"
-            echo "url_multisite_pattern=https://playground.wordpress.net/#$(encode "$BLUEPRINT_MS_PATTERN")"
           } >> "$GITHUB_OUTPUT"
 
       - name: Post or update sticky comment
@@ -218,22 +208,14 @@ jobs:
           PLAYGROUND_URL: ${{ steps.playground.outputs.url }}
           PLAYGROUND_URL_MULTISITE: ${{ steps.playground.outputs.url_multisite }}
           PLAYGROUND_URL_RTC: ${{ steps.playground.outputs.url_rtc }}
-          PLAYGROUND_URL_MULTISITE_RTC: ${{ steps.playground.outputs.url_multisite_rtc }}
-          PLAYGROUND_URL_SETTINGS: ${{ steps.playground.outputs.url_settings }}
-          PLAYGROUND_URL_MULTISITE_SETTINGS: ${{ steps.playground.outputs.url_multisite_settings }}
           PLAYGROUND_URL_PATTERN: ${{ steps.playground.outputs.url_pattern }}
-          PLAYGROUND_URL_MULTISITE_PATTERN: ${{ steps.playground.outputs.url_multisite_pattern }}
         with:
           script: |
             const marker = '<!-- presence-api:playground-preview -->';
             const url = process.env.PLAYGROUND_URL;
             const urlMultisite = process.env.PLAYGROUND_URL_MULTISITE;
             const urlRtc = process.env.PLAYGROUND_URL_RTC;
-            const urlMultisiteRtc = process.env.PLAYGROUND_URL_MULTISITE_RTC;
-            const urlSettings = process.env.PLAYGROUND_URL_SETTINGS;
-            const urlMultisiteSettings = process.env.PLAYGROUND_URL_MULTISITE_SETTINGS;
             const urlPattern = process.env.PLAYGROUND_URL_PATTERN;
-            const urlMultisitePattern = process.env.PLAYGROUND_URL_MULTISITE_PATTERN;
             const fullSha = process.env.HEAD_SHA;
             const sha = fullSha.slice(0, 7);
             const commitUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/commit/${fullSha}`;
@@ -253,10 +235,9 @@ jobs:
               // emits, which the timeline's sha links are not.
               `Built from <a href="${commitUrl}"><samp>${sha}</samp></a>`,
               '',
-              '|  | Post locks | RTC | Synced patterns | Settings |',
-              '| --- | --- | --- | --- | --- |',
-              `| **Single site** | ${launch(url, 'Launch post locks, single site')} | ${launch(urlRtc, 'Launch RTC, single site')} | ${launch(urlPattern, 'Launch synced patterns, single site')} | ${launch(urlSettings, 'Launch settings, single site')} |`,
-              `| **Multisite** | ${launch(urlMultisite, 'Launch post locks, multisite')} | ${launch(urlMultisiteRtc, 'Launch RTC, multisite')} | ${launch(urlMultisitePattern, 'Launch synced patterns, multisite')} | ${launch(urlMultisiteSettings, 'Launch network settings, multisite')} |`,
+              '| Presence API | Multisite | RTC | Synced patterns |',
+              '| --- | --- | --- | --- |',
+              `| ${launch(url, 'Launch Presence API')} | ${launch(urlMultisite, 'Launch multisite')} | ${launch(urlRtc, 'Launch RTC')} | ${launch(urlPattern, 'Launch synced patterns')} |`,
               '',
             ].join('\n');
 
