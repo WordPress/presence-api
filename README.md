@@ -72,28 +72,29 @@ Only Heartbeat refreshes a row between page loads. With its script removed, or i
 | --- | --- |
 | `admin/online` | Everyone on an admin screen |
 | `postType/{type}:{id}` | Everyone editing that post, such as `postType/post:42` |
+| Any other string | A plugin's own room, such as `my-plugin/order:123` (see [Custom rooms](#custom-rooms)) |
 
 Each post type with presence support gets a room; see [Post type support](#post-type-support).
 
 ### Client IDs
 
-A `client_id` prefix tells this plugin's rows apart from anyone else's in the same room. These are reserved:
+A row's `client_id` prefix says who wrote it, and these are reserved:
 
 | Prefix | Room | Written by |
 | --- | --- | --- |
 | `user-{user_id}` | `admin/online` | Heartbeat, login and logout |
-| `editor-{user_id}` | Post rooms | Heartbeat, post locks |
+| `editor-{user_id}` | Post rooms | Heartbeat and post locks, and counted as the room's editors |
+| `agent-{user_id}` | Post rooms | An AI agent's save (see [Agents](#agents)) |
 | `cli-{user_id}` | Any | `wp presence set` when given no client ID |
+| `_collab`, `_lock`, `_version` | Post rooms, `_version` any | Bookkeeping: the last editor count, the post's `_edit_lock`, and the room's version counter |
 
-Anything else writing to a room, such as a plugin relaying awareness or a REST client, must use its own prefix, like `gse-` for [gutenberg-sync-engines](https://github.com/WordPress/gutenberg-sync-engines). Pass it as `client_prefix` to read back only your rows: `wp_get_presence( $room, array( 'client_prefix' => 'gse-' ) )`.
+Anything else writing to a room, such as a plugin relaying awareness or a REST client, must use its own prefix, like `gse-` for [gutenberg-sync-engines](https://github.com/WordPress/gutenberg-sync-engines), and passes it as `client_prefix` to read back only its rows.
 
-A leading `_` marks bookkeeping rows, which are not participants: `_collab` holds a post room's last editor count for the collaboration actions, `_lock` holds the post's `_edit_lock`, and `_version` holds the room's version counter. `wp_get_presence()` and the REST collection leave them out, and the REST write and delete routes reject them. `wp_set_presence()` writes one even with recording off, which is how a post lock outlasts the switch.
-
-This plugin counts a post room's editors by the `editor-` prefix, so anyone else using it inflates the count.
+Rows starting with `_` aren't participants, so reads leave them out and the REST routes refuse to write or delete them, though `wp_set_presence()` still writes them with recording off, which is how a post lock outlasts the switch.
 
 ### Custom rooms
 
-A screen for something that isn't a post, such as an order or a form entry kept in its own table, can have a room of its own. Name it under your plugin, like `my-plugin/order:123`, and have the screen's own Heartbeat join it and read it back:
+A screen for something that isn't a post, such as an order kept in its own table, can have a room named under your plugin, joined and read back on the screen's own Heartbeat:
 
 ```js
 jQuery( document )
@@ -109,12 +110,17 @@ jQuery( document )
 ```php
 add_filter( 'heartbeat_received', function ( $response, $data ) {
 	$order_id = absint( $data['my-plugin-order'] ?? 0 );
-	if ( ! $order_id || ! current_user_can( 'edit_shop_orders' ) ) { // Your screen's own capability.
+	if ( ! $order_id || ! current_user_can( 'edit_shop_orders' ) ) {
 		return $response;
 	}
 
 	$user_id = get_current_user_id();
-	$entries = wp_presence_exchange( "my-plugin/order:{$order_id}", "my-plugin-{$user_id}", array(), array( 'user_id' => $user_id, 'client_prefix' => 'my-plugin-' ) );
+	$entries = wp_presence_exchange(
+		"my-plugin/order:{$order_id}",
+		"my-plugin-{$user_id}",
+		array(),
+		array( 'user_id' => $user_id, 'client_prefix' => 'my-plugin-' )
+	);
 
 	$response['my-plugin-order'] = array();
 	foreach ( $entries as $entry ) {
@@ -126,9 +132,7 @@ add_filter( 'heartbeat_received', function ( $response, $data ) {
 }, 10, 2 );
 ```
 
-Each tick renews the row, and a closed tab's row expires within the TTL, which outlasts the 120 seconds between ticks in a background tab.
-
-Use the screen's own Heartbeat key rather than [`presence-api.liveSurfaces`](#presence-apilivesurfaces). A surface rides this plugin's ping, which only one tab per screen sends, so two tabs on different orders would share one answer.
+Use the screen's own Heartbeat key rather than [`presence-api.liveSurfaces`](#presence-apilivesurfaces), which rides a ping only one tab per screen sends, so two tabs on different orders would share one answer.
 
 Anyone who can edit a post type can read a custom room over the [REST API](#rest-api), so keep `$state` free of anything only the screen's own users should see.
 
