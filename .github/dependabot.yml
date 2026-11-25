@@ -36,6 +36,10 @@ updates:
       prefix: "build"
       prefix-development: "build"
       include: "scope"
+    # Under 1.65.1 the synced-patterns film never finds the block editor footer.
+    ignore:
+      - dependency-name: "@playwright/test"
+        versions: [ "1.65.1" ]
 
   - package-ecosystem: "github-actions"
     directory: "/"
