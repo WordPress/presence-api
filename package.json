@@ -27,6 +27,7 @@
 		"@wordpress/env": "^12.1.0",
 		"@wordpress/eslint-plugin": "^28.1.0",
 		"@wordpress/scripts": "^37.1.0",
+		"@wordpress/theme": "^4.0.0",
 		"github-slugger": "^2.0.0",
 		"globals": "^17.14.0",
 		"html-validate": "^11.21.1",
