@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.20.3](https://github.com/WordPress/presence-api/compare/v0.20.2...v0.20.3) (2026-11-25)
+
+
+### Dependencies
+
+* **deps-dev:** add @wordpress/theme 4 so Stylelint finds its design tokens ([#971](https://github.com/WordPress/presence-api/issues/971)) ([672854e](https://github.com/WordPress/presence-api/commit/672854ef95cc17fd4a6dc4a260c9a132cb425267))
+* **deps-dev:** bump @playwright/test from 1.64.1 to 1.65.0 ([#954](https://github.com/WordPress/presence-api/issues/954)) ([c714f00](https://github.com/WordPress/presence-api/commit/c714f0018d9db51d94f7c165e92c321ff07a711e))
+* **deps-dev:** bump @playwright/test from 1.65.0 to 1.65.1 ([#965](https://github.com/WordPress/presence-api/issues/965)) ([828cc10](https://github.com/WordPress/presence-api/commit/828cc10a67f2a968c17d301ec535e4f6a842d592))
+* **deps-dev:** bump @wordpress/env from 12.0.0 to 12.1.0 ([#955](https://github.com/WordPress/presence-api/issues/955)) ([93b0734](https://github.com/WordPress/presence-api/commit/93b0734a6b2544f3d3b4861481f2f224b0afa4c9))
+* **deps-dev:** bump @wordpress/eslint-plugin from 28.0.0 to 28.1.0 ([#952](https://github.com/WordPress/presence-api/issues/952)) ([680c384](https://github.com/WordPress/presence-api/commit/680c38437e15418c6c753ad803307b14f6c25c70))
+* **deps-dev:** bump @wordpress/scripts from 37.0.0 to 37.1.0 ([#956](https://github.com/WordPress/presence-api/issues/956)) ([8a872ec](https://github.com/WordPress/presence-api/commit/8a872ecafaa90df1a76df98526d5863c41c1f671))
+* **deps-dev:** bump html-validate from 11.18.0 to 11.21.1 ([#969](https://github.com/WordPress/presence-api/issues/969)) ([efd6ce7](https://github.com/WordPress/presence-api/commit/efd6ce7c965c6ea0b6e4d092733a29b0acf2a385))
+* **deps-dev:** bump jquery from 4.0.0 to 4.1.0 ([#968](https://github.com/WordPress/presence-api/issues/968)) ([34f7313](https://github.com/WordPress/presence-api/commit/34f73137628236d170f1a9f8f7014142cc28b7c5))
+* **deps-dev:** bump jsdom from 30.1.3 to 31.0.0 ([#953](https://github.com/WordPress/presence-api/issues/953)) ([e341421](https://github.com/WordPress/presence-api/commit/e341421c604ee1ce5a3ff9b6594b10c9c602ce8a))
+* **deps-dev:** bump jsdom from 31.0.0 to 31.0.1 ([#966](https://github.com/WordPress/presence-api/issues/966)) ([cf96bda](https://github.com/WordPress/presence-api/commit/cf96bdaa75a144cecbbf0a1141678d7ef2e4cbc7))
+* **deps-dev:** bump markdown-it-anchor from 10.0.0 to 10.1.0 ([#974](https://github.com/WordPress/presence-api/issues/974)) ([f2b6585](https://github.com/WordPress/presence-api/commit/f2b6585a925339555955ff9d01f9ac47fc4198d9))
+* **deps-dev:** bump vite from 8.3.5 to 8.3.8 ([#973](https://github.com/WordPress/presence-api/issues/973)) ([879a402](https://github.com/WordPress/presence-api/commit/879a402510600da38b85fff6a155808a1a28a3fe))
+* **deps-dev:** bump vitest from 5.1.0 to 5.1.1 ([#967](https://github.com/WordPress/presence-api/issues/967)) ([57d9272](https://github.com/WordPress/presence-api/commit/57d927203820489f67796310e18df34ab0aa2e5e))
+* **deps-dev:** roll @playwright/test back to 1.65.0 ([#972](https://github.com/WordPress/presence-api/issues/972)) ([7d80641](https://github.com/WordPress/presence-api/commit/7d806410c69a6c17405ac24e5173d98cb5a7eb83))
+* **deps-dev:** update phpstan/phpstan requirement from 2.3.5 to 2.3.6 ([#964](https://github.com/WordPress/presence-api/issues/964)) ([7913acc](https://github.com/WordPress/presence-api/commit/7913acca3297e0af7a3ffc23e64ce43ff0900dfd))
+* **deps:** bump amannn/action-semantic-pull-request ([#951](https://github.com/WordPress/presence-api/issues/951)) ([42e2160](https://github.com/WordPress/presence-api/commit/42e2160f1ccb17ee3a2dd7abb2f7320f3380f0a5))
+* **deps:** bump astral-sh/setup-uv from 10.3.3 to 10.4.0 ([#963](https://github.com/WordPress/presence-api/issues/963)) ([cd46b67](https://github.com/WordPress/presence-api/commit/cd46b67dc6a2d2016d05b2287a78fd317943f8e0))
+* **deps:** bump crate-ci/typos from 1.52.0 to 1.52.2 ([#950](https://github.com/WordPress/presence-api/issues/950)) ([72df29e](https://github.com/WordPress/presence-api/commit/72df29e6292cbff95149eb4938c33af981fcdf80))
+
 ## [0.20.2](https://github.com/WordPress/presence-api/compare/v0.20.1...v0.20.2) (2026-11-11)
 
 
