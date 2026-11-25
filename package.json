@@ -36,7 +36,7 @@
 		"markdown-it": "^15.0.3",
 		"markdown-it-anchor": "^10.0.0",
 		"mermaid": "^12.3.0",
-		"vite": "^8.3.5",
+		"vite": "^8.3.8",
 		"vitest": "^5.1.1"
 	},
 	"peerDependencies": {
