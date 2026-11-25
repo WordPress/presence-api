@@ -3,7 +3,7 @@ Contributors: joefusco, intenzi, ashishjii, iamchitti, iqbal1hossain, wp24horas,
 Tags: presence, awareness, heartbeat, real-time
 Requires at least: 7.0
 Tested up to: 7.2
-Stable tag: 0.20.2
+Stable tag: 0.20.3
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -79,6 +79,9 @@ For code, the `wp_presence_recording_enabled` and `wp_presence_network_recording
 
 Only the most recent releases are listed here. For the full history, see https://github.com/WordPress/presence-api/blob/main/CHANGELOG.md
 
+= 0.20.3 =
+* Maintenance release.
+
 = 0.20.2 =
 * Draw the admin bar icons as WordPress 7.2 SVG icons ([#940](https://github.com/WordPress/presence-api/issues/940)).
 
@@ -95,10 +98,3 @@ Only the most recent releases are listed here. For the full history, see https:/
 = 0.19.0 =
 * Add a presence-api.keepalive filter so a push transport can hold a tab's rows ([#904](https://github.com/WordPress/presence-api/issues/904)).
 * Add a presence-api.roomChanged action that refreshes presence now ([#903](https://github.com/WordPress/presence-api/issues/903)).
-
-= 0.18.4 =
-* Clear the cleanup cron event on plugin uninstall ([#872](https://github.com/WordPress/presence-api/issues/872)).
-* Preserve post locks on logout from another session ([#893](https://github.com/WordPress/presence-api/issues/893)).
-* Exclude reserved rows from personal data export ([#896](https://github.com/WordPress/presence-api/issues/896)).
-* Store no session hash on a post room's one editor row per person ([#884](https://github.com/WordPress/presence-api/issues/884)).
-* Write wp presence set as WP-CLI's --user, and three smaller corrections ([#887](https://github.com/WordPress/presence-api/issues/887)).
